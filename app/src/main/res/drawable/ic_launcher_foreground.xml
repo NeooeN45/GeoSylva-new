@@ -1,0 +1,43 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- GeoSylva stylised tree: minimalist lines in golden color -->
+    <path
+        android:strokeColor="#D8B15A"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M54,20 L54,88" />
+
+    <!-- Upper branch -->
+    <path
+        android:strokeColor="#D8B15A"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M34,32 L54,20 L74,32" />
+
+    <!-- Middle branch -->
+    <path
+        android:strokeColor="#D8B15A"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M30,48 L54,32 L78,48" />
+
+    <!-- Lower triangle / base -->
+    <path
+        android:strokeColor="#D8B15A"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="@android:color/transparent"
+        android:pathData="M34,72 L54,48 L74,72 L34,72" />
+
+</vector>

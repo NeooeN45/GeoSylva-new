@@ -1,0 +1,548 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GéoSylva</string>
+
+    <!-- Groups Screen -->
+    <string name="groups_title">Groupes</string>
+    <string name="no_groups">Aucun groupe</string>
+    <string name="create_group">Créer un groupe</string>
+    <string name="create_group_to_start">Créez un groupe pour commencer</string>
+    <string name="group_name">Nom du groupe</string>
+    <string name="group">Groupe</string>
+    <string name="project_color">Couleur du projet</string>
+    <string name="martelage_choose_project_title">Choisir un projet pour le martelage</string>
+
+    <!-- Counter Screen -->
+    <string name="no_counters">Aucun compteur</string>
+    <string name="add_counter">Ajouter un compteur</string>
+    <string name="add_counter_to_start">Ajoutez un compteur pour commencer</string>
+    <string name="counter_name">Nom du compteur</string>
+    <string name="counter_step">Pas</string>
+    <string name="counter_min">Min</string>
+    <string name="counter_max">Max</string>
+    <string name="counter_target">Objectif</string>
+
+    <!-- Actions -->
+    <string name="create">Créer</string>
+    <string name="add">Ajouter</string>
+    <string name="cancel">Annuler</string>
+    <string name="delete">Supprimer</string>
+    <string name="duplicate">Dupliquer</string>
+    <string name="rename_project">Renommer le projet</string>
+    <string name="change_project_color">Changer la couleur du projet</string>
+    <string name="reset">Réinitialiser</string>
+    <string name="save">Enregistrer</string>
+    <string name="save_and_apply">Enregistrer et appliquer</string>
+    <string name="export">Exporter</string>
+    <string name="import_label">Importer</string>
+
+    <!-- Settings -->
+    <string name="settings">Paramètres</string>
+    <string name="appearance">Apparence</string>
+    <string name="language">Langue</string>
+    <string name="system">Système</string>
+    <string name="french">Français</string>
+    <string name="english">Anglais</string>
+    <string name="theme">Thème</string>
+    <string name="theme_light">Clair</string>
+    <string name="theme_dark">Sombre</string>
+    <string name="theme_system">Système</string>
+    <string name="font_size">Taille de police</string>
+    <string name="animations">Animations</string>
+    <string name="haptic_feedback">Retour haptique</string>
+    <string name="dynamic_color">Couleurs dynamiques</string>
+    <string name="use_system_palette">Utiliser la palette du système</string>
+    <string name="accent_color">Couleur d’accent</string>
+    <string name="glass_blur">Effet verre (flou)</string>
+    <string name="glass_blur_desc">Activer le flou en mode sombre (Android 12+)</string>
+
+    <!-- Privacy -->
+    <string name="no_ads">Sans pub</string>
+    <string name="no_tracking">Sans suivi</string>
+    <string name="privacy_statement">Aucune publicité ni suivi</string>
+
+    <!-- Descriptions -->
+    <string name="back">Retour</string>
+    <string name="more_options">Plus d’options</string>
+    <string name="formulas">Formules</string>
+    <string name="calculator">Calculatrice</string>
+
+    <string name="formulas_empty_title">Aucune formule</string>
+    <string name="formulas_empty_desc">Appuyez sur + pour créer votre première formule.</string>
+    <string name="formulas_create_title">Créer une formule</string>
+    <string name="formulas_edit_title">Modifier la formule</string>
+
+    <string name="unit">Unité</string>
+    <string name="evaluate">Évaluer</string>
+    <string name="result">Résultat</string>
+    <string name="history">Historique</string>
+    <string name="search">Rechercher</string>
+
+    <string name="sort">Trier</string>
+    <string name="sort_by_name">Nom</string>
+    <string name="sort_by_surface">Surface</string>
+    <string name="sort_by_last_update">Dernière modif</string>
+    <string name="no_results">Aucun résultat</string>
+    <string name="clear_search">Effacer la recherche</string>
+
+    <string name="insert_counter">Insérer un compteur</string>
+    <string name="insert_from_counter">Insérer depuis un compteur</string>
+    <string name="bind">Lier</string>
+    <string name="snapshot">Instantané</string>
+    <string name="save_as_formula">Enregistrer comme formule</string>
+    <string name="export_result">Exporter le résultat</string>
+
+    <string name="result_exported">Résultat exporté</string>
+    <string name="export_failed_format">Échec de l’export : %1$s</string>
+    <string name="formula_saved">Formule enregistrée</string>
+    <string name="calculator_expression_bind_hint">Expression (utilisez [NomCompteur] pour lier)</string>
+
+    <string name="result_value_format">Résultat : %1$.4f</string>
+
+    <!-- GroupScreen extras -->
+    <string name="counter_settings_title">Paramètres du compteur</string>
+    <string name="name">Nom</string>
+    <string name="color_hex_label">Couleur (#RRGGBB)</string>
+    <string name="palette">Palette</string>
+    <string name="color_palette_title">Palette de couleurs</string>
+    <string name="brightness">Luminosité</string>
+    <string name="choose">Choisir</string>
+    <string name="less_colors">Moins de couleurs</string>
+    <string name="more_colors">Plus de couleurs</string>
+    <string name="step">Pas</string>
+    <string name="target">Objectif</string>
+    <string name="min">Min</string>
+    <string name="max">Max</string>
+    <string name="decimal_places">Décimales</string>
+    <string name="initial_value">Valeur initiale</string>
+    <string name="reset_value">Valeur de réinitialisation</string>
+    <string name="expression">Expression</string>
+    <string name="tile_size">Taille de tuile</string>
+    <string name="small">Petite</string>
+    <string name="normal_size">Normale</string>
+    <string name="large">Grande</string>
+    <string name="sound">Son</string>
+    <string name="inherit">Hériter</string>
+    <string name="on_state">Activé</string>
+    <string name="off_state">Désactivé</string>
+    <string name="vibration">Vibration</string>
+    <string name="vibration_intensity_hint">Intensité de vibration (1..3, hériter=0)</string>
+    <string name="intensity">Intensité</string>
+    <string name="target_action">Action cible</string>
+    
+    <string name="reset_to_zero">Remettre à 0</string>
+    <string name="copies">Copies</string>
+    <string name="duplicate_counter">Dupliquer le compteur</string>
+    <string name="number_of_copies">Nombre de copies</string>
+
+    <string name="loading">Chargement…</string>
+    <string name="essence">Essence</string>
+    <string name="product">Produit</string>
+    <string name="delete_counter_title">Supprimer le compteur</string>
+    <string name="delete_counter_confirm">Êtes-vous sûr de vouloir supprimer %1$s ?</string>
+    <string name="delete_counter">Supprimer le compteur</string>
+    <string name="import_json">Importer JSON</string>
+    <string name="import_csv">Importer CSV</string>
+    <string name="import_excel">Importer Excel</string>
+    <string name="export_json">Exporter JSON</string>
+    <string name="export_csv">Exporter CSV</string>
+    <string name="export_zip">Exporter ZIP</string>
+    <string name="export_excel">Exporter Excel</string>
+    <string name="quick_colors">Couleurs rapides</string>
+    <string name="create_counter_title">Créer un compteur</string>
+    <string name="min_optional">Min (optionnel)</string>
+    <string name="max_optional">Max (optionnel)</string>
+    <string name="target_optional">Objectif (optionnel)</string>
+    <string name="color_hex_optional">Couleur (#RRGGBB, optionnel)</string>
+    <string name="computed_use_formula">Calculé (utiliser une formule)</string>
+    <string name="computed_default_name">Calculé</string>
+    <string name="computed_expression_label">Expression (ex : sum(name:startsWith("H")))</string>
+    <string name="expression_hint">Expression</string>
+    
+    <string name="standard_counter">Compteur standard</string>
+    <string name="calculated_counter">Calculé (formule)</string>
+    <string name="target_value">Objectif : %1$d</string>
+
+    <string name="settings_section_interaction">Interaction</string>
+    <string name="settings_animations_desc">Activer les animations de l’interface</string>
+    <string name="settings_sound_desc">Jouer un son lors de +1/−1</string>
+    <string name="settings_haptic_desc">Vibrer lors d’un appui sur un compteur</string>
+    <string name="settings_haptic_intensity_label">Intensité haptique : %1$d</string>
+
+    <string name="settings_section_data">Données</string>
+    <string name="settings_csv_separator">Séparateur CSV</string>
+    <string name="settings_csv_current">Actuel : %1$s</string>
+    <string name="settings_csv_separator_dialog_title">Séparateur CSV</string>
+    <string name="settings_csv_option_comma">, (virgule)</string>
+    <string name="settings_csv_option_semicolon">; (point-virgule)</string>
+    <string name="settings_csv_option_tab">Tabulation</string>
+
+    <string name="settings_section_privacy">Confidentialité</string>
+    <string name="settings_no_ads_desc">Aucune publicité</string>
+    <string name="settings_no_tracking_desc">Aucune analyse ni suivi</string>
+    <string name="settings_crash_logs_title">Journaux de crash</string>
+    <string name="settings_crash_logs_desc">Enregistrer les crashes dans des logs locaux (debug)</string>
+    <string name="settings_view_latest_crash_log">Voir le dernier crash</string>
+    <string name="settings_view_latest_crash_log_desc">Ouvrir le log le plus récent, s’il existe</string>
+    <string name="settings_no_crash_logs_found">Aucun log de crash trouvé</string>
+    <string name="settings_latest_crash_log_title">Dernier log de crash</string>
+    <string name="close">Fermer</string>
+    <string name="clear_logs">Effacer les logs</string>
+    <string name="settings_exported_latest_log">Log exporté</string>
+    <string name="settings_no_log_to_export">Aucun log à exporter</string>
+    <string name="settings_exported_logs_zip">ZIP de logs exporté</string>
+    <string name="settings_no_logs_to_export">Aucun log à exporter</string>
+    <string name="settings_export_latest_crash_log">Exporter le dernier log de crash</string>
+    <string name="settings_export_latest_crash_log_desc">Enregistrer le log le plus récent en fichier texte</string>
+    <string name="settings_export_all_crash_logs">Exporter tous les logs de crash (ZIP)</string>
+    <string name="settings_export_all_crash_logs_desc">Archiver tous les logs locaux dans un fichier ZIP</string>
+
+    <string name="settings_section_backups">Sauvegardes</string>
+    <string name="settings_automatic_backups">Sauvegardes automatiques</string>
+    <string name="settings_automatic_backups_desc">Créer des sauvegardes ZIP périodiques dans le stockage de l’app</string>
+    <string name="settings_backup_frequency">Fréquence de sauvegarde</string>
+    <string name="settings_backup_frequency_desc">Toutes les %1$d journée(s)</string>
+    <string name="settings_manual_backup">Sauvegarde manuelle (ZIP)</string>
+    <string name="settings_manual_backup_desc">Choisir une destination et enregistrer un export ZIP</string>
+    <string name="settings_backup_created">Sauvegarde créée</string>
+    <string name="settings_backup_failed">Échec sauvegarde : %1$s</string>
+
+    <string name="sync">Synchroniser</string>
+    <string name="configure">Configurer</string>
+    <string name="template">Modèle</string>
+    <string name="not_configured">Non configuré</string>
+
+    <string name="settings_section_products_prices">Produits &amp; Prix</string>
+    <string name="settings_product_rules_json">Règles produits (JSON)</string>
+    <string name="settings_product_rules_json_desc">Cliquez pour éditer les règles BO/BI/BCh/Pâte</string>
+    <string name="settings_product_rules_saved">Règles enregistrées</string>
+    <string name="settings_price_tables_csv">Barèmes prix (CSV)</string>
+    <string name="settings_price_tables_csv_hint">Importer : essence,product,min,max,eurPerM3</string>
+    <string name="settings_price_source_url">Source prix (URL)</string>
+    <string name="settings_price_sync_started">Synchronisation lancée</string>
+    <string name="settings_price_url_dialog_title">Configurer la source des prix</string>
+    <string name="settings_price_url_label">URL JSON des prix</string>
+    <string name="settings_price_url_example">Ex: https://exemple.org/prix.json</string>
+    <string name="settings_price_url_saved">URL enregistrée</string>
+    <string name="settings_product_rules_format">Format : [{essence, min, max, product}]</string>
+
+    <string name="settings_edit_price_tables">Éditer les barèmes</string>
+    <string name="settings_edit_price_tables_desc">Modifier essence, produit, classes et €/m³</string>
+    <string name="price_tables_editor_title">Barèmes prix</string>
+    <string name="add_line">Ajouter une ligne</string>
+    <string name="price_tables_saved">Barèmes enregistrés</string>
+    <string name="price_tables_invalid_row_format">Ligne %1$d invalide : %2$s</string>
+    <string name="reset_price_tables_title">Revenir aux prix par défaut</string>
+    <string name="reset_price_tables_desc">Remplacer les barèmes actuels par les valeurs par défaut ?</string>
+    <string name="diameter_card_hint">Appui = +1, appui long = -1</string>
+
+    <string name="martelage">Martelage</string>
+
+    <string name="map_parcelle_title">Carte (parcelle)</string>
+    <string name="gps_coverage">Couverture GPS</string>
+    <string name="gps_points_format">Points GPS : %1$d / %2$d</string>
+    <string name="map_coming_soon">Carte interactive (MapLibre) sera activée dans une prochaine version.</string>
+
+    <string name="parcelles_title">Parcelles</string>
+    <string name="parcelles_empty_title">Aucune parcelle</string>
+    <string name="parcelles_empty_desc">Créez une parcelle pour commencer.</string>
+    <string name="create_parcelle">Créer une parcelle</string>
+    <string name="parcelle_default_name_format">Parcelle %1$d</string>
+    <string name="parcelle_added">Parcelle ajoutée</string>
+    <string name="parcelle_updated">Parcelle mise à jour</string>
+    <string name="parcelle_deleted">Parcelle supprimée</string>
+    <string name="delete_parcelle">Supprimer la parcelle</string>
+    <string name="delete_parcelle_title">Supprimer la parcelle</string>
+    <string name="delete_parcelle_confirm_format">Supprimer la parcelle « %1$s » ? Toutes les placettes et tiges seront supprimées.</string>
+    <string name="parcelle_defaults_title">Infos parcelle</string>
+    <string name="parcelle_shape">Forme</string>
+    <string name="parcelle_slope_pct">Pente (%)</string>
+    <string name="parcelle_aspect">Exposition</string>
+    <string name="parcelle_access">Accès</string>
+    <string name="parcelle_altitude_m">Altitude (m)</string>
+    <string name="parcelle_remarks">Remarques</string>
+    <string name="surface_ha">Surface (ha)</string>
+    <string name="surface_ha_format">Surface : %1$.2f ha</string>
+    <string name="sampling_mode">Mode d’échantillonnage</string>
+    <string name="sampling_mode_circular">Circulaire</string>
+    <string name="sampling_mode_fixed_area">Surface fixe</string>
+    <string name="sample_plot_area_m2">Surface placette (m²)</string>
+    <string name="target_species">Essences ciblées</string>
+    <string name="objective_type_label">Objectif (type)</string>
+    <string name="objective_value_label">Objectif (valeur)</string>
+    <string name="tolerance_pct_label">Tolérance (%)</string>
+    <string name="objective_type_n_ha">N/ha</string>
+    <string name="objective_type_g_m2_ha">G (m²/ha)</string>
+    <string name="objective_type_v_m3_ha">V (m³/ha)</string>
+    <string name="objective_type_dm_cm">Dm (cm)</string>
+
+    <string name="placettes_title">Placettes</string>
+    <string name="placettes_empty_title">Aucune placette</string>
+    <string name="placettes_empty_desc">Créez une placette pour commencer.</string>
+    <string name="create_placette">Créer une placette</string>
+    <string name="placette_default_name_format">Placette %1$d</string>
+    <string name="placette_added">Placette ajoutée</string>
+    <string name="placette_name_dialog_title">Nom de la placette</string>
+    <string name="placette_renamed">Placette renommée</string>
+    <string name="placette_deleted">Placette supprimée</string>
+    <string name="delete_placette_confirm_name_format">Supprimer la placette « %1$s » ? Toutes les tiges seront supprimées.</string>
+
+    <string name="placette_essences_title">Placette - Essences</string>
+    <string name="placette_essences_empty_desc">Aucune essence. Appuyez sur + pour ajouter.</string>
+    <string name="reorder">Réorganiser</string>
+    <string name="move_up">Monter</string>
+    <string name="move_down">Descendre</string>
+    <string name="add_essence_title">Ajouter une essence</string>
+    <string name="search_tolerant_hint">Rechercher (tolère les fautes)</string>
+    <string name="cannot_delete_existing_data">Impossible de supprimer : données existantes</string>
+    <string name="color_for_format">Couleur pour %1$s</string>
+    <string name="choose_color_for_essence">Choisissez une couleur pour cette essence</string>
+    <string name="color_long_press_tip">Astuce : appui long sur une couleur pour revenir à la couleur automatique.</string>
+    <string name="essence_actions_title_format">Actions : %1$s</string>
+    <string name="change_color">Changer la couleur</string>
+    <string name="delete_essence_title">Supprimer l’essence</string>
+    <string name="delete_essence_confirm_format">Supprimer %1$s de cette placette ? %2$d tiges seront supprimées.</string>
+    <string name="delete_placette">Supprimer la placette</string>
+    <string name="delete_placette_title">Supprimer la placette</string>
+    <string name="delete_placette_confirm_format">Supprimer cette placette ? %1$d tiges seront supprimées.</string>
+    <string name="error">Erreur</string>
+
+    <string name="gps_permission_required">Autoriser la localisation pour enregistrer le GPS</string>
+    <string name="location_unavailable">Localisation indisponible</string>
+    <string name="gps_save_failed">Échec de l’enregistrement GPS</string>
+    <string name="gps_error_format">Erreur GPS : %1$s</string>
+
+    <string name="essence_diameters_title_format">%1$s - Diamètres</string>
+    <string name="show_special_trees">Afficher arbres spéciaux</string>
+    <string name="hide_special_trees">Masquer arbres spéciaux</string>
+    <string name="add_diameter_class">Ajouter classe de diamètre</string>
+    <string name="configure_heights">Configurer les hauteurs</string>
+    <string name="height">Hauteur</string>
+
+    <string name="special_tree_dying">Dépérissant</string>
+    <string name="special_tree_bio">Arbre bio</string>
+    <string name="special_tree_dead">Mort</string>
+    <string name="special_tree_parasite">Parasite</string>
+    <string name="special_tree_special">Spécial</string>
+
+    <string name="tree_deleted">Arbre supprimé</string>
+    <string name="tige_added">Tige ajoutée</string>
+    <string name="undo">Annuler</string>
+    <string name="add_undone">Ajout annulé</string>
+    <string name="insert_failed">Insertion échouée</string>
+    <string name="no_tige_to_remove_for_diameter_format">Aucune tige à retirer pour %1$d cm</string>
+
+    <string name="height_dialog_title_format">Hauteur – %1$s</string>
+    <string name="height_input_mode_title">Mode de saisie des hauteurs</string>
+    <string name="mean_height">Hauteur moyenne</string>
+    <string name="height_by_diameter_class">Par classe de diamètre</string>
+    <string name="mean_height_m">Hauteur moyenne (m)</string>
+    <string name="height_by_class_m">Hauteur par classe (m)</string>
+    <string name="height_for_diameter_class_format">H %1$d cm</string>
+    <string name="mean_height_invalid">Hauteur moyenne invalide</string>
+    <string name="no_valid_height_entered">Aucune hauteur valide saisie</string>
+    <string name="heights_saved">Hauteurs enregistrées</string>
+    <string name="validate">Valider</string>
+
+    <string name="add_dying_tree_title">Ajouter arbre dépérissant</string>
+    <string name="add_bio_tree_title">Ajouter arbre bio</string>
+    <string name="add_dead_tree_title">Ajouter arbre mort</string>
+    <string name="add_parasitized_tree_title">Ajouter arbre parasité</string>
+
+    <string name="diameter_cm_label">Diamètre (cm)</string>
+    <string name="height_m_optional_label">Hauteur (m, optionnel)</string>
+    <string name="note_optional_label">Note (optionnelle)</string>
+    <string name="invalid_diameter">Diamètre invalide</string>
+    <string name="tree_added">Arbre ajouté</string>
+
+    <string name="diameter_cm_value_format">%1$d cm</string>
+    <string name="height_m_value_format">%1$.1f m</string>
+
+    <string name="mandatory_heights_title">Hauteurs manquantes</string>
+    <string name="mandatory_heights_desc">Vous devez renseigner les hauteurs pour calculer le volume.</string>
+
+    <string name="martelage_missing_prices_title">Prix manquants</string>
+    <string name="martelage_missing_prices_desc">%1$s m³ (%2$d%% du volume) n’a pas de prix associé. Importez des barèmes et/ou ajustez les règles produits.</string>
+    <string name="martelage_missing_prices_essences">Concerné : %1$s</string>
+    <string name="martelage_configure_prices">Configurer les prix</string>
+
+    <string name="yes">Oui</string>
+    <string name="no">Non</string>
+    <string name="placeholder_dash">—</string>
+    <string name="ellipsis">…</string>
+    <string name="euro_symbol">€</string>
+
+    <string name="symbol_plus">+</string>
+    <string name="symbol_minus">−</string>
+
+    <string name="martelage_before_cut_title">Peuplement avant coupe</string>
+    <string name="martelage_scope_placette_desc">Placette : synthèse limitée à cette placette</string>
+    <string name="martelage_scope_parcelle_desc">Parcelle : toutes les placettes de la parcelle</string>
+    <string name="martelage_scope_forest_desc">Projet / forêt : toutes les parcelles de ce projet</string>
+    <string name="martelage_scope_global_desc">Global : toutes les parcelles et placettes de l’application</string>
+
+    <string name="martelage_view_placette">Placette</string>
+    <string name="martelage_view_parcelle">Parcelle</string>
+    <string name="martelage_view_global">Global</string>
+
+    <string name="martelage_summary_title">Martelage – Synthèse</string>
+    <string name="martelage_parameters">Paramètres</string>
+    <string name="martelage_details">Détails</string>
+
+    <string name="martelage_included_parcelles_format">Parcelles incluses : %1$s</string>
+    <string name="martelage_no_tiges_error">Erreur : aucune tige trouvée pour ce périmètre. Ajoutez des tiges ou changez de vue pour afficher les tuiles de synthèse.</string>
+    <string name="martelage_available_species">Essences disponibles</string>
+    <string name="martelage_no_resinous_species_detected">Aucune essence résineuse détectée dans ce périmètre.</string>
+
+    <string name="martelage_dendro_details_title">Indicateurs dendrométriques</string>
+    <string name="martelage_dg_format">Dg (quadratique) : %1$s cm</string>
+    <string name="martelage_lorey_height_format">Hg (Lorey) : %1$s m</string>
+
+    <string name="martelage_calc_parameters_title">Paramètres de calcul</string>
+    <string name="martelage_sample_area_m2">Surface d’échantillon (m² ou ha)</string>
+    <string name="martelage_ho_dominant_optional">Ho dominant moyen (m) – optionnel</string>
+    <string name="martelage_heights_by_species_or_ho_desc">Hauteurs par essence (obligatoires pour le volume)</string>
+    <string name="martelage_custom_heights_defined">Hauteurs personnalisées définies</string>
+    <string name="martelage_default_height_tables_used">Aucune hauteur personnalisée</string>
+
+    <string name="martelage_sample_area_missing_error">Erreur : la surface d’échantillon est manquante ou nulle. Les tuiles Volume, G et Prix restent cachées tant que cette valeur n’est pas renseignée.</string>
+    <string name="martelage_fill_in">Renseigner</string>
+
+    <string name="martelage_volume_price_title">Volume &amp; Prix</string>
+    <string name="martelage_total_volume_format">Volume total : %1$s m³</string>
+    <string name="martelage_volume_per_ha_format">Volume / ha : %1$s m³/ha</string>
+    <string name="martelage_estimated_revenue_format">Recette estimée : %1$s · /ha : %2$s</string>
+
+    <string name="martelage_basal_area_title">Surface terrière</string>
+    <string name="martelage_g_removed_format">G prélevée : %1$s m²</string>
+    <string name="martelage_g_per_ha_format">G / ha : %1$s m²/ha</string>
+
+    <string name="martelage_density_structure_title">Densité &amp; structure</string>
+    <string name="martelage_stems_count_format">N tiges : %1$d · N / ha : %2$s</string>
+    <string name="martelage_dm_hm_format">Dm (arithm.) : %1$s cm · Hm (moy.) : %2$s m</string>
+
+    <string name="martelage_per_species_title">Par essence</string>
+    <string name="martelage_table_species">Essence</string>
+    <string name="martelage_table_v_m3">V (m³)</string>
+    <string name="martelage_table_v_per_ha">V/ha</string>
+    <string name="martelage_table_g_m2">G (m²)</string>
+    <string name="martelage_table_eur_per_m3">€/m³</string>
+    <string name="martelage_table_revenue">Recette</string>
+
+    <string name="martelage_stats_unavailable_error">Erreur : la synthèse n’a pas pu être calculée avec les données actuelles (tarifs de volume/prix ou hauteurs non compatibles). Les tuiles restent désactivées.</string>
+
+    <string name="martelage_missing_heights_title">Hauteurs manquantes</string>
+    <string name="martelage_missing_heights_desc">Le volume est désactivé tant que les hauteurs ne sont pas renseignées pour : %1$s.</string>
+    <string name="martelage_fill_heights">Renseigner les hauteurs</string>
+    <string name="badge_to_complete">À compléter</string>
+
+    <string name="martelage_params_dialog_desc">Ces valeurs sont nécessaires pour calculer le tableau avant coupe.</string>
+    <string name="martelage_params_dialog_hint">Vous pourrez ensuite affiner les hauteurs par essence et classe de diamètre dans le mini-menu.</string>
+
+    <string name="martelage_heights_dialog_title_format">Hauteurs – %1$s</string>
+    <string name="martelage_no_stem_for_species">Aucune tige pour cette essence dans ce périmètre.</string>
+    <string name="martelage_height_by_class_hint">Renseignez une hauteur moyenne par classe de diamètre (m). Vous pouvez saisir plusieurs hauteurs séparées par des virgules (ex : 25,20,27) : la moyenne sera utilisée. Laissez vide seulement si toutes les tiges de la classe ont une hauteur mesurée.</string>
+    <string name="martelage_diameter_class_cm_format">Classe %1$d cm</string>
+
+    <string name="settings_background_image">Image de fond</string>
+    <string name="settings_background_image_desc">Afficher une image en arrière-plan des écrans principaux</string>
+    <string name="settings_background_choice">Choix du fond</string>
+    <string name="settings_background_default_forest">Forêt par défaut</string>
+    <string name="settings_background_personal_photo">Photo personnelle</string>
+
+    <string name="settings_keep_screen_on">Garder l’écran allumé</string>
+    <string name="settings_keep_screen_on_desc">Empêche la mise en veille pendant l’utilisation</string>
+
+    <string name="settings_quality_finesse">Qualité &amp; finesse</string>
+    <string name="settings_tilt_deg_format">Inclinaison : %1$.1f°</string>
+    <string name="settings_press_scale_format">Échelle à l’appui : %1$.2f</string>
+    <string name="settings_halo_alpha_format">Opacité du halo : %1$.2f</string>
+    <string name="settings_halo_width_dp_format">Largeur du halo : %1$d dp</string>
+    <string name="settings_blur_radius_px_format">Rayon du flou : %1$d px</string>
+    <string name="settings_blur_overlay_alpha_format">Opacité du voile : %1$.2f</string>
+    <string name="settings_anim_speed_ms_format">Vitesse des animations : %1$d ms</string>
+
+    <string name="settings_import_error_format">Erreur import : %1$s</string>
+    <string name="settings_prices_lines_imported_format">%1$d lignes importées</string>
+    <string name="settings_prices_tables_count_format">%1$d barèmes</string>
+
+    <string name="settings_export_scope">Portée de l’export</string>
+    <string name="settings_export_scope_project">Tout le projet</string>
+    <string name="settings_export_scope_parcelle">Une parcelle</string>
+    <string name="settings_export_scope_placette">Une placette</string>
+    <string name="settings_export_parcelle">Parcelle</string>
+    <string name="settings_export_choose_parcelle">Choisir une parcelle</string>
+    <string name="settings_export_placette">Placette</string>
+    <string name="settings_export_choose_placette">Choisir une placette</string>
+
+    <string name="settings_select_parcelle_for_export">Sélectionnez une parcelle pour l’export</string>
+    <string name="settings_select_placette_for_export">Sélectionnez une placette pour l’export</string>
+    <string name="settings_no_tige_for_scope">Aucune tige pour cette portée</string>
+
+    <string name="settings_export_csv_tiges">CSV Tiges</string>
+    <string name="settings_export_csv_tiges_done">Export CSV tiges terminé</string>
+    <string name="settings_export_geojson">GeoJSON</string>
+    <string name="settings_export_geojson_done">Export GeoJSON terminé</string>
+    <string name="settings_export_gpx">GPX</string>
+    <string name="settings_export_gpx_done">Export GPX terminé</string>
+    <string name="settings_export_excel_forestry">Excel forestry</string>
+    <string name="settings_export_excel_forestry_done">Export Excel forestry terminé</string>
+    <string name="settings_export_profile_json">Profil JSON</string>
+    <string name="settings_export_profile_json_done">Profil JSON exporté</string>
+
+    <string name="settings_json_label">JSON</string>
+
+    <string name="settings_section_about">À propos</string>
+    <string name="version">Version</string>
+    <string name="settings_section_forestry_exports">Exports forestiers</string>
+
+    <!-- Tarifs de cubage -->
+    <string name="settings_section_tarifs">Tarifs de cubage</string>
+    <string name="settings_tarif_method">Méthode de cubage</string>
+    <string name="settings_tarif_method_desc">Choisir la méthode de calcul du volume</string>
+    <string name="settings_tarif_current_format">Actuel : %1$s</string>
+    <string name="settings_tarif_numero_format">Tarif n°%1$d</string>
+    <string name="settings_tarif_numero_label">Numéro de tarif</string>
+    <string name="settings_tarif_saved">Paramètres de tarif enregistrés</string>
+
+    <string name="tarif_method_schaeffer_1e">Schaeffer 1 entrée</string>
+    <string name="tarif_method_schaeffer_1e_desc">V = a + b × C² — Tarif à 1 entrée (circonférence seule). Schaeffer, 1949.</string>
+    <string name="tarif_method_schaeffer_2e">Schaeffer 2 entrées</string>
+    <string name="tarif_method_schaeffer_2e_desc">V = a + b × C² × H — Tarif à 2 entrées (circonférence + hauteur). Schaeffer, 1949.</string>
+    <string name="tarif_method_algan">Algan</string>
+    <string name="tarif_method_algan_desc">V = a × D^b × H^c — Tarif Algan pour peuplements réguliers. Algan, 1958.</string>
+    <string name="tarif_method_ifn_rapide">Tarif rapide IFN</string>
+    <string name="tarif_method_ifn_rapide_desc">Tarifs IFN à 1 entrée (n° 1–36). V = f(D130). Inventaire Forestier National.</string>
+    <string name="tarif_method_ifn_lent">Tarif lent IFN</string>
+    <string name="tarif_method_ifn_lent_desc">Tables IFN à 2 entrées (D130, H). Inventaire Forestier National.</string>
+    <string name="tarif_method_coef_forme">Coefficient de forme</string>
+    <string name="tarif_method_coef_forme_desc">V = G × H × f — Méthode classique avec coefficient de forme/décroissance.</string>
+
+    <string name="tarif_select_dialog_title">Choisir la méthode de cubage</string>
+    <string name="tarif_numero_dialog_title">Choisir le numéro de tarif</string>
+    <string name="tarif_numero_range_format">Disponible : n° %1$d à %2$d</string>
+    <string name="tarif_recommended_for_essence">Recommandé pour %1$s : n°%2$d</string>
+    <string name="tarif_requires_height">Cette méthode nécessite les hauteurs des arbres.</string>
+    <string name="tarif_no_height_required">Cette méthode ne nécessite pas les hauteurs (tarif à 1 entrée).</string>
+    <string name="tarif_source_reference">Source : %1$s</string>
+
+    <string name="tarif_coef_forme_label">Coefficient de forme (f)</string>
+    <string name="tarif_coef_forme_default_format">Par défaut pour %1$s : %2$.2f</string>
+    <string name="tarif_coef_forme_override_hint">Coefficient personnalisé (0.30–0.60)</string>
+
+    <string name="tarif_method_used_format">Méthode : %1$s</string>
+    <string name="tarif_numero_used_format">Tarif n°%1$d</string>
+
+    <!-- Produits bois -->
+    <string name="produit_bo">Bois d\'œuvre</string>
+    <string name="produit_bi">Bois d\'industrie</string>
+    <string name="produit_bch">Bois de chauffage</string>
+    <string name="produit_be">Bois énergie</string>
+    <string name="produit_pate">Bois de trituration</string>
+    <string name="produit_piq">Piquets</string>
+    <string name="produit_pot">Poteaux</string>
+
+    <string name="settings_section_decoupe">Découpe par produits</string>
+    <string name="settings_decoupe_rules">Règles de découpe</string>
+    <string name="settings_decoupe_rules_desc">Configurer la ventilation du volume par produit et par essence</string>
+</resources>
