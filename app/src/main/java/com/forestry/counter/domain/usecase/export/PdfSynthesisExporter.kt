@@ -1,0 +1,271 @@
+package com.forestry.counter.domain.usecase.export
+
+import android.content.Context
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Typeface
+import android.graphics.pdf.PdfDocument
+import android.net.Uri
+import com.forestry.counter.R
+import com.forestry.counter.presentation.screens.forestry.MartelageStats
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+/**
+ * Génère un PDF professionnel de synthèse de martelage à partir de [MartelageStats].
+ * Utilise l'API native [android.graphics.pdf.PdfDocument] — aucune dépendance tierce.
+ */
+object PdfSynthesisExporter {
+
+    private const val PAGE_W = 595  // A4 portrait (pt)
+    private const val PAGE_H = 842
+    private const val MARGIN = 40f
+    private const val CONTENT_W = PAGE_W - 2 * MARGIN.toInt()
+
+    fun export(
+        context: Context,
+        uri: Uri,
+        stats: MartelageStats,
+        scopeLabel: String,
+        surfaceM2: Double?
+    ) {
+        val doc = PdfDocument()
+        try {
+            val pageInfo = PdfDocument.PageInfo.Builder(PAGE_W, PAGE_H, 1).create()
+            val page = doc.startPage(pageInfo)
+            val canvas = page.canvas
+
+            val y = drawContent(canvas, context, stats, scopeLabel, surfaceM2)
+
+            // Footer
+            val footerPaint = paint(9f, Color.GRAY)
+            val footer = context.getString(R.string.pdf_footer)
+            canvas.drawText(footer, PAGE_W / 2f, PAGE_H - 24f, footerPaint.apply { textAlign = Paint.Align.CENTER })
+
+            doc.finishPage(page)
+
+            // Écriture via ContentResolver
+            context.contentResolver.openOutputStream(uri)?.use { os ->
+                doc.writeTo(os)
+            }
+        } finally {
+            doc.close()
+        }
+    }
+
+    // ── Dessin du contenu ──────────────────────────────────
+
+    private fun drawContent(
+        canvas: Canvas,
+        ctx: Context,
+        s: MartelageStats,
+        scopeLabel: String,
+        surfaceM2: Double?
+    ): Float {
+        var y = MARGIN + 10f
+
+        // Titre
+        val titlePaint = paint(18f, Color.parseColor("#2E7D32"), bold = true)
+        titlePaint.textAlign = Paint.Align.CENTER
+        canvas.drawText(ctx.getString(R.string.pdf_title), PAGE_W / 2f, y, titlePaint)
+        y += 8f
+
+        // Ligne décorative
+        val linePaint = Paint().apply { color = Color.parseColor("#4CAF50"); strokeWidth = 2f }
+        canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, linePaint)
+        y += 20f
+
+        // Date
+        val now = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())
+        val datePaint = paint(9f, Color.GRAY)
+        datePaint.textAlign = Paint.Align.RIGHT
+        canvas.drawText(ctx.getString(R.string.pdf_generated_at, now), PAGE_W - MARGIN, y, datePaint)
+        y += 22f
+
+        // Section : informations générales
+        val sectionPaint = paint(13f, Color.parseColor("#2E7D32"), bold = true)
+        val labelPaint = paint(10f, Color.DKGRAY)
+        val valuePaint = paint(10f, Color.BLACK, bold = true)
+
+        y = drawKvRow(canvas, y, ctx.getString(R.string.pdf_scope), scopeLabel, labelPaint, valuePaint)
+        if (surfaceM2 != null && surfaceM2 > 0.0) {
+            val surfaceHa = surfaceM2 / 10_000.0
+            val surfaceStr = if (surfaceHa >= 1.0) fmt1(surfaceHa) + " ha" else fmt0(surfaceM2) + " m²"
+            y = drawKvRow(canvas, y, ctx.getString(R.string.pdf_surface), surfaceStr, labelPaint, valuePaint)
+        }
+
+        y += 6f
+        canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, thinLine())
+        y += 14f
+
+        // Section : résultats dendrométriques
+        canvas.drawText("Dendrométrie", MARGIN, y, sectionPaint)
+        y += 18f
+
+        y = drawKvRow(canvas, y, ctx.getString(R.string.pdf_stems), "${s.nTotal}  (${fmt1(s.nPerHa)} /ha)", labelPaint, valuePaint)
+        y = drawKvRow(canvas, y, ctx.getString(R.string.pdf_volume), "${fmt3(s.vTotal)} m³", labelPaint, valuePaint)
+        y = drawKvRow(canvas, y, ctx.getString(R.string.pdf_volume_ha), "${fmt3(s.vPerHa)} m³/ha", labelPaint, valuePaint)
+        y = drawKvRow(canvas, y, ctx.getString(R.string.pdf_basal_area), "${fmt3(s.gTotal)} m²", labelPaint, valuePaint)
+        y = drawKvRow(canvas, y, ctx.getString(R.string.pdf_basal_area_ha), "${fmt3(s.gPerHa)} m²/ha", labelPaint, valuePaint)
+
+        s.dm?.let { y = drawKvRow(canvas, y, ctx.getString(R.string.pdf_dm), "${fmt1(it)} cm", labelPaint, valuePaint) }
+        s.dg?.let { y = drawKvRow(canvas, y, ctx.getString(R.string.pdf_dg), "${fmt1(it)} cm", labelPaint, valuePaint) }
+        s.meanH?.let { y = drawKvRow(canvas, y, ctx.getString(R.string.pdf_h_mean), "${fmt1(it)} m", labelPaint, valuePaint) }
+        s.hLorey?.let { y = drawKvRow(canvas, y, ctx.getString(R.string.pdf_h_lorey), "${fmt1(it)} m", labelPaint, valuePaint) }
+        if (s.dMin != null && s.dMax != null) {
+            y = drawKvRow(canvas, y, "Dmin – Dmax", "${fmt1(s.dMin)} – ${fmt1(s.dMax)} cm", labelPaint, valuePaint)
+        }
+        s.cvDiam?.let { y = drawKvRow(canvas, y, "CV diamètres", "${fmt0(it)} %", labelPaint, valuePaint) }
+        s.ratioVG?.let { y = drawKvRow(canvas, y, "V/G", fmt1(it), labelPaint, valuePaint) }
+
+        if (s.revenueTotal != null && s.revenueTotal > 0.0) {
+            y += 6f
+            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, thinLine())
+            y += 14f
+            canvas.drawText("Valorisation", MARGIN, y, sectionPaint)
+            y += 18f
+            y = drawKvRow(canvas, y, ctx.getString(R.string.pdf_revenue), "${fmt0(s.revenueTotal)} €", labelPaint, valuePaint)
+            s.revenuePerHa?.let { y = drawKvRow(canvas, y, ctx.getString(R.string.pdf_revenue_ha), "${fmt0(it)} €/ha", labelPaint, valuePaint) }
+        }
+
+        // ── Tableau par essence ──
+        if (s.perEssence.isNotEmpty()) {
+            y += 10f
+            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, thinLine())
+            y += 16f
+            canvas.drawText(ctx.getString(R.string.pdf_per_essence_title), MARGIN, y, sectionPaint)
+            y += 18f
+            y = drawEssenceTable(canvas, ctx, s, y)
+        }
+
+        return y
+    }
+
+    // ── Tableau par essence ───────────────────────────────
+
+    private fun drawEssenceTable(canvas: Canvas, ctx: Context, s: MartelageStats, startY: Float): Float {
+        val headers = listOf(
+            ctx.getString(R.string.pdf_col_essence),
+            ctx.getString(R.string.pdf_col_n),
+            ctx.getString(R.string.pdf_col_v),
+            ctx.getString(R.string.pdf_col_v_ha),
+            ctx.getString(R.string.pdf_col_g),
+            ctx.getString(R.string.pdf_col_g_ha),
+            ctx.getString(R.string.pdf_col_price),
+            ctx.getString(R.string.pdf_col_revenue)
+        )
+
+        // Largeurs colonnes (proportionnelles sur CONTENT_W)
+        val colW = floatArrayOf(
+            CONTENT_W * 0.22f,  // Essence
+            CONTENT_W * 0.07f,  // N
+            CONTENT_W * 0.11f,  // V
+            CONTENT_W * 0.10f,  // V/ha
+            CONTENT_W * 0.10f,  // G
+            CONTENT_W * 0.10f,  // G/ha
+            CONTENT_W * 0.12f,  // €/m³
+            CONTENT_W * 0.18f   // Recettes
+        )
+
+        val rowH = 16f
+        val headerPaint = paint(8f, Color.WHITE, bold = true)
+        val cellPaint = paint(8f, Color.DKGRAY)
+        val cellBoldPaint = paint(8f, Color.BLACK, bold = true)
+        val headerBg = Paint().apply { color = Color.parseColor("#388E3C"); style = Paint.Style.FILL }
+        val stripeBg = Paint().apply { color = Color.parseColor("#F1F8E9"); style = Paint.Style.FILL }
+
+        var y = startY
+
+        // Header background
+        canvas.drawRect(MARGIN, y, PAGE_W - MARGIN, y + rowH, headerBg)
+        var x = MARGIN + 4f
+        for (i in headers.indices) {
+            val align = if (i == 0) Paint.Align.LEFT else Paint.Align.RIGHT
+            val xText = if (i == 0) x else x + colW[i] - 4f
+            headerPaint.textAlign = align
+            canvas.drawText(headers[i], xText, y + 12f, headerPaint)
+            x += colW[i]
+        }
+        y += rowH
+
+        // Rows
+        s.perEssence.forEachIndexed { idx, row ->
+            if (idx % 2 == 0) {
+                canvas.drawRect(MARGIN, y, PAGE_W - MARGIN, y + rowH, stripeBg)
+            }
+            x = MARGIN + 4f
+            val cells = listOf(
+                row.essenceName,
+                row.n.toString(),
+                fmt2(row.vTotal),
+                fmt2(row.vPerHa),
+                fmt3(row.gTotal),
+                fmt3(row.gPerHa),
+                row.meanPricePerM3?.let { fmt0(it) } ?: "–",
+                row.revenueTotal?.let { fmt0(it) } ?: "–"
+            )
+            for (i in cells.indices) {
+                val p = if (i == 0) cellBoldPaint else cellPaint
+                val align = if (i == 0) Paint.Align.LEFT else Paint.Align.RIGHT
+                val xText = if (i == 0) x else x + colW[i] - 4f
+                p.textAlign = align
+                canvas.drawText(cells[i], xText, y + 12f, p)
+                x += colW[i]
+            }
+            y += rowH
+        }
+
+        // Totals row
+        val totalBg = Paint().apply { color = Color.parseColor("#E8F5E9"); style = Paint.Style.FILL }
+        canvas.drawRect(MARGIN, y, PAGE_W - MARGIN, y + rowH, totalBg)
+        x = MARGIN + 4f
+        val totals = listOf(
+            "TOTAL",
+            s.nTotal.toString(),
+            fmt2(s.vTotal),
+            fmt2(s.vPerHa),
+            fmt3(s.gTotal),
+            fmt3(s.gPerHa),
+            "",
+            s.revenueTotal?.let { fmt0(it) } ?: "–"
+        )
+        for (i in totals.indices) {
+            val xText = if (i == 0) x else x + colW[i] - 4f
+            cellBoldPaint.textAlign = if (i == 0) Paint.Align.LEFT else Paint.Align.RIGHT
+            canvas.drawText(totals[i], xText, y + 12f, cellBoldPaint)
+            x += colW[i]
+        }
+        y += rowH + 2f
+
+        // Bordure extérieure
+        val border = Paint().apply { color = Color.parseColor("#388E3C"); style = Paint.Style.STROKE; strokeWidth = 1f }
+        canvas.drawRect(MARGIN, startY, PAGE_W - MARGIN, y, border)
+
+        return y
+    }
+
+    // ── Helpers ────────────────────────────────────────────
+
+    private fun drawKvRow(canvas: Canvas, y: Float, label: String, value: String, lp: Paint, vp: Paint): Float {
+        lp.textAlign = Paint.Align.LEFT
+        vp.textAlign = Paint.Align.RIGHT
+        canvas.drawText(label, MARGIN, y, lp)
+        canvas.drawText(value, PAGE_W - MARGIN, y, vp)
+        return y + 16f
+    }
+
+    private fun paint(size: Float, color: Int, bold: Boolean = false) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = size
+        this.color = color
+        typeface = if (bold) Typeface.create(Typeface.DEFAULT, Typeface.BOLD) else Typeface.DEFAULT
+    }
+
+    private fun thinLine() = Paint().apply { color = Color.LTGRAY; strokeWidth = 0.5f }
+
+    private fun fmt0(v: Double) = String.format(Locale.getDefault(), "%.0f", v)
+    private fun fmt1(v: Double) = String.format(Locale.getDefault(), "%.1f", v)
+    private fun fmt2(v: Double) = String.format(Locale.getDefault(), "%.2f", v)
+    private fun fmt3(v: Double) = String.format(Locale.getDefault(), "%.3f", v)
+}

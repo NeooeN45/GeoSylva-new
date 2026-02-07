@@ -239,10 +239,59 @@
     <string name="martelage">Martelage</string>
 
     <string name="map_parcelle_title">Carte (parcelle)</string>
+    <string name="map_subtitle_stems_format">%1$d tiges géolocalisées / %2$d</string>
     <string name="gps_coverage">Couverture GPS</string>
     <string name="gps_points_format">Points GPS : %1$d / %2$d</string>
     <string name="map_coming_soon">Carte interactive (MapLibre) sera activée dans une prochaine version.</string>
     <string name="map_no_gps_data">Aucune tige géolocalisée dans cette parcelle. Activez le GPS lors de la saisie pour voir les arbres sur la carte.</string>
+    <string name="map_legend">Légende</string>
+    <string name="map_style">Fond de carte</string>
+    <string name="map_recenter">Voir les arbres</string>
+    <string name="map_my_location">Ma position</string>
+    <string name="map_empty">Aucune tige dans cette parcelle.</string>
+    <string name="map_view">Carte</string>
+    <string name="map_layer_picker_title">Fonds de carte</string>
+    <string name="map_layer_osm">OSM</string>
+    <string name="map_layer_satellite">Satellite</string>
+    <string name="map_layer_satellite_labels">Sat. + noms</string>
+    <string name="map_layer_topo">Topo</string>
+    <string name="map_layer_carto">Carto</string>
+    <string name="map_layer_dark">Sombre</string>
+    <string name="map_layer_esri_topo">ESRI Topo</string>
+    <string name="map_layer_cadastre">Cadastre</string>
+    <string name="map_zoom_in">Zoom +</string>
+    <string name="map_zoom_out">Zoom −</string>
+    <string name="map_north">Nord</string>
+    <string name="map_category_general">Général</string>
+    <string name="map_category_forestry">Forestier / ONF</string>
+    <string name="map_layer_plan_ign">Plan IGN</string>
+    <string name="map_layer_forets_publiques">Forêts pub.</string>
+    <string name="map_layer_sat_forets">Sat. + Forêts</string>
+    <string name="map_layer_bd_foret">BD Forêt</string>
+    <string name="map_layer_foret_cadastre">Forêts + Cad.</string>
+
+    <string name="map_choose_scope_title">Ouvrir la carte</string>
+    <string name="map_scope_all">Toutes les tiges</string>
+    <string name="map_scope_empty">Carte seule (sans tiges)</string>
+
+    <string name="shp_overlay">Parcellaire forestier</string>
+    <string name="shp_no_overlay">Aucun shapefile importé. Importez un .zip contenant un shapefile (.shp + .dbf + .prj) pour afficher les parcelles forestières sur la carte.</string>
+    <string name="shp_import">Importer un shapefile (.zip)</string>
+    <string name="shp_import_success">%1$d parcelles importées avec succès</string>
+    <string name="shp_import_error">Échec de l\'import. Vérifiez que le .zip contient des fichiers .shp, .dbf et .prj valides.</string>
+    <string name="shp_importing">Import et reprojection en cours…</string>
+    <string name="shp_visible">Afficher sur la carte</string>
+    <string name="shp_fill_opacity">Opacité remplissage : %1$d%%</string>
+    <string name="shp_fill_color">Couleur de remplissage</string>
+    <string name="shp_border_color">Couleur du contour</string>
+    <string name="shp_border_opacity">Opacité contour : %1$d%%</string>
+    <string name="shp_border_width">Épaisseur contour : %1$s</string>
+    <string name="shp_labels_title">Étiquettes</string>
+    <string name="shp_label_size">Taille : %1$d</string>
+    <string name="shp_combine_labels">Combiner sur une ligne</string>
+    <string name="shp_replace">Remplacer</string>
+    <string name="shp_delete">Supprimer</string>
+    <string name="shp_info_format">%1$d parcelles · %2$d forêts</string>
 
     <string name="parcelles_title">Parcelles</string>
     <string name="parcelles_empty_title">Aucune parcelle</string>
@@ -361,6 +410,22 @@
 
     <string name="mandatory_heights_title">Hauteurs manquantes</string>
     <string name="mandatory_heights_desc">Vous devez renseigner les hauteurs pour calculer le volume.</string>
+    <string name="mandatory_heights_desc_tarif">Le tarif actif (%1$s) est à 2 entrées et nécessite les hauteurs pour calculer le volume. Complétez-les maintenant ou passez à un tarif à 1 entrée.</string>
+    <string name="mandatory_heights_skip">Ignorer pour le moment</string>
+    <string name="mandatory_heights_classes_format">Classes manquantes : %1$s</string>
+    <string name="height_status_set">H définie</string>
+    <string name="height_status_missing">H manquante</string>
+    <string name="height_status_measured">H mesurée</string>
+    <string name="height_quick_fill_title">Remplissage rapide</string>
+    <string name="height_quick_fill_desc">Appliquer une même hauteur à toutes les classes vides</string>
+    <string name="height_quick_fill_apply">Appliquer à toutes</string>
+    <string name="height_tarif_info_2e">Tarif 2 entrées — hauteurs requises</string>
+    <string name="height_tarif_info_1e">Tarif 1 entrée — hauteurs optionnelles</string>
+    <string name="height_n_stems_format">%1$d tiges</string>
+    <string name="height_n_missing_format">%1$d sans H</string>
+    <string name="height_mean_computed_format">Moy. calculée : %1$.1f m (%2$d mesures)</string>
+    <string name="height_dialog_essence_title_format">Hauteurs — %1$s</string>
+    <string name="height_propagated">Hauteurs propagées aux niveaux supérieurs</string>
 
     <string name="martelage_missing_prices_title">Prix manquants</string>
     <string name="martelage_missing_prices_desc">%1$s m³ (%2$d%% du volume) n’a pas de prix associé. Importez des barèmes et/ou ajustez les règles produits.</string>
@@ -421,6 +486,29 @@
     <string name="martelage_density_structure_title">Densité &amp; structure</string>
     <string name="martelage_stems_count_format">N tiges : %1$d · N / ha : %2$s</string>
     <string name="martelage_dm_hm_format">Dm (arithm.) : %1$s cm · Hm (moy.) : %2$s m</string>
+
+    <string name="martelage_label_v_total">V total</string>
+    <string name="martelage_label_v_per_ha">V / ha</string>
+    <string name="martelage_label_revenue">Recette</string>
+    <string name="martelage_label_revenue_per_ha">Recette / ha</string>
+    <string name="martelage_label_g_total">G totale</string>
+    <string name="martelage_label_g_per_ha">G / ha</string>
+    <string name="martelage_label_surface">Surface</string>
+    <string name="martelage_label_ratio_vg">V/G</string>
+    <string name="martelage_label_n_total">N tiges</string>
+    <string name="martelage_label_n_per_ha">N / ha</string>
+    <string name="martelage_label_dm">Dm (arithm.)</string>
+    <string name="martelage_label_dg">Dg (quadr.)</string>
+    <string name="martelage_label_hm">Hm (moy.)</string>
+    <string name="martelage_label_hlorey">Hg (Lorey)</string>
+    <string name="martelage_label_d_range">Plage D</string>
+    <string name="martelage_label_cv_diam">CV diam.</string>
+    <string name="martelage_class_distribution_title">Distribution par classe</string>
+    <string name="martelage_class_dist_legend_n">↑ Nombre de tiges</string>
+    <string name="martelage_class_dist_legend_diam">→ Classe de diamètre (cm)</string>
+    <string name="martelage_quality_title">Qualité du bois</string>
+    <string name="martelage_quality_assessed_format">%1$d / %2$d évalués</string>
+    <string name="martelage_quality_coverage_hint">Évaluez la qualité des tiges restantes pour affiner les prix</string>
 
     <string name="martelage_per_species_title">Par essence</string>
     <string name="martelage_table_species">Essence</string>
@@ -624,4 +712,47 @@
     <string name="lambert93_coords">Lambert 93</string>
     <string name="lambert93_e_format">E : %.0f m</string>
     <string name="lambert93_n_format">N : %.0f m</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome_title">Bienvenue sur GeoSylva</string>
+    <string name="onboarding_welcome_desc">Votre assistant professionnel de martelage et d\'inventaire forestier, directement sur le terrain.</string>
+    <string name="onboarding_forest_title">Structurez votre forêt</string>
+    <string name="onboarding_forest_desc">Organisez vos données en forêts, parcelles et placettes. Ajoutez vos essences et configurez les tarifs de cubage adaptés.</string>
+    <string name="onboarding_measure_title">Saisissez vos tiges</string>
+    <string name="onboarding_measure_desc">Enregistrez diamètre, hauteur, qualité et GPS pour chaque arbre. La géolocalisation permet de visualiser vos tiges sur la carte.</string>
+    <string name="onboarding_synthesis_title">Analysez vos résultats</string>
+    <string name="onboarding_synthesis_desc">Synthèse dendrométrique complète : volume, surface terrière, recettes estimées par essence. Exportez en CSV, GeoJSON ou PDF.</string>
+    <string name="onboarding_start">Commencer</string>
+    <string name="onboarding_next">Suivant</string>
+    <string name="onboarding_skip">Passer</string>
+
+    <!-- Export PDF -->
+    <string name="export_pdf">Export PDF</string>
+    <string name="pdf_title">Synthèse de martelage</string>
+    <string name="pdf_generated_at">Généré le %1$s</string>
+    <string name="pdf_scope">Périmètre</string>
+    <string name="pdf_surface">Surface</string>
+    <string name="pdf_stems">Nombre de tiges</string>
+    <string name="pdf_volume">Volume total</string>
+    <string name="pdf_volume_ha">Volume / ha</string>
+    <string name="pdf_basal_area">Surface terrière</string>
+    <string name="pdf_basal_area_ha">G / ha</string>
+    <string name="pdf_density_ha">Densité / ha</string>
+    <string name="pdf_revenue">Recettes estimées</string>
+    <string name="pdf_revenue_ha">Recettes / ha</string>
+    <string name="pdf_dm">Dm (diamètre moyen)</string>
+    <string name="pdf_dg">Dg (diamètre quadratique)</string>
+    <string name="pdf_h_mean">H moyen</string>
+    <string name="pdf_h_lorey">H Lorey</string>
+    <string name="pdf_per_essence_title">Synthèse par essence</string>
+    <string name="pdf_col_essence">Essence</string>
+    <string name="pdf_col_n">N</string>
+    <string name="pdf_col_v">V (m³)</string>
+    <string name="pdf_col_v_ha">V/ha</string>
+    <string name="pdf_col_g">G (m²)</string>
+    <string name="pdf_col_g_ha">G/ha</string>
+    <string name="pdf_col_price">€/m³</string>
+    <string name="pdf_col_revenue">Recettes (€)</string>
+    <string name="pdf_exported">PDF exporté</string>
+    <string name="pdf_footer">GeoSylva — Synthèse forestière professionnelle</string>
 </resources>

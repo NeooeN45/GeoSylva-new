@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberCoroutineScope
@@ -70,8 +71,10 @@ import com.forestry.counter.domain.calculation.tarifs.TarifMethod
 import com.forestry.counter.domain.calculation.tarifs.TarifSelection
 import com.forestry.counter.domain.calculation.tarifs.TarifCalculator
 import com.forestry.counter.domain.usecase.export.QgisExportHelper
+import com.forestry.counter.domain.usecase.export.PdfSynthesisExporter
 import com.forestry.counter.data.preferences.UserPreferencesManager
 import com.forestry.counter.presentation.components.AppMiniDialog
+import com.forestry.counter.presentation.utils.parseHeightInputMean
 import com.forestry.counter.presentation.utils.rememberHapticFeedback
 import com.forestry.counter.presentation.utils.rememberSoundFeedback
 import com.forestry.counter.presentation.utils.ColorUtils
@@ -112,6 +115,7 @@ fun MartelageScreen(
     userPreferences: UserPreferencesManager,
     onNavigateToSettings: (() -> Unit)? = null,
     onNavigateToPriceTablesEditor: (() -> Unit)? = null,
+    onNavigateToMap: ((String) -> Unit)? = null,
     onNavigateBack: () -> Unit
 ) {
     val snackbar = remember { SnackbarHostState() }
@@ -253,7 +257,7 @@ fun MartelageScreen(
     // Paramètres communs au calcul (surface d'échantillonnage, Ho, hauteurs par classe)
     val fixedClasses = remember { listOf(20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75) }
 
-    var surfaceInput by remember(parcellesInScope) { mutableStateOf("") }
+    var surfaceInput by remember { mutableStateOf("") }
     var hoInput by remember { mutableStateOf("") }
     val hauteurParClasseState = remember {
         mutableStateMapOf<Int, String>().apply {
@@ -380,6 +384,20 @@ fun MartelageScreen(
         }
     }
 
+    // Auto-save debounced : persiste surface/Ho dès que la saisie est valide (pas besoin de cliquer Valider)
+    LaunchedEffect(surfaceInputValueM2, scopeKey) {
+        if (surfaceInputValueM2 != null && surfaceInputValueM2 > 0.0) {
+            kotlinx.coroutines.delay(800L)
+            userPreferences.setMartelageSurface(scopeKey, surfaceInputValueM2)
+        }
+    }
+    LaunchedEffect(hoInputValue, scopeKey) {
+        if (hoInputValue != null && hoInputValue > 0.0) {
+            kotlinx.coroutines.delay(800L)
+            userPreferences.setMartelageHo(scopeKey, hoInputValue)
+        }
+    }
+
     val synthesisParams by produceState<ForestrySynthesisParams?>(
         initialValue = null,
         forestryCalculator
@@ -455,179 +473,18 @@ fun MartelageScreen(
         synthesisParams,
         diameterClasses
     ) {
-        if (tigesInScope.isEmpty() || surfaceM2 == null || surfaceM2 <= 0.0) {
-            value = null
-            return@produceState
-        }
-
-        val surfaceHa = surfaceM2 / 10_000.0
-        if (surfaceHa <= 0.0) {
-            value = null
-            return@produceState
-        }
-
-        val classes = if (diameterClasses.isNotEmpty()) diameterClasses else (5..120 step 5).toList()
-
-        val byEssence = tigesInScope.groupBy { normalizeEssenceCode(it.essenceCode) }
-        val perEssence = mutableListOf<PerEssenceStats>()
-
-        val heightModes = synthesisParams?.heightModes.orEmpty()
-        val missingHeightsByEssence = mutableMapOf<String, List<Int>>()
-        byEssence.forEach { (code, tigesEss) ->
-            if (selectedEssenceCodes.isNotEmpty() && code !in selectedEssenceCodes) return@forEach
-            val byClass = tigesEss.groupBy { forestryCalculator.diameterClassFor(it.diamCm, classes) }
-            val manual = martelageHeights[normalizeEssenceCode(code)].orEmpty()
-            val missing = byClass.entries
-                .filter { (diamClass, list) ->
-                    val hasMissingMeasured = list.any { it.hauteurM == null }
-                    if (!hasMissingMeasured) {
-                        false
-                    } else {
-                        val manualH = manual[diamClass]
-                        val mode = heightModes.firstOrNull { it.essence.equals(code, true) && it.diamClass == diamClass }
-                        val fixedH = mode?.mode?.equals("FIXED", ignoreCase = true) == true && (mode.fixed ?: 0.0) > 0.0
-                        val sampleH = mode?.mode?.equals("SAMPLES", ignoreCase = true) == true && list.any { it.hauteurM != null }
-                        val canResolve = manualH != null || fixedH || sampleH
-                        !canResolve
-                    }
-                }
-                .map { it.key }
-                .sorted()
-            if (missing.isNotEmpty()) {
-                missingHeightsByEssence[code] = missing
-            }
-        }
-        val volumeAvailable = missingHeightsByEssence.isEmpty()
-        val missingHeightEssenceCodes = missingHeightsByEssence.keys.sorted()
-        val missingHeightEssenceNames = missingHeightEssenceCodes.map { code ->
-            essences.firstOrNull { normalizeEssenceCode(it.code) == code }?.name ?: code
-        }
-
-        var nTotal = 0
-        var gTotal = 0.0
-        var vTotal = 0.0
-        var revenueTotal = 0.0
-        var unpricedVolumeTotal = 0.0
-        val unpricedEssenceNames = mutableListOf<String>()
-        var dmSum = 0.0
-        var dmWeight = 0
-        var hSum = 0.0
-        var hWeight = 0
-        var loreyGhSum = 0.0
-        var loreyGSum = 0.0
-
-        byEssence.forEach { (code, tigesEss) ->
-            if (selectedEssenceCodes.isNotEmpty() && code !in selectedEssenceCodes) return@forEach
-
-            val manualHeightsForEss = martelageHeights[normalizeEssenceCode(code)]
-            val (rows, totals) = try {
-                forestryCalculator.synthesisForEssence(
-                    essenceCode = code,
-                    classes = classes,
-                    tiges = tigesEss,
-                    manualHeights = manualHeightsForEss,
-                    method = null,
-                    params = synthesisParams,
-                    requireHeights = true
-                )
-            } catch (_: Throwable) {
-                emptyList<ClassSynthesis>() to SynthesisTotals(0, null, null, null)
-            }
-
-            val vEss = if (volumeAvailable) (totals.vTotal ?: 0.0) else 0.0
-            val gEss = tigesEss.sumOf { forestryCalculator.computeG(it.diamCm) }
-            val revEss = if (volumeAvailable) rows.sumOf { it.valueSumEur ?: 0.0 } else 0.0
-            val nEss = tigesEss.size
-
-            nTotal += nEss
-            gTotal += gEss
-            vTotal += vEss
-            revenueTotal += revEss
-            totals.dmWeighted?.let { dm ->
-                dmSum += dm * nEss
-                dmWeight += nEss
-            }
-            totals.hMean?.let { hm ->
-                hSum += hm * nEss
-                hWeight += nEss
-            }
-
-            if (volumeAvailable) {
-                val manual = manualHeightsForEss.orEmpty()
-                tigesEss.forEach { t ->
-                    val diamClass = forestryCalculator.diameterClassFor(t.diamCm, classes)
-                    val h = t.hauteurM ?: manual[diamClass]
-                    if (h != null) {
-                        val g = forestryCalculator.computeG(t.diamCm)
-                        loreyGhSum += g * h
-                        loreyGSum += g
-                    }
-                }
-            }
-
-            val essenceName = essences.firstOrNull { normalizeEssenceCode(it.code) == code }?.name ?: code
-
-            if (volumeAvailable) {
-                val unpricedVEss = rows.asSequence()
-                    .filter { r -> r.count > 0 && (r.vSum ?: 0.0) > 0.0 && r.valueSumEur == null }
-                    .sumOf { it.vSum ?: 0.0 }
-                if (unpricedVEss > 0.0) {
-                    unpricedVolumeTotal += unpricedVEss
-                    unpricedEssenceNames += essenceName
-                }
-            }
-
-            perEssence += PerEssenceStats(
-                essenceCode = code,
-                essenceName = essenceName,
-                n = nEss,
-                vTotal = vEss,
-                vPerHa = if (surfaceHa > 0.0) vEss / surfaceHa else 0.0,
-                gTotal = gEss,
-                gPerHa = if (surfaceHa > 0.0) gEss / surfaceHa else 0.0,
-                meanPricePerM3 = if (volumeAvailable && vEss > 0.0 && revEss > 0.0) revEss / vEss else null,
-                revenueTotal = if (volumeAvailable && revEss > 0.0) revEss else null,
-                revenuePerHa = if (volumeAvailable && revEss > 0.0 && surfaceHa > 0.0) revEss / surfaceHa else null
+        value = if (surfaceM2 != null && surfaceM2 > 0.0) {
+            computeMartelageStats(
+                tigesInScope = tigesInScope,
+                surfaceM2 = surfaceM2,
+                selectedEssenceCodes = selectedEssenceCodes,
+                martelageHeights = martelageHeights,
+                synthesisParams = synthesisParams,
+                diameterClasses = diameterClasses,
+                essences = essences,
+                forestryCalculator = forestryCalculator
             )
-        }
-
-        if (nTotal == 0 && vTotal == 0.0 && gTotal == 0.0) {
-            value = null
-            return@produceState
-        }
-
-        val nPerHa = if (surfaceHa > 0.0) nTotal / surfaceHa else 0.0
-        val gPerHa = if (surfaceHa > 0.0) gTotal / surfaceHa else 0.0
-        val vPerHa = if (surfaceHa > 0.0) vTotal / surfaceHa else 0.0
-        val unpricedVolumePerHa = if (surfaceHa > 0.0) unpricedVolumeTotal / surfaceHa else 0.0
-        val revenuePerHa = if (surfaceHa > 0.0 && revenueTotal > 0.0) revenueTotal / surfaceHa else null
-
-        val dm = if (dmWeight > 0) dmSum / dmWeight else null
-        val hMean = if (hWeight > 0) hSum / hWeight else null
-        val dg = if (nTotal > 0 && gTotal > 0.0) sqrt((4.0 * gTotal) / (PI * nTotal.toDouble())) * 100.0 else null
-        val hLorey = if (volumeAvailable && loreyGSum > 0.0) loreyGhSum / loreyGSum else null
-
-        value = MartelageStats(
-            nTotal = nTotal,
-            nPerHa = nPerHa,
-            gTotal = gTotal,
-            gPerHa = gPerHa,
-            vTotal = vTotal,
-            vPerHa = vPerHa,
-            unpricedVolumeTotal = unpricedVolumeTotal,
-            unpricedVolumePerHa = unpricedVolumePerHa,
-            unpricedEssenceNames = unpricedEssenceNames,
-            revenueTotal = if (volumeAvailable && revenueTotal > 0.0) revenueTotal else null,
-            revenuePerHa = if (volumeAvailable) revenuePerHa else null,
-            dm = dm,
-            meanH = if (volumeAvailable) hMean else null,
-            dg = dg,
-            hLorey = hLorey,
-            perEssence = perEssence.sortedBy { it.essenceName },
-            volumeAvailable = volumeAvailable,
-            missingHeightEssenceCodes = missingHeightEssenceCodes,
-            missingHeightEssenceNames = missingHeightEssenceNames
-        )
+        } else null
     }
 
     val exportMartelageCsv = rememberLauncherForActivityResult(
@@ -701,6 +558,34 @@ fun MartelageScreen(
         }
     }
 
+    // Export PDF synthèse
+    val exportPdfLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/pdf")
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                val s = stats
+                if (s == null) {
+                    snackbar.showSnackbar(context.getString(R.string.martelage_stats_unavailable_error))
+                    return@launch
+                }
+                runCatching {
+                    PdfSynthesisExporter.export(
+                        context = context,
+                        uri = uri,
+                        stats = s,
+                        scopeLabel = scopeKey,
+                        surfaceM2 = surfaceM2
+                    )
+                }.onSuccess {
+                    snackbar.showSnackbar(context.getString(R.string.pdf_exported))
+                }.onFailure { e ->
+                    snackbar.showSnackbar(context.getString(R.string.export_failed_format, e.message ?: ""))
+                }
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
     if (backgroundImageEnabled) {
         val uriString = backgroundImageUri
@@ -743,21 +628,22 @@ fun MartelageScreen(
                     }
                 },
                 actions = {
-                    // Export QGIS rapide
+                    // Carte des tiges
+                    if (parcelleId != null && onNavigateToMap != null) {
+                        IconButton(
+                            onClick = {
+                                playClickFeedback()
+                                onNavigateToMap(parcelleId)
+                            }
+                        ) {
+                            Icon(Icons.Default.Map, contentDescription = stringResource(R.string.map_view))
+                        }
+                    }
+                    // Export (ouvre le dialogue avec toutes les options)
                     IconButton(
                         onClick = {
                             playClickFeedback()
                             showExportDialog = true
-                        }
-                    ) {
-                        Icon(Icons.Default.Map, contentDescription = stringResource(R.string.export_qgis))
-                    }
-                    // Export CSV martelage
-                    IconButton(
-                        onClick = {
-                            playClickFeedback()
-                            val ts = SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date())
-                            exportMartelageCsv.launch("martelage-${scopeKey}-${viewScope.name.lowercase(Locale.getDefault())}-${ts}.csv")
                         }
                     ) {
                         Icon(Icons.Default.Download, contentDescription = stringResource(R.string.export))
@@ -853,14 +739,7 @@ fun MartelageScreen(
                                 )
                             }
                         )
-                        FilterChip(
-                            selected = showDetails,
-                            onClick = {
-                                playClickFeedback()
-                                showDetails = !showDetails
-                            },
-                            label = { Text(stringResource(R.string.martelage_details)) }
-                        )
+                    
                     }
                 }
 
@@ -902,6 +781,20 @@ fun MartelageScreen(
                             },
                             leadingIcon = {
                                 Icon(Icons.Default.GpsFixed, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        )
+                    }
+                    if (parcelleId != null && onNavigateToMap != null) {
+                        AssistChip(
+                            onClick = {
+                                playClickFeedback()
+                                onNavigateToMap(parcelleId)
+                            },
+                            label = {
+                                Text(stringResource(R.string.map_view), style = MaterialTheme.typography.labelSmall)
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.Map, contentDescription = null, modifier = Modifier.size(16.dp))
                             }
                         )
                     }
@@ -949,44 +842,7 @@ fun MartelageScreen(
                             }
                         }
 
-                        AnimatedVisibility(
-                            visible = showDetails && !missingParams && stats != null,
-                            enter = fadeIn(animationSpec = tween(durationMillis = if (animationsEnabled) 180 else 0, easing = FastOutSlowInEasing)) +
-                                expandVertically(animationSpec = tween(durationMillis = if (animationsEnabled) 220 else 0, easing = FastOutSlowInEasing)),
-                            exit = fadeOut(animationSpec = tween(durationMillis = if (animationsEnabled) 180 else 0, easing = FastOutSlowInEasing)) +
-                                shrinkVertically(animationSpec = tween(durationMillis = if (animationsEnabled) 220 else 0, easing = FastOutSlowInEasing))
-                        ) {
-                            val s = stats ?: return@AnimatedVisibility
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            val detailsCardBg = MaterialTheme.colorScheme.surfaceVariant
-                            val detailsCardContent = ColorUtils.getContrastingTextColor(detailsCardBg)
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(18.dp)),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = detailsCardBg,
-                                    contentColor = detailsCardContent
-                                )
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Text(stringResource(R.string.martelage_dendro_details_title), style = MaterialTheme.typography.titleMedium)
-                                    Text(
-                                        stringResource(R.string.martelage_dg_format, formatDiameter(s.dg, placeholderDash)),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                    Text(
-                                        stringResource(R.string.martelage_lorey_height_format, formatHeight(s.hLorey, placeholderDash)),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                            }
-                        }
+                    
                     }
 
                     // Paramètres de calcul (mini menu animé)
@@ -1392,159 +1248,64 @@ fun MartelageScreen(
                             }
                         }
 
-                        AnimatedVisibility(
-                            visible = s.volumeAvailable,
-                            enter = fadeIn(animationSpec = tween(durationMillis = if (animationsEnabled) 180 else 0, easing = FastOutSlowInEasing)) +
-                                expandVertically(animationSpec = tween(durationMillis = if (animationsEnabled) 220 else 0, easing = FastOutSlowInEasing)),
-                            exit = fadeOut(animationSpec = tween(durationMillis = if (animationsEnabled) 180 else 0, easing = FastOutSlowInEasing)) +
-                                shrinkVertically(animationSpec = tween(durationMillis = if (animationsEnabled) 220 else 0, easing = FastOutSlowInEasing))
-                        ) {
-                            // Carte Volume & Prix
-                            val volumeCardBg = MaterialTheme.colorScheme.primaryContainer
-                            val volumeCardContent = ColorUtils.getContrastingTextColor(volumeCardBg)
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(18.dp)),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = volumeCardBg,
-                                    contentColor = volumeCardContent
-                                )
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Text(stringResource(R.string.martelage_volume_price_title), style = MaterialTheme.typography.titleMedium)
-                                    Text(
-                                        stringResource(R.string.martelage_total_volume_format, formatVolume(vTotalAnim.toDouble())),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                    Text(
-                                        stringResource(R.string.martelage_volume_per_ha_format, formatVolume(vPerHaAnim.toDouble())),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                    Text(
-                                        stringResource(R.string.martelage_estimated_revenue_format, revenueTotalText, revenuePerHaText),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                            }
-                        }
+                        VolumeCard(
+                            vTotalText = formatVolume(vTotalAnim.toDouble()),
+                            vPerHaText = formatVolume(vPerHaAnim.toDouble()),
+                            revenueTotalText = revenueTotalText,
+                            revenuePerHaText = revenuePerHaText,
+                            animationsEnabled = animationsEnabled,
+                            volumeAvailable = s.volumeAvailable
+                        )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Carte Surface terrière (S% affiché seulement si on aura G initial plus tard)
-                        val surfaceCardBg = MaterialTheme.colorScheme.secondaryContainer
-                        val surfaceCardContent = ColorUtils.getContrastingTextColor(surfaceCardBg)
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(18.dp)),
-                            colors = CardDefaults.cardColors(
-                                containerColor = surfaceCardBg,
-                                contentColor = surfaceCardContent
-                            )
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(stringResource(R.string.martelage_basal_area_title), style = MaterialTheme.typography.titleMedium)
-                                Text(
-                                    stringResource(R.string.martelage_g_removed_format, formatG(s.gTotal)),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    stringResource(R.string.martelage_g_per_ha_format, formatG(s.gPerHa)),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                        }
+                        BasalAreaCard(
+                            gTotal = s.gTotal,
+                            gPerHa = s.gPerHa,
+                            surfaceHa = s.surfaceHa,
+                            ratioVG = s.ratioVG
+                        )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Carte Densité & structure
-                        val densityCardBg = MaterialTheme.colorScheme.tertiaryContainer
-                        val densityCardContent = ColorUtils.getContrastingTextColor(densityCardBg)
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(18.dp)),
-                            colors = CardDefaults.cardColors(
-                                containerColor = densityCardBg,
-                                contentColor = densityCardContent
+                        DensityCard(
+                            nTotal = s.nTotal,
+                            nPerHa = s.nPerHa,
+                            dm = s.dm,
+                            meanH = s.meanH,
+                            dg = s.dg,
+                            hLorey = s.hLorey,
+                            dMin = s.dMin,
+                            dMax = s.dMax,
+                            cvDiam = s.cvDiam,
+                            placeholderDash = placeholderDash
+                        )
+
+                        if (s.classDistribution.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            ClassDistributionCard(
+                                classDistribution = s.classDistribution,
+                                volumeAvailable = s.volumeAvailable,
+                                animationsEnabled = animationsEnabled
                             )
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(stringResource(R.string.martelage_density_structure_title), style = MaterialTheme.typography.titleMedium)
-                                Text(
-                                    stringResource(R.string.martelage_stems_count_format, s.nTotal, formatIntPerHa(s.nPerHa)),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    stringResource(R.string.martelage_dm_hm_format, formatDiameter(s.dm, placeholderDash), formatHeight(s.meanH, placeholderDash)),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
                         }
 
-                        if (s.volumeAvailable && s.perEssence.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(stringResource(R.string.martelage_per_species_title), style = MaterialTheme.typography.titleMedium)
+                        if (s.qualityDistribution.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            QualityDistributionCard(
+                                qualityDistribution = s.qualityDistribution,
+                                assessedCount = s.qualityAssessedCount,
+                                totalCount = s.qualityTotalCount
+                            )
+                        }
 
-                            val perEssenceCardBg = MaterialTheme.colorScheme.surfaceVariant
-                            val perEssenceCardContent = ColorUtils.getContrastingTextColor(perEssenceCardBg)
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(18.dp)),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = perEssenceCardBg,
-                                    contentColor = perEssenceCardContent
-                                )
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    // En-tête du tableau
-                                    Row {
-                                        Text(stringResource(R.string.martelage_table_species), modifier = Modifier.weight(2f), style = MaterialTheme.typography.labelMedium)
-                                        Text(stringResource(R.string.martelage_table_v_m3), modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
-                                        Text(stringResource(R.string.martelage_table_v_per_ha), modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
-                                        Text(stringResource(R.string.martelage_table_g_m2), modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
-                                        Text(stringResource(R.string.martelage_table_eur_per_m3), modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
-                                        Text(stringResource(R.string.martelage_table_revenue), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.labelMedium)
-                                    }
-
-                                    HorizontalDivider()
-
-                                    for (row in s.perEssence) {
-                                        val tint = essenceTintColor(row.essenceCode, essences)
-                                        val bg = tint?.copy(alpha = 0.18f)
-                                            ?: MaterialTheme.colorScheme.surface.copy(alpha = 0.04f)
-                                        val rowTextColor = ColorUtils.getContrastingTextColor(bg)
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(bg)
-                                                .padding(vertical = 4.dp, horizontal = 4.dp)
-                                        ) {
-                                            Text(row.essenceName, modifier = Modifier.weight(2f), style = MaterialTheme.typography.bodyMedium, color = rowTextColor)
-                                            Text(formatVolume(row.vTotal), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = rowTextColor)
-                                            Text(formatVolume(row.vPerHa), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = rowTextColor)
-                                            Text(formatG(row.gTotal), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = rowTextColor)
-                                            Text(formatPrice(row.meanPricePerM3, placeholderDash), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = rowTextColor)
-                                            Text(formatMoney(row.revenueTotal, placeholderDash, euroSymbol), modifier = Modifier.weight(1.3f), style = MaterialTheme.typography.bodySmall, color = rowTextColor)
-                                        }
-                                    }
-                                }
-                            }
+                        if (s.perEssence.isNotEmpty()) {
+                            PerEssenceTable(
+                                perEssence = s.perEssence,
+                                essences = essences,
+                                placeholderDash = placeholderDash,
+                                euroSymbol = euroSymbol
+                            )
                         }
                     }
 
@@ -1644,29 +1405,6 @@ fun MartelageScreen(
                     v?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: ""
                 }
             )
-        }
-
-        fun parseHeightInputMean(raw: String): Pair<Double?, Int> {
-            val s = raw.trim()
-            if (s.isBlank()) return null to 0
-            val compact = s.replace(" ", "")
-            val commaCount = compact.count { it == ',' }
-            if (commaCount >= 2) {
-                val values = compact.split(',')
-                    .mapNotNull { it.toDoubleOrNull() }
-                    .filter { it > 0.0 }
-                if (values.isEmpty()) return null to 0
-                return values.average() to values.size
-            }
-            if (compact.contains(';')) {
-                val values = compact.split(';')
-                    .mapNotNull { it.replace(',', '.').toDoubleOrNull() }
-                    .filter { it > 0.0 }
-                if (values.isEmpty()) return null to 0
-                return values.average() to values.size
-            }
-            val v = compact.replace(',', '.').toDoubleOrNull()
-            return if (v != null && v > 0.0) v to 1 else null to 0
         }
 
         val essenceName = availableEssences.firstOrNull { normalizeEssenceCode(it.code) == normalizedEditingEssenceCode }?.name ?: editingEssenceCode
@@ -1822,170 +1560,40 @@ fun MartelageScreen(
 
     // ── Dialogue sélection méthode de cubage ──
     if (showTarifMethodDialog) {
-        var selectedMethod by remember { mutableStateOf(currentTarifMethod) }
-        var selectedNumero by remember { mutableStateOf(currentTarifNumero) }
-        val availableRange = TarifCalculator.availableTarifNumbers(selectedMethod)
-        val needsNumero = availableRange != null
-
-        AlertDialog(
-            onDismissRequest = { showTarifMethodDialog = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    currentTarifMethod = selectedMethod
-                    currentTarifNumero = selectedNumero
-                    coroutineScope.launch {
-                        forestryCalculator.saveTarifSelection(
-                            TarifSelection(
-                                method = selectedMethod.code,
-                                schaefferNumero = if (selectedMethod == TarifMethod.SCHAEFFER_1E || selectedMethod == TarifMethod.SCHAEFFER_2E) selectedNumero else null,
-                                ifnNumero = if (selectedMethod == TarifMethod.IFN_RAPIDE || selectedMethod == TarifMethod.IFN_LENT) selectedNumero else null
-                            )
+        TarifMethodDialog(
+            currentMethod = currentTarifMethod,
+            currentNumero = currentTarifNumero,
+            onConfirm = { method, numero ->
+                currentTarifMethod = method
+                currentTarifNumero = numero
+                coroutineScope.launch {
+                    forestryCalculator.saveTarifSelection(
+                        TarifSelection(
+                            method = method.code,
+                            schaefferNumero = if (method == TarifMethod.SCHAEFFER_1E || method == TarifMethod.SCHAEFFER_2E) numero else null,
+                            ifnNumero = if (method == TarifMethod.IFN_RAPIDE || method == TarifMethod.IFN_LENT) numero else null
                         )
-                        snackbar.showSnackbar(context.getString(R.string.martelage_cubage_method_saved))
-                    }
-                    showTarifMethodDialog = false
-                }) {
-                    Text(stringResource(R.string.validate))
+                    )
+                    snackbar.showSnackbar(context.getString(R.string.martelage_cubage_method_saved))
                 }
+                showTarifMethodDialog = false
             },
-            dismissButton = {
-                TextButton(onClick = { showTarifMethodDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            },
-            title = { Text(stringResource(R.string.martelage_cubage_method)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    TarifMethod.entries.forEach { method ->
-                        Row(
-                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .let { mod ->
-                                    mod
-                                }
-                                .background(
-                                    if (selectedMethod == method) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
-                                    else Color.Transparent,
-                                    RoundedCornerShape(8.dp)
-                                )
-                                .padding(vertical = 4.dp, horizontal = 4.dp)
-                        ) {
-                            RadioButton(
-                                selected = selectedMethod == method,
-                                onClick = {
-                                    selectedMethod = method
-                                    if (TarifCalculator.availableTarifNumbers(method) == null) {
-                                        selectedNumero = null
-                                    } else if (selectedNumero == null) {
-                                        selectedNumero = TarifCalculator.recommendedTarifNumero(method, "HETRE_COMMUN")
-                                    }
-                                }
-                            )
-                            Column(modifier = Modifier.padding(start = 8.dp)) {
-                                Text(method.label, style = MaterialTheme.typography.bodyMedium)
-                                Text(
-                                    if (method.entrees == 1) "1 entrée (D seul)" else "2 entrées (D + H)",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-
-                    if (needsNumero && availableRange != null) {
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                        Text(
-                            stringResource(R.string.settings_tarif_numero_label),
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                        var numeroInput by remember(selectedMethod) {
-                            mutableStateOf(selectedNumero?.toString() ?: "")
-                        }
-                        OutlinedTextField(
-                            value = numeroInput,
-                            onValueChange = { v ->
-                                numeroInput = v
-                                selectedNumero = v.toIntOrNull()?.coerceIn(availableRange)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("${availableRange.first}–${availableRange.last}") },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number,
-                                imeAction = ImeAction.Done
-                            ),
-                            singleLine = true
-                        )
-                    }
-                }
-            }
+            onDismiss = { showTarifMethodDialog = false }
         )
     }
 
     // ── Dialogue export QGIS ──
     if (showExportDialog) {
-        AlertDialog(
-            onDismissRequest = { showExportDialog = false },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showExportDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            },
-            title = { Text(stringResource(R.string.export_qgis_choose_format)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val gpsCount = remember(tigesInScope) {
-                        tigesInScope.count { !it.gpsWkt.isNullOrBlank() }
-                    }
-                    Text(
-                        stringResource(R.string.gps_satellites_format, gpsCount).replace("Sat", "GPS"),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    FilledTonalButton(
-                        onClick = {
-                            playClickFeedback()
-                            showExportDialog = false
-                            val ts = SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date())
-                            exportGeoJsonLauncher.launch("tiges-${scopeKey}-${ts}.geojson")
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Default.Map, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(stringResource(R.string.export_qgis_geojson))
-                            Text(
-                                stringResource(R.string.export_qgis_geojson_desc),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
-
-                    FilledTonalButton(
-                        onClick = {
-                            playClickFeedback()
-                            showExportDialog = false
-                            val ts = SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date())
-                            exportCsvXyLauncher.launch("tiges-${scopeKey}-${ts}.csv")
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(stringResource(R.string.export_qgis_csv_xy))
-                            Text(
-                                stringResource(R.string.export_qgis_csv_xy_desc),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                    }
-                }
-            }
+        ExportQgisDialog(
+            tigesInScope = tigesInScope,
+            scopeKey = scopeKey,
+            onDismiss = { showExportDialog = false },
+            onPlayClick = { playClickFeedback() },
+            exportGeoJsonLauncher = exportGeoJsonLauncher,
+            exportCsvXyLauncher = exportCsvXyLauncher,
+            exportCsvMartelageLauncher = exportMartelageCsv,
+            exportPdfLauncher = exportPdfLauncher,
+            viewScopeName = viewScope.name
         )
     }
 }
@@ -2009,83 +1617,7 @@ private fun ToCompleteBadge(modifier: Modifier = Modifier) {
 }
 
 
-// Vue locale pour la synthèse (indépendante du scope de navigation)
-private enum class MartelageViewScope { PLACETTE, PARCELLE, GLOBAL }
+// Data classes et enums déplacés dans MartelageModels.kt
 
-// Agrégats globaux martelage pour une vue donnée
-private data class MartelageStats(
-    val nTotal: Int,
-    val nPerHa: Double,
-    val gTotal: Double,
-    val gPerHa: Double,
-    val vTotal: Double,
-    val vPerHa: Double,
-    val unpricedVolumeTotal: Double,
-    val unpricedVolumePerHa: Double,
-    val unpricedEssenceNames: List<String>,
-    val revenueTotal: Double?,
-    val revenuePerHa: Double?,
-    val dm: Double?,
-    val meanH: Double?,
-    val dg: Double?,
-    val hLorey: Double?,
-    val perEssence: List<PerEssenceStats>,
-    val volumeAvailable: Boolean,
-    val missingHeightEssenceCodes: List<String>,
-    val missingHeightEssenceNames: List<String>
-)
-
-// Agrégats par essence pour le tableau
-private data class PerEssenceStats(
-    val essenceCode: String,
-    val essenceName: String,
-    val n: Int,
-    val vTotal: Double,
-    val vPerHa: Double,
-    val gTotal: Double,
-    val gPerHa: Double,
-    val meanPricePerM3: Double?,
-    val revenueTotal: Double?,
-    val revenuePerHa: Double?
-)
-
-// Helpers de formatage simples, uniquement pour l'affichage
-private fun formatVolume(v: Double): String {
-    val a = abs(v)
-    val decimals = when {
-        a < 10.0 -> 3
-        a < 100.0 -> 2
-        else -> 1
-    }
-    return String.format(Locale.getDefault(), "%.${decimals}f", v)
-}
-
-private fun formatG(g: Double): String = String.format(Locale.getDefault(), "%.2f", g)
-
-private fun formatMoney(v: Double?, placeholder: String, euroSymbol: String): String =
-    v?.let { String.format(Locale.getDefault(), "%.0f %s", it, euroSymbol) } ?: placeholder
-
-private fun formatPrice(p: Double?, placeholder: String): String =
-    p?.let { String.format(Locale.getDefault(), "%.0f", it) } ?: placeholder
-
-private fun formatIntPerHa(nPerHa: Double): String = String.format(Locale.getDefault(), "%.0f", nPerHa)
-
-private fun formatDiameter(dm: Double?, placeholder: String): String =
-    dm?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: placeholder
-
-private fun formatHeight(h: Double?, placeholder: String): String =
-    h?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: placeholder
-
-private fun essenceTintColor(
-    essenceCode: String,
-    essences: List<com.forestry.counter.domain.model.Essence>
-): Color? {
-    val hex = essences.firstOrNull { it.code == essenceCode }?.colorHex
-    if (hex.isNullOrBlank()) return null
-    return try {
-        Color(AndroidColor.parseColor(hex))
-    } catch (_: Throwable) {
-        null
-    }
-}
+// Fonctions de formatage déplacées dans MartelageFormatters.kt
 

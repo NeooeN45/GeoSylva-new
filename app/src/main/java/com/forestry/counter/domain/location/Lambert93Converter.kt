@@ -51,7 +51,7 @@ object Lambert93Converter {
         val w1 = grandNormal(PHI_1)
         val w2 = grandNormal(PHI_2)
 
-        N = (ln(w2 * cos(PHI_1)) - ln(w1 * cos(PHI_2))) / (n1 - n2)
+        N = (ln(w1 * cos(PHI_1)) - ln(w2 * cos(PHI_2))) / (n2 - n1)
         C = (w1 * cos(PHI_1) / N) * exp(N * n1)
 
         val r0 = C * exp(-N * latIso(PHI_0))

@@ -21,12 +21,15 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.scale
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -63,7 +66,8 @@ fun ParcellesScreen(
     userPreferences: UserPreferencesManager,
     onNavigateToPlacettes: (String) -> Unit,
     onNavigateBack: (() -> Unit)? = null,
-    onNavigateToMartelage: ((String) -> Unit)? = null
+    onNavigateToMartelage: ((String) -> Unit)? = null,
+    onNavigateToMap: (() -> Unit)? = null
 ) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -180,6 +184,14 @@ fun ParcellesScreen(
                         }
                     },
                     actions = {
+                        if (onNavigateToMap != null) {
+                            IconButton(onClick = {
+                                playClickFeedback()
+                                onNavigateToMap()
+                            }) {
+                                Icon(Icons.Default.Map, contentDescription = stringResource(R.string.map_view))
+                            }
+                        }
                         if (forestId != null) {
                             IconButton(onClick = {
                                 playClickFeedback()
@@ -263,69 +275,48 @@ fun ParcellesScreen(
                         }
                     } else {
                         Column(modifier = Modifier.fillMaxSize()) {
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-                                tonalElevation = 2.dp
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    var sortExpanded by remember { mutableStateOf(false) }
-                                    ExposedDropdownMenuBox(
-                                        expanded = sortExpanded,
-                                        onExpandedChange = { sortExpanded = !sortExpanded }
-                                    ) {
-                                        val sortLabel = when (sortMode) {
-                                            ParcelleSort.NAME -> stringResource(R.string.sort_by_name)
-                                            ParcelleSort.SURFACE -> stringResource(R.string.sort_by_surface)
-                                            ParcelleSort.UPDATED_AT -> stringResource(R.string.sort_by_last_update)
-                                        }
-                                        OutlinedTextField(
-                                            value = sortLabel,
-                                            onValueChange = {},
-                                            readOnly = true,
-                                            singleLine = true,
-                                            label = { Text(stringResource(R.string.sort)) },
-                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = sortExpanded) },
-                                            modifier = Modifier.menuAnchor().widthIn(min = 140.dp),
-                                            colors = OutlinedTextFieldDefaults.colors(
-                                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                                            )
-                                        )
-                                        ExposedDropdownMenu(
-                                            expanded = sortExpanded,
-                                            onDismissRequest = { sortExpanded = false }
-                                        ) {
-                                            DropdownMenuItem(
-                                                text = { Text(stringResource(R.string.sort_by_name)) },
-                                                onClick = { sortMode = ParcelleSort.NAME; sortExpanded = false }
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text(stringResource(R.string.sort_by_surface)) },
-                                                onClick = { sortMode = ParcelleSort.SURFACE; sortExpanded = false }
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text(stringResource(R.string.sort_by_last_update)) },
-                                                onClick = { sortMode = ParcelleSort.UPDATED_AT; sortExpanded = false }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
                             LazyColumn(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .weight(1f),
-                                contentPadding = PaddingValues(12.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
+                                // Tri compact en chips discrets en tête de liste
+                                item {
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                        shape = RoundedCornerShape(12.dp),
+                                        tonalElevation = 1.dp
+                                    ) {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Sort,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                            )
+                                            ParcelleSort.entries.forEach { mode ->
+                                                val label = when (mode) {
+                                                    ParcelleSort.NAME -> stringResource(R.string.sort_by_name)
+                                                    ParcelleSort.SURFACE -> stringResource(R.string.sort_by_surface)
+                                                    ParcelleSort.UPDATED_AT -> stringResource(R.string.sort_by_last_update)
+                                                }
+                                                FilterChip(
+                                                    selected = sortMode == mode,
+                                                    onClick = { sortMode = mode },
+                                                    label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                                                    modifier = Modifier.height(28.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                                 items(displayedParcelles, key = { it.id }) { p ->
                                     ParcelleCard(
                                         parcelle = p,

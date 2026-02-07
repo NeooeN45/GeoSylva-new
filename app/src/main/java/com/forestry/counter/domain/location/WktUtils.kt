@@ -14,7 +14,7 @@ object WktUtils {
     fun parsePointZ(wkt: String?): Triple<Double?, Double?, Double?> {
         if (wkt.isNullOrBlank()) return Triple(null, null, null)
         val cleaned = wkt.trim().replace(Regex("\\s+"), " ")
-        val regex = Regex("POINT( Z)? \\(([-0-9.]+) ([-0-9.]+)( [-0-9.]+)?\\)")
+        val regex = Regex("POINT( Z)? ?\\( ?([-0-9.]+) ([-0-9.]+)( [-0-9.]+)? ?\\)")
         val m = regex.find(cleaned) ?: return Triple(null, null, null)
         val lon = m.groupValues.getOrNull(2)?.toDoubleOrNull()
         val lat = m.groupValues.getOrNull(3)?.toDoubleOrNull()

@@ -33,3 +33,11 @@
 
 # Keep OpenCSV
 -dontwarn com.opencsv.**
+
+# Keep MapLibre / Mapbox
+-keep class com.mapbox.mapboxsdk.** { *; }
+-keep class com.mapbox.geojson.** { *; }
+-keep class com.mapbox.turf.** { *; }
+-dontwarn com.mapbox.**
+-keep class org.maplibre.** { *; }
+-dontwarn org.maplibre.**

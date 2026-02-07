@@ -61,6 +61,9 @@ class UserPreferencesManager(private val context: Context) {
         val AUTO_BACKUP_ENABLED = booleanPreferencesKey("auto_backup_enabled")
         val BACKUP_FREQUENCY_DAYS = intPreferencesKey("backup_frequency_days")
         val BACKUP_PATH = stringPreferencesKey("backup_path")
+
+        // Onboarding
+        val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
     }
 
     // Theme preferences
@@ -426,6 +429,17 @@ class UserPreferencesManager(private val context: Context) {
         dataStore.edit { prefs ->
             val key = stringPreferencesKey("placette_essence_order_${placetteId}")
             if (order.isEmpty()) prefs.remove(key) else prefs[key] = order.joinToString(",")
+        }
+    }
+
+    // Onboarding
+    val onboardingCompleted: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[ONBOARDING_COMPLETED] ?: false
+    }
+
+    suspend fun setOnboardingCompleted(completed: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[ONBOARDING_COMPLETED] = completed
         }
     }
 }

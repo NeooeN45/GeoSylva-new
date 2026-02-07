@@ -15,6 +15,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -34,6 +35,8 @@ import com.forestry.counter.presentation.screens.forestry.MapScreen
 import com.forestry.counter.presentation.screens.forestry.PlacetteDetailScreen
 import com.forestry.counter.presentation.screens.forestry.EssenceDiamScreen
 import com.forestry.counter.presentation.screens.settings.PriceTablesEditorScreen
+import com.forestry.counter.presentation.screens.onboarding.OnboardingScreen
+import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String) {
     object Forets : Screen("forets")
@@ -70,6 +73,7 @@ sealed class Screen(val route: String) {
     object EssenceDiam : Screen("placette/{parcelleId}/{placetteId}/essence/{essenceCode}") {
         fun createRoute(parcelleId: String, placetteId: String, essenceCode: String) = "placette/$parcelleId/$placetteId/essence/$essenceCode"
     }
+    object Onboarding : Screen("onboarding")
 }
 
 @Composable
@@ -77,6 +81,8 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
     val navController = rememberNavController()
 
     val animationsEnabled by app.userPreferences.animationsEnabled.collectAsState(initial = true)
+    val onboardingCompleted by app.userPreferences.onboardingCompleted.collectAsState(initial = true)
+    val coroutineScope = rememberCoroutineScope()
 
     // Courbes Material 3 Emphasized
     val emphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
@@ -148,10 +154,31 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
         }
     }
 
+    val startDest = if (onboardingCompleted) Screen.Forets.route else Screen.Onboarding.route
+
     NavHost(
         navController = navController,
-        startDestination = Screen.Forets.route
+        startDestination = startDest
     ) {
+        composable(
+            route = Screen.Onboarding.route,
+            enterTransition = navEnterTransition,
+            exitTransition = navExitTransition,
+            popEnterTransition = navPopEnterTransition,
+            popExitTransition = navPopExitTransition
+        ) {
+            OnboardingScreen(
+                onComplete = {
+                    coroutineScope.launch {
+                        app.userPreferences.setOnboardingCompleted(true)
+                    }
+                    navController.navigate(Screen.Forets.route) {
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         // Forests selection using existing Groups screen
         composable(
             route = Screen.Forets.route,
@@ -173,6 +200,9 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                     } else {
                         navController.navigate(Screen.Martelage.forForest(groupIdOrNull))
                     }
+                },
+                onNavigateToMap = { scope ->
+                    navController.navigate(Screen.Map.createRoute(scope))
                 }
             )
         }
@@ -227,6 +257,10 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToMartelage = { fid ->
                     navController.navigate(Screen.Martelage.forForest(fid))
+                },
+                onNavigateToMap = {
+                    val scope = if (forestId != null) "forest_$forestId" else "all"
+                    navController.navigate(Screen.Map.createRoute(scope))
                 }
             )
         }
@@ -252,6 +286,9 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToMartelageForParcelle = { pid ->
                     navController.navigate(Screen.Martelage.forParcelle(pid))
+                },
+                onNavigateToMap = { pid ->
+                    navController.navigate(Screen.Map.createRoute(pid))
                 }
             )
         }
@@ -315,6 +352,7 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                 userPreferences = app.userPreferences,
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                 onNavigateToPriceTablesEditor = { navController.navigate(Screen.PriceTablesEditor.route) },
+                onNavigateToMap = { pid -> navController.navigate(Screen.Map.createRoute(pid)) },
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -331,6 +369,8 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
             MapScreen(
                 parcelleId = parcelleId,
                 tigeRepository = app.tigeRepository,
+                essenceRepository = app.essenceRepository,
+                parcelleRepository = app.parcelleRepository,
                 preferencesManager = app.userPreferences,
                 onNavigateBack = { navController.popBackStack() }
             )

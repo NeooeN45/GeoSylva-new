@@ -65,7 +65,8 @@ fun GroupsScreen(
     onNavigateToGroup: (String) -> Unit,
     onNavigateToSettings: () -> Unit,
     preferencesManager: UserPreferencesManager,
-    onNavigateToMartelage: ((String?) -> Unit)? = null
+    onNavigateToMartelage: ((String?) -> Unit)? = null,
+    onNavigateToMap: ((String) -> Unit)? = null
 ) {
     val viewModel = remember { GroupsViewModel(groupRepository) }
     val uiState by viewModel.uiState.collectAsState()
@@ -77,6 +78,7 @@ fun GroupsScreen(
     var colorTargetGroupId by remember { mutableStateOf<String?>(null) }
     var colorHex by remember { mutableStateOf("") }
     var showMartelageScopeDialog by remember { mutableStateOf(false) }
+    var showMapScopeDialog by remember { mutableStateOf(false) }
 
     val glassBlurEnabled = false
     val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
@@ -171,6 +173,11 @@ fun GroupsScreen(
                                     Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
                                 }
                             } else {
+                                if (onNavigateToMap != null) {
+                                    IconButton(onClick = { showMapScopeDialog = true }) {
+                                        Icon(Icons.Default.Map, contentDescription = stringResource(R.string.map_view))
+                                    }
+                                }
                                 if (onNavigateToMartelage != null) {
                                     IconButton(
                                         onClick = {
@@ -301,6 +308,55 @@ fun GroupsScreen(
                     },
                     confirmButton = {
                         TextButton(onClick = { showMartelageScopeDialog = false }) {
+                            Text(stringResource(R.string.cancel))
+                        }
+                    }
+                )
+            }
+
+            if (showMapScopeDialog && onNavigateToMap != null) {
+                val groups = (uiState as? GroupsUiState.Success)?.groups.orEmpty()
+                AlertDialog(
+                    onDismissRequest = { showMapScopeDialog = false },
+                    title = { Text(stringResource(R.string.map_choose_scope_title)) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            TextButton(
+                                onClick = {
+                                    showMapScopeDialog = false
+                                    onNavigateToMap("all")
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.map_scope_all))
+                            }
+                            TextButton(
+                                onClick = {
+                                    showMapScopeDialog = false
+                                    onNavigateToMap("none")
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.map_scope_empty))
+                            }
+                            if (groups.isNotEmpty()) {
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                groups.forEach { g ->
+                                    TextButton(
+                                        onClick = {
+                                            showMapScopeDialog = false
+                                            onNavigateToMap("forest_${g.id}")
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(g.name)
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showMapScopeDialog = false }) {
                             Text(stringResource(R.string.cancel))
                         }
                     }
