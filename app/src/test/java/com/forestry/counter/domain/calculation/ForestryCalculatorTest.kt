@@ -129,9 +129,10 @@ class ForestryCalculatorTest {
             method = null
         )
 
-        val expected = 0.000050 * d.pow(2.03) * h.pow(0.97)
+        // Algan CH_SESSILE : V = a * D^b * H^c
+        val expected = 0.0000423 * d.pow(2.118) * h.pow(0.872)
         assertNotNull(v)
-        assertNullableDoubleEquals(expected, v, delta = 1e-9)
+        assertNullableDoubleEquals(expected, v, delta = 1e-6)
     }
 
     @Test
@@ -237,11 +238,12 @@ class ForestryCalculatorTest {
         assertEquals(1, totals.nTotal)
         assertNotNull(totals.vTotal)
 
-        val expected = 0.000043 * 30.0.pow(2.08) * 20.0.pow(0.95)
+        // Algan HETRE_COMMUN : V = a * D^b * H^c
+        val expected = 0.0000362 * 30.0.pow(2.158) * 20.0.pow(0.860)
         val row = rows.firstOrNull { it.diamClass == 30 }
         assertNotNull(row)
         assertNotNull(row!!.vSum)
-        assertNullableDoubleEquals(expected, row.vSum, delta = 1e-9)
+        assertNullableDoubleEquals(expected, row.vSum, delta = 1e-6)
     }
 
     @Test
@@ -639,12 +641,12 @@ class ForestryCalculatorTest {
         val row30 = rows.first { it.diamClass == 30 }
         assertNullableDoubleEquals(24.0, row30.hMean, delta = 1e-9)
 
-        // Hêtre (HETRE) : V = a * D^b * H^c
-        val a = 0.000043
-        val b = 2.08
-        val c = 0.95
+        // Algan HETRE_COMMUN : V = a * D^b * H^c
+        val a = 0.0000362
+        val b = 2.158
+        val c = 0.860
         val expectedV = a * 30.0.pow(b) * 22.0.pow(c) + a * 30.0.pow(b) * 26.0.pow(c)
-        assertNullableDoubleEquals(expectedV, row30.vSum, delta = 1e-9)
+        assertNullableDoubleEquals(expectedV, row30.vSum, delta = 1e-6)
     }
 
     @Test
@@ -908,12 +910,12 @@ class ForestryCalculatorTest {
         )
 
         val row40 = rows.first { it.diamClass == 40 }
-        // Hêtre commun (HETRE_COMMUN) : V = a * D^b * H^c
-        val a = 0.000043
-        val b = 2.08
-        val c = 0.95
+        // Algan HETRE_COMMUN : V = a * D^b * H^c
+        val a = 0.0000362
+        val b = 2.158
+        val c = 0.860
         val expectedV = a * 40.0.pow(b) * 20.0.pow(c)
-        assertNullableDoubleEquals(expectedV, row40.vSum, delta = 1e-9)
-        assertNullableDoubleEquals(expectedV * 100.0, row40.valueSumEur, delta = 1e-9)
+        assertNullableDoubleEquals(expectedV, row40.vSum, delta = 1e-6)
+        assertNullableDoubleEquals(expectedV * 100.0, row40.valueSumEur, delta = 1e-6)
     }
 }

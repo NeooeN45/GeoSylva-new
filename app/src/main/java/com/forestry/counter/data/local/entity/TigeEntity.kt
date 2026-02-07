@@ -54,5 +54,6 @@ data class TigeEntity(
     val categorie: String?,
     val qualite: Int?,
     val defauts: String?,
-    val photoUri: String?
+    val photoUri: String?,
+    val qualiteDetail: String?
 )

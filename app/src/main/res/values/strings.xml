@@ -242,6 +242,7 @@
     <string name="gps_coverage">GPS coverage</string>
     <string name="gps_points_format">GPS points: %1$d / %2$d</string>
     <string name="map_coming_soon">Interactive map (MapLibre) will be enabled in a future version.</string>
+    <string name="map_no_gps_data">No geolocated stems in this parcel. Enable GPS during data entry to see trees on the map.</string>
 
     <string name="parcelles_title">Parcels</string>
     <string name="parcelles_empty_title">No parcels</string>
@@ -546,4 +547,82 @@
     <string name="settings_section_decoupe">Product breakdown</string>
     <string name="settings_decoupe_rules">Breakdown rules</string>
     <string name="settings_decoupe_rules_desc">Configure volume allocation by product per species</string>
+
+    <!-- Martelage — sélection méthode de cubage -->
+    <string name="martelage_cubage_method">Cubage method</string>
+    <string name="martelage_cubage_method_change">Change</string>
+    <string name="martelage_cubage_method_current_format">Method: %1$s</string>
+    <string name="martelage_cubage_method_numero_format">Tariff n°%1$d</string>
+    <string name="martelage_cubage_method_saved">Cubage method saved</string>
+
+    <!-- GPS amélioré -->
+    <string name="gps_averaging_title">GPS averaging</string>
+    <string name="gps_averaging_desc">Collecting points for better accuracy…</string>
+    <string name="gps_averaging_progress_format">%1$d / %2$d readings</string>
+    <string name="gps_averaging_precision_format">Precision: ±%1$.1f m</string>
+    <string name="gps_averaging_done">GPS position recorded (averaged)</string>
+    <string name="gps_precision_excellent">Excellent (±%1$.1f m)</string>
+    <string name="gps_precision_good">Good (±%1$.1f m)</string>
+    <string name="gps_precision_moderate">Moderate (±%1$.1f m)</string>
+    <string name="gps_precision_poor">Poor (±%1$.1f m)</string>
+    <string name="gps_hdop_format">HDOP: %1$.1f</string>
+    <string name="gps_satellites_format">Sat: %1$d</string>
+    <string name="gps_start_averaging">Start GPS averaging</string>
+    <string name="gps_stop_averaging">Stop</string>
+    <string name="gps_num_readings">Number of readings</string>
+    <string name="gps_num_readings_desc">More readings = better accuracy (3–10 recommended)</string>
+
+    <!-- Export QGIS -->
+    <string name="export_qgis">Export QGIS</string>
+    <string name="export_qgis_geojson">GeoJSON (QGIS)</string>
+    <string name="export_qgis_geojson_desc">Stems with all forestry attributes, EPSG:4326</string>
+    <string name="export_qgis_geojson_done">GeoJSON export done (%1$d stems)</string>
+    <string name="export_qgis_no_gps_stems">No geolocated stems to export</string>
+    <string name="export_qgis_csv_xy">CSV with XY (QGIS)</string>
+    <string name="export_qgis_csv_xy_desc">Semicolon-separated with lon, lat columns</string>
+    <string name="export_qgis_csv_xy_done">CSV XY export done (%1$d stems)</string>
+    <string name="export_qgis_quick">Quick QGIS export</string>
+    <string name="export_qgis_choose_format">Choose export format</string>
+
+    <!-- Martelage — export rapide -->
+    <string name="martelage_export_qgis">QGIS</string>
+    <string name="martelage_export_csv">CSV</string>
+    <string name="martelage_export_choose">Export</string>
+
+    <!-- Wood quality -->
+    <string name="quality_dialog_title">Wood quality</string>
+    <string name="quality_assess">Assess quality</string>
+    <string name="quality_rectitude">Stem straightness</string>
+    <string name="quality_rect_0">Forked</string>
+    <string name="quality_rect_1">Curved</string>
+    <string name="quality_rect_2">Straight</string>
+    <string name="quality_rect_3">Very straight</string>
+    <string name="quality_branching">Branching</string>
+    <string name="quality_branch_0">Very branchy</string>
+    <string name="quality_branch_1">Branchy</string>
+    <string name="quality_branch_2">Pruned</string>
+    <string name="quality_branch_3">No branches</string>
+    <string name="quality_health">Health status</string>
+    <string name="quality_health_0">Rotten</string>
+    <string name="quality_health_1">Mistletoe/fungi</string>
+    <string name="quality_health_2">Healthy</string>
+    <string name="quality_health_3">Perfect</string>
+    <string name="quality_defects">Stem defects</string>
+    <string name="quality_defect_0">Large knots</string>
+    <string name="quality_defect_1">Medium knots</string>
+    <string name="quality_defect_2">Small knots</string>
+    <string name="quality_defect_3">None</string>
+    <string name="quality_result_grade">Grade: %1$s</string>
+    <string name="quality_result_product">Product: %1$s</string>
+    <string name="quality_result_secondary">Secondary product: %1$s</string>
+    <string name="quality_saved">Quality %1$s saved — %2$s</string>
+    <string name="quality_grade_a">Excellent (A)</string>
+    <string name="quality_grade_b">Good (B)</string>
+    <string name="quality_grade_c">Average (C)</string>
+    <string name="quality_grade_d">Poor (D)</string>
+
+    <!-- Lambert 93 -->
+    <string name="lambert93_coords">Lambert 93</string>
+    <string name="lambert93_e_format">E: %.0f m</string>
+    <string name="lambert93_n_format">N: %.0f m</string>
 </resources>

@@ -9,6 +9,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
@@ -77,21 +78,26 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
 
     val animationsEnabled by app.userPreferences.animationsEnabled.collectAsState(initial = true)
 
-    val navAnimMs = 240
-    val navOffsetDivisor = 10
-    val navScale = 0.98f
+    // Courbes Material 3 Emphasized
+    val emphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
+    val emphasizedAccelerate = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f)
+
+    // Durées synchronisées — la sortie dure aussi longtemps que l'entrée
+    // pour éviter le flash de la page précédente
+    val transMs = 300
+    val navScale = 0.97f
 
     val navEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
         if (!animationsEnabled) {
             EnterTransition.None
         } else {
-            fadeIn(animationSpec = tween(durationMillis = navAnimMs, easing = FastOutSlowInEasing)) +
+            fadeIn(animationSpec = tween(durationMillis = transMs, easing = emphasizedDecelerate)) +
                 slideInHorizontally(
-                    animationSpec = tween(durationMillis = navAnimMs, easing = FastOutSlowInEasing),
-                    initialOffsetX = { it / navOffsetDivisor }
+                    animationSpec = tween(durationMillis = transMs, easing = emphasizedDecelerate),
+                    initialOffsetX = { it / 8 }
                 ) +
                 scaleIn(
-                    animationSpec = tween(durationMillis = navAnimMs, easing = FastOutSlowInEasing),
+                    animationSpec = tween(durationMillis = transMs, easing = emphasizedDecelerate),
                     initialScale = navScale
                 )
         }
@@ -100,13 +106,13 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
         if (!animationsEnabled) {
             ExitTransition.None
         } else {
-            fadeOut(animationSpec = tween(durationMillis = navAnimMs, easing = FastOutSlowInEasing)) +
+            fadeOut(animationSpec = tween(durationMillis = transMs, easing = emphasizedAccelerate)) +
                 slideOutHorizontally(
-                    animationSpec = tween(durationMillis = navAnimMs, easing = FastOutSlowInEasing),
-                    targetOffsetX = { -it / navOffsetDivisor }
+                    animationSpec = tween(durationMillis = transMs, easing = emphasizedAccelerate),
+                    targetOffsetX = { -it / 8 }
                 ) +
                 scaleOut(
-                    animationSpec = tween(durationMillis = navAnimMs, easing = FastOutSlowInEasing),
+                    animationSpec = tween(durationMillis = transMs, easing = emphasizedAccelerate),
                     targetScale = navScale
                 )
         }
@@ -115,13 +121,13 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
         if (!animationsEnabled) {
             EnterTransition.None
         } else {
-            fadeIn(animationSpec = tween(durationMillis = navAnimMs, easing = FastOutSlowInEasing)) +
+            fadeIn(animationSpec = tween(durationMillis = transMs, easing = emphasizedDecelerate)) +
                 slideInHorizontally(
-                    animationSpec = tween(durationMillis = navAnimMs, easing = FastOutSlowInEasing),
-                    initialOffsetX = { -it / navOffsetDivisor }
+                    animationSpec = tween(durationMillis = transMs, easing = emphasizedDecelerate),
+                    initialOffsetX = { -it / 8 }
                 ) +
                 scaleIn(
-                    animationSpec = tween(durationMillis = navAnimMs, easing = FastOutSlowInEasing),
+                    animationSpec = tween(durationMillis = transMs, easing = emphasizedDecelerate),
                     initialScale = navScale
                 )
         }
@@ -130,13 +136,13 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
         if (!animationsEnabled) {
             ExitTransition.None
         } else {
-            fadeOut(animationSpec = tween(durationMillis = navAnimMs, easing = FastOutSlowInEasing)) +
+            fadeOut(animationSpec = tween(durationMillis = transMs, easing = emphasizedAccelerate)) +
                 slideOutHorizontally(
-                    animationSpec = tween(durationMillis = navAnimMs, easing = FastOutSlowInEasing),
-                    targetOffsetX = { it / navOffsetDivisor }
+                    animationSpec = tween(durationMillis = transMs, easing = emphasizedAccelerate),
+                    targetOffsetX = { it / 8 }
                 ) +
                 scaleOut(
-                    animationSpec = tween(durationMillis = navAnimMs, easing = FastOutSlowInEasing),
+                    animationSpec = tween(durationMillis = transMs, easing = emphasizedAccelerate),
                     targetScale = navScale
                 )
         }
@@ -193,6 +199,7 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                 tigeRepository = app.tigeRepository,
                 calculator = app.forestryCalculator,
                 userPreferences = app.userPreferences,
+                essenceRepository = app.essenceRepository,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

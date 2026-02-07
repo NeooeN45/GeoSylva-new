@@ -130,7 +130,9 @@ object TarifCalculator {
     }
 
     private fun volumeSchaeffer2E(essenceCode: String, diamCm: Double, hauteurM: Double, tarifNumero: Int?): Double? {
-        val numero = tarifNumero ?: 4
+        val numero = tarifNumero
+            ?: TarifData.essenceToIfnLentNumero[normalizeEssenceCode(essenceCode)]?.coerceIn(1, 8)
+            ?: 4
         val coefs = TarifData.schaefferTwoEntry.firstOrNull { it.numero == numero } ?: return null
         return coefs.volumeFromDiam(diamCm, hauteurM)
     }

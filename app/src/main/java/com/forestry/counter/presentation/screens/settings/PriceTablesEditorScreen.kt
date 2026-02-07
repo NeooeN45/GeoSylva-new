@@ -1,6 +1,17 @@
 package com.forestry.counter.presentation.screens.settings
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,17 +20,30 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,9 +67,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.forestry.counter.R
+import com.forestry.counter.data.local.CanonicalEssences
 import com.forestry.counter.data.parameters.ParameterDefaults
 import com.forestry.counter.domain.calculation.PriceEntry
 import com.forestry.counter.domain.model.ParameterItem
@@ -62,7 +88,25 @@ private data class EditablePriceRow(
     val product: String,
     val min: String,
     val max: String,
-    val eurPerM3: String
+    val eurPerM3: String,
+    val expanded: Boolean = false
+)
+
+private val PRODUCT_CODES = listOf("*", "BO", "BI", "BCh", "BE", "MERAIN", "TRANCHAGE", "SCIAGE_Q", "GRUME_L", "POTEAU", "SCIAGE_S", "PALETTE", "PATE")
+private val PRODUCT_LABELS = mapOf(
+    "*" to "Tous produits",
+    "BO" to "Bois d\u2019\u0153uvre",
+    "BI" to "Bois industrie",
+    "BCh" to "Chauffage",
+    "BE" to "Bois \u00e9nergie",
+    "MERAIN" to "M\u00e9rain",
+    "TRANCHAGE" to "Tranchage",
+    "SCIAGE_Q" to "Sciage qualit\u00e9",
+    "GRUME_L" to "Grume longue",
+    "POTEAU" to "Poteau",
+    "SCIAGE_S" to "Sciage standard",
+    "PALETTE" to "Palette",
+    "PATE" to "P\u00e2te / trituration"
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -217,98 +261,252 @@ fun PriceTablesEditorScreen(
             return@Scaffold
         }
 
-        Column(
+        val essenceCodes = remember {
+            listOf("*") + CanonicalEssences.ALL.map { it.code }
+        }
+        val essenceLabels = remember {
+            mapOf("*" to "Toutes essences") + CanonicalEssences.ALL.associate { it.code to it.name }
+        }
+
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilledTonalButton(
-                    onClick = {
-                        rows.add(
-                            EditablePriceRow(
-                                essence = "*",
-                                product = "*",
-                                min = "0",
-                                max = "999",
-                                eurPerM3 = "0"
-                            )
-                        )
-                    }
+            // Header — compteur + bouton ajouter
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Spacer(Modifier.padding(horizontal = 4.dp))
-                    Text(stringResource(R.string.add_line))
+                    Text(
+                        text = "${rows.size} ${stringResource(R.string.price_tables_editor_title).lowercase()}",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    FilledTonalButton(
+                        onClick = {
+                            rows.add(
+                                EditablePriceRow(
+                                    essence = "*",
+                                    product = "*",
+                                    min = "0",
+                                    max = "999",
+                                    eurPerM3 = "0"
+                                )
+                            )
+                        }
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.add_line))
+                    }
                 }
             }
 
-            rows.forEachIndexed { index, row ->
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+            itemsIndexed(rows, key = { idx, _ -> idx }) { index, row ->
+                PriceRowCard(
+                    row = row,
+                    index = index,
+                    essenceCodes = essenceCodes,
+                    essenceLabels = essenceLabels,
+                    onUpdate = { updated -> rows[index] = updated },
+                    onDelete = { if (rows.size > 1) rows.removeAt(index) }
+                )
+            }
+
+            item { Spacer(Modifier.height(32.dp)) }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PriceRowCard(
+    row: EditablePriceRow,
+    index: Int,
+    essenceCodes: List<String>,
+    essenceLabels: Map<String, String>,
+    onUpdate: (EditablePriceRow) -> Unit,
+    onDelete: () -> Unit
+) {
+    val essenceLabel = essenceLabels[row.essence] ?: row.essence
+    val productLabel = PRODUCT_LABELS[row.product] ?: row.product
+    val priceDisplay = row.eurPerM3.replace(',', '.').toDoubleOrNull()?.let { "%.0f €/m³".format(it) } ?: row.eurPerM3
+
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMedium
+                )
+            ),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = if (row.expanded) 4.dp else 1.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            // Header compact — cliquable pour expand
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onUpdate(row.copy(expanded = !row.expanded)) },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    Icons.Default.Forest,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = essenceLabel,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "$productLabel · D ${row.min}–${row.max} cm · $priceDisplay",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                AssistChip(
+                    onClick = {},
+                    label = { Text(priceDisplay, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold) },
+                    leadingIcon = { Icon(Icons.Default.AttachMoney, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                )
+                IconButton(onClick = { onUpdate(row.copy(expanded = !row.expanded)) }, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        if (row.expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            // Détails expandés
+            AnimatedVisibility(
+                visible = row.expanded,
+                enter = fadeIn(tween(200)) + slideInVertically(tween(200)) { -it / 4 },
+                exit = fadeOut(tween(150)) + slideOutVertically(tween(150)) { -it / 4 }
+            ) {
+                Column(
+                    modifier = Modifier.padding(top = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Dropdown essence
+                    var essenceExpanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = essenceExpanded,
+                        onExpandedChange = { essenceExpanded = it }
                     ) {
                         OutlinedTextField(
-                            value = row.essence,
-                            onValueChange = { v ->
-                                rows[index] = row.copy(essence = v)
-                            },
+                            value = essenceLabel,
+                            onValueChange = {},
+                            readOnly = true,
                             label = { Text(stringResource(R.string.essence)) },
-                            modifier = Modifier.weight(1f)
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = essenceExpanded) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor()
                         )
-                        OutlinedTextField(
-                            value = row.product,
-                            onValueChange = { v ->
-                                rows[index] = row.copy(product = v)
-                            },
-                            label = { Text(stringResource(R.string.product)) },
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(
-                            onClick = {
-                                if (rows.size > 1) rows.removeAt(index)
-                            }
+                        ExposedDropdownMenu(
+                            expanded = essenceExpanded,
+                            onDismissRequest = { essenceExpanded = false }
                         ) {
-                            Icon(Icons.Default.Delete, contentDescription = null)
+                            essenceCodes.forEach { code ->
+                                DropdownMenuItem(
+                                    text = { Text(essenceLabels[code] ?: code) },
+                                    onClick = {
+                                        onUpdate(row.copy(essence = code))
+                                        essenceExpanded = false
+                                    }
+                                )
+                            }
                         }
                     }
 
+                    // Dropdown produit
+                    var productExpanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = productExpanded,
+                        onExpandedChange = { productExpanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = productLabel,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(stringResource(R.string.product)) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = productExpanded) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = productExpanded,
+                            onDismissRequest = { productExpanded = false }
+                        ) {
+                            PRODUCT_CODES.forEach { code ->
+                                DropdownMenuItem(
+                                    text = { Text(PRODUCT_LABELS[code] ?: code) },
+                                    onClick = {
+                                        onUpdate(row.copy(product = code))
+                                        productExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Diamètres min/max + prix
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         OutlinedTextField(
                             value = row.min,
-                            onValueChange = { v -> rows[index] = row.copy(min = v) },
-                            label = { Text(stringResource(R.string.min)) },
+                            onValueChange = { v -> onUpdate(row.copy(min = v)) },
+                            label = { Text("D min (cm)") },
                             modifier = Modifier.weight(1f),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true
                         )
                         OutlinedTextField(
                             value = row.max,
-                            onValueChange = { v -> rows[index] = row.copy(max = v) },
-                            label = { Text(stringResource(R.string.max)) },
+                            onValueChange = { v -> onUpdate(row.copy(max = v)) },
+                            label = { Text("D max (cm)") },
                             modifier = Modifier.weight(1f),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true
                         )
                         OutlinedTextField(
                             value = row.eurPerM3,
-                            onValueChange = { v -> rows[index] = row.copy(eurPerM3 = v) },
-                            label = { Text(stringResource(R.string.martelage_table_eur_per_m3)) },
+                            onValueChange = { v -> onUpdate(row.copy(eurPerM3 = v)) },
+                            label = { Text("€/m³") },
                             modifier = Modifier.weight(1f),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            singleLine = true
                         )
                     }
+
+                    // Bouton supprimer
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        FilledTonalButton(
+                            onClick = onDelete,
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp)
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(stringResource(R.string.delete), style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
                 }
-
-                Spacer(Modifier.height(8.dp))
             }
-
-            Spacer(Modifier.height(32.dp))
         }
     }
 }

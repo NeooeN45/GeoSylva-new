@@ -19,5 +19,6 @@ data class Tige(
     val categorie: String? = null,
     val qualite: Int? = null,
     val defauts: List<String>? = null,
-    val photoUri: String? = null
+    val photoUri: String? = null,
+    val qualiteDetail: String? = null
 )

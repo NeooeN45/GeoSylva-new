@@ -3,6 +3,9 @@ package com.forestry.counter.domain.calculation
 import com.forestry.counter.domain.calculation.tarifs.TarifCalculator
 import com.forestry.counter.domain.calculation.tarifs.TarifMethod
 import com.forestry.counter.domain.calculation.tarifs.TarifSelection
+import com.forestry.counter.domain.calculation.quality.DefaultProductPrices
+import com.forestry.counter.domain.calculation.quality.ProductClassifier
+import com.forestry.counter.domain.calculation.quality.WoodQualityGrade
 import com.forestry.counter.domain.model.Tige
 import com.forestry.counter.domain.parameters.ParameterKeys
 import com.forestry.counter.domain.repository.ParameterRepository
@@ -509,7 +512,7 @@ class ForestryCalculator(
             val hMean = mean(heights)
 
             val prod = classifyProduct(essenceCode, d, rules)
-            val eurPerM3 = priceFor(essenceCode, prod, d, prices)
+            val eurPerM3FromRules = priceFor(essenceCode, prod, d, prices)
 
             var vSum: Double? = null
             var valueSum: Double? = null
@@ -546,16 +549,23 @@ class ForestryCalculator(
                         }
                         if (v != null) vs += v
                         if (v != null) {
-                            if (eurPerM3 != null) valSum += v * eurPerM3
+                            // Prix par tige : priorité au prix utilisateur (PriceEntry),
+                            // sinon fallback vers DefaultProductPrices avec qualité réelle
+                            val tigePrice = eurPerM3FromRules ?: run {
+                                val grade = t.qualite?.let { q ->
+                                    WoodQualityGrade.entries.getOrNull(q)
+                                } ?: WoodQualityGrade.C
+                                val productCode = t.produit ?: prod
+                                DefaultProductPrices.priceFor(productCode, essenceCode, grade)
+                            }
+                            valSum += v * tigePrice
                         }
                     }
                 }
                 if (!missingHeightsInClass) {
                     vSum = vs
                     vTotal += vs
-                    if (eurPerM3 != null && vs > 0.0) {
-                        // Important: si un tarif existe mais vaut 0, on considère la classe tarifée
-                        // (sinon, le warning "prix manquants" devient un faux positif).
+                    if (vs > 0.0) {
                         valueSum = valSum
                         valueTotal += valSum
                     }

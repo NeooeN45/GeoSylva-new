@@ -85,4 +85,11 @@ interface TigeRepository {
         diamCm: Double,
         photoUri: String?
     ): Boolean
+
+    suspend fun updateTigeQuality(
+        tigeId: String,
+        qualite: Int?,
+        produit: String?,
+        qualiteDetail: String?
+    ): Boolean
 }

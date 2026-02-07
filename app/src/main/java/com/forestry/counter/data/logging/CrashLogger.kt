@@ -26,7 +26,7 @@ object CrashLogger {
                 try {
                     val dir = File(context.filesDir, "crash-logs")
                     if (!dir.exists()) dir.mkdirs()
-                    val ts = SimpleDateFormat("yyyyMMdd-HHmmss").format(Date())
+                    val ts = SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(Date())
                     val file = File(dir, "crash-$ts.txt")
                     PrintWriter(file).use { pw ->
                         pw.println("Thread: ${thread.name}")

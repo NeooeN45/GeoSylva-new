@@ -66,6 +66,10 @@ import com.forestry.counter.domain.calculation.ForestryCalculator
 import com.forestry.counter.domain.calculation.ForestrySynthesisParams
 import com.forestry.counter.domain.calculation.ClassSynthesis
 import com.forestry.counter.domain.calculation.SynthesisTotals
+import com.forestry.counter.domain.calculation.tarifs.TarifMethod
+import com.forestry.counter.domain.calculation.tarifs.TarifSelection
+import com.forestry.counter.domain.calculation.tarifs.TarifCalculator
+import com.forestry.counter.domain.usecase.export.QgisExportHelper
 import com.forestry.counter.data.preferences.UserPreferencesManager
 import com.forestry.counter.presentation.components.AppMiniDialog
 import com.forestry.counter.presentation.utils.rememberHapticFeedback
@@ -263,6 +267,66 @@ fun MartelageScreen(
     var showParamPanel by remember { mutableStateOf(false) }
     var editingHeightsEssenceCode by remember { mutableStateOf<String?>(null) }
     var persistParamsRequested by remember { mutableStateOf(false) }
+
+    // Tarif de cubage — sélection depuis le martelage
+    var showTarifMethodDialog by remember { mutableStateOf(false) }
+    var currentTarifMethod by remember { mutableStateOf(TarifMethod.ALGAN) }
+    var currentTarifNumero by remember { mutableStateOf<Int?>(null) }
+
+    LaunchedEffect(Unit) {
+        val sel = forestryCalculator.loadTarifSelection()
+        currentTarifMethod = TarifMethod.fromCode(sel?.method ?: "") ?: TarifMethod.ALGAN
+        currentTarifNumero = sel?.schaefferNumero ?: sel?.ifnNumero
+    }
+
+    // Export QGIS rapide
+    var showExportDialog by remember { mutableStateOf(false) }
+    val exportGeoJsonLauncher = rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/geo+json")
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                val (geojson, count) = QgisExportHelper.buildGeoJson(
+                    tiges = tigesInScope,
+                    essences = essences
+                )
+                if (count == 0) {
+                    snackbar.showSnackbar(context.getString(R.string.export_qgis_no_gps_stems))
+                    return@launch
+                }
+                runCatching {
+                    context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { it.write(geojson) }
+                }.onSuccess {
+                    snackbar.showSnackbar(context.getString(R.string.export_qgis_geojson_done, count))
+                }.onFailure { e ->
+                    snackbar.showSnackbar(context.getString(R.string.export_failed_format, e.message ?: ""))
+                }
+            }
+        }
+    }
+    val exportCsvXyLauncher = rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                val (csv, count) = QgisExportHelper.buildCsvXY(
+                    tiges = tigesInScope,
+                    essences = essences
+                )
+                if (count == 0) {
+                    snackbar.showSnackbar(context.getString(R.string.export_qgis_no_gps_stems))
+                    return@launch
+                }
+                runCatching {
+                    context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { it.write(csv) }
+                }.onSuccess {
+                    snackbar.showSnackbar(context.getString(R.string.export_qgis_csv_xy_done, count))
+                }.onFailure { e ->
+                    snackbar.showSnackbar(context.getString(R.string.export_failed_format, e.message ?: ""))
+                }
+            }
+        }
+    }
 
     // Pré-remplissage des champs si des valeurs ont déjà été enregistrées pour cette portée
     LaunchedEffect(savedSurface) {
@@ -679,6 +743,16 @@ fun MartelageScreen(
                     }
                 },
                 actions = {
+                    // Export QGIS rapide
+                    IconButton(
+                        onClick = {
+                            playClickFeedback()
+                            showExportDialog = true
+                        }
+                    ) {
+                        Icon(Icons.Default.Map, contentDescription = stringResource(R.string.export_qgis))
+                    }
+                    // Export CSV martelage
                     IconButton(
                         onClick = {
                             playClickFeedback()
@@ -797,6 +871,40 @@ fun MartelageScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+
+                // Badge méthode de cubage + compteur GPS
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    val gpsCount = remember(tigesInScope) {
+                        tigesInScope.count { !it.gpsWkt.isNullOrBlank() }
+                    }
+                    AssistChip(
+                        onClick = { showTarifMethodDialog = true },
+                        label = {
+                            Text(
+                                stringResource(R.string.martelage_cubage_method_current_format, currentTarifMethod.label),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(16.dp))
+                        }
+                    )
+                    if (gpsCount > 0) {
+                        AssistChip(
+                            onClick = { showExportDialog = true },
+                            label = {
+                                Text("GPS: $gpsCount", style = MaterialTheme.typography.labelSmall)
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Default.GpsFixed, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        )
+                    }
                 }
 
                 if (tigesInScope.isEmpty()) {
@@ -970,6 +1078,41 @@ fun MartelageScreen(
                                     suffix = { Text("m") },
                                     singleLine = true
                                 )
+
+                                // ── Sélecteur de méthode de cubage ──
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            stringResource(R.string.martelage_cubage_method),
+                                            style = MaterialTheme.typography.titleSmall
+                                        )
+                                        Text(
+                                            stringResource(R.string.martelage_cubage_method_current_format, currentTarifMethod.label),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        if (currentTarifNumero != null) {
+                                            Text(
+                                                stringResource(R.string.martelage_cubage_method_numero_format, currentTarifNumero!!),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    FilledTonalButton(
+                                        onClick = {
+                                            playClickFeedback()
+                                            showTarifMethodDialog = true
+                                        }
+                                    ) {
+                                        Text(stringResource(R.string.martelage_cubage_method_change))
+                                    }
+                                }
 
                                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -1675,6 +1818,175 @@ fun MartelageScreen(
                 }
             }
         }
+    }
+
+    // ── Dialogue sélection méthode de cubage ──
+    if (showTarifMethodDialog) {
+        var selectedMethod by remember { mutableStateOf(currentTarifMethod) }
+        var selectedNumero by remember { mutableStateOf(currentTarifNumero) }
+        val availableRange = TarifCalculator.availableTarifNumbers(selectedMethod)
+        val needsNumero = availableRange != null
+
+        AlertDialog(
+            onDismissRequest = { showTarifMethodDialog = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    currentTarifMethod = selectedMethod
+                    currentTarifNumero = selectedNumero
+                    coroutineScope.launch {
+                        forestryCalculator.saveTarifSelection(
+                            TarifSelection(
+                                method = selectedMethod.code,
+                                schaefferNumero = if (selectedMethod == TarifMethod.SCHAEFFER_1E || selectedMethod == TarifMethod.SCHAEFFER_2E) selectedNumero else null,
+                                ifnNumero = if (selectedMethod == TarifMethod.IFN_RAPIDE || selectedMethod == TarifMethod.IFN_LENT) selectedNumero else null
+                            )
+                        )
+                        snackbar.showSnackbar(context.getString(R.string.martelage_cubage_method_saved))
+                    }
+                    showTarifMethodDialog = false
+                }) {
+                    Text(stringResource(R.string.validate))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTarifMethodDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+            title = { Text(stringResource(R.string.martelage_cubage_method)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TarifMethod.entries.forEach { method ->
+                        Row(
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .let { mod ->
+                                    mod
+                                }
+                                .background(
+                                    if (selectedMethod == method) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                                    else Color.Transparent,
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .padding(vertical = 4.dp, horizontal = 4.dp)
+                        ) {
+                            RadioButton(
+                                selected = selectedMethod == method,
+                                onClick = {
+                                    selectedMethod = method
+                                    if (TarifCalculator.availableTarifNumbers(method) == null) {
+                                        selectedNumero = null
+                                    } else if (selectedNumero == null) {
+                                        selectedNumero = TarifCalculator.recommendedTarifNumero(method, "HETRE_COMMUN")
+                                    }
+                                }
+                            )
+                            Column(modifier = Modifier.padding(start = 8.dp)) {
+                                Text(method.label, style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    if (method.entrees == 1) "1 entrée (D seul)" else "2 entrées (D + H)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+
+                    if (needsNumero && availableRange != null) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                        Text(
+                            stringResource(R.string.settings_tarif_numero_label),
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                        var numeroInput by remember(selectedMethod) {
+                            mutableStateOf(selectedNumero?.toString() ?: "")
+                        }
+                        OutlinedTextField(
+                            value = numeroInput,
+                            onValueChange = { v ->
+                                numeroInput = v
+                                selectedNumero = v.toIntOrNull()?.coerceIn(availableRange)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("${availableRange.first}–${availableRange.last}") },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Done
+                            ),
+                            singleLine = true
+                        )
+                    }
+                }
+            }
+        )
+    }
+
+    // ── Dialogue export QGIS ──
+    if (showExportDialog) {
+        AlertDialog(
+            onDismissRequest = { showExportDialog = false },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showExportDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+            title = { Text(stringResource(R.string.export_qgis_choose_format)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val gpsCount = remember(tigesInScope) {
+                        tigesInScope.count { !it.gpsWkt.isNullOrBlank() }
+                    }
+                    Text(
+                        stringResource(R.string.gps_satellites_format, gpsCount).replace("Sat", "GPS"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    FilledTonalButton(
+                        onClick = {
+                            playClickFeedback()
+                            showExportDialog = false
+                            val ts = SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date())
+                            exportGeoJsonLauncher.launch("tiges-${scopeKey}-${ts}.geojson")
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Map, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(stringResource(R.string.export_qgis_geojson))
+                            Text(
+                                stringResource(R.string.export_qgis_geojson_desc),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+
+                    FilledTonalButton(
+                        onClick = {
+                            playClickFeedback()
+                            showExportDialog = false
+                            val ts = SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date())
+                            exportCsvXyLauncher.launch("tiges-${scopeKey}-${ts}.csv")
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(stringResource(R.string.export_qgis_csv_xy))
+                            Text(
+                                stringResource(R.string.export_qgis_csv_xy_desc),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+            }
+        )
     }
 }
 

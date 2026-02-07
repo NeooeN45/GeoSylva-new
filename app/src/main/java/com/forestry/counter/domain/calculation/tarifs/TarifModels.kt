@@ -29,7 +29,7 @@ enum class TarifMethod(val code: String, val label: String, val description: Str
     ALGAN(
         code = "ALGAN",
         label = "Algan",
-        description = "V = a × D^b × H^c  — Tarif Algan pour résineux réguliers. Algan, 1958.",
+        description = "V = a × D^b × H^c  — Coefficients par essence (Algan 1958, Pardé & Bouchon 1988). Adapté résineux et feuillus.",
         entrees = 2
     ),
     IFN_RAPIDE(

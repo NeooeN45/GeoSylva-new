@@ -43,6 +43,7 @@ import com.forestry.counter.domain.calculation.ForestryCalculator
 import com.forestry.counter.domain.calculation.tarifs.TarifMethod
 import com.forestry.counter.domain.calculation.tarifs.TarifSelection
 import com.forestry.counter.domain.calculation.tarifs.TarifCalculator
+import com.forestry.counter.domain.usecase.export.QgisExportHelper
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
@@ -121,14 +122,6 @@ fun SettingsScreen(
 
     
 
-    // Export modèle CSV (Produits & Prix)
-    val exportPricesModelLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { outUri ->
-        if (outUri != null) {
-            context.contentResolver.openOutputStream(outUri)?.bufferedWriter()?.use { w ->
-                w.write("essence,product,min,max,eurPerM3\nHETRE,BO,35,80,85\nDOUGLAS,BO,30,80,70\n")
-            }
-        }
-    }
     val themeMode by preferencesManager.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
     val fontSize by preferencesManager.fontSize.collectAsState(initial = FontSize.MEDIUM)
     val animationsEnabled by preferencesManager.animationsEnabled.collectAsState(initial = true)
@@ -139,22 +132,9 @@ fun SettingsScreen(
     val backgroundImageEnabled by preferencesManager.backgroundImageEnabled.collectAsState(initial = true)
     val soundEnabled by preferencesManager.soundEnabled.collectAsState(initial = true)
     val hapticLevel by preferencesManager.hapticIntensity.collectAsState(initial = 2)
-    val tiltDeg by preferencesManager.tiltDeg.collectAsState(initial = 2f)
-    val pressScale by preferencesManager.pressScale.collectAsState(initial = 0.96f)
-    val haloAlpha by preferencesManager.haloAlpha.collectAsState(initial = 0.35f)
-    val haloWidthDp by preferencesManager.haloWidthDp.collectAsState(initial = 2)
-    val blurRadius by preferencesManager.blurRadius.collectAsState(initial = 16f)
-    val blurOverlayAlpha by preferencesManager.blurOverlayAlpha.collectAsState(initial = 0.6f)
-    val animDurationShort by preferencesManager.animDurationShort.collectAsState(initial = 120)
     val appLanguage by preferencesManager.appLanguage.collectAsState(initial = "system")
     val keepScreenOn by preferencesManager.keepScreenOn.collectAsState(initial = false)
     var showCsvDialog by remember { mutableStateOf(false) }
-    var rulesJson by remember { mutableStateOf("") }
-    var pricesSummary by remember { mutableStateOf("") }
-    var showRulesDialog by remember { mutableStateOf(false) }
-    var importPricesResult by remember { mutableStateOf<String?>(null) }
-    var showPriceUrlDialog by remember { mutableStateOf(false) }
-    var priceUrl by remember { mutableStateOf("") }
 
     // Tarif de cubage
     var showTarifDialog by remember { mutableStateOf(false) }
@@ -302,80 +282,9 @@ fun SettingsScreen(
             )
         }
     }
-    if (showPriceUrlDialog) {
-        AppMiniDialog(
-            onDismissRequest = { showPriceUrlDialog = false },
-            animationsEnabled = animationsEnabled,
-            icon = Icons.Default.Public,
-            title = stringResource(R.string.settings_price_url_dialog_title),
-            description = stringResource(R.string.settings_price_url_example),
-            confirmText = stringResource(R.string.save),
-            dismissText = stringResource(R.string.cancel),
-            onConfirm = {
-                scope.launch {
-                    val url = priceUrl.trim()
-                    val json = Json.encodeToString(url)
-                    parameterRepository.setParameter(ParameterItem(ParameterKeys.PRICE_FEED_URL, json))
-                    snackbarHostState.showSnackbar(context.getString(R.string.settings_price_url_saved))
-                    showPriceUrlDialog = false
-                }
-            }
-        ) {
-            OutlinedTextField(
-                value = priceUrl,
-                onValueChange = { priceUrl = it },
-                label = { Text(stringResource(R.string.settings_price_url_label)) },
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-    }
-    BackHandler(enabled = showRulesDialog || showCsvDialog) {
-        when {
-            showRulesDialog -> showRulesDialog = false
-            showCsvDialog -> showCsvDialog = false
-            else -> onNavigateBack()
-        }
-    }
-    val importPricesLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) {
-            scope.launch {
-                try {
-                    context.contentResolver.openInputStream(uri).use { input ->
-                        if (input == null) throw IllegalStateException("No input")
-                        val reader = java.io.BufferedReader(java.io.InputStreamReader(input))
-                        val rows = mutableListOf<List<String>>()
-                        reader.useLines { seq -> seq.forEach { line ->
-                            if (line.isBlank()) return@forEach
-                            val parts = line.split(';', ',')
-                            rows += parts.map { it.trim() }
-                        } }
-                        // Expect header: essence,product,min,max,eurPerM3
-                        val data = rows.drop(1).mapNotNull { c ->
-                            if (c.size < 5) null else mapOf(
-                                "essence" to c[0],
-                                "product" to c[1],
-                                "min" to c[2],
-                                "max" to c[3],
-                                "eurPerM3" to c[4]
-                            )
-                        }
-                        val entries = data.mapNotNull { m ->
-                            val min = m["min"]?.toIntOrNull(); val max = m["max"]?.toIntOrNull(); val eur = m["eurPerM3"]?.toDoubleOrNull()
-                            val essence = m["essence"] ?: return@mapNotNull null
-                            val product = m["product"] ?: return@mapNotNull null
-                            if (min == null || max == null || eur == null) return@mapNotNull null
-                            com.forestry.counter.domain.calculation.PriceEntry(essence, product, min, max, eur)
-                        }
-                        val json = Json.encodeToString(ListSerializer(PriceEntry.serializer()), entries)
-                        parameterRepository.setParameter(ParameterItem(ParameterKeys.PRIX_MARCHE, json))
-                        importPricesResult = context.getString(R.string.settings_prices_lines_imported_format, entries.size)
-                        pricesSummary = context.getString(R.string.settings_prices_tables_count_format, entries.size)
-                    }
-                } catch (e: Exception) {
-                    importPricesResult = context.getString(R.string.settings_import_error_format, e.message ?: "")
-                }
-            }
-        }
+    BackHandler(enabled = showCsvDialog) {
+        if (showCsvDialog) showCsvDialog = false
+        else onNavigateBack()
     }
 
     // Backup launcher (manual)
@@ -694,53 +603,7 @@ fun SettingsScreen(
                     }
                 )
 
-                Text(text = stringResource(R.string.settings_quality_finesse), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-                Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                    Text(stringResource(R.string.settings_tilt_deg_format, tiltDeg))
-                    Slider(
-                        value = tiltDeg,
-                        onValueChange = { v -> scope.launch { preferencesManager.setTiltDeg(v) } },
-                        valueRange = 0f..8f
-                    )
-                    Text(stringResource(R.string.settings_press_scale_format, pressScale))
-                    Slider(
-                        value = pressScale,
-                        onValueChange = { v -> scope.launch { preferencesManager.setPressScale(v) } },
-                        valueRange = 0.9f..1.0f
-                    )
-                    Text(stringResource(R.string.settings_halo_alpha_format, haloAlpha))
-                    Slider(
-                        value = haloAlpha,
-                        onValueChange = { v -> scope.launch { preferencesManager.setHaloAlpha(v) } },
-                        valueRange = 0f..0.8f
-                    )
-                    Text(stringResource(R.string.settings_halo_width_dp_format, haloWidthDp))
-                    Slider(
-                        value = haloWidthDp.toFloat(),
-                        onValueChange = { v -> scope.launch { preferencesManager.setHaloWidthDp(v.toInt()) } },
-                        valueRange = 0f..6f,
-                        steps = 5
-                    )
-                    Text(stringResource(R.string.settings_blur_radius_px_format, blurRadius.toInt()))
-                    Slider(
-                        value = blurRadius,
-                        onValueChange = { v -> scope.launch { preferencesManager.setBlurRadius(v) } },
-                        valueRange = 0f..30f
-                    )
-                    Text(stringResource(R.string.settings_blur_overlay_alpha_format, blurOverlayAlpha))
-                    Slider(
-                        value = blurOverlayAlpha,
-                        onValueChange = { v -> scope.launch { preferencesManager.setBlurOverlayAlpha(v) } },
-                        valueRange = 0f..0.85f
-                    )
-                    Text(stringResource(R.string.settings_anim_speed_ms_format, animDurationShort))
-                    Slider(
-                        value = animDurationShort.toFloat(),
-                        onValueChange = { v -> scope.launch { preferencesManager.setAnimDurationShort(v.toInt()) } },
-                        valueRange = 60f..240f,
-                        steps = 9
-                    )
-                }
+                
             }
 
             HorizontalDivider()
@@ -826,73 +689,11 @@ fun SettingsScreen(
 
             // Produits & Prix
             SettingsSection(title = stringResource(R.string.settings_section_products_prices)) {
-                // Règles produits (JSON)
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.settings_product_rules_json)) },
-                    supportingContent = { Text(stringResource(R.string.settings_product_rules_json_desc)) },
-                    leadingContent = { Icon(Icons.Default.Tune, contentDescription = null) },
-                    modifier = Modifier.clickable {
-                        scope.launch {
-                            val item = parameterRepository.getParameter(ParameterKeys.RULES_PRODUITS).first()
-                            rulesJson = item?.valueJson ?: "[]"
-                            showRulesDialog = true
-                        }
-                    }
-                )
-
-                // Prix marché (CSV)
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.settings_price_tables_csv)) },
-                    supportingContent = { Text(pricesSummary.ifBlank { stringResource(R.string.settings_price_tables_csv_hint) }) },
-                    leadingContent = { Icon(Icons.Default.AttachMoney, contentDescription = null) },
-                    trailingContent = {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextButton(onClick = { importPricesLauncher.launch(arrayOf("text/*", "application/octet-stream")) }) { Text(stringResource(R.string.import_csv)) }
-                            TextButton(onClick = { exportPricesModelLauncher.launch("prix_modele.csv") }) { Text(stringResource(R.string.template)) }
-                        }
-                    }
-                )
-
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.settings_edit_price_tables)) },
                     supportingContent = { Text(stringResource(R.string.settings_edit_price_tables_desc)) },
-                    leadingContent = { Icon(Icons.Default.Edit, contentDescription = null) },
+                    leadingContent = { Icon(Icons.Default.AttachMoney, contentDescription = null) },
                     modifier = Modifier.clickable { onNavigateToPriceTablesEditor() }
-                )
-
-                importPricesResult?.let { Text(it, modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.primary) }
-
-                // Price feed URL
-                ListItem(
-                    headlineContent = { Text(stringResource(R.string.settings_price_source_url)) },
-                    supportingContent = { Text(if (priceUrl.isBlank()) stringResource(R.string.not_configured) else priceUrl) },
-                    leadingContent = { Icon(Icons.Default.Public, contentDescription = null) },
-                    trailingContent = {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextButton(onClick = {
-                                scope.launch {
-                                    val item = parameterRepository.getParameter(ParameterKeys.PRICE_FEED_URL).first()
-                                    priceUrl = item?.valueJson?.trim('"') ?: ""
-                                    showPriceUrlDialog = true
-                                }
-                            }) { Text(stringResource(R.string.configure)) }
-                            TextButton(onClick = {
-                                scope.launch {
-                                    val url = priceUrl.takeIf { it.isNotBlank() }
-                                    val data = if (url != null) Data.Builder().putString(PriceSyncWorker.KEY_URL, url).build() else Data.EMPTY
-                                    val constraints = Constraints.Builder()
-                                        .setRequiredNetworkType(NetworkType.CONNECTED)
-                                        .build()
-                                    val req = OneTimeWorkRequestBuilder<PriceSyncWorker>()
-                                        .setInputData(data)
-                                        .setConstraints(constraints)
-                                        .build()
-                                    WorkManager.getInstance(context).enqueue(req)
-                                    snackbarHostState.showSnackbar(context.getString(R.string.settings_price_sync_started))
-                                }
-                            }) { Text(stringResource(R.string.sync)) }
-                        }
-                    }
                 )
             }
 
@@ -1093,53 +894,17 @@ fun SettingsScreen(
                                         }
                                         else -> tigeRepository.getAllTiges().first()
                                     }
-                                    val feats = tigesAll.asSequence()
-                                        .mapNotNull { t ->
-                                            val (lon, lat, alt) = parseWktPointZ(t.gpsWkt)
-                                            if (lon == null || lat == null) return@mapNotNull null
-                                            val diamClass = t.diamCm.toInt()
-                                            val diamLabel = "${diamClass} cm"
-                                            val props = buildString {
-                                                append("\"id\":"); append(Json.encodeToString(t.id)); append(',')
-                                                append("\"parcelle_id\":"); append(Json.encodeToString(t.parcelleId)); append(',')
-                                                append("\"placette_id\":"); append(Json.encodeToString(t.placetteId ?: "")); append(',')
-                                                append("\"essence\":"); append(Json.encodeToString(t.essenceCode)); append(',')
-                                                append("\"diam_cm\":"); append(t.diamCm.toString()); append(',')
-                                                append("\"diam_class_cm\":"); append(diamClass.toString()); append(',')
-                                                append("\"diam_class_label\":"); append(Json.encodeToString(diamLabel)); append(',')
-                                                append("\"hauteur_m\":"); append(t.hauteurM?.toString() ?: "null"); append(',')
-                                                append("\"precision_m\":"); append(t.precisionM?.toString() ?: "null"); append(',')
-                                                append("\"altitude_m\":"); append(t.altitudeM?.toString() ?: (alt?.toString() ?: "null")); append(',')
-                                                append("\"categorie\":"); append(t.categorie?.let { Json.encodeToString(it) } ?: "null"); append(',')
-                                                append("\"qualite\":"); append(t.qualite?.toString() ?: "null"); append(',')
-                                                append("\"numero\":"); append(t.numero?.toString() ?: "null"); append(',')
-                                                append("\"note\":"); append(t.note?.let { Json.encodeToString(it) } ?: "null"); append(',')
-                                                append("\"produit\":"); append(t.produit?.let { Json.encodeToString(it) } ?: "null"); append(',')
-                                                append("\"f_coef\":"); append(t.fCoef?.toString() ?: "null"); append(',')
-                                                append("\"value_eur\":"); append(t.valueEur?.toString() ?: "null"); append(',')
-                                                append("\"defauts\":"); append(t.defauts?.let { Json.encodeToString(it) } ?: "null"); append(',')
-                                                append("\"photo_uri\":"); append(t.photoUri?.let { Json.encodeToString(it) } ?: "null"); append(',')
-                                                append("\"timestamp\":"); append(t.timestamp.toString())
-                                            }
-                                            buildString {
-                                                append('{')
-                                                append("\"type\":\"Feature\",")
-                                                append("\"geometry\":{\"type\":\"Point\",\"coordinates\":[")
-                                                append(lon)
-                                                append(',')
-                                                append(lat)
-                                                append(',')
-                                                append(alt ?: 0.0)
-                                                append("]},")
-                                                append("\"properties\":{")
-                                                append(props)
-                                                append("}}")
-                                            }
-                                        }
-                                        .joinToString(",")
-                                    val fc = "{\"type\":\"FeatureCollection\",\"features\":[${feats}]}"
-                                    context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { it.write(fc) }
-                                    snackbarHostState.showSnackbar(context.getString(R.string.settings_export_geojson_done))
+                                    val essencesAll = essenceRepository?.getAllEssences()?.first() ?: emptyList()
+                                    val (geojson, count) = QgisExportHelper.buildGeoJson(
+                                        tiges = tigesAll,
+                                        essences = essencesAll
+                                    )
+                                    if (count == 0) {
+                                        snackbarHostState.showSnackbar(context.getString(R.string.export_qgis_no_gps_stems))
+                                        return@launch
+                                    }
+                                    context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { it.write(geojson) }
+                                    snackbarHostState.showSnackbar(context.getString(R.string.export_qgis_geojson_done, count))
                                 }
                             }
                         }
@@ -1665,45 +1430,10 @@ fun SettingsScreen(
         }
     }
 
-    if (showRulesDialog) {
-        AppMiniDialog(
-            onDismissRequest = { showRulesDialog = false },
-            animationsEnabled = animationsEnabled,
-            icon = Icons.Default.Tune,
-            title = stringResource(R.string.settings_product_rules_json),
-            description = stringResource(R.string.settings_product_rules_format),
-            confirmText = stringResource(R.string.save),
-            dismissText = stringResource(R.string.cancel),
-            onConfirm = {
-                scope.launch {
-                    parameterRepository.setParameter(ParameterItem(ParameterKeys.RULES_PRODUITS, rulesJson))
-                    snackbarHostState.showSnackbar(context.getString(R.string.settings_product_rules_saved))
-                    showRulesDialog = false
-                }
-            }
-        ) {
-            OutlinedTextField(
-                value = rulesJson,
-                onValueChange = { rulesJson = it },
-                label = { Text(stringResource(R.string.settings_json_label)) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-            )
-        }
-    }
 }
 
-private fun parseWktPointZ(wkt: String?): Triple<Double?, Double?, Double?> {
-    if (wkt.isNullOrBlank()) return Triple(null, null, null)
-    val cleaned = wkt.trim().replace(Regex("\\s+"), " ")
-    val regex = Regex("POINT( Z)? \\(([-0-9.]+) ([-0-9.]+)( [-0-9.]+)?\\)")
-    val m = regex.find(cleaned) ?: return Triple(null, null, null)
-    val lon = m.groupValues.getOrNull(2)?.toDoubleOrNull()
-    val lat = m.groupValues.getOrNull(3)?.toDoubleOrNull()
-    val alt = m.groupValues.getOrNull(4)?.trim()?.toDoubleOrNull()
-    return Triple(lon, lat, alt)
-}
+private fun parseWktPointZ(wkt: String?): Triple<Double?, Double?, Double?> =
+    com.forestry.counter.domain.location.WktUtils.parsePointZ(wkt)
 
 @Composable
 fun SettingsSection(

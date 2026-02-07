@@ -58,22 +58,21 @@ import com.forestry.counter.domain.calculation.HeightModeEntry
 import com.forestry.counter.domain.repository.TigeRepository
 import com.forestry.counter.data.preferences.UserPreferencesManager
 import com.forestry.counter.presentation.components.AppMiniDialog
+import com.forestry.counter.presentation.components.WoodQualityDialog
+import com.forestry.counter.domain.repository.EssenceRepository
+import com.forestry.counter.domain.calculation.quality.WoodQualityGrade
 import com.forestry.counter.presentation.utils.rememberHapticFeedback
 import com.forestry.counter.presentation.utils.rememberSoundFeedback
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.Priority
-import com.google.android.gms.tasks.CancellationTokenSource
+import com.forestry.counter.domain.location.GpsAverager
+import com.forestry.counter.domain.location.GpsQuality
+import androidx.compose.material.icons.filled.Star
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
 import java.util.UUID
-import kotlin.coroutines.resume
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalPermissionsApi::class)
 @Composable
@@ -84,6 +83,7 @@ fun EssenceDiamScreen(
     tigeRepository: TigeRepository,
     calculator: ForestryCalculator?,
     userPreferences: UserPreferencesManager,
+    essenceRepository: EssenceRepository? = null,
     onNavigateBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -117,72 +117,35 @@ fun EssenceDiamScreen(
                 return@launch
             }
 
-            val client = LocationServices.getFusedLocationProviderClient(appContext)
             try {
-                suspend fun bestLocationFix(timeoutMs: Long = 4500L): android.location.Location? {
-                    return suspendCancellableCoroutine { cont ->
-                        var best: android.location.Location? = null
-                        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 650L)
-                            .setMinUpdateIntervalMillis(350L)
-                            .setMaxUpdateDelayMillis(0L)
-                            .build()
+                // Moyennage multi-lectures pour une meilleure précision
+                val averaged = GpsAverager.collectAndAverage(
+                    context = appContext,
+                    targetReadings = 5,
+                    maxAccuracyM = 25f,
+                    timeoutMs = 12_000L
+                )
 
-                        val callback = object : LocationCallback() {
-                            override fun onLocationResult(result: LocationResult) {
-                                val locs = result.locations
-                                for (loc in locs) {
-                                    val a = loc.accuracy
-                                    if (a > 0f && (best == null || a < (best?.accuracy ?: Float.MAX_VALUE))) {
-                                        best = loc
-                                        if (a <= 4.5f) {
-                                            client.removeLocationUpdates(this)
-                                            if (!cont.isCompleted) cont.resume(best)
-                                            return
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        cont.invokeOnCancellation {
-                            client.removeLocationUpdates(callback)
-                        }
-
-                        client.requestLocationUpdates(request, callback, android.os.Looper.getMainLooper())
-
-                        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                            client.removeLocationUpdates(callback)
-                            if (!cont.isCompleted) cont.resume(best)
-                        }, timeoutMs)
-                    }
-                }
-
-                val loc = bestLocationFix() ?: run {
-                    val token = CancellationTokenSource().token
-                    suspendCancellableCoroutine<android.location.Location?> { cont ->
-                        val task = client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, token)
-                        task.addOnSuccessListener { cont.resume(it) }
-                        task.addOnFailureListener { cont.resume(null) }
-                    }
-                }
-
-                if (loc == null) {
+                if (averaged == null) {
                     snackbar.showSnackbar(appContext.getString(R.string.location_unavailable))
                     return@launch
                 }
 
-                val lon = loc.longitude
-                val lat = loc.latitude
-                val alt = loc.altitude
-                val acc = loc.accuracy.toDouble()
-                val wkt = String.format(Locale.US, "POINT Z (%.6f %.6f %.1f)", lon, lat, alt)
                 val ok = tigeRepository.setTigeGps(
                     tigeId = tigeId,
-                    wkt = wkt,
-                    precisionM = acc,
-                    altitudeM = alt
+                    wkt = averaged.wkt,
+                    precisionM = averaged.precisionM,
+                    altitudeM = averaged.altitude
                 )
-                if (!ok) {
+                if (ok) {
+                    val qualityMsg = when (averaged.qualityLabel) {
+                        GpsQuality.EXCELLENT -> appContext.getString(R.string.gps_precision_excellent, averaged.precisionM)
+                        GpsQuality.GOOD -> appContext.getString(R.string.gps_precision_good, averaged.precisionM)
+                        GpsQuality.MODERATE -> appContext.getString(R.string.gps_precision_moderate, averaged.precisionM)
+                        GpsQuality.POOR -> appContext.getString(R.string.gps_precision_poor, averaged.precisionM)
+                    }
+                    snackbar.showSnackbar("${appContext.getString(R.string.gps_averaging_done)} · $qualityMsg")
+                } else {
                     snackbar.showSnackbar(appContext.getString(R.string.gps_save_failed))
                 }
             } catch (e: SecurityException) {
@@ -228,6 +191,16 @@ fun EssenceDiamScreen(
             t.essenceCode.equals(essenceCode, true) &&
                 (t.categorie?.uppercase(Locale.getDefault()) in specialCategories)
         }
+    }
+
+    // Qualité bois — optionnel
+    var showQualityDialog by remember { mutableStateOf(false) }
+    var qualityTargetTigeId by remember { mutableStateOf<String?>(null) }
+    var qualityTargetDiam by remember { mutableStateOf(30.0) }
+    val essenceCategorie by produceState<String?>(initialValue = null, key1 = essenceRepository, key2 = essenceCode) {
+        value = try {
+            essenceRepository?.getEssenceByCode(essenceCode)?.first()?.categorie
+        } catch (_: Throwable) { null }
     }
 
     var showSpecialList by remember { mutableStateOf(false) }
@@ -347,6 +320,22 @@ fun EssenceDiamScreen(
                             imageVector = Icons.Default.Eco,
                             contentDescription = stringResource(if (showSpecialList) R.string.hide_special_trees else R.string.show_special_trees)
                         )
+                    }
+                    // Bouton qualité bois (optionnel) — évalue la dernière tige pointée
+                    IconButton(onClick = {
+                        playClickFeedback()
+                        val lastTige = tigesEssence.maxByOrNull { it.timestamp }
+                        if (lastTige != null) {
+                            qualityTargetTigeId = lastTige.id
+                            qualityTargetDiam = lastTige.diamCm
+                            showQualityDialog = true
+                        } else {
+                            scope.launch {
+                                snackbar.showSnackbar(appContext.getString(R.string.no_tige_to_remove_for_diameter_format, 0))
+                            }
+                        }
+                    }) {
+                        Icon(Icons.Default.Star, contentDescription = stringResource(R.string.quality_assess))
                     }
                     IconButton(onClick = {
                         playClickFeedback()
@@ -816,6 +805,43 @@ fun EssenceDiamScreen(
                 )
             }
         }
+    }
+
+    // Dialogue d'évaluation qualité bois (optionnel)
+    if (showQualityDialog && qualityTargetTigeId != null) {
+        val targetTige = tigesEssence.firstOrNull { it.id == qualityTargetTigeId }
+        WoodQualityDialog(
+            essenceCode = essenceCode,
+            categorie = essenceCategorie,
+            diamCm = qualityTargetDiam,
+            hauteurM = targetTige?.hauteurM,
+            initialDetail = targetTige?.qualiteDetail,
+            animationsEnabled = animationsEnabled,
+            onDismiss = { showQualityDialog = false },
+            onConfirm = { grade, classification, detailJson ->
+                showQualityDialog = false
+                val tigeId = qualityTargetTigeId ?: return@WoodQualityDialog
+                scope.launch {
+                    try {
+                        tigeRepository.updateTigeQuality(
+                            tigeId = tigeId,
+                            qualite = grade.ordinal,
+                            produit = classification.primary.code,
+                            qualiteDetail = detailJson
+                        )
+                        snackbar.showSnackbar(
+                            appContext.getString(
+                                R.string.quality_saved,
+                                grade.shortLabel,
+                                classification.primary.label
+                            )
+                        )
+                    } catch (e: Exception) {
+                        snackbar.showSnackbar(appContext.getString(R.string.insert_failed))
+                    }
+                }
+            }
+        )
     }
 }
 

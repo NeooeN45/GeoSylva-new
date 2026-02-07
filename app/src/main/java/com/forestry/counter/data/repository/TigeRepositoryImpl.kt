@@ -186,4 +186,15 @@ class TigeRepositoryImpl(
         tigeDao.updateTige(latest.copy(photoUri = photoUri))
         return true
     }
+
+    override suspend fun updateTigeQuality(
+        tigeId: String,
+        qualite: Int?,
+        produit: String?,
+        qualiteDetail: String?
+    ): Boolean {
+        val current = tigeDao.getTigeById(tigeId) ?: return false
+        tigeDao.updateTige(current.copy(qualite = qualite, produit = produit, qualiteDetail = qualiteDetail))
+        return true
+    }
 }

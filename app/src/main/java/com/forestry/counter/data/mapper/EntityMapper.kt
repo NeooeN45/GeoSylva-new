@@ -275,7 +275,8 @@ fun TigeEntity.toTige(): Tige {
         categorie = categorie,
         qualite = qualite,
         defauts = defauts?.split(',')?.map { it.trim() }?.filter { it.isNotEmpty() },
-        photoUri = photoUri
+        photoUri = photoUri,
+        qualiteDetail = qualiteDetail
     )
 }
 
@@ -299,7 +300,8 @@ fun Tige.toTigeEntity(): TigeEntity {
         categorie = categorie,
         qualite = qualite,
         defauts = defauts?.joinToString(","),
-        photoUri = photoUri
+        photoUri = photoUri,
+        qualiteDetail = qualiteDetail
     )
 }
 
