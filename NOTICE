@@ -1,0 +1,23 @@
+GeoSylva
+Copyright (c) 2024-2026 GeoSylva Project. All rights reserved.
+
+This software is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+See the LICENSE file for the full license text.
+
+A separate commercial license is required for any commercial, professional,
+industrial, SaaS, or proprietary use that does not comply with the AGPL-3.0.
+See COMMERCIAL_LICENSE.md for details.
+
+---
+
+This project includes or depends on the following third-party components:
+
+- Jetpack Compose (Apache License 2.0) - https://developer.android.com/jetpack/compose
+- Material 3 (Apache License 2.0) - https://m3.material.io/
+- Room Database (Apache License 2.0) - https://developer.android.com/training/data-storage/room
+- Kotlin & Coroutines (Apache License 2.0) - https://kotlinlang.org/
+- MapLibre GL Native (BSD 2-Clause License) - https://maplibre.org/
+- OpenCSV (Apache License 2.0) - https://opencsv.sourceforge.net/
+- Apache POI (Apache License 2.0) - https://poi.apache.org/
+- exp4j (Apache License 2.0) - https://www.objecthunter.net/exp4j/
+- kotlinx.serialization (Apache License 2.0) - https://github.com/Kotlin/kotlinx.serialization

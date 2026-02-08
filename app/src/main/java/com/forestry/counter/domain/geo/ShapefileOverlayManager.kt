@@ -15,11 +15,15 @@ import java.io.File
  * Champ d'étiquette disponible pour l'affichage sur la carte.
  */
 enum class LabelField(val key: String, val frLabel: String, val enLabel: String) {
-    NOM("nom", "N° parcelle", "Parcel #"),
-    FORET("foret", "Forêt", "Forest"),
-    SURFACE("surface_ha", "Surface (ha)", "Area (ha)"),
-    PARCELLE("parcelle", "Code parcelle", "Parcel code"),
-    DISTRICT("district", "District", "District");
+    PARCELLE("ccod_prf", "N° parcelle", "Parcel #"),
+    FORET("llib_frt", "Forêt", "Forest"),
+    SURFACE("SURFACE_HA", "Surface (ha)", "Area (ha)"),
+    DISTRICT("qdis_prf", "District", "District"),
+    NOM("NOM", "ID global", "Global ID"),
+    PERIMETRE("PERIMETRE", "Périmètre (m)", "Perimeter (m)"),
+    SURF_CADASTRALE("qsret_prf", "Surface cadastrale (ha)", "Cadastral area (ha)"),
+    OBSERVATION("lobs_prf", "Observation", "Observation"),
+    CATEGORIE("ccod_cact", "Code catégorie", "Category code");
 
     companion object {
         fun fromKey(key: String): LabelField? = entries.firstOrNull { it.key == key }
@@ -37,7 +41,7 @@ data class ShapefileOverlay(
     val borderOpacity: Float = 0.9f,
     val borderWidth: Float = 1.5f,
     val labelSize: Float = 12f,
-    val labelFields: List<LabelField> = listOf(LabelField.NOM),
+    val labelFields: List<LabelField> = listOf(LabelField.PARCELLE),
     val combineLabels: Boolean = true,
     val visible: Boolean = true,
     val geoJsonFile: String
@@ -73,10 +77,26 @@ class ShapefileOverlayManager(private val context: Context) {
                     return@withContext null
                 }
 
-                val result = ShapefileParser.parseZip(inputStream) ?: run {
-                    Log.e(TAG, "Failed to parse shapefile")
+                // Copier vers un fichier temporaire pour éviter les problèmes de ZipInputStream
+                // sur les flux content provider Android (readBytes peut retourner 0 octets)
+                val tempFile = java.io.File.createTempFile("shp_import", ".zip", context.cacheDir)
+                try {
+                    inputStream.use { input ->
+                        tempFile.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    Log.d(TAG, "Copied to temp file: ${tempFile.length()} bytes")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to copy URI to temp file", e)
+                    tempFile.delete()
                     return@withContext null
                 }
+
+                val result = ShapefileParser.parseZip(tempFile.inputStream()) ?: run {
+                    Log.e(TAG, "Failed to parse shapefile")
+                    tempFile.delete()
+                    return@withContext null
+                }
+                tempFile.delete()
 
                 if (result.features.isEmpty()) {
                     Log.w(TAG, "No features in shapefile")
@@ -84,10 +104,13 @@ class ShapefileOverlayManager(private val context: Context) {
                 }
 
                 val geoJson = ShapefileParser.toGeoJson(result)
+                Log.d(TAG, "GeoJSON generated: ${geoJson.length} chars")
+                Log.d(TAG, "GeoJSON first 300 chars: ${geoJson.take(300)}")
                 val id = "shp_${System.currentTimeMillis()}"
                 val geoJsonFileName = "$id.geojson"
                 val geoJsonFile = File(dir, geoJsonFileName)
                 geoJsonFile.writeText(geoJson, Charsets.UTF_8)
+                Log.d(TAG, "GeoJSON saved: ${geoJsonFile.absolutePath} (${geoJsonFile.length()} bytes)")
 
                 val name = displayName
                     ?: result.forestNames.firstOrNull()?.replaceFirstChar { it.uppercase() }
@@ -124,6 +147,14 @@ class ShapefileOverlayManager(private val context: Context) {
         }
 
     /**
+     * Retourne le fichier GeoJSON d'un overlay (pour chargement par URI).
+     */
+    fun getGeoJsonFile(overlay: ShapefileOverlay): File? {
+        val f = File(dir, overlay.geoJsonFile)
+        return if (f.exists()) f else null
+    }
+
+    /**
      * Retourne la liste de tous les overlays importés.
      */
     fun listOverlays(): List<ShapefileOverlay> {
@@ -151,7 +182,7 @@ class ShapefileOverlayManager(private val context: Context) {
                     labelFields = run {
                         val la = obj.optJSONArray("labelFields")
                         if (la != null) (0 until la.length()).mapNotNull { LabelField.fromKey(la.getString(it)) }
-                        else listOf(LabelField.NOM)
+                        else listOf(LabelField.PARCELLE)
                     },
                     combineLabels = obj.optBoolean("combineLabels", true),
                     visible = obj.optBoolean("visible", true),

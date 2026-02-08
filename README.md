@@ -226,7 +226,24 @@ Settings → Appearance → Font Size (S/M/L)
 
 ## 📄 Licence
 
-À définir (suggéré: MIT ou Apache 2.0)
+Ce projet est distribué sous la licence **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+Voir le fichier [LICENSE](LICENSE) pour le texte complet.
+
+### Utilisation commerciale
+
+Toute utilisation commerciale, professionnelle, industrielle, SaaS ou propriétaire
+de ce logiciel nécessite une **licence commerciale séparée**.
+
+Consultez le fichier [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) pour plus de détails.
+
+| Cas d'usage | AGPL-3.0 (Gratuit) | Licence commerciale |
+|---|---|---|
+| Usage personnel / éducatif | ✅ Oui | Non requise |
+| Projet open-source compatible AGPL-3.0 | ✅ Oui | Non requise |
+| Usage interne en entreprise (sans divulgation du code) | ❌ Non | **Requise** |
+| Produit ou service commercial | ❌ Non | **Requise** |
+| SaaS / service hébergé | ❌ Non | **Requise** |
+| Intégration propriétaire / code fermé | ❌ Non | **Requise** |
 
 ## 👥 Contribution
 

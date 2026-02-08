@@ -174,68 +174,107 @@ private const val SHP_LABEL_ID = "shp-labels"
  */
 private fun applyShapefileOverlay(
     style: Style,
-    geoJson: String,
+    geoJsonFile: java.io.File,
     overlay: ShapefileOverlay
-) {
+): String {
+    // 1. Supprimer les couches/source existantes
+    try { style.removeLayer(SHP_LABEL_ID) } catch (_: Throwable) {}
+    try { style.removeLayer(SHP_LINE_ID) } catch (_: Throwable) {}
+    try { style.removeLayer(SHP_FILL_ID) } catch (_: Throwable) {}
+    try { style.removeSource(SHP_SOURCE_ID) } catch (_: Throwable) {}
+
+    if (!overlay.visible) return "hidden"
+
+    // 2. Lire le fichier GeoJSON
+    if (!geoJsonFile.exists()) {
+        Log.e(TAG, "SHP: GeoJSON file not found: ${geoJsonFile.absolutePath}")
+        return "ERR: file not found"
+    }
+    val geoJson: String
     try {
-        // Supprimer les couches/source existantes
-        try { style.removeLayer(SHP_LABEL_ID) } catch (_: Throwable) {}
-        try { style.removeLayer(SHP_LINE_ID) } catch (_: Throwable) {}
-        try { style.removeLayer(SHP_FILL_ID) } catch (_: Throwable) {}
-        try { style.removeSource(SHP_SOURCE_ID) } catch (_: Throwable) {}
+        geoJson = geoJsonFile.readText(Charsets.UTF_8)
+    } catch (e: Throwable) {
+        Log.e(TAG, "SHP: failed to read GeoJSON file", e)
+        return "ERR: read failed: ${e.message}"
+    }
+    if (geoJson.length < 10) {
+        Log.e(TAG, "SHP: GeoJSON too short (${geoJson.length} chars)")
+        return "ERR: file too short (${geoJson.length})"
+    }
+    Log.d(TAG, "SHP: read ${geoJson.length} chars from ${geoJsonFile.name}")
+    Log.d(TAG, "SHP: first 200 chars: ${geoJson.take(200)}")
 
-        if (!overlay.visible) return
+    // 3. Valider le JSON avant de passer à MapLibre
+    try {
+        org.json.JSONObject(geoJson)
+    } catch (e: Throwable) {
+        Log.e(TAG, "SHP: INVALID JSON — ${e.message}")
+        return "ERR: invalid JSON: ${e.message?.take(80)}"
+    }
 
-        // Ajouter la source GeoJSON
+    // 4. Créer source, layers, puis injecter les données
+    try {
         val source = GeoJsonSource(SHP_SOURCE_ID)
-        source.setGeoJson(geoJson)
         style.addSource(source)
 
-        // Fill layer (polygones colorés) — couleur RGB sans alpha + opacité séparée
-        val fillRgb = overlay.fillColor or 0xFF000000.toInt() // forcer alpha 0xFF pour la couleur
-        val fill = FillLayer(SHP_FILL_ID, SHP_SOURCE_ID).withProperties(
-            PropertyFactory.fillColor(fillRgb),
-            PropertyFactory.fillOpacity(overlay.fillOpacity)
-        )
-        style.addLayer(fill)
-
-        // Line layer (contours)
-        val borderRgb = overlay.borderColor or 0xFF000000.toInt()
-        val line = LineLayer(SHP_LINE_ID, SHP_SOURCE_ID).withProperties(
-            PropertyFactory.lineColor(borderRgb),
-            PropertyFactory.lineWidth(overlay.borderWidth),
-            PropertyFactory.lineOpacity(overlay.borderOpacity)
-        )
-        style.addLayer(line)
-
-        // Symbol layer (étiquettes) — seulement si des champs sont sélectionnés
-        if (overlay.labelFields.isNotEmpty()) {
-            val textExpr = if (overlay.combineLabels) {
-                // Combiner : "val1 · val2 · val3"
-                overlay.labelFields.joinToString(" · ") { "{${it.key}}" }
-            } else {
-                // Multi-ligne : "val1\nval2\nval3"
-                overlay.labelFields.joinToString("\n") { "{${it.key}}" }
-            }
-            val labels = SymbolLayer(SHP_LABEL_ID, SHP_SOURCE_ID).withProperties(
-                PropertyFactory.textField(textExpr),
-                PropertyFactory.textSize(overlay.labelSize),
-                PropertyFactory.textColor(android.graphics.Color.BLACK),
-                PropertyFactory.textHaloColor(android.graphics.Color.WHITE),
-                PropertyFactory.textHaloWidth(1.5f),
-                PropertyFactory.textFont(arrayOf("Open Sans Bold")),
-                PropertyFactory.textAllowOverlap(false),
-                PropertyFactory.textIgnorePlacement(false),
-                PropertyFactory.textMaxWidth(10f)
+        val fillRgb = overlay.fillColor or 0xFF000000.toInt()
+        style.addLayer(
+            FillLayer(SHP_FILL_ID, SHP_SOURCE_ID).withProperties(
+                PropertyFactory.fillColor(fillRgb),
+                PropertyFactory.fillOpacity(overlay.fillOpacity)
             )
-            style.addLayer(labels)
-        }
+        )
 
-        Log.d(TAG, "Shapefile overlay applied: ${overlay.featureCount} features")
+        val borderRgb = overlay.borderColor or 0xFF000000.toInt()
+        style.addLayer(
+            LineLayer(SHP_LINE_ID, SHP_SOURCE_ID).withProperties(
+                PropertyFactory.lineColor(borderRgb),
+                PropertyFactory.lineWidth(overlay.borderWidth),
+                PropertyFactory.lineOpacity(overlay.borderOpacity)
+            )
+        )
+
+        source.setGeoJson(geoJson)
+
+        Log.i(TAG, "SHP: fill+line OK — ${overlay.featureCount} features")
 
     } catch (e: Throwable) {
-        Log.e(TAG, "applyShapefileOverlay failed", e)
+        Log.e(TAG, "SHP: failed to apply fill/line", e)
+        return "ERR: apply failed: ${e.message?.take(80)}"
     }
+
+    // 5. Étiquettes (try/catch séparé pour ne pas casser les polygones)
+    var labelStatus = ""
+    if (overlay.labelFields.isNotEmpty()) {
+        try {
+            try { style.removeLayer(SHP_LABEL_ID) } catch (_: Throwable) {}
+            val textExpr = if (overlay.combineLabels) {
+                overlay.labelFields.joinToString(" · ") { "{${it.key}}" }
+            } else {
+                overlay.labelFields.joinToString("\n") { "{${it.key}}" }
+            }
+            Log.d(TAG, "SHP: adding labels with expr='$textExpr'")
+            style.addLayer(
+                SymbolLayer(SHP_LABEL_ID, SHP_SOURCE_ID).withProperties(
+                    PropertyFactory.textField(textExpr),
+                    PropertyFactory.textSize(overlay.labelSize),
+                    PropertyFactory.textColor(android.graphics.Color.BLACK),
+                    PropertyFactory.textHaloColor(android.graphics.Color.WHITE),
+                    PropertyFactory.textHaloWidth(1.5f),
+                    PropertyFactory.textAllowOverlap(false),
+                    PropertyFactory.textIgnorePlacement(false),
+                    PropertyFactory.textMaxWidth(10f)
+                )
+            )
+            labelStatus = " +labels"
+            Log.i(TAG, "SHP: labels OK")
+        } catch (e: Throwable) {
+            Log.e(TAG, "SHP: labels FAILED", e)
+            labelStatus = " labels ERR: ${e.message?.take(50)}"
+        }
+    }
+
+    return "OK: ${overlay.featureCount}f$labelStatus"
 }
 
 /**
@@ -569,14 +608,15 @@ fun MapScreen(
     val scope = rememberCoroutineScope()
     val shpManager = remember { ShapefileOverlayManager(context) }
     var shpOverlay by remember { mutableStateOf<ShapefileOverlay?>(shpManager.listOverlays().firstOrNull()) }
-    var shpGeoJson by remember { mutableStateOf<String?>(null) }
+    var shpGeoJsonFile by remember { mutableStateOf<java.io.File?>(null) }
     var showShpPanel by remember { mutableStateOf(false) }
     var shpImporting by remember { mutableStateOf(false) }
 
-    // Charger le GeoJSON au démarrage si un overlay existe
+    // Résoudre le fichier GeoJSON au démarrage si un overlay existe
     LaunchedEffect(shpOverlay?.id) {
-        val overlay = shpOverlay ?: run { shpGeoJson = null; return@LaunchedEffect }
-        shpGeoJson = shpManager.loadGeoJson(overlay)
+        val overlay = shpOverlay ?: run { shpGeoJsonFile = null; return@LaunchedEffect }
+        shpGeoJsonFile = shpManager.getGeoJsonFile(overlay)
+        Log.d(TAG, "Overlay ${overlay.id}: geojson file=${shpGeoJsonFile?.absolutePath}, exists=${shpGeoJsonFile?.exists()}")
     }
 
     // File picker pour importer un .zip shapefile
@@ -603,11 +643,11 @@ fun MapScreen(
 
     val currentLayer = MAP_LAYERS.getOrElse(currentLayerIdx) { MAP_LAYERS[0] }
 
-    // Appliquer l'overlay shapefile quand le GeoJSON ou les paramètres changent
-    fun applyCurrentShpOverlay(style: Style) {
-        val json = shpGeoJson ?: return
-        val ov = shpOverlay ?: return
-        applyShapefileOverlay(style, json, ov)
+    // Appliquer l'overlay shapefile quand le fichier ou les paramètres changent
+    fun applyCurrentShpOverlay(style: Style): String {
+        val file = shpGeoJsonFile ?: return "no file"
+        val ov = shpOverlay ?: return "no overlay"
+        return applyShapefileOverlay(style, file, ov)
     }
 
     fun switchLayer(index: Int) {
@@ -823,10 +863,15 @@ fun MapScreen(
             }
 
             // ── Appliquer/mettre à jour overlay shapefile quand les données changent ──
-            LaunchedEffect(shpGeoJson, shpOverlay) {
+            LaunchedEffect(shpGeoJsonFile, shpOverlay, mapReady) {
                 val map = mapLibreMap ?: return@LaunchedEffect
                 if (!mapReady) return@LaunchedEffect
-                map.getStyle { style -> applyCurrentShpOverlay(style) }
+                Log.d(TAG, "Applying shapefile overlay: file=${shpGeoJsonFile?.absolutePath}, overlay=${shpOverlay?.id}")
+                map.getStyle { style ->
+                    val result = applyCurrentShpOverlay(style)
+                    Log.d(TAG, "SHP apply result: $result")
+                    Toast.makeText(context, "SHP: $result", Toast.LENGTH_LONG).show()
+                }
             }
 
             // ── Panneau sélecteur de couches (par catégorie) ──
@@ -1181,7 +1226,7 @@ fun MapScreen(
                                     onClick = {
                                         shpManager.deleteOverlay(ov.id)
                                         shpOverlay = null
-                                        shpGeoJson = null
+                                        shpGeoJsonFile = null
                                     },
                                     color = MaterialTheme.colorScheme.errorContainer,
                                     shape = RoundedCornerShape(8.dp),

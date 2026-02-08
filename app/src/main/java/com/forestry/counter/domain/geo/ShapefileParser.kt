@@ -60,16 +60,19 @@ object ShapefileParser {
         var shpData: ByteArray? = null
         var dbfData: ByteArray? = null
         var prjData: String? = null
+        var cpgEncoding: String? = null
 
         try {
             val zis = ZipInputStream(inputStream)
             var entry = zis.nextEntry
             while (entry != null) {
                 val name = entry.name.lowercase()
+                Log.d(TAG, "ZIP entry: ${entry.name} (size=${entry.size})")
                 when {
                     name.endsWith(".shp") -> shpData = zis.readBytes()
                     name.endsWith(".dbf") -> dbfData = zis.readBytes()
                     name.endsWith(".prj") -> prjData = String(zis.readBytes(), Charsets.UTF_8)
+                    name.endsWith(".cpg") -> cpgEncoding = String(zis.readBytes(), Charsets.US_ASCII).trim()
                 }
                 zis.closeEntry()
                 entry = zis.nextEntry
@@ -80,16 +83,47 @@ object ShapefileParser {
             return null
         }
 
+        Log.d(TAG, "ZIP read: shp=${shpData?.size ?: "null"} dbf=${dbfData?.size ?: "null"} prj=${prjData?.length ?: "null"} chars")
+
         if (shpData == null || dbfData == null) {
             Log.e(TAG, "ZIP missing .shp or .dbf")
             return null
         }
 
-        val isLambert93 = prjData?.contains("Lambert_93", ignoreCase = true) == true
+        var isLambert93 = prjData?.contains("Lambert_93", ignoreCase = true) == true
                 || prjData?.contains("2154", ignoreCase = true) == true
 
-        val attributes = parseDbf(dbfData) ?: return null
+        // Si pas de .prj, détecter Lambert 93 depuis le bounding box du SHP
+        if (!isLambert93 && prjData == null && shpData.size >= 68) {
+            val shpBuf = ByteBuffer.wrap(shpData).order(ByteOrder.LITTLE_ENDIAN)
+            val xMin = shpBuf.getDouble(36)
+            val yMin = shpBuf.getDouble(44)
+            val xMax = shpBuf.getDouble(52)
+            val yMax = shpBuf.getDouble(60)
+            // Plages typiques Lambert 93 : X ∈ [100 000, 1 300 000], Y ∈ [6 000 000, 7 200 000]
+            if (xMin in 100_000.0..1_300_000.0 && xMax in 100_000.0..1_300_000.0 &&
+                yMin in 6_000_000.0..7_200_000.0 && yMax in 6_000_000.0..7_200_000.0) {
+                isLambert93 = true
+                Log.i(TAG, "No .prj file — auto-detected Lambert 93 from bbox: x=[$xMin..$xMax] y=[$yMin..$yMax]")
+            }
+        }
+        Log.d(TAG, "Projection: isLambert93=$isLambert93 (prj=${if (prjData != null) "present" else "absent"})")
+
+        // Déterminer l'encodage des textes DBF (défaut ISO-8859-1, surchargé par .cpg)
+        val dbfCharset = if (cpgEncoding != null) {
+            try {
+                java.nio.charset.Charset.forName(cpgEncoding)
+            } catch (_: Exception) {
+                Log.w(TAG, "Unknown CPG encoding '$cpgEncoding', falling back to ISO-8859-1")
+                Charsets.ISO_8859_1
+            }
+        } else Charsets.ISO_8859_1
+        Log.d(TAG, "DBF encoding: ${dbfCharset.name()} (cpg=${cpgEncoding ?: "absent"})")
+
+        val attributes = parseDbf(dbfData, dbfCharset) ?: return null
+        Log.d(TAG, "DBF parsed: ${attributes.size} records")
         val geometries = parseShp(shpData, isLambert93) ?: return null
+        Log.d(TAG, "SHP parsed: ${geometries.size} geometries")
 
         if (geometries.size != attributes.size) {
             Log.w(TAG, "Geometry count (${geometries.size}) != attribute count (${attributes.size})")
@@ -213,7 +247,7 @@ object ShapefileParser {
 
     private data class DbfField(val name: String, val type: Char, val size: Int)
 
-    private fun parseDbf(data: ByteArray): List<ParcelAttributes>? {
+    private fun parseDbf(data: ByteArray, charset: java.nio.charset.Charset = Charsets.ISO_8859_1): List<ParcelAttributes>? {
         try {
             val buf = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN)
             val numRecords = buf.getInt(4)
@@ -245,9 +279,9 @@ object ShapefileParser {
                                 minOf(recOffset + fieldPos + field.size, data.size)
                     )
                     val value = try {
-                        String(rawBytes, Charsets.ISO_8859_1).trim()
+                        String(rawBytes, charset).trim()
                     } catch (_: Exception) {
-                        String(rawBytes, Charsets.US_ASCII).trim()
+                        String(rawBytes, Charsets.ISO_8859_1).trim()
                     }
                     attrs[field.name] = value
                     fieldPos += field.size
@@ -283,12 +317,13 @@ object ShapefileParser {
             if (idx > 0) sb.append(",")
             sb.append("""{"type":"Feature","properties":{""")
 
-            // Properties
-            sb.append(""""nom":${jsonString(feature.attributes.nom)},""")
-            sb.append("\"surface_ha\":${String.format(Locale.US, "%.4f", feature.attributes.surface)},")
-            sb.append(""""foret":${jsonString(feature.attributes.forestName)},""")
-            sb.append(""""parcelle":${jsonString(feature.attributes.parcelCode)},""")
-            sb.append(""""district":"${feature.attributes.district}"""")
+            // Properties — toutes les colonnes du DBF (tout en string pour JSON valide)
+            var propIdx = 0
+            for ((key, value) in feature.attributes.allAttributes) {
+                if (propIdx > 0) sb.append(",")
+                sb.append("${jsonString(key)}:${jsonString(value)}")
+                propIdx++
+            }
 
             sb.append("""},"geometry":""")
 
