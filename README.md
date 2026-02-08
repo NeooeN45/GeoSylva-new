@@ -138,6 +138,8 @@ Pour un build signé (Play Store):
 - ✅ **Code source auditable**
 - ✅ **ProGuard/R8 activé** en release
 
+📄 Voir la [Politique de confidentialité](PRIVACY_POLICY.md) complète.
+
 ## 📚 Utilisation
 
 ### Créer un Groupe
