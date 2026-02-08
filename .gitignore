@@ -3,3 +3,17 @@
 *.jks
 *.keystore
 keystore.properties
+
+# Données SIG / shapefiles (ne pas publier)
+*.zip
+*.shp
+*.dbf
+*.shx
+*.prj
+*.cpg
+*.geojson
+
+# IDE
+.idea/
+*.iml
+local.properties

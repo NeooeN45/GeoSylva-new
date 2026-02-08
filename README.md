@@ -226,24 +226,19 @@ Settings → Appearance → Font Size (S/M/L)
 
 ## 📄 Licence
 
-Ce projet est distribué sous la licence **GNU Affero General Public License v3.0 (AGPL-3.0)**.
-Voir le fichier [LICENSE](LICENSE) pour le texte complet.
+Ce projet est **dual-licensed** (double licence).
 
-### Utilisation commerciale
+### Licence Open Source
+- **GNU Affero General Public License v3.0 (AGPL-3.0)**
+- Libre pour usage personnel, éducatif et projets open-source compatibles.
+- L'usage commercial est autorisé sous AGPL-3.0, à condition de divulguer le code source complet.
 
-Toute utilisation commerciale, professionnelle, industrielle, SaaS ou propriétaire
-de ce logiciel nécessite une **licence commerciale séparée**.
+### Licence Commerciale
+- Requise si vous souhaitez utiliser GeoSylva **sans respecter les obligations AGPL-3.0** (divulgation du code source).
+- Concerne : intégration propriétaire, SaaS, services hébergés, usage interne sans divulgation.
+- Contactez l'auteur pour les conditions de licence commerciale.
 
-Consultez le fichier [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) pour plus de détails.
-
-| Cas d'usage | AGPL-3.0 (Gratuit) | Licence commerciale |
-|---|---|---|
-| Usage personnel / éducatif | ✅ Oui | Non requise |
-| Projet open-source compatible AGPL-3.0 | ✅ Oui | Non requise |
-| Usage interne en entreprise (sans divulgation du code) | ❌ Non | **Requise** |
-| Produit ou service commercial | ❌ Non | **Requise** |
-| SaaS / service hébergé | ❌ Non | **Requise** |
-| Intégration propriétaire / code fermé | ❌ Non | **Requise** |
+Voir [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) pour tous les détails.
 
 ## 👥 Contribution
 
