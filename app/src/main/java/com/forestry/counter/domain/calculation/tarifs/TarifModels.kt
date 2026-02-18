@@ -11,6 +11,7 @@ import kotlinx.serialization.Serializable
  * - Algan : Algan, 1958 — Tarifs de cubage pour Douglas, Épicéa, etc.
  * - Tarifs rapides IFN : Inventaire Forestier National — 36 tarifs à 1 entrée (D130)
  * - Tarifs lents IFN : Inventaire Forestier National — Tables à 2 entrées (D130 + H)
+ * - FGH : V = F × G × H  (variante explicite de la méthode du coefficient de forme)
  * - Coefficient de forme : V = G × H × f  (méthode classique)
  */
 enum class TarifMethod(val code: String, val label: String, val description: String, val entrees: Int) {
@@ -42,6 +43,12 @@ enum class TarifMethod(val code: String, val label: String, val description: Str
         code = "IFN_LENT",
         label = "Tarif lent IFN",
         description = "Tables IFN à 2 entrées (D130, H). Inventaire Forestier National.",
+        entrees = 2
+    ),
+    FGH(
+        code = "FGH",
+        label = "FGH",
+        description = "V = F × G × H  — Variante explicite de la méthode du coefficient de forme (F = facteur de forme).",
         entrees = 2
     ),
     COEF_FORME(

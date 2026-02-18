@@ -57,6 +57,10 @@ object TarifCalculator {
                 val h = hauteurM ?: return null
                 volumeIfnLent(essenceCode, diamCm, h, tarifNumero)
             }
+            TarifMethod.FGH -> {
+                val h = hauteurM ?: return null
+                volumeFgh(essenceCode, diamCm, h, coefFormOverride)
+            }
             TarifMethod.COEF_FORME -> {
                 val h = hauteurM ?: return null
                 volumeCoefForme(essenceCode, diamCm, h, coefFormOverride)
@@ -143,9 +147,29 @@ object TarifCalculator {
             val coefs = TarifData.alganCoefs.firstOrNull { it.essence.equals(c, true) }
             if (coefs != null) return coefs.volume(diamCm, hauteurM)
         }
-        // Fallback : utiliser les coefficients du Hêtre (essence médiane)
-        val fallback = TarifData.alganCoefs.firstOrNull { it.essence == "HETRE_COMMUN" }
+        // Fallback : choisir des coefficients de repli selon la famille d'essence.
+        val fallback = fallbackAlganCoefs(essenceCode)
         return fallback?.volume(diamCm, hauteurM)
+    }
+
+    private fun fallbackAlganCoefs(essenceCode: String): AlganCoefs? {
+        val up = normalizeEssenceCode(essenceCode)
+        val looksConifer = listOf(
+            "PIN", "SAPIN", "EPICEA", "DOUGLAS", "MELEZE", "CEDRE", "IF", "GENEV"
+        ).any { up.contains(it) }
+
+        val prioritized = if (looksConifer) {
+            listOf("DOUGLAS_VERT", "EPICEA_COMMUN", "PIN_SYLVESTRE", "SAPIN_PECTINE")
+        } else {
+            listOf("HETRE_COMMUN", "CH_SESSILE", "CH_PEDONCULE", "CHARME")
+        }
+
+        prioritized.forEach { key ->
+            TarifData.alganCoefs.firstOrNull { it.essence.equals(key, true) }?.let { return it }
+        }
+
+        return TarifData.alganCoefs.firstOrNull { it.essence == "HETRE_COMMUN" }
+            ?: TarifData.alganCoefs.firstOrNull()
     }
 
     private fun volumeIfnRapide(essenceCode: String, diamCm: Double, tarifNumero: Int?): Double? {
@@ -168,6 +192,12 @@ object TarifCalculator {
         val f = override ?: defaultCoefForme(essenceCode)
         val g = PI / 4.0 * (diamCm / 100.0).pow(2.0)
         return g * hauteurM * f
+    }
+
+    private fun volumeFgh(essenceCode: String, diamCm: Double, hauteurM: Double, override: Double?): Double {
+        val f = override ?: defaultCoefForme(essenceCode)
+        val g = PI / 4.0 * (diamCm / 100.0).pow(2.0)
+        return f * g * hauteurM
     }
 
     // ─────────────────────────────────────────────────────

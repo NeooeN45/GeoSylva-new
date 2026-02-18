@@ -235,9 +235,30 @@ class ForestryCounterApplication : Application() {
                 essenceRepository.insertEssences(CanonicalEssences.ALL)
             } else {
                 val existingCodes = ess.map { it.code }.toSet()
+                val canonicalMap = CanonicalEssences.ALL.associateBy { it.code }
+
+                // Insert new essences not yet in database
                 val missing = CanonicalEssences.ALL.filter { it.code !in existingCodes }
                 if (missing.isNotEmpty()) {
                     essenceRepository.insertEssences(missing)
+                }
+
+                // Enrich existing essences with new forestry fields if still empty
+                for (existing in ess) {
+                    val canonical = canonicalMap[existing.code] ?: continue
+                    if (existing.densiteBois == null && canonical.densiteBois != null) {
+                        essenceRepository.updateEssence(existing.copy(
+                            densiteBois = canonical.densiteBois,
+                            qualiteTypique = existing.qualiteTypique ?: canonical.qualiteTypique,
+                            typeCoupePreferee = existing.typeCoupePreferee ?: canonical.typeCoupePreferee,
+                            usageBois = existing.usageBois ?: canonical.usageBois,
+                            vitesseCroissance = existing.vitesseCroissance ?: canonical.vitesseCroissance,
+                            hauteurMaxM = existing.hauteurMaxM ?: canonical.hauteurMaxM,
+                            diametreMaxCm = existing.diametreMaxCm ?: canonical.diametreMaxCm,
+                            toleranceOmbre = existing.toleranceOmbre ?: canonical.toleranceOmbre,
+                            remarques = existing.remarques ?: canonical.remarques
+                        ))
+                    }
                 }
             }
         }

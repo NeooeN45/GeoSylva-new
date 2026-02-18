@@ -133,6 +133,7 @@ internal fun ExportQgisDialog(
     onPlayClick: () -> Unit,
     exportGeoJsonLauncher: ActivityResultLauncher<String>,
     exportCsvXyLauncher: ActivityResultLauncher<String>,
+    exportShapefileLauncher: ActivityResultLauncher<String>? = null,
     exportCsvMartelageLauncher: ActivityResultLauncher<String>? = null,
     exportPdfLauncher: ActivityResultLauncher<String>? = null,
     viewScopeName: String? = null
@@ -244,6 +245,28 @@ internal fun ExportQgisDialog(
                                 stringResource(R.string.export_qgis_csv_xy_desc),
                                 style = MaterialTheme.typography.bodySmall
                             )
+                        }
+                    }
+
+                    if (exportShapefileLauncher != null) {
+                        FilledTonalButton(
+                            onClick = {
+                                onPlayClick()
+                                onDismiss()
+                                val ts = SimpleDateFormat("yyyyMMdd-HHmm", Locale.US).format(Date())
+                                exportShapefileLauncher.launch("tiges-${scopeKey}-${ts}.shp.zip")
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Map, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(stringResource(R.string.export_shapefile))
+                                Text(
+                                    stringResource(R.string.export_shapefile_desc),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
                         }
                     }
                 }

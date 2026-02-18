@@ -1,268 +1,294 @@
-# GéoSylva - Multi-Compteur Forestier
+<div align="center">
 
-Une application Android professionnelle pour le comptage forestier avec support multi-compteurs, formules calculées, et import/export universel.
+# 🌲 GeoSylva
 
-## 🌲 Fonctionnalités Principales
+### Application Android professionnelle d'inventaire forestier et de martelage
 
-### Core
-- ✅ Multi-compteurs avec groupes organisés
-- ✅ Incrémentation/décrémentation avec haptique
-- ✅ Valeurs cibles et suivi de progression
-- ✅ Duplication rapide de compteurs
-- ✅ Formules calculées avec moteur avancé
-- ✅ Import/Export universel (CSV, XLSX, JSON, SQLite, ZIP)
+[![Version](https://img.shields.io/badge/version-1.1.0-green?style=for-the-badge)](CHANGELOG.md)
+[![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
+[![Kotlin](https://img.shields.io/badge/Kotlin-1.9-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)](LICENSE)
 
-### Interface
-- ✅ Material 3 Design avec thème adaptatif
-- ✅ Mode clair/sombre/système
-- ✅ Couleurs d'accent personnalisables
-- ✅ Tailles de police ajustables (accessibilité)
-- ✅ Animations douces et micro-interactions
-- ✅ Feedback haptique sur actions
-- ✅ Contraste automatique du texte
+**Conçue pour les forestiers, géomètres et gestionnaires de forêts.**
+Fonctionne intégralement hors-ligne — idéal sur le terrain.
 
-### Calculs
-- Opérateurs: `+`, `-`, `*`, `/`, `%`, `^`, `()`
-- Fonctions: `sum()`, `avg()`, `min()`, `max()`, `count()`
-- Filtres: `name:startsWith()`, `name:contains()`, `tag:`
-- Conditions: `if(condition, true, false)`
-- Variables personnalisées par groupe (ex: `PLOT_AREA`)
-- Constantes: `PI`, `E`
+---
 
-### Import/Export
-- **CSV**: auto-détection séparateur/encodage
-- **Excel (.xlsx)**: lecture/écriture multi-feuilles
-- **JSON**: format structuré avec métadonnées
-- **SQLite**: import de bases externes
-- **ZIP**: export groupé avec manifest
+[Fonctionnalités](#-fonctionnalités) · [Captures d'écran](#-captures-décran) · [Installation](#-installation) · [Documentation](#-documentation) · [Licence](#-licence)
+
+</div>
+
+---
+
+## 🎯 Pourquoi GeoSylva ?
+
+GeoSylva remplace le carnet de terrain et les tableurs Excel par une application unique qui couvre **l'ensemble du workflow forestier** : de la saisie des tiges sur le terrain jusqu'au rapport PDF de synthèse dendrométrique, en passant par la cartographie, le calcul de volume et la simulation de martelage.
+
+| Problème terrain | Solution GeoSylva |
+|---|---|
+| Saisie papier lente et sujette aux erreurs | Comptage par classe avec boutons +/−, GPS automatique |
+| Calculs manuels fastidieux | 6 méthodes de cubage intégrées, calcul temps réel |
+| Pas de visualisation sur place | Carte interactive avec 12 couches (IGN, satellite, cadastre…) |
+| Export compliqué vers SIG | Export Shapefile, GeoJSON, CSV-XY en un clic |
+| Pas de réseau en forêt | 100% hors-ligne, tuiles cartographiques téléchargeables |
+
+---
+
+## ✨ Fonctionnalités
+
+### 📐 Inventaire & Dendrométrie
+
+- **Saisie rapide** — comptage par essence et classe de diamètre avec boutons +/−
+- **95+ essences** pré-configurées avec données forestières détaillées (densité, qualité, croissance, usage bois, tolérance ombre, dimensions max)
+- **6 méthodes de cubage** : Schaeffer, Chaudet, Algan, IFN rapide/lent, FGH, coefficient de forme
+- **Classification produit automatique** — bois d'œuvre (BO), bois d'industrie (BI), bois de chauffage (BCh), déroulage, traverse, charpente…
+- **Notation qualité bois** A/B/C/D avec défauts visuels
+
+### 📍 GPS de précision
+
+- **Moyennage multi-lectures** avec rejet d'outliers (MAD-based)
+- **3 profils de capture** : Rapide (3 lectures), Standard (5), Précis (8)
+- **Seuil de précision configurable** — rejette automatiquement les points GPS imprécis
+- **Monitoring périodique** de la qualité du signal GPS
+
+### 🗺️ Cartographie interactive
+
+- **12 couches cartographiques** : OSM, IGN, satellite, cadastre, forêts, topographique…
+- **Affichage des tiges** sur la carte avec clustering et code couleur par essence
+- **Tuiles hors-ligne** — téléchargez la zone de travail pour utilisation sans réseau
+- **Import de shapefiles** pour superposer vos couches parcellaires
+- **Filtre de fiabilité GPS** — n'affiche que les points sous un seuil de précision configurable
+
+### 📊 Synthèse & Martelage
+
+- **Tableau de bord visuel** — graphiques donut (répartition essences), barres (classes de diamètre), surface terrière par essence
+- **Synthèse dendrométrique complète** — N/ha, G/ha, V/ha, hauteur dominante, diamètre moyen
+- **Volume partiel intelligent** — affiche les résultats disponibles avec % de complétude au lieu de bloquer
+- **Simulation de coupe** — taux de prélèvement N/ha et G/ha, peuplement résiduel
+- **Garde-fous automatiques** — vérification de cohérence des données (30+ contrôles)
+- **Tables de prix** éditables par essence et classe de diamètre
+
+### 📤 Exports professionnels
+
+- **PDF** — rapport A4 avec tableaux dendrométriques, valorisation par essence
+- **Shapefile** (SHP/SHX/DBF/PRJ) — ESRI compatible pour QGIS / ArcGIS
+- **GeoJSON** — avec coordonnées Lambert 93 pour intégration SIG
+- **CSV / CSV-XY** — export tabulaire avec coordonnées géographiques
+- **Excel (XLSX)** — multi-feuilles avec métadonnées
+
+### 🛡️ Fiabilité terrain
+
+- **100% hors-ligne** — aucune connexion requise pour toutes les fonctionnalités
+- **Sauvegarde automatique** quotidienne via WorkManager
+- **Rappel hauteurs avec snooze** — reportez les alertes de hauteurs manquantes (1h, 4h, 24h)
+- **Tips contextuels** — aide intégrée sur chaque écran
+- **Onboarding complet** — 7 écrans d'introduction interactifs
+
+---
+
+## 📸 Captures d'écran
+
+> *À venir — captures des écrans principaux*
+
+<!--
+<div align="center">
+<img src="docs/screenshots/dashboard.png" width="200" />
+<img src="docs/screenshots/inventory.png" width="200" />
+<img src="docs/screenshots/map.png" width="200" />
+<img src="docs/screenshots/synthesis.png" width="200" />
+</div>
+-->
+
+---
 
 ## 🏗️ Architecture
 
 ```
-app/
+app/src/main/java/com/forestry/counter/
 ├── data/
 │   ├── local/
-│   │   ├── entity/          # Room entities
-│   │   ├── dao/             # Data Access Objects
-│   │   └── ForestryDatabase # Room database
-│   ├── preferences/         # DataStore preferences
-│   ├── repository/          # Repository implementations
-│   └── mapper/              # Entity ↔ Domain mappers
+│   │   ├── entity/              # Room entities (11 tables)
+│   │   ├── dao/                 # Data Access Objects
+│   │   ├── CanonicalEssences.kt # 95+ espèces pré-configurées
+│   │   ├── DatabaseMigrations.kt# Migrations v1→v11
+│   │   └── ForestryDatabase.kt  # Room database
+│   ├── preferences/             # DataStore (GPS, affichage, tarifs…)
+│   ├── repository/              # Implémentations Repository
+│   ├── mapper/                  # Entity ↔ Domain mappers
+│   └── work/                    # WorkManager (sauvegardes)
 ├── domain/
-│   ├── model/               # Domain models
-│   ├── repository/          # Repository interfaces
-│   ├── calculator/          # Formula parser engine
-│   └── usecase/             # Use cases (import/export)
+│   ├── model/                   # Modèles métier (Tige, Essence, Parcelle…)
+│   ├── repository/              # Interfaces Repository
+│   ├── calculation/
+│   │   ├── ForestryCalculator.kt# Moteur dendrométrique principal
+│   │   ├── SanityChecker.kt     # Garde-fous & cohérence
+│   │   ├── tarifs/              # 6 méthodes de cubage
+│   │   └── quality/             # Qualité bois & classification produit
+│   ├── location/
+│   │   ├── GpsAverager.kt       # Moyennage GPS + rejet outliers
+│   │   └── OfflineTileManager.kt# Gestion tuiles hors-ligne
+│   ├── geo/                     # Lambert 93, Shapefile parser
+│   └── usecase/export/          # ShapefileExporter, ExportDataUseCase
 └── presentation/
-    ├── screens/             # UI screens (Compose)
-    ├── navigation/          # Navigation graph
-    └── theme/               # Material 3 theming
+    ├── screens/
+    │   ├── forestry/            # Inventaire, carte, martelage, dashboard
+    │   ├── settings/            # Paramètres, éditeur de prix
+    │   └── onboarding/          # Assistant d'accueil
+    ├── components/              # Composants réutilisables
+    ├── navigation/              # Navigation graph
+    └── theme/                   # Material 3 theming
 ```
 
-**Principes:**
-- Clean Architecture (domain/data/presentation)
-- MVVM pattern avec ViewModels
-- Reactive (Kotlin Flow)
-- Room pour persistence
-- DataStore pour préférences
+**Principes :**
+- **Clean Architecture** — séparation stricte domain / data / presentation
+- **Reactive** — Kotlin Flow du DAO jusqu'à l'UI Compose
+- **Offline-first** — Room + DataStore, aucune dépendance réseau
+- **Testable** — 11 fichiers de tests unitaires couvrant calculs, tarifs, export
 
-## 🚀 Technologies
+---
 
-- **Kotlin** + Coroutines
-- **Jetpack Compose** - UI moderne
-- **Material 3** - Design system
-- **Room** - Base de données locale
-- **DataStore** - Préférences
-- **Navigation Compose** - Navigation
-- **OpenCSV** - Parsing CSV
-- **Apache POI** - Excel (XLSX)
-- **kotlinx.serialization** - JSON
-- **exp4j** - Évaluation d'expressions mathématiques
+## 🚀 Stack technique
+
+| Catégorie | Technologies |
+|---|---|
+| **Langage** | Kotlin 1.9 + Coroutines + Flow |
+| **UI** | Jetpack Compose + Material 3 |
+| **Base de données** | Room (SQLite) — 11 tables, migrations automatiques |
+| **Préférences** | DataStore Preferences |
+| **Cartographie** | MapLibre GL Native 10.3 |
+| **Géolocalisation** | Google Fused Location Provider |
+| **Export** | Apache POI (XLSX), OpenCSV, Shapefile (pur Java) |
+| **Sérialisation** | kotlinx.serialization |
+| **Background** | WorkManager (sauvegardes planifiées) |
+| **Build** | Gradle 8.2 + KSP + ProGuard/R8 |
+
+---
 
 ## 📋 Prérequis
 
-- Android Studio Hedgehog (2023.1.1) ou supérieur
+- Android Studio Ladybug (2024.2) ou supérieur
 - JDK 17
-- Android SDK API 24+ (Android 7.0+)
+- Android SDK API 26+ (Android 8.0 Oreo)
 - Gradle 8.2+
 
 ## 🛠️ Installation
 
-1. Cloner le repository
 ```bash
-git clone <repository-url>
-cd "multi counter forestier"
+# 1. Cloner le repository
+git clone https://github.com/NeooeN45/GeoSylva-new.git
+cd GeoSylva
+
+# 2. Ouvrir dans Android Studio
+#    File → Open → Sélectionner le dossier GeoSylva
+
+# 3. Gradle sync automatique, puis :
+#    Run → Run 'app' (appareil ou émulateur)
 ```
 
-2. Ouvrir dans Android Studio
-```bash
-# Ouvrir le projet dans Android Studio
-# File → Open → Sélectionner le dossier du projet
-```
-
-3. Synchroniser Gradle
-```bash
-# Android Studio fera automatiquement la sync
-# Ou: Tools → Android → Sync Project with Gradle Files
-```
-
-4. Lancer l'application
-```bash
-# Connecter un appareil Android ou démarrer un émulateur
-# Run → Run 'app'
-```
-
-## 📦 Build Release
+## 📦 Build
 
 ```bash
-# Via ligne de commande
-cd app
+# Debug
+./gradlew assembleDebug
+
+# Release (APK signé)
 ./gradlew assembleRelease
+# → app/build/outputs/apk/release/
 
-# APK généré dans:
-# app/build/outputs/apk/release/app-release.apk
-```
-
-Pour un build signé (Play Store):
-```bash
+# Bundle Play Store (AAB)
 ./gradlew bundleRelease
-# AAB généré dans: app/build/outputs/bundle/release/
+# → app/build/outputs/bundle/release/
 ```
-
-## 🔒 Sécurité & Confidentialité
-
-- ✅ **Aucune publicité**
-- ✅ **Aucun tracking / analytics**
-- ✅ **Aucune permission réseau obligatoire**
-- ✅ **Données 100% locales**
-- ✅ **Code source auditable**
-- ✅ **ProGuard/R8 activé** en release
-
-📄 Voir la [Politique de confidentialité](PRIVACY_POLICY.md) complète.
-
-## 📚 Utilisation
-
-### Créer un Groupe
-1. Écran d'accueil → Bouton `+`
-2. Entrer le nom du groupe
-3. Optionnel: choisir une couleur
-
-### Ajouter des Compteurs
-1. Ouvrir un groupe
-2. Bouton `+` → Remplir les champs:
-   - Nom
-   - Pas (incrément)
-   - Min/Max (limites)
-   - Cible (objectif)
-
-### Compter
-- **Tap**: +1 (ou pas défini)
-- **Long press**: Options (reset, dupliquer, supprimer)
-
-### Formules
-Exemples:
-```javascript
-// Total de tous les hêtres
-sum(name:startsWith("Hêtre"))
-
-// Densité par hectare
-sum(*) * (10000 / PLOT_AREA)
-
-// Condition
-if(sum(tag:"Résineux") > 50, 1, 0)
-
-// Moyenne
-avg(name:contains("Chêne"))
-```
-
-### Import/Export
-- Menu groupe → Import/Export
-- Sélectionner format (CSV, XLSX, JSON, ZIP)
-- Choisir mode (Remplacer/Fusionner/Ajouter)
-- Mapper les colonnes si nécessaire
 
 ## 🧪 Tests
 
 ```bash
-# Tests unitaires
-./gradlew test
+# Tous les tests unitaires
+./gradlew testDebugUnitTest
 
-# Tests instrumentés
-./gradlew connectedAndroidTest
+# Tests spécifiques
+./gradlew testDebugUnitTest --tests "*.TarifCalculatorTest"
+./gradlew testDebugUnitTest --tests "*.SanityCheckerTest"
+./gradlew testDebugUnitTest --tests "*.ForestryCalculatorTest"
 ```
 
-## 🎨 Personnalisation
-
-### Thème
-Settings → Appearance → Theme (Clair/Sombre/Système)
-
-### Accent
-Settings → Appearance → Accent Color (Vert/Bleu/Orange...)
-
-### Police
-Settings → Appearance → Font Size (S/M/L)
-
-## 🗺️ Roadmap
-
-### Phase 1 ✅ (Actuel)
-- [x] Core CRUD (groupes, compteurs)
-- [x] UI Material 3
-- [x] Thème personnalisable
-- [x] Formules basiques
-- [x] Import/Export (CSV, JSON, XLSX)
-
-### Phase 2 (Prochaine)
-- [ ] Templates forestiers (essence×classe)
-- [ ] Mode terrain optimisé (gros boutons)
-- [ ] Sauvegardes automatiques planifiées
-- [ ] Synchronisation multi-appareils (optionnelle)
-- [ ] Graphiques et statistiques
-- [ ] Export PDF avec rapports
-
-### Phase 3 (Future)
-- [ ] Mode hors-ligne avancé
-- [ ] Géolocalisation des comptages
-- [ ] Photos par compteur
-- [ ] Collaboration équipe
-- [ ] API REST (optionnelle)
-
-## 📄 Licence
-
-Ce projet est **dual-licensed** (double licence).
-
-### Licence Open Source
-- **GNU Affero General Public License v3.0 (AGPL-3.0)**
-- Libre pour usage personnel, éducatif et projets open-source compatibles.
-- L'usage commercial est autorisé sous AGPL-3.0, à condition de divulguer le code source complet.
-
-### Licence Commerciale
-- Requise si vous souhaitez utiliser GeoSylva **sans respecter les obligations AGPL-3.0** (divulgation du code source).
-- Concerne : intégration propriétaire, SaaS, services hébergés, usage interne sans divulgation.
-- Contactez l'auteur pour les conditions de licence commerciale.
-
-Voir [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) pour tous les détails.
-
-## 👥 Contribution
-
-Les contributions sont bienvenues! Merci de:
-1. Fork le projet
-2. Créer une branche (`git checkout -b feature/AmazingFeature`)
-3. Commit (`git commit -m 'Add AmazingFeature'`)
-4. Push (`git push origin feature/AmazingFeature`)
-5. Ouvrir une Pull Request
-
-## 🐛 Bugs & Support
-
-Ouvrir une issue sur GitHub avec:
-- Description du problème
-- Étapes pour reproduire
-- Version Android
-- Screenshots si applicable
-
-## 📧 Contact
-
-Pour questions professionnelles: [Ajouter email/contact]
+**Couverture des tests :**
+- Calculs de volume (6 méthodes de cubage)
+- Classification produit & qualité bois
+- Garde-fous de cohérence (SanityChecker)
+- Export GeoJSON / CSV-XY / WKT
+- Conversion Lambert 93
+- Parseur de formules
 
 ---
 
-**Made with 🌲 for forestry professionals**
+## 🔒 Sécurité & Confidentialité
+
+- ✅ **Aucune publicité** — expérience 100% professionnelle
+- ✅ **Aucun tracking / analytics** — aucune donnée collectée
+- ✅ **Fonctionne hors-ligne** — aucune connexion requise
+- ✅ **Données 100% locales** — stockées uniquement sur l'appareil
+- ✅ **ProGuard/R8** — code obfusqué en release
+- ✅ **Code source auditable** — open source sous AGPL-3.0
+
+📄 [Politique de confidentialité](PRIVACY_POLICY.md) · 🔐 [Politique de sécurité](SECURITY.md)
+
+---
+
+## 📖 Documentation
+
+| Document | Description |
+|---|---|
+| [CHANGELOG.md](CHANGELOG.md) | Historique des versions et modifications |
+| [QUICK_START.md](QUICK_START.md) | Guide de démarrage rapide |
+| [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md) | Guide technique d'implémentation |
+| [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) | Vue d'ensemble du projet |
+| [PRIVACY_POLICY.md](PRIVACY_POLICY.md) | Politique de confidentialité |
+| [SECURITY.md](SECURITY.md) | Politique de sécurité |
+| [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) | Conditions de licence commerciale |
+
+---
+
+## 📄 Licence
+
+Ce projet est sous **double licence**.
+
+### Open Source
+**GNU Affero General Public License v3.0 (AGPL-3.0)** — libre pour usage personnel, éducatif et projets open-source compatibles. L'usage commercial est autorisé sous AGPL-3.0 à condition de divulguer le code source complet.
+
+### Commerciale
+Requise pour une utilisation **sans les obligations AGPL-3.0** (intégration propriétaire, SaaS, services hébergés). Voir [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
+
+---
+
+## 👥 Contribution
+
+Les contributions sont bienvenues !
+
+1. **Fork** le projet
+2. Créez votre branche : `git checkout -b feature/ma-fonctionnalite`
+3. Committez : `git commit -m 'Ajout de ma fonctionnalité'`
+4. Pushez : `git push origin feature/ma-fonctionnalite`
+5. Ouvrez une **Pull Request**
+
+Merci de consulter le [SECURITY.md](SECURITY.md) pour le signalement de vulnérabilités.
+
+---
+
+## 🐛 Bugs & Support
+
+Ouvrez une [issue](../../issues) avec :
+- Description du problème
+- Étapes pour reproduire
+- Version Android & modèle d'appareil
+- Captures d'écran si applicable
+
+---
+
+<div align="center">
+
+**Made with 🌲 by forestry professionals, for forestry professionals.**
+
+*GeoSylva — L'inventaire forestier, simplifié.*
+
+</div>

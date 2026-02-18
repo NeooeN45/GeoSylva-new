@@ -420,6 +420,60 @@ fun PlacetteDetailScreen(
                 actionTargetEssenceCode = null
             }
         ) {
+            // ── Fiche propriétés forestières ──
+            if (e != null && e.densiteBois != null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    @Composable
+                    fun InfoRow(label: String, value: String?) {
+                        if (!value.isNullOrBlank()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(label, style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(value, style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium)
+                            }
+                        }
+                    }
+                    Text(
+                        stringResource(R.string.essence_info_title),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    InfoRow(stringResource(R.string.essence_density), "${e.densiteBois?.toInt()} kg/m³")
+                    InfoRow(stringResource(R.string.essence_quality), e.qualiteTypique)
+                    InfoRow(stringResource(R.string.essence_logging), e.typeCoupePreferee)
+                    InfoRow(stringResource(R.string.essence_wood_use), e.usageBois)
+                    InfoRow(stringResource(R.string.essence_growth), e.vitesseCroissance)
+                    InfoRow(stringResource(R.string.essence_shade), e.toleranceOmbre)
+                    if (e.hauteurMaxM != null || e.diametreMaxCm != null) {
+                        val dims = buildString {
+                            e.hauteurMaxM?.let { append("H=${it.toInt()}m") }
+                            if (e.hauteurMaxM != null && e.diametreMaxCm != null) append(" / ")
+                            e.diametreMaxCm?.let { append("D=${it.toInt()}cm") }
+                        }
+                        InfoRow(stringResource(R.string.essence_max_dims), dims)
+                    }
+                    if (!e.remarques.isNullOrBlank()) {
+                        Text(
+                            e.remarques,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
+                }
+            }
+
             FilledTonalButton(
                 onClick = {
                     showEssenceActionsDialog = false

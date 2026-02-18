@@ -240,7 +240,16 @@ fun EssenceEntity.toEssence(): Essence {
         name = name,
         categorie = categorie,
         densiteBoite = densiteBoite,
-        colorHex = colorHex
+        colorHex = colorHex,
+        densiteBois = densiteBois,
+        qualiteTypique = qualiteTypique,
+        typeCoupePreferee = typeCoupePreferee,
+        usageBois = usageBois,
+        vitesseCroissance = vitesseCroissance,
+        hauteurMaxM = hauteurMaxM,
+        diametreMaxCm = diametreMaxCm,
+        toleranceOmbre = toleranceOmbre,
+        remarques = remarques
     )
 }
 
@@ -250,7 +259,16 @@ fun Essence.toEssenceEntity(): EssenceEntity {
         name = name,
         categorie = categorie,
         densiteBoite = densiteBoite,
-        colorHex = colorHex
+        colorHex = colorHex,
+        densiteBois = densiteBois,
+        qualiteTypique = qualiteTypique,
+        typeCoupePreferee = typeCoupePreferee,
+        usageBois = usageBois,
+        vitesseCroissance = vitesseCroissance,
+        hauteurMaxM = hauteurMaxM,
+        diametreMaxCm = diametreMaxCm,
+        toleranceOmbre = toleranceOmbre,
+        remarques = remarques
     )
 }
 

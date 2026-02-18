@@ -34,6 +34,7 @@ import com.forestry.counter.presentation.screens.forestry.MartelageScreen
 import com.forestry.counter.presentation.screens.forestry.MapScreen
 import com.forestry.counter.presentation.screens.forestry.PlacetteDetailScreen
 import com.forestry.counter.presentation.screens.forestry.EssenceDiamScreen
+import com.forestry.counter.presentation.screens.forestry.DashboardScreen
 import com.forestry.counter.presentation.screens.settings.PriceTablesEditorScreen
 import com.forestry.counter.presentation.screens.onboarding.OnboardingScreen
 import kotlinx.coroutines.launch
@@ -73,6 +74,9 @@ sealed class Screen(val route: String) {
     object EssenceDiam : Screen("placette/{parcelleId}/{placetteId}/essence/{essenceCode}") {
         fun createRoute(parcelleId: String, placetteId: String, essenceCode: String) = "placette/$parcelleId/$placetteId/essence/$essenceCode"
     }
+    object Dashboard : Screen("dashboard/{parcelleId}") {
+        fun createRoute(parcelleId: String) = "dashboard/$parcelleId"
+    }
     object Onboarding : Screen("onboarding")
 }
 
@@ -84,26 +88,27 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
     val onboardingCompleted by app.userPreferences.onboardingCompleted.collectAsState(initial = true)
     val coroutineScope = rememberCoroutineScope()
 
-    // Courbes Material 3 Emphasized
+    // Courbes Material 3 Emphasized (M3 spec)
     val emphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
     val emphasizedAccelerate = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f)
+    val standard = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
 
-    // Durées synchronisées — la sortie dure aussi longtemps que l'entrée
-    // pour éviter le flash de la page précédente
-    val transMs = 300
-    val navScale = 0.97f
+    // Durées M3 : entrée 400ms, sortie 200ms pour un enchaînement fluide
+    val enterMs = 400
+    val exitMs = 250
+    val navScale = 0.94f
 
     val navEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
         if (!animationsEnabled) {
             EnterTransition.None
         } else {
-            fadeIn(animationSpec = tween(durationMillis = transMs, easing = emphasizedDecelerate)) +
+            fadeIn(animationSpec = tween(durationMillis = enterMs, delayMillis = 60, easing = emphasizedDecelerate)) +
                 slideInHorizontally(
-                    animationSpec = tween(durationMillis = transMs, easing = emphasizedDecelerate),
-                    initialOffsetX = { it / 8 }
+                    animationSpec = tween(durationMillis = enterMs, easing = emphasizedDecelerate),
+                    initialOffsetX = { it / 4 }
                 ) +
                 scaleIn(
-                    animationSpec = tween(durationMillis = transMs, easing = emphasizedDecelerate),
+                    animationSpec = tween(durationMillis = enterMs, easing = emphasizedDecelerate),
                     initialScale = navScale
                 )
         }
@@ -112,13 +117,13 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
         if (!animationsEnabled) {
             ExitTransition.None
         } else {
-            fadeOut(animationSpec = tween(durationMillis = transMs, easing = emphasizedAccelerate)) +
+            fadeOut(animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate)) +
                 slideOutHorizontally(
-                    animationSpec = tween(durationMillis = transMs, easing = emphasizedAccelerate),
-                    targetOffsetX = { -it / 8 }
+                    animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate),
+                    targetOffsetX = { -it / 5 }
                 ) +
                 scaleOut(
-                    animationSpec = tween(durationMillis = transMs, easing = emphasizedAccelerate),
+                    animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate),
                     targetScale = navScale
                 )
         }
@@ -127,13 +132,13 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
         if (!animationsEnabled) {
             EnterTransition.None
         } else {
-            fadeIn(animationSpec = tween(durationMillis = transMs, easing = emphasizedDecelerate)) +
+            fadeIn(animationSpec = tween(durationMillis = enterMs, delayMillis = 60, easing = emphasizedDecelerate)) +
                 slideInHorizontally(
-                    animationSpec = tween(durationMillis = transMs, easing = emphasizedDecelerate),
-                    initialOffsetX = { -it / 8 }
+                    animationSpec = tween(durationMillis = enterMs, easing = emphasizedDecelerate),
+                    initialOffsetX = { -it / 4 }
                 ) +
                 scaleIn(
-                    animationSpec = tween(durationMillis = transMs, easing = emphasizedDecelerate),
+                    animationSpec = tween(durationMillis = enterMs, easing = emphasizedDecelerate),
                     initialScale = navScale
                 )
         }
@@ -142,13 +147,13 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
         if (!animationsEnabled) {
             ExitTransition.None
         } else {
-            fadeOut(animationSpec = tween(durationMillis = transMs, easing = emphasizedAccelerate)) +
+            fadeOut(animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate)) +
                 slideOutHorizontally(
-                    animationSpec = tween(durationMillis = transMs, easing = emphasizedAccelerate),
-                    targetOffsetX = { it / 8 }
+                    animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate),
+                    targetOffsetX = { it / 5 }
                 ) +
                 scaleOut(
-                    animationSpec = tween(durationMillis = transMs, easing = emphasizedAccelerate),
+                    animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate),
                     targetScale = navScale
                 )
         }
@@ -289,6 +294,9 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                 },
                 onNavigateToMap = { pid ->
                     navController.navigate(Screen.Map.createRoute(pid))
+                },
+                onNavigateToDashboard = { pid ->
+                    navController.navigate(Screen.Dashboard.createRoute(pid))
                 }
             )
         }
@@ -372,6 +380,23 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                 essenceRepository = app.essenceRepository,
                 parcelleRepository = app.parcelleRepository,
                 preferencesManager = app.userPreferences,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.Dashboard.route,
+            arguments = listOf(navArgument("parcelleId") { type = NavType.StringType }),
+            enterTransition = navEnterTransition,
+            exitTransition = navExitTransition,
+            popEnterTransition = navPopEnterTransition,
+            popExitTransition = navPopExitTransition
+        ) { backStackEntry ->
+            val parcelleId = backStackEntry.arguments?.getString("parcelleId") ?: return@composable
+            DashboardScreen(
+                parcelleId = parcelleId,
+                tigeRepository = app.tigeRepository,
+                essenceRepository = app.essenceRepository,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

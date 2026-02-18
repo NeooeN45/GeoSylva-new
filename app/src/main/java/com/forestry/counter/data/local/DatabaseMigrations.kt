@@ -99,10 +99,24 @@ object DatabaseMigrations {
         }
     }
 
+    val MIGRATION_10_11 = object : Migration(10, 11) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            try { db.execSQL("ALTER TABLE essences ADD COLUMN densiteBois REAL") } catch (_: Throwable) {}
+            try { db.execSQL("ALTER TABLE essences ADD COLUMN qualiteTypique TEXT") } catch (_: Throwable) {}
+            try { db.execSQL("ALTER TABLE essences ADD COLUMN typeCoupePreferee TEXT") } catch (_: Throwable) {}
+            try { db.execSQL("ALTER TABLE essences ADD COLUMN usageBois TEXT") } catch (_: Throwable) {}
+            try { db.execSQL("ALTER TABLE essences ADD COLUMN vitesseCroissance TEXT") } catch (_: Throwable) {}
+            try { db.execSQL("ALTER TABLE essences ADD COLUMN hauteurMaxM REAL") } catch (_: Throwable) {}
+            try { db.execSQL("ALTER TABLE essences ADD COLUMN diametreMaxCm REAL") } catch (_: Throwable) {}
+            try { db.execSQL("ALTER TABLE essences ADD COLUMN toleranceOmbre TEXT") } catch (_: Throwable) {}
+            try { db.execSQL("ALTER TABLE essences ADD COLUMN remarques TEXT") } catch (_: Throwable) {}
+        }
+    }
+
     /** Liste ordonnée de toutes les migrations pour Room.databaseBuilder */
     val ALL = arrayOf(
         MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
         MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
-        MIGRATION_9_10
+        MIGRATION_9_10, MIGRATION_10_11
     )
 }

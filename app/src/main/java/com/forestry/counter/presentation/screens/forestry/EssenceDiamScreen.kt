@@ -57,14 +57,16 @@ import androidx.compose.ui.unit.dp
 import androidx.activity.compose.BackHandler
 import androidx.core.content.ContextCompat
 import com.forestry.counter.R
+import com.forestry.counter.presentation.components.AppMiniDialog
+import com.forestry.counter.presentation.components.WoodQualityDialog
+import com.forestry.counter.presentation.components.TipCard
 import com.forestry.counter.domain.calculation.ForestryCalculator
 import com.forestry.counter.domain.calculation.HeightModeEntry
 import com.forestry.counter.domain.calculation.tarifs.TarifMethod
 import com.forestry.counter.domain.calculation.tarifs.TarifCalculator
 import com.forestry.counter.domain.repository.TigeRepository
 import com.forestry.counter.data.preferences.UserPreferencesManager
-import com.forestry.counter.presentation.components.AppMiniDialog
-import com.forestry.counter.presentation.components.WoodQualityDialog
+import com.forestry.counter.data.preferences.GpsCaptureMode
 import com.forestry.counter.domain.repository.EssenceRepository
 import com.forestry.counter.domain.calculation.quality.WoodQualityGrade
 import com.forestry.counter.presentation.utils.parseHeightInputMean
@@ -102,6 +104,8 @@ fun EssenceDiamScreen(
     val soundEnabled by userPreferences.soundEnabled.collectAsState(initial = true)
     val hapticIntensity by userPreferences.hapticIntensity.collectAsState(initial = 2)
     val animationsEnabled by userPreferences.animationsEnabled.collectAsState(initial = true)
+    val gpsCaptureMode by userPreferences.gpsCaptureMode.collectAsState(initial = GpsCaptureMode.STANDARD)
+    val gpsMaxAcceptablePrecisionM by userPreferences.gpsMaxAcceptablePrecisionM.collectAsState(initial = 15f)
     val haptic = rememberHapticFeedback()
     val sound = rememberSoundFeedback()
 
@@ -125,16 +129,33 @@ fun EssenceDiamScreen(
             }
 
             try {
+                val profile = when (gpsCaptureMode) {
+                    GpsCaptureMode.FAST -> Triple(3, 35f, 7_000L)
+                    GpsCaptureMode.STANDARD -> Triple(5, 25f, 12_000L)
+                    GpsCaptureMode.PRECISE -> Triple(8, 12f, 18_000L)
+                }
+
                 // Moyennage multi-lectures pour une meilleure précision
                 val averaged = GpsAverager.collectAndAverage(
                     context = appContext,
-                    targetReadings = 5,
-                    maxAccuracyM = 25f,
-                    timeoutMs = 12_000L
+                    targetReadings = profile.first,
+                    maxAccuracyM = profile.second,
+                    timeoutMs = profile.third
                 )
 
                 if (averaged == null) {
                     snackbar.showSnackbar(appContext.getString(R.string.location_unavailable))
+                    return@launch
+                }
+
+                if (averaged.precisionM > gpsMaxAcceptablePrecisionM.toDouble()) {
+                    snackbar.showSnackbar(
+                        appContext.getString(
+                            R.string.gps_precision_rejected_format,
+                            averaged.precisionM,
+                            gpsMaxAcceptablePrecisionM
+                        )
+                    )
                     return@launch
                 }
 
@@ -160,6 +181,36 @@ fun EssenceDiamScreen(
             } catch (e: Exception) {
                 snackbar.showSnackbar(appContext.getString(R.string.gps_error_format, e.message ?: ""))
             }
+        }
+    }
+
+    // ── Surveillance GPS périodique (toutes les 10 min) ──
+    LaunchedEffect(Unit) {
+        val hasPermission = ContextCompat.checkSelfPermission(appContext, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(appContext, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        if (!hasPermission) return@LaunchedEffect
+
+        while (true) {
+            kotlinx.coroutines.delay(10 * 60 * 1000L) // 10 minutes
+            try {
+                val quick = GpsAverager.collectAndAverage(
+                    context = appContext,
+                    targetReadings = 2,
+                    maxAccuracyM = 100f,
+                    timeoutMs = 5_000L
+                )
+                if (quick == null) {
+                    snackbar.showSnackbar(
+                        appContext.getString(R.string.gps_periodic_unavailable),
+                        duration = SnackbarDuration.Long
+                    )
+                } else if (quick.precisionM > gpsMaxAcceptablePrecisionM.toDouble()) {
+                    snackbar.showSnackbar(
+                        appContext.getString(R.string.gps_periodic_poor, quick.precisionM, gpsMaxAcceptablePrecisionM),
+                        duration = SnackbarDuration.Long
+                    )
+                }
+            } catch (_: Throwable) { /* permission lost or other error — silently skip */ }
         }
     }
 
@@ -258,14 +309,6 @@ fun EssenceDiamScreen(
         }
     }
 
-    val missingHeightClasses = remember(tigesEssence, orderedClasses, martelageHeights) {
-        val manual = martelageHeights[normalizedEssenceCode].orEmpty()
-        orderedClasses.filter { d ->
-            val list = tigesByDiamClass[d].orEmpty()
-            list.isNotEmpty() && list.any { it.hauteurM == null } && manual[d] == null
-        }
-    }
-
     // Nom d'essence résolu pour les dialogues
     val essenceName by produceState<String>(initialValue = essenceCode, key1 = essenceRepository, key2 = essenceCode) {
         value = try {
@@ -284,16 +327,31 @@ fun EssenceDiamScreen(
         activeTarifMethod?.let { TarifCalculator.requiresHeight(it) } ?: true
     }
 
+    val missingHeightClasses = remember(tigesEssence, orderedClasses, martelageHeights, tarifRequiresHeight) {
+        if (!tarifRequiresHeight) emptyList()
+        else {
+            val manual = martelageHeights[normalizedEssenceCode].orEmpty()
+            orderedClasses.filter { d ->
+                val list = tigesByDiamClass[d].orEmpty()
+                list.isNotEmpty() && list.any { it.hauteurM == null } && manual[d] == null
+            }
+        }
+    }
+
     // Classes avec des tiges (pour le dialogue filtré)
     val populatedClasses = remember(orderedClasses, tigesByDiamClass) {
         orderedClasses.filter { (tigesByDiamClass[it]?.size ?: 0) > 0 }
     }
 
     var showMissingHeightsDialog by remember { mutableStateOf(false) }
+    var showSnoozeHeightsDialog by remember { mutableStateOf(false) }
+    var snoozeHours by rememberSaveable { mutableStateOf(1) }
     var skipMissingHeightsPrompt by rememberSaveable { mutableStateOf(false) }
+    val heightPromptSnoozeUntilMs by userPreferences.heightPromptSnoozeUntilMs.collectAsState(initial = 0L)
+    val isHeightPromptSnoozed = heightPromptSnoozeUntilMs > System.currentTimeMillis()
 
     val safeNavigateBack = {
-        if (!skipMissingHeightsPrompt && missingHeightClasses.isNotEmpty() && calculator != null) {
+        if (!skipMissingHeightsPrompt && !isHeightPromptSnoozed && missingHeightClasses.isNotEmpty() && calculator != null) {
             showMissingHeightsDialog = true
         } else {
             onNavigateBack()
@@ -457,7 +515,15 @@ fun EssenceDiamScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+
+            TipCard(
+                tipKey = "essences_tip",
+                title = stringResource(R.string.tip_essences_title),
+                message = stringResource(R.string.tip_essences_msg)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             if (showSpecialList) {
                 LazyVerticalGrid(
@@ -809,10 +875,16 @@ fun EssenceDiamScreen(
             description = descText,
             confirmText = stringResource(R.string.configure_heights),
             dismissText = stringResource(R.string.mandatory_heights_skip),
+            neutralText = stringResource(R.string.mandatory_heights_snooze_title),
             onDismiss = {
                 showMissingHeightsDialog = false
                 skipMissingHeightsPrompt = true
                 onNavigateBack()
+            },
+            onNeutral = {
+                showMissingHeightsDialog = false
+                snoozeHours = 1
+                showSnoozeHeightsDialog = true
             },
             onConfirm = {
                 showMissingHeightsDialog = false
@@ -849,6 +921,43 @@ fun EssenceDiamScreen(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showSnoozeHeightsDialog) {
+        AppMiniDialog(
+            onDismissRequest = { showSnoozeHeightsDialog = false },
+            animationsEnabled = animationsEnabled,
+            icon = Icons.Default.Warning,
+            title = stringResource(R.string.mandatory_heights_snooze_title),
+            description = stringResource(R.string.mandatory_heights_desc),
+            confirmText = stringResource(R.string.validate),
+            dismissText = stringResource(R.string.cancel),
+            onConfirm = {
+                val hours = snoozeHours.coerceAtLeast(1)
+                showSnoozeHeightsDialog = false
+                skipMissingHeightsPrompt = true
+                scope.launch {
+                    userPreferences.snoozeHeightPromptForHours(hours)
+                    snackbar.showSnackbar(appContext.getString(R.string.mandatory_heights_snoozed_format, hours))
+                }
+                onNavigateBack()
+            }
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                listOf(1, 4, 24).forEach { hours ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        RadioButton(
+                            selected = snoozeHours == hours,
+                            onClick = { snoozeHours = hours }
+                        )
+                        Text(stringResource(R.string.mandatory_heights_snooze_format, hours))
                     }
                 }
             }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -29,6 +30,8 @@ fun AppMiniDialog(
     description: String? = null,
     dismissText: String? = null,
     onDismiss: (() -> Unit)? = null,
+    neutralText: String? = null,
+    onNeutral: (() -> Unit)? = null,
     confirmEnabled: Boolean = true,
     confirmIsDestructive: Boolean = false,
     content: (@Composable ColumnScope.() -> Unit)? = null
@@ -72,9 +75,20 @@ fun AppMiniDialog(
             }
         },
         dismissButton = {
-            if (!dismissText.isNullOrBlank()) {
-                TextButton(onClick = dismissAction) {
-                    Text(dismissText)
+            val hasNeutral = !neutralText.isNullOrBlank() && onNeutral != null
+            val hasDismiss = !dismissText.isNullOrBlank()
+            if (hasNeutral || hasDismiss) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (hasNeutral) {
+                        TextButton(onClick = { onNeutral?.invoke() }) {
+                            Text(neutralText.orEmpty())
+                        }
+                    }
+                    if (hasDismiss) {
+                        TextButton(onClick = dismissAction) {
+                            Text(dismissText.orEmpty())
+                        }
+                    }
                 }
             }
         }

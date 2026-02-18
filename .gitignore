@@ -1,19 +1,41 @@
+# Gradle
 .gradle/
 **/build/
+
+# Keystore & signing
 *.jks
 *.keystore
 keystore.properties
+keystore/
 
 # Données SIG / shapefiles (ne pas publier)
-*.zip
 *.shp
 *.dbf
 *.shx
 *.prj
 *.cpg
-*.geojson
 
 # IDE
 .idea/
 *.iml
 local.properties
+
+# Build logs
+buildlog.txt
+kotlinlog.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Archives & large files at root
+/*.zip
+/*.png
+
+# Scratch / reference code
+martelage_calcul/
+
+# Captures / generated
+*.hprof
+*.log

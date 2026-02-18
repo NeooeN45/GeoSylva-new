@@ -228,13 +228,7 @@ class ForestryCalculator(
     suspend fun lookupH(essenceCode: String, diamCm: Double): Double? {
         val item = parameterRepository.getParameter(ParameterKeys.HAUTEURS_DEFAUT).first() ?: return null
         val list = runCatching { json.decodeFromString<List<HeightDefaultRange>>(item.valueJson) }.getOrNull() ?: return null
-        val d = diamCm.toInt()
-        val codes = essenceCodeCandidates(essenceCode)
-        for (c in codes) {
-            val h = list.firstOrNull { it.essence.trim().equals(c, true) && d >= it.min && d <= it.max }?.h
-            if (h != null) return h
-        }
-        return list.firstOrNull { it.essence == "*" && d >= it.min && d <= it.max }?.h
+        return lookupHFromRanges(list, essenceCode, diamCm)
     }
 
     private suspend fun heightModes(): List<HeightModeEntry> {
@@ -360,13 +354,65 @@ class ForestryCalculator(
     }
 
     private fun lookupHIn(heightDefaults: List<HeightDefaultRange>, essenceCode: String, diamCm: Double): Double? {
+        return lookupHFromRanges(heightDefaults, essenceCode, diamCm)
+    }
+
+    private fun lookupHFromRanges(heightDefaults: List<HeightDefaultRange>, essenceCode: String, diamCm: Double): Double? {
         val d = diamCm.toInt()
+
+        val specific = matchHeightRangesForEssence(heightDefaults, essenceCode)
+        val exactSpecific = specific.firstOrNull { d >= it.min && d <= it.max }?.h
+        if (exactSpecific != null) return exactSpecific
+
+        val interpolatedSpecific = interpolateHeight(specific, diamCm)
+        if (interpolatedSpecific != null) return interpolatedSpecific
+
+        val wildcard = heightDefaults.filter { it.essence.trim() == "*" }
+        val exactWildcard = wildcard.firstOrNull { d >= it.min && d <= it.max }?.h
+        if (exactWildcard != null) return exactWildcard
+
+        return interpolateHeight(wildcard, diamCm)
+    }
+
+    private fun matchHeightRangesForEssence(
+        heightDefaults: List<HeightDefaultRange>,
+        essenceCode: String
+    ): List<HeightDefaultRange> {
         val codes = essenceCodeCandidates(essenceCode)
         for (c in codes) {
-            val h = heightDefaults.firstOrNull { it.essence.trim().equals(c, true) && d >= it.min && d <= it.max }?.h
-            if (h != null) return h
+            val found = heightDefaults.filter { it.essence.trim().equals(c, true) }
+            if (found.isNotEmpty()) return found
         }
-        return heightDefaults.firstOrNull { it.essence == "*" && d >= it.min && d <= it.max }?.h
+        return emptyList()
+    }
+
+    private fun interpolateHeight(ranges: List<HeightDefaultRange>, diamCm: Double): Double? {
+        if (ranges.isEmpty()) return null
+        if (ranges.size == 1) return ranges.first().h
+
+        val points = ranges
+            .map { ((it.min + it.max) / 2.0) to it.h }
+            .distinctBy { it.first }
+            .sortedBy { it.first }
+
+        if (points.isEmpty()) return null
+        if (points.size == 1) return points.first().second
+
+        val x = diamCm
+        if (x <= points.first().first) return points.first().second
+        if (x >= points.last().first) return points.last().second
+
+        for (i in 0 until points.size - 1) {
+            val (x1, y1) = points[i]
+            val (x2, y2) = points[i + 1]
+            if (x in x1..x2) {
+                val span = x2 - x1
+                if (span == 0.0) return y1
+                val ratio = (x - x1) / span
+                return y1 + (y2 - y1) * ratio
+            }
+        }
+        return null
     }
 
     private fun lookupFIn(coefs: List<CoefVolumeRange>, essenceCode: String, diamCm: Double, method: String? = null): Double {
@@ -457,8 +503,8 @@ class ForestryCalculator(
         } else {
             tigesEss.groupBy { diamToClass(it.diamCm) }
         }
+
         var vTotal = 0.0
-        var valueTotal = 0.0
         var nTotal = 0
         var diamSum = 0.0
         var diamCount = 0
@@ -474,12 +520,14 @@ class ForestryCalculator(
 
         val allClasses = (sortedClasses + tigesByClass.keys).distinct().sorted()
 
-        var volumeComplete = true
+        var volumeExpectedCount = 0
+        var volumeComputedCount = 0
 
         for (d in allClasses) {
             val list = tigesByClass[d].orEmpty()
             val count = list.size
             nTotal += count
+
             val resolvedH = manualHeights?.get(d) ?: if (params != null && heightModes != null && heightDefaults != null) {
                 if (requireHeights) {
                     val mode = heightModes.firstOrNull { it.essence.equals(essenceCode, true) && it.diamClass == d }
@@ -503,22 +551,23 @@ class ForestryCalculator(
                 }
             }
 
-            val missingHeightsInClass = requireHeights && list.any { it.hauteurM == null } && resolvedH == null
-            if (missingHeightsInClass) {
-                volumeComplete = false
-            }
-
-            val heights = list.mapNotNull { it.hauteurM } + if (resolvedH != null && list.any { it.hauteurM == null }) List(list.count { it.hauteurM == null }) { resolvedH } else emptyList()
+            val heights = list.mapNotNull { it.hauteurM } +
+                if (resolvedH != null && list.any { it.hauteurM == null }) {
+                    List(list.count { it.hauteurM == null }) { resolvedH }
+                } else {
+                    emptyList()
+                }
             val hMean = mean(heights)
 
-            val prod = classifyProduct(essenceCode, d, rules)
-            val eurPerM3FromRules = priceFor(essenceCode, prod, d, prices)
+            val defaultProd = classifyProduct(essenceCode, d, rules)
 
             var vSum: Double? = null
             var valueSum: Double? = null
             if (count > 0) {
                 var vs = 0.0
                 var valSum = 0.0
+                volumeExpectedCount += count
+
                 list.forEach { t ->
                     val h = t.hauteurM ?: resolvedH
                     diamSum += t.diamCm
@@ -528,18 +577,9 @@ class ForestryCalculator(
                         hCount += 1
                     }
 
-                    if (!missingHeightsInClass) {
-                        val v = if (requireHeights && needsHeight) {
-                            if (h != null) {
-                                if (params != null && heightDefaults != null) {
-                                    computeVIn(essenceCode, t.diamCm, h, method, coefs ?: emptyList(), heightDefaults, tarifSel)
-                                } else {
-                                    computeVolumeWithTarif(essenceCode, t.diamCm, h, tarifSel)
-                                }
-                            } else {
-                                null
-                            }
-                        } else {
+                    val v = when {
+                        requireHeights && needsHeight && h == null -> null
+                        else -> {
                             val effectiveH = if (needsHeight) h else null
                             if (params != null && heightDefaults != null) {
                                 computeVIn(essenceCode, t.diamCm, effectiveH ?: h, method, coefs ?: emptyList(), heightDefaults, tarifSel)
@@ -547,28 +587,43 @@ class ForestryCalculator(
                                 computeVolumeWithTarif(essenceCode, t.diamCm, effectiveH ?: h, tarifSel)
                             }
                         }
-                        if (v != null) vs += v
-                        if (v != null) {
-                            // Prix par tige : priorité au prix utilisateur (PriceEntry),
-                            // sinon fallback vers DefaultProductPrices avec qualité réelle
-                            val tigePrice = eurPerM3FromRules ?: run {
-                                val grade = t.qualite?.let { q ->
-                                    WoodQualityGrade.entries.getOrNull(q)
-                                } ?: WoodQualityGrade.C
-                                val productCode = t.produit ?: prod
-                                DefaultProductPrices.priceFor(productCode, essenceCode, grade)
+                    }
+
+                    if (v != null) {
+                        vs += v
+                        volumeComputedCount += 1
+
+                        val quality = t.qualite
+                        val ruleProduct = classifyProduct(
+                            essence = essenceCode,
+                            diamClass = d,
+                            rules = rules,
+                            quality = quality,
+                            defects = t.defauts
+                        )
+                        val treeProduct = t.produit?.trim()?.takeIf { it.isNotEmpty() } ?: ruleProduct
+
+                        val priceFromRules = priceFor(essenceCode, treeProduct, d, prices)
+                            ?: if (!treeProduct.equals(defaultProd, ignoreCase = true)) {
+                                priceFor(essenceCode, defaultProd, d, prices)
+                            } else {
+                                null
                             }
-                            valSum += v * tigePrice
+
+                        val tigePrice = priceFromRules ?: run {
+                            val grade = quality?.let { q ->
+                                WoodQualityGrade.entries.getOrNull(q)
+                            } ?: WoodQualityGrade.C
+                            DefaultProductPrices.priceFor(treeProduct, essenceCode, grade)
                         }
+                        valSum += v * tigePrice
                     }
                 }
-                if (!missingHeightsInClass) {
+
+                if (vs > 0.0) {
                     vSum = vs
                     vTotal += vs
-                    if (vs > 0.0) {
-                        valueSum = valSum
-                        valueTotal += valSum
-                    }
+                    valueSum = valSum
                 }
             }
             perClass += ClassSynthesis(diamClass = d, count = count, hMean = hMean, vSum = vSum, valueSumEur = valueSum)
@@ -576,11 +631,19 @@ class ForestryCalculator(
 
         val dm = if (diamCount > 0) diamSum / diamCount else null
         val hm = if (hCount > 0) hSum / hCount else null
+        val completenessPct = if (volumeExpectedCount > 0) {
+            (volumeComputedCount.toDouble() / volumeExpectedCount.toDouble()) * 100.0
+        } else {
+            100.0
+        }
         val totals = SynthesisTotals(
             nTotal = nTotal,
             dmWeighted = dm,
             hMean = hm,
-            vTotal = if (volumeComplete && vTotal > 0.0) vTotal else null
+            vTotal = if (vTotal > 0.0) vTotal else null,
+            volumeCompletenessPct = completenessPct.coerceIn(0.0, 100.0),
+            volumeComputedCount = volumeComputedCount,
+            volumeExpectedCount = volumeExpectedCount
         )
         return perClass to totals
     }
@@ -599,17 +662,46 @@ class ForestryCalculator(
         return runCatching { json.decodeFromString<List<PriceEntry>>(str) }.getOrElse { emptyList() }
     }
 
-    private fun classifyProduct(essence: String, diamClass: Int, rules: List<ProductRule>): String {
+    private fun classifyProduct(
+        essence: String,
+        diamClass: Int,
+        rules: List<ProductRule>,
+        quality: Int? = null,
+        defects: List<String>? = null
+    ): String {
         // First matching rule wins; fallback basic thresholds if none
         val codes = essenceCodeCandidates(essence)
+        val defectsNorm = defects.orEmpty().map { it.trim().uppercase() }
         rules.forEach { r ->
             val rEss = r.essence?.trim()
             val essMatch = rEss == null || rEss == "*" || codes.any { c -> rEss.equals(c, true) }
             val minOk = r.min?.let { diamClass >= it } ?: true
             val maxOk = r.max?.let { diamClass <= it } ?: true
-            if (essMatch && minOk && maxOk) return r.product.trim()
+            val minQualityOk = r.minQuality?.let { qMin -> quality != null && quality >= qMin } ?: true
+            val maxQualityOk = r.maxQuality?.let { qMax -> quality != null && quality <= qMax } ?: true
+            val requiresDefectOk = r.requiresDefect?.trim()?.takeIf { it.isNotEmpty() }?.let { req ->
+                defectsNorm.contains(req.uppercase())
+            } ?: true
+            val excludesDefectOk = r.excludesDefect?.trim()?.takeIf { it.isNotEmpty() }?.let { forbidden ->
+                !defectsNorm.contains(forbidden.uppercase())
+            } ?: true
+
+            if (essMatch && minOk && maxOk && minQualityOk && maxQualityOk && requiresDefectOk && excludesDefectOk) {
+                return r.product.trim()
+            }
         }
-        // fallback heuristic
+
+        // fallback heuristic with practical quality/defect downgrades
+        if (quality != null) {
+            when {
+                quality >= 3 -> return "PATE"
+                quality >= 2 && diamClass >= 20 -> return "BCh"
+            }
+        }
+        if (defectsNorm.isNotEmpty() && diamClass >= 20) {
+            return "BCh"
+        }
+
         return when {
             diamClass >= 35 -> "BO"
             diamClass >= 20 -> "BI"

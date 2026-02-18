@@ -318,6 +318,38 @@ class TarifCalculatorTest {
     }
 
     @Test
+    fun `FGH — equals coef forme for same data`() {
+        val d = 35.0
+        val h = 22.0
+        val ess = "HETRE_COMMUN"
+
+        val vFgh = TarifCalculator.computeVolume(
+            method = TarifMethod.FGH,
+            essenceCode = ess,
+            diamCm = d,
+            hauteurM = h
+        )
+        val vCoef = TarifCalculator.computeVolume(
+            method = TarifMethod.COEF_FORME,
+            essenceCode = ess,
+            diamCm = d,
+            hauteurM = h
+        )
+        assertApprox(vCoef ?: 0.0, vFgh, delta = 1e-12, msg = "FGH should match coef forme")
+    }
+
+    @Test
+    fun `FGH — returns null without height`() {
+        val v = TarifCalculator.computeVolume(
+            method = TarifMethod.FGH,
+            essenceCode = "HETRE_COMMUN",
+            diamCm = 35.0,
+            hauteurM = null
+        )
+        assertNull(v)
+    }
+
+    @Test
     fun `defaultCoefForme returns sensible values`() {
         val fHetre = TarifCalculator.defaultCoefForme("HETRE_COMMUN")
         val fDouglas = TarifCalculator.defaultCoefForme("DOUGLAS_VERT")
@@ -434,6 +466,7 @@ class TarifCalculatorTest {
         assertEquals(1..36, TarifCalculator.availableTarifNumbers(TarifMethod.IFN_RAPIDE))
         assertEquals(1..8, TarifCalculator.availableTarifNumbers(TarifMethod.IFN_LENT))
         assertNull(TarifCalculator.availableTarifNumbers(TarifMethod.ALGAN))
+        assertNull(TarifCalculator.availableTarifNumbers(TarifMethod.FGH))
         assertNull(TarifCalculator.availableTarifNumbers(TarifMethod.COEF_FORME))
     }
 

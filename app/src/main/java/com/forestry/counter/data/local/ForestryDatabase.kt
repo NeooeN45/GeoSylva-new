@@ -33,7 +33,7 @@ import com.forestry.counter.data.local.entity.ParameterEntity
         TigeEntity::class,
         ParameterEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = true
 )
 abstract class ForestryDatabase : RoomDatabase() {

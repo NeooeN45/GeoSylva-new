@@ -166,6 +166,16 @@
     <string name="settings_sound_desc">Play a sound on +1/−1</string>
     <string name="settings_haptic_desc">Vibrate on counter tap</string>
     <string name="settings_haptic_intensity_label">Haptic intensity: %1$d</string>
+    <string name="settings_gps_capture_mode_title">GPS capture profile</string>
+    <string name="settings_gps_capture_mode_fast">Fast (3 readings)</string>
+    <string name="settings_gps_capture_mode_standard">Standard (5 readings)</string>
+    <string name="settings_gps_capture_mode_precise">Precise (8 readings)</string>
+    <string name="settings_gps_precision_threshold_format">Accepted GPS precision: ≤ %1$.1f m</string>
+    <string name="settings_gps_precision_threshold_desc">Points above this accuracy threshold are rejected when recording stems.</string>
+    <string name="settings_map_only_reliable_gps">Map: show only reliable GPS points</string>
+    <string name="settings_map_only_reliable_gps_desc">Hide stems whose horizontal precision is above the configured threshold.</string>
+    <string name="settings_map_reliable_gps_threshold_format">Map reliable threshold: ≤ %1$.1f m</string>
+    <string name="settings_map_reliable_gps_threshold_desc">Only points below this value are considered reliable on the map.</string>
 
     <string name="settings_section_data">Data</string>
     <string name="settings_csv_separator">CSV separator</string>
@@ -250,8 +260,62 @@
     <string name="map_my_location">My location</string>
     <string name="map_empty">No stems in this plot.</string>
     <string name="map_view">Map</string>
+    <string name="dashboard_title">Dashboard</string>
+    <string name="dashboard_total_stems">Total stems</string>
+    <string name="dashboard_avg_diam">Avg. diameter</string>
+    <string name="dashboard_avg_height">Avg. height</string>
+    <string name="dashboard_basal_area">Basal area</string>
+    <string name="dashboard_species_distribution">Species distribution</string>
+    <string name="dashboard_diameter_distribution">Diameter classes</string>
+    <string name="dashboard_basal_area_by_species">Basal area by species (m²)</string>
+    <string name="dashboard_others">others</string>
+    <string name="dashboard_button">Dashboard</string>
+
+    <!-- Sanity / Guardrail warnings -->
+    <string name="sanity_card_title">Data consistency check</string>
+    <string name="sanity_more_warnings">+ %1$d more alerts</string>
+    <string name="sanity_diam_zero">A stem has diameter = 0</string>
+    <string name="sanity_diam_too_small">Diameter %.1f cm is abnormally small</string>
+    <string name="sanity_diam_too_large">Diameter %.1f cm exceeds physical limits</string>
+    <string name="sanity_diam_very_large">Diameter %.1f cm is unusually large — please verify</string>
+    <string name="sanity_height_zero">A stem has height = 0</string>
+    <string name="sanity_height_too_small">Height %.1f m is abnormally small</string>
+    <string name="sanity_height_too_large">Height %.1f m exceeds physical limits</string>
+    <string name="sanity_height_very_large">Height %.1f m is unusually large — please verify</string>
+    <string name="sanity_hd_ratio_extreme">Height/diameter ratio is extreme — likely data entry error</string>
+    <string name="sanity_hd_ratio_high">Height/diameter ratio is very high — slender tree or error?</string>
+    <string name="sanity_coef_forme_range">Form coefficient %.2f is outside typical range (0.15–0.85)</string>
+    <string name="sanity_volume_negative">Computed volume is negative — calculation error</string>
+    <string name="sanity_volume_tree_extreme">Volume %.2f m³ per tree exceeds physical limits</string>
+    <string name="sanity_volume_tree_large">Volume %.2f m³ per tree is very large — please verify</string>
+    <string name="sanity_volume_vs_diam">Computed volume is incoherent with diameter</string>
+    <string name="sanity_many_input_errors">%1$d stems have input anomalies</string>
+    <string name="sanity_potential_duplicates">%1$d potential duplicate entries detected (same species + diameter within 1 min)</string>
+    <string name="sanity_surface_zero">Plot surface is zero — cannot compute per-hectare values</string>
+    <string name="sanity_surface_very_small">Plot surface is very small — per-hectare values may be inflated</string>
+    <string name="sanity_n_ha_extreme">N/ha = %1$d is extreme — check plot surface</string>
+    <string name="sanity_n_ha_very_high">N/ha = %1$d is very high — verify plot surface</string>
+    <string name="sanity_g_ha_extreme">G/ha = %.1f m² is extreme — check data</string>
+    <string name="sanity_g_ha_very_high">G/ha = %.1f m² is very high for French forests</string>
+    <string name="sanity_g_ha_very_low">G/ha = %.2f m² is very low — sparse stand or partial data?</string>
+    <string name="sanity_v_ha_extreme">V/ha = %.0f m³ is extreme — check data</string>
+    <string name="sanity_v_ha_very_high">V/ha = %.0f m³ is very high — verify heights and surface</string>
+    <string name="sanity_vg_ratio_low">V/G ratio = %.1f is unusually low — check volume calculation</string>
+    <string name="sanity_vg_ratio_high">V/G ratio = %.1f is unusually high — check heights</string>
+    <string name="sanity_revenue_negative">Negative revenue computed — check prices</string>
+    <string name="sanity_revenue_tree_extreme">Revenue per tree is abnormally high</string>
+    <string name="sanity_revenue_ha_negative">Revenue/ha is negative — check price tables</string>
+    <string name="sanity_revenue_ha_very_high">Revenue/ha = %.0f € is very high — verify</string>
     <string name="map_layer_picker_title">Base maps</string>
     <string name="map_layer_osm">OSM</string>
+    <string name="gps_periodic_unavailable">⚠ GPS signal unavailable — location capture may fail</string>
+    <string name="gps_periodic_poor">⚠ Poor GPS accuracy (±%.0f m) — threshold is ±%.0f m. Move to an open area for better signal.</string>
+    <string name="map_gps_filtered_out">%1$d stems have GPS but precision exceeds %2$d m threshold.\nDisable the precision filter or move to open sky.</string>
+    <string name="offline_download">Download tiles for offline</string>
+    <string name="offline_downloading">Downloading tiles…</string>
+    <string name="offline_download_done">Tiles downloaded ✓</string>
+    <string name="offline_download_error">Download error</string>
+    <string name="map_layer_offline_local">Offline local</string>
     <string name="map_layer_satellite">Satellite</string>
     <string name="map_layer_satellite_labels">Sat. + labels</string>
     <string name="map_layer_topo">Topo</string>
@@ -349,6 +413,14 @@
     <string name="choose_color_for_essence">Choose a color for this species</string>
     <string name="color_long_press_tip">Tip: long-press a color to reset to automatic color.</string>
     <string name="essence_actions_title_format">Actions: %1$s</string>
+    <string name="essence_info_title">Species properties</string>
+    <string name="essence_density">Wood density</string>
+    <string name="essence_quality">Typical quality</string>
+    <string name="essence_logging">Preferred logging</string>
+    <string name="essence_wood_use">Wood use</string>
+    <string name="essence_growth">Growth speed</string>
+    <string name="essence_shade">Shade tolerance</string>
+    <string name="essence_max_dims">Max dimensions</string>
     <string name="change_color">Change color</string>
     <string name="delete_essence_title">Delete species</string>
     <string name="delete_essence_confirm_format">Delete %1$s from this plot? %2$d stems will be removed.</string>
@@ -359,6 +431,7 @@
 
     <string name="gps_permission_required">Allow location to record GPS</string>
     <string name="location_unavailable">Location unavailable</string>
+    <string name="gps_precision_rejected_format">GPS precision too low (±%1$.1f m). Max accepted: %2$.1f m.</string>
     <string name="gps_save_failed">Failed to save GPS</string>
     <string name="gps_error_format">GPS error: %1$s</string>
 
@@ -412,6 +485,9 @@
     <string name="mandatory_heights_desc">You must enter heights to compute volume.</string>
     <string name="mandatory_heights_desc_tarif">The active tariff (%1$s) is a 2-entry method and requires heights to compute volume. Fill them in now or switch to a 1-entry tariff.</string>
     <string name="mandatory_heights_skip">Skip for now</string>
+    <string name="mandatory_heights_snooze_format">Remind me in %1$d h</string>
+    <string name="mandatory_heights_snooze_title">Height reminder</string>
+    <string name="mandatory_heights_snoozed_format">Height reminder snoozed for %1$d h</string>
     <string name="mandatory_heights_classes_format">Missing classes: %1$s</string>
     <string name="height_status_set">H set</string>
     <string name="height_status_missing">H missing</string>
@@ -475,6 +551,7 @@
     <string name="martelage_fill_in">Fill in</string>
 
     <string name="martelage_volume_price_title">Volume &amp; Price</string>
+    <string name="martelage_volume_partial_format">Partial result (%1$.0f%% complete)</string>
     <string name="martelage_total_volume_format">Total volume: %1$s m³</string>
     <string name="martelage_volume_per_ha_format">Volume / ha: %1$s m³/ha</string>
     <string name="martelage_estimated_revenue_format">Estimated revenue: %1$s · /ha: %2$s</string>
@@ -518,10 +595,22 @@
     <string name="martelage_table_eur_per_m3">€/m³</string>
     <string name="martelage_table_revenue">Revenue</string>
 
+    <string name="export_shapefile">Shapefile (SHP)</string>
+    <string name="export_shapefile_desc">ESRI Shapefile ZIP (.shp/.dbf/.prj) for QGIS/ArcGIS</string>
+    <string name="export_shapefile_done">Shapefile exported (%1$d stems)</string>
+
+    <string name="martelage_harvest_simulation_title">Harvest simulation</string>
+    <string name="martelage_harvest_n_pct">Removal N/ha</string>
+    <string name="martelage_harvest_g_pct">Removal G/ha</string>
+    <string name="martelage_residual_stand">Residual stand</string>
+    <string name="martelage_nha_avant_label">N/ha before harvest</string>
+    <string name="martelage_gha_avant_label">G/ha before harvest (m²)</string>
+    <string name="martelage_avant_coupe_hint">Optional: enter stand values before harvest to compute removal rates</string>
+
     <string name="martelage_stats_unavailable_error">Error: the summary could not be computed with the current data (volume/price tariffs or incompatible heights). Tiles remain disabled.</string>
 
     <string name="martelage_missing_heights_title">Missing heights</string>
-    <string name="martelage_missing_heights_desc">Volume is disabled until heights are provided for: %1$s.</string>
+    <string name="martelage_missing_heights_desc">Volume is partial until heights are provided for: %1$s.</string>
     <string name="martelage_fill_heights">Fill heights</string>
 
     <string name="badge_to_complete">To complete</string>
@@ -605,6 +694,8 @@
     <string name="tarif_method_ifn_rapide_desc">IFN 1-entry tariffs (n° 1–36). V = f(DBH). National Forest Inventory.</string>
     <string name="tarif_method_ifn_lent">IFN slow tariff</string>
     <string name="tarif_method_ifn_lent_desc">IFN 2-entry tables (DBH, H). National Forest Inventory.</string>
+    <string name="tarif_method_fgh">FGH</string>
+    <string name="tarif_method_fgh_desc">V = F × G × H — explicit variant with form factor.</string>
     <string name="tarif_method_coef_forme">Form factor</string>
     <string name="tarif_method_coef_forme_desc">V = G × H × f — Classic method with form/taper factor.</string>
 
@@ -717,15 +808,54 @@
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Welcome to GeoSylva</string>
     <string name="onboarding_welcome_desc">Your professional field assistant for timber marking and forest inventory.</string>
+    <string name="onboarding_welcome_b1">Designed for foresters, surveyors and woodland managers</string>
+    <string name="onboarding_welcome_b2">Works offline — ideal for field conditions</string>
+    <string name="onboarding_welcome_b3">All your forestry data in one place</string>
     <string name="onboarding_forest_title">Organize your forest</string>
     <string name="onboarding_forest_desc">Structure your data into forests, plots and subplots. Add your species and configure the appropriate volume tariffs.</string>
+    <string name="onboarding_forest_b1">Create forests, plots and subplots freely</string>
+    <string name="onboarding_forest_b2">95+ tree species with detailed forestry data</string>
+    <string name="onboarding_forest_b3">Configure volume tariffs (Schaeffer, Algan, FGH…)</string>
     <string name="onboarding_measure_title">Record your stems</string>
     <string name="onboarding_measure_desc">Enter diameter, height, quality and GPS for each tree. Geolocation lets you visualize your stems on the map.</string>
+    <string name="onboarding_measure_b1">Quick diameter entry by class with +/− buttons</string>
+    <string name="onboarding_measure_b2">Wood quality grading (A/B/C/D) with product classification</string>
+    <string name="onboarding_measure_b3">Optional height input when tariff doesn\'t require it</string>
+    <string name="onboarding_gps_title">Precision GPS</string>
+    <string name="onboarding_gps_desc">Each stem can be geolocated automatically. Multi-reading averaging improves accuracy for precise mapping.</string>
+    <string name="onboarding_gps_b1">Multi-reading GPS averaging (3 to 8 readings)</string>
+    <string name="onboarding_gps_b2">3 capture modes: Fast, Standard, Precise</string>
+    <string name="onboarding_gps_b3">Accuracy monitoring with quality indicators</string>
+    <string name="onboarding_map_title">Interactive map</string>
+    <string name="onboarding_map_desc">Visualize your stems on the map with 12 cartographic layers including IGN, cadastre and forest maps.</string>
+    <string name="onboarding_map_b1">12 map layers: IGN, satellite, forests, cadastre…</string>
+    <string name="onboarding_map_b2">Download tiles for offline use in the field</string>
+    <string name="onboarding_map_b3">Tap on stems to see their details on the map</string>
     <string name="onboarding_synthesis_title">Analyze your results</string>
-    <string name="onboarding_synthesis_desc">Complete dendrometric synthesis: volume, basal area, estimated revenue by species. Export to CSV, GeoJSON or PDF.</string>
+    <string name="onboarding_synthesis_desc">Complete dendrometric synthesis with dashboard charts: volume, basal area and estimated revenue by species.</string>
+    <string name="onboarding_synthesis_b1">Volume, basal area, density per hectare</string>
+    <string name="onboarding_synthesis_b2">Visual dashboard with charts and statistics</string>
+    <string name="onboarding_synthesis_b3">Timber marking simulation with harvest rates</string>
+    <string name="onboarding_export_title">Professional exports</string>
+    <string name="onboarding_export_desc">Export your data in multiple formats for reporting, GIS analysis or archiving.</string>
+    <string name="onboarding_export_b1">PDF synthesis report with full dendrometric tables</string>
+    <string name="onboarding_export_b2">GeoJSON and Shapefile for QGIS / ArcGIS</string>
+    <string name="onboarding_export_b3">CSV export for spreadsheet analysis</string>
     <string name="onboarding_start">Get started</string>
     <string name="onboarding_next">Next</string>
     <string name="onboarding_skip">Skip</string>
+
+    <!-- Contextual tips -->
+    <string name="tip_parcelles_title">Getting started</string>
+    <string name="tip_parcelles_msg">Create your first plot to start recording stems. Each plot can have multiple subplots with different tariff methods.</string>
+    <string name="tip_placettes_title">Subplots</string>
+    <string name="tip_placettes_msg">Add subplots to organize your inventory. Each subplot can have its own species and diameter classes.</string>
+    <string name="tip_essences_title">Quick tip</string>
+    <string name="tip_essences_msg">Tap a diameter class to add a stem. Long press to remove one. GPS is captured automatically if enabled in settings.</string>
+    <string name="tip_map_title">Map navigation</string>
+    <string name="tip_map_msg">Switch layers with the layer button. Download tiles for offline field use with the cloud button.</string>
+    <string name="tip_martelage_title">Timber marking</string>
+    <string name="tip_martelage_msg">Select species to include in the synthesis. Volume and revenue are computed automatically based on your tariff and prices.</string>
 
     <!-- Export PDF -->
     <string name="export_pdf">Export PDF</string>

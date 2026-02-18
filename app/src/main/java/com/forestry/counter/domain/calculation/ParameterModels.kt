@@ -39,7 +39,10 @@ data class SynthesisTotals(
     val nTotal: Int,
     val dmWeighted: Double?,
     val hMean: Double?,
-    val vTotal: Double?
+    val vTotal: Double?,
+    val volumeCompletenessPct: Double = 100.0,
+    val volumeComputedCount: Int = 0,
+    val volumeExpectedCount: Int = 0
 )
 
 @Serializable
@@ -47,6 +50,10 @@ data class ProductRule(
     val essence: String? = null, // null or "*" = wildcard
     val min: Int? = null,
     val max: Int? = null,
+    val minQuality: Int? = null,
+    val maxQuality: Int? = null,
+    val requiresDefect: String? = null,
+    val excludesDefect: String? = null,
     val product: String // BO, BI, BCh, PATE
 )
 

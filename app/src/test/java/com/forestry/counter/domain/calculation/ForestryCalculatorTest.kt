@@ -720,7 +720,7 @@ class ForestryCalculatorTest {
     }
 
     @Test
-    fun `synthesisForEssence requireHeights makes totals volume null if any class is missing heights`() = runTest {
+    fun `synthesisForEssence requireHeights keeps partial volume and reports completeness when some classes are missing heights`() = runTest {
         val json = Json { ignoreUnknownKeys = true }
 
         val coefs = listOf(CoefVolumeRange(essence = "HETRE", min = 0, max = 200, f = 0.5, method = null))
@@ -758,7 +758,7 @@ class ForestryCalculatorTest {
                 fCoef = null,
                 valueEur = null
             ),
-            // Class 35: missing height and no manual height => should invalidate totals
+            // Class 35: missing height and no manual height => volume stays partial
             Tige(
                 id = "2",
                 parcelleId = "P",
@@ -787,8 +787,12 @@ class ForestryCalculatorTest {
         )
 
         assertEquals(2, totals.nTotal)
-        assertEquals(null, totals.vTotal)
+        assertNotNull(totals.vTotal)
+        assertNullableDoubleEquals(rows.first { it.diamClass == 30 }.vSum, totals.vTotal, delta = 1e-9)
         assertEquals(null, rows.first { it.diamClass == 35 }.vSum)
+        assertEquals(1, totals.volumeComputedCount)
+        assertEquals(2, totals.volumeExpectedCount)
+        assertNullableDoubleEquals(50.0, totals.volumeCompletenessPct, delta = 1e-9)
     }
 
     @Test

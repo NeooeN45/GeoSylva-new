@@ -3,6 +3,8 @@ package com.forestry.counter.presentation.screens.forestry
 import com.forestry.counter.domain.calculation.ClassSynthesis
 import com.forestry.counter.domain.calculation.ForestryCalculator
 import com.forestry.counter.domain.calculation.ForestrySynthesisParams
+import com.forestry.counter.domain.calculation.SanityChecker
+import com.forestry.counter.domain.calculation.SanityWarning
 import com.forestry.counter.domain.calculation.SynthesisTotals
 import com.forestry.counter.domain.calculation.quality.WoodQualityGrade
 import com.forestry.counter.domain.model.Essence
@@ -26,7 +28,9 @@ suspend fun computeMartelageStats(
     synthesisParams: ForestrySynthesisParams?,
     diameterClasses: List<Int>,
     essences: List<Essence>,
-    forestryCalculator: ForestryCalculator
+    forestryCalculator: ForestryCalculator,
+    nHaAvant: Double? = null,
+    gHaAvant: Double? = null
 ): MartelageStats? {
     if (tigesInScope.isEmpty() || surfaceM2 <= 0.0) return null
 
@@ -66,7 +70,6 @@ suspend fun computeMartelageStats(
             missingHeightsByEssence[code] = missing
         }
     }
-    val volumeAvailable = missingHeightsByEssence.isEmpty()
     val missingHeightEssenceCodes = missingHeightsByEssence.keys.sorted()
     val missingHeightEssenceNames = missingHeightEssenceCodes.map { code ->
         essences.firstOrNull { normalizeEssenceCode(it.code) == code }?.name ?: code
@@ -84,6 +87,8 @@ suspend fun computeMartelageStats(
     var hWeight = 0
     var loreyGhSum = 0.0
     var loreyGSum = 0.0
+    var volumeExpectedCountTotal = 0
+    var volumeComputedCountTotal = 0
     val allDiams = mutableListOf<Double>()
 
     // Distribution par classe (agrégée toutes essences confondues)
@@ -91,7 +96,6 @@ suspend fun computeMartelageStats(
 
     // Distribution par qualité bois
     val qualityCounts = mutableMapOf<WoodQualityGrade, Int>()
-    val qualityVolumes = mutableMapOf<WoodQualityGrade, Double>()
     var qualityAssessedCount = 0
 
     byEssence.forEach { (code, tigesEss) ->
@@ -112,10 +116,12 @@ suspend fun computeMartelageStats(
             emptyList<ClassSynthesis>() to SynthesisTotals(0, null, null, null)
         }
 
-        val vEss = if (volumeAvailable) (totals.vTotal ?: 0.0) else 0.0
+        val vEss = totals.vTotal ?: 0.0
         val gEss = tigesEss.sumOf { forestryCalculator.computeG(it.diamCm) }
-        val revEss = if (volumeAvailable) rows.sumOf { it.valueSumEur ?: 0.0 } else 0.0
+        val revEss = rows.sumOf { it.valueSumEur ?: 0.0 }
         val nEss = tigesEss.size
+        volumeExpectedCountTotal += totals.volumeExpectedCount
+        volumeComputedCountTotal += totals.volumeComputedCount
 
         nTotal += nEss
         gTotal += gEss
@@ -131,28 +137,29 @@ suspend fun computeMartelageStats(
             hWeight += nEss
         }
 
-        if (volumeAvailable) {
-            val manual = manualHeightsForEss.orEmpty()
-            tigesEss.forEach { t ->
-                val diamClass = forestryCalculator.diameterClassFor(t.diamCm, classes)
-                val h = t.hauteurM ?: manual[diamClass]
-                if (h != null) {
-                    val g = forestryCalculator.computeG(t.diamCm)
-                    loreyGhSum += g * h
-                    loreyGSum += g
-                }
+        val manual = manualHeightsForEss.orEmpty()
+        tigesEss.forEach { t ->
+            val diamClass = forestryCalculator.diameterClassFor(t.diamCm, classes)
+            val h = t.hauteurM ?: manual[diamClass]
+            if (h != null) {
+                val g = forestryCalculator.computeG(t.diamCm)
+                loreyGhSum += g * h
+                loreyGSum += g
             }
         }
 
-        // Distribution par classe
+        // Distribution par classe — G pré-calculée par classe pour éviter O(n²)
+        val gByClass = mutableMapOf<Int, Double>()
+        tigesEss.forEach { t ->
+            val dc = forestryCalculator.diameterClassFor(t.diamCm, classes)
+            gByClass[dc] = (gByClass[dc] ?: 0.0) + forestryCalculator.computeG(t.diamCm)
+        }
         rows.forEach { r ->
             val prev = classDistMap[r.diamClass] ?: Triple(0, 0.0, 0.0)
-            val gClass = tigesEss.filter { forestryCalculator.diameterClassFor(it.diamCm, classes) == r.diamClass }
-                .sumOf { forestryCalculator.computeG(it.diamCm) }
             classDistMap[r.diamClass] = Triple(
                 prev.first + r.count,
-                prev.second + gClass,
-                prev.third + (if (volumeAvailable) (r.vSum ?: 0.0) else 0.0)
+                prev.second + (gByClass[r.diamClass] ?: 0.0),
+                prev.third + (r.vSum ?: 0.0)
             )
         }
 
@@ -165,21 +172,20 @@ suspend fun computeMartelageStats(
             }
         }
 
+        val unpricedVEss = rows.asSequence()
+            .filter { r -> r.count > 0 && (r.vSum ?: 0.0) > 0.0 && r.valueSumEur == null }
+            .sumOf { it.vSum ?: 0.0 }
+        if (unpricedVEss > 0.0) {
+            unpricedVolumeTotal += unpricedVEss
+            val essenceName = essences.firstOrNull { normalizeEssenceCode(it.code) == code }?.name ?: code
+            unpricedEssenceNames += essenceName
+        }
+
         val essenceName = essences.firstOrNull { normalizeEssenceCode(it.code) == code }?.name ?: code
         val dmEss = if (tigesEss.isNotEmpty()) tigesEss.sumOf { it.diamCm } / tigesEss.size else null
         val dgEss = if (nEss > 0 && gEss > 0.0) sqrt((4.0 * gEss) / (PI * nEss.toDouble())) * 100.0 else null
         val qualityEss = tigesEss.mapNotNull { t -> t.qualite?.let { WoodQualityGrade.entries.getOrNull(it) } }
         val dominantQuality = qualityEss.groupBy { it }.maxByOrNull { it.value.size }?.key
-
-        if (volumeAvailable) {
-            val unpricedVEss = rows.asSequence()
-                .filter { r -> r.count > 0 && (r.vSum ?: 0.0) > 0.0 && r.valueSumEur == null }
-                .sumOf { it.vSum ?: 0.0 }
-            if (unpricedVEss > 0.0) {
-                unpricedVolumeTotal += unpricedVEss
-                unpricedEssenceNames += essenceName
-            }
-        }
 
         perEssence += PerEssenceStats(
             essenceCode = code,
@@ -194,15 +200,26 @@ suspend fun computeMartelageStats(
             gPerHa = if (surfaceHa > 0.0) gEss / surfaceHa else 0.0,
             dm = dmEss,
             dg = dgEss,
-            meanPricePerM3 = if (volumeAvailable && vEss > 0.0 && revEss > 0.0) revEss / vEss else null,
-            revenueTotal = if (volumeAvailable && revEss > 0.0) revEss else null,
-            revenuePerHa = if (volumeAvailable && revEss > 0.0 && surfaceHa > 0.0) revEss / surfaceHa else null,
+            meanPricePerM3 = if (vEss > 0.0 && revEss > 0.0) revEss / vEss else null,
+            revenueTotal = if (revEss > 0.0) revEss else null,
+            revenuePerHa = if (revEss > 0.0 && surfaceHa > 0.0) revEss / surfaceHa else null,
             dominantQuality = dominantQuality,
             qualityAssessedPct = if (tigesEss.isNotEmpty()) qualityEss.size.toDouble() / tigesEss.size * 100.0 else 0.0
         )
     }
 
     if (nTotal == 0 && vTotal == 0.0 && gTotal == 0.0) return null
+
+    // ── Garde-fou : vérification de cohérence ──
+    val sanityWarnings = mutableListOf<SanityWarning>()
+    sanityWarnings.addAll(SanityChecker.checkAllTiges(tigesInScope))
+
+    val volumeCompletenessPct = if (volumeExpectedCountTotal > 0) {
+        volumeComputedCountTotal.toDouble() / volumeExpectedCountTotal.toDouble() * 100.0
+    } else {
+        100.0
+    }
+    val volumeFullyComplete = volumeCompletenessPct >= 99.999
 
     // Recalculer les pourcentages par essence
     val perEssenceWithPct = perEssence.map { row ->
@@ -217,12 +234,12 @@ suspend fun computeMartelageStats(
     val gPerHa = if (surfaceHa > 0.0) gTotal / surfaceHa else 0.0
     val vPerHa = if (surfaceHa > 0.0) vTotal / surfaceHa else 0.0
     val unpricedVolumePerHa = if (surfaceHa > 0.0) unpricedVolumeTotal / surfaceHa else 0.0
-    val revenuePerHa = if (surfaceHa > 0.0 && revenueTotal > 0.0) revenueTotal / surfaceHa else null
+    val revenuePerHa = if (revenueTotal > 0.0 && surfaceHa > 0.0) revenueTotal / surfaceHa else null
 
     val dm = if (dmWeight > 0) dmSum / dmWeight else null
     val hMean = if (hWeight > 0) hSum / hWeight else null
     val dg = if (nTotal > 0 && gTotal > 0.0) sqrt((4.0 * gTotal) / (PI * nTotal.toDouble())) * 100.0 else null
-    val hLorey = if (volumeAvailable && loreyGSum > 0.0) loreyGhSum / loreyGSum else null
+    val hLorey = if (loreyGSum > 0.0) loreyGhSum / loreyGSum else null
 
     // Statistiques avancées sur les diamètres
     val dMin = allDiams.minOrNull()
@@ -231,12 +248,12 @@ suspend fun computeMartelageStats(
         val variance = allDiams.sumOf { (it - dm) * (it - dm) } / (allDiams.size - 1)
         (sqrt(variance) / dm) * 100.0
     } else null
-    val ratioVG = if (volumeAvailable && gTotal > 0.0 && vTotal > 0.0) vTotal / gTotal else null
+    val ratioVG = if (gTotal > 0.0 && vTotal > 0.0) vTotal / gTotal else null
 
     // Distribution par classes triée
     val classDistribution = classDistMap.entries
         .sortedBy { it.key }
-        .map { (cls, triple) -> ClassDistEntry(cls, triple.first, triple.second, if (volumeAvailable) triple.third else null) }
+        .map { (cls, triple) -> ClassDistEntry(cls, triple.first, triple.second, triple.third.takeIf { it > 0.0 }) }
 
     // Distribution qualité agrégée
     val qualityDistribution = WoodQualityGrade.entries.map { grade ->
@@ -246,6 +263,31 @@ suspend fun computeMartelageStats(
             pct = if (qualityAssessedCount > 0) (qualityCounts[grade] ?: 0).toDouble() / qualityAssessedCount * 100.0 else 0.0
         )
     }.filter { it.count > 0 }
+
+    // Harvest simulation — taux de prélèvement
+    val harvestNhaPct = if (nHaAvant != null && nHaAvant > 0.0 && nPerHa > 0.0)
+        (nPerHa / nHaAvant * 100.0).coerceAtMost(100.0) else null
+    val harvestGhaPct = if (gHaAvant != null && gHaAvant > 0.0 && gPerHa > 0.0)
+        (gPerHa / gHaAvant * 100.0).coerceAtMost(100.0) else null
+    // V/ha removal rate only if both N and G before are known (rough proportionality)
+    val harvestVhaPct = if (harvestNhaPct != null && harvestGhaPct != null && vPerHa > 0.0 && nHaAvant != null && nHaAvant > 0.0) {
+        // Estimate V/ha avant from ratio: V_avant_approx = V_prélèvement / (G_prélèvement_pct/100)
+        if (harvestGhaPct > 0.0) (harvestGhaPct).coerceAtMost(100.0) else null
+    } else null
+    val residualNha = if (nHaAvant != null && nPerHa > 0.0) (nHaAvant - nPerHa).coerceAtLeast(0.0) else null
+    val residualGha = if (gHaAvant != null && gPerHa > 0.0) (gHaAvant - gPerHa).coerceAtLeast(0.0) else null
+    val residualVha: Double? = null // Cannot estimate without V/ha avant
+
+    sanityWarnings.addAll(
+        SanityChecker.checkAggregates(
+            nPerHa = nPerHa,
+            gPerHa = gPerHa,
+            vPerHa = vPerHa,
+            revenuePerHa = revenuePerHa,
+            surfaceHa = surfaceHa,
+            ratioVG = ratioVG
+        )
+    )
 
     return MartelageStats(
         nTotal = nTotal,
@@ -257,10 +299,10 @@ suspend fun computeMartelageStats(
         unpricedVolumeTotal = unpricedVolumeTotal,
         unpricedVolumePerHa = unpricedVolumePerHa,
         unpricedEssenceNames = unpricedEssenceNames,
-        revenueTotal = if (volumeAvailable && revenueTotal > 0.0) revenueTotal else null,
-        revenuePerHa = if (volumeAvailable) revenuePerHa else null,
+        revenueTotal = if (revenueTotal > 0.0) revenueTotal else null,
+        revenuePerHa = revenuePerHa,
         dm = dm,
-        meanH = if (volumeAvailable) hMean else null,
+        meanH = hMean,
         dg = dg,
         hLorey = hLorey,
         dMin = dMin,
@@ -273,9 +315,17 @@ suspend fun computeMartelageStats(
         qualityAssessedCount = qualityAssessedCount,
         qualityTotalCount = nTotal,
         perEssence = perEssenceWithPct.sortedBy { it.essenceName },
-        volumeAvailable = volumeAvailable,
+        volumeAvailable = volumeFullyComplete,
+        volumeCompletenessPct = volumeCompletenessPct.coerceIn(0.0, 100.0),
         missingHeightEssenceCodes = missingHeightEssenceCodes,
-        missingHeightEssenceNames = missingHeightEssenceNames
+        missingHeightEssenceNames = missingHeightEssenceNames,
+        harvestNhaPct = harvestNhaPct,
+        harvestGhaPct = harvestGhaPct,
+        harvestVhaPct = harvestVhaPct,
+        residualNha = residualNha,
+        residualGha = residualGha,
+        residualVha = residualVha,
+        sanityWarnings = sanityWarnings
     )
 }
 
@@ -307,8 +357,18 @@ data class MartelageStats(
     val qualityTotalCount: Int,
     val perEssence: List<PerEssenceStats>,
     val volumeAvailable: Boolean,
+    val volumeCompletenessPct: Double,
     val missingHeightEssenceCodes: List<String>,
-    val missingHeightEssenceNames: List<String>
+    val missingHeightEssenceNames: List<String>,
+    // Harvest simulation (taux de prélèvement)
+    val harvestNhaPct: Double? = null,
+    val harvestGhaPct: Double? = null,
+    val harvestVhaPct: Double? = null,
+    val residualNha: Double? = null,
+    val residualGha: Double? = null,
+    val residualVha: Double? = null,
+    // Garde-fou
+    val sanityWarnings: List<SanityWarning> = emptyList()
 )
 
 data class ClassDistEntry(

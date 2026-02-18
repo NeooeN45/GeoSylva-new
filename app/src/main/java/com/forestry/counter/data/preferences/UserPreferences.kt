@@ -47,6 +47,12 @@ class UserPreferencesManager(private val context: Context) {
         val BLUR_OVERLAY_ALPHA = floatPreferencesKey("blur_overlay_alpha")
         val ANIM_DURATION_SHORT = intPreferencesKey("anim_duration_short")
         val KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
+        val GPS_CAPTURE_MODE = stringPreferencesKey("gps_capture_mode")
+        val GPS_MAX_ACCEPTABLE_PRECISION_M = floatPreferencesKey("gps_max_acceptable_precision_m")
+        val MAP_LAST_LAYER_KEY = stringPreferencesKey("map_last_layer_key")
+        val MAP_SHOW_LEGEND = booleanPreferencesKey("map_show_legend")
+        val MAP_ONLY_RELIABLE_GPS = booleanPreferencesKey("map_only_reliable_gps")
+        val MAP_RELIABLE_GPS_THRESHOLD_M = floatPreferencesKey("map_reliable_gps_threshold_m")
 
         // Data preferences
         val CSV_SEPARATOR = stringPreferencesKey("csv_separator")
@@ -56,6 +62,9 @@ class UserPreferencesManager(private val context: Context) {
 
         // Privacy preferences
         val CRASH_LOGS_ENABLED = booleanPreferencesKey("crash_logs_enabled")
+
+        // Height reminder preferences
+        val HEIGHT_PROMPT_SNOOZE_UNTIL_MS = longPreferencesKey("height_prompt_snooze_until_ms")
 
         // Backup preferences
         val AUTO_BACKUP_ENABLED = booleanPreferencesKey("auto_backup_enabled")
@@ -270,6 +279,68 @@ class UserPreferencesManager(private val context: Context) {
         }
     }
 
+    val gpsCaptureMode: Flow<GpsCaptureMode> = dataStore.data.map { prefs ->
+        runCatching {
+            GpsCaptureMode.valueOf(prefs[GPS_CAPTURE_MODE] ?: GpsCaptureMode.STANDARD.name)
+        }.getOrElse { GpsCaptureMode.STANDARD }
+    }
+
+    suspend fun setGpsCaptureMode(mode: GpsCaptureMode) {
+        dataStore.edit { prefs ->
+            prefs[GPS_CAPTURE_MODE] = mode.name
+        }
+    }
+
+    val gpsMaxAcceptablePrecisionM: Flow<Float> = dataStore.data.map { prefs ->
+        (prefs[GPS_MAX_ACCEPTABLE_PRECISION_M] ?: 15f).coerceIn(3f, 100f)
+    }
+
+    suspend fun setGpsMaxAcceptablePrecisionM(value: Float) {
+        dataStore.edit { prefs ->
+            prefs[GPS_MAX_ACCEPTABLE_PRECISION_M] = value.coerceIn(3f, 100f)
+        }
+    }
+
+    val mapLastLayerKey: Flow<String> = dataStore.data.map { prefs ->
+        prefs[MAP_LAST_LAYER_KEY] ?: "PLAN_IGN"
+    }
+
+    suspend fun setMapLastLayerKey(layerKey: String) {
+        dataStore.edit { prefs ->
+            prefs[MAP_LAST_LAYER_KEY] = layerKey
+        }
+    }
+
+    val mapShowLegend: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[MAP_SHOW_LEGEND] ?: false
+    }
+
+    suspend fun setMapShowLegend(show: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[MAP_SHOW_LEGEND] = show
+        }
+    }
+
+    val mapOnlyReliableGps: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[MAP_ONLY_RELIABLE_GPS] ?: false
+    }
+
+    suspend fun setMapOnlyReliableGps(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[MAP_ONLY_RELIABLE_GPS] = enabled
+        }
+    }
+
+    val mapReliableGpsThresholdM: Flow<Float> = dataStore.data.map { prefs ->
+        (prefs[MAP_RELIABLE_GPS_THRESHOLD_M] ?: 8f).coerceIn(3f, 100f)
+    }
+
+    suspend fun setMapReliableGpsThresholdM(value: Float) {
+        dataStore.edit { prefs ->
+            prefs[MAP_RELIABLE_GPS_THRESHOLD_M] = value.coerceIn(3f, 100f)
+        }
+    }
+
     val soundEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
         prefs[SOUND_ENABLED] ?: true
     }
@@ -293,6 +364,8 @@ class UserPreferencesManager(private val context: Context) {
     private fun martelageSurfaceKey(scopeKey: String) = doublePreferencesKey("martelage_surface_$scopeKey")
     private fun martelageHoKey(scopeKey: String) = doublePreferencesKey("martelage_ho_$scopeKey")
     private fun martelageHeightsKey(scopeKey: String) = stringPreferencesKey("martelage_heights_$scopeKey")
+    private fun martelageNhaAvantKey(scopeKey: String) = doublePreferencesKey("martelage_nha_avant_$scopeKey")
+    private fun martelageGhaAvantKey(scopeKey: String) = doublePreferencesKey("martelage_gha_avant_$scopeKey")
 
     fun martelageSurfaceFlow(scopeKey: String): Flow<Double?> = dataStore.data.map { prefs ->
         prefs[martelageSurfaceKey(scopeKey)]
@@ -312,6 +385,28 @@ class UserPreferencesManager(private val context: Context) {
     suspend fun setMartelageHo(scopeKey: String, value: Double?) {
         dataStore.edit { prefs ->
             val key = martelageHoKey(scopeKey)
+            if (value == null) prefs.remove(key) else prefs[key] = value
+        }
+    }
+
+    fun martelageNhaAvantFlow(scopeKey: String): Flow<Double?> = dataStore.data.map { prefs ->
+        prefs[martelageNhaAvantKey(scopeKey)]
+    }
+
+    suspend fun setMartelageNhaAvant(scopeKey: String, value: Double?) {
+        dataStore.edit { prefs ->
+            val key = martelageNhaAvantKey(scopeKey)
+            if (value == null) prefs.remove(key) else prefs[key] = value
+        }
+    }
+
+    fun martelageGhaAvantFlow(scopeKey: String): Flow<Double?> = dataStore.data.map { prefs ->
+        prefs[martelageGhaAvantKey(scopeKey)]
+    }
+
+    suspend fun setMartelageGhaAvant(scopeKey: String, value: Double?) {
+        dataStore.edit { prefs ->
+            val key = martelageGhaAvantKey(scopeKey)
             if (value == null) prefs.remove(key) else prefs[key] = value
         }
     }
@@ -415,6 +510,26 @@ class UserPreferencesManager(private val context: Context) {
         }
     }
 
+    val heightPromptSnoozeUntilMs: Flow<Long> = dataStore.data.map { prefs ->
+        prefs[HEIGHT_PROMPT_SNOOZE_UNTIL_MS] ?: 0L
+    }
+
+    suspend fun setHeightPromptSnoozeUntilMs(epochMs: Long) {
+        dataStore.edit { prefs ->
+            if (epochMs <= 0L) {
+                prefs.remove(HEIGHT_PROMPT_SNOOZE_UNTIL_MS)
+            } else {
+                prefs[HEIGHT_PROMPT_SNOOZE_UNTIL_MS] = epochMs
+            }
+        }
+    }
+
+    suspend fun snoozeHeightPromptForHours(hours: Int) {
+        val safeHours = hours.coerceAtLeast(1)
+        val until = System.currentTimeMillis() + safeHours * 60L * 60L * 1000L
+        setHeightPromptSnoozeUntilMs(until)
+    }
+
     suspend fun clearAllPreferences() {
         dataStore.edit { it.clear() }
     }
@@ -456,4 +571,10 @@ enum class FontSize(val scale: Float) {
     SMALL(0.85f),
     MEDIUM(1.0f),
     LARGE(1.15f)
+}
+
+enum class GpsCaptureMode {
+    FAST,
+    STANDARD,
+    PRECISE
 }

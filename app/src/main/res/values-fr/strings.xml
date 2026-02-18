@@ -168,6 +168,16 @@
     <string name="settings_sound_desc">Jouer un son lors de +1/−1</string>
     <string name="settings_haptic_desc">Vibrer lors d’un appui sur un compteur</string>
     <string name="settings_haptic_intensity_label">Intensité haptique : %1$d</string>
+    <string name="settings_gps_capture_mode_title">Profil de capture GPS</string>
+    <string name="settings_gps_capture_mode_fast">Rapide (3 lectures)</string>
+    <string name="settings_gps_capture_mode_standard">Standard (5 lectures)</string>
+    <string name="settings_gps_capture_mode_precise">Précis (8 lectures)</string>
+    <string name="settings_gps_precision_threshold_format">Précision GPS acceptée : ≤ %1$.1f m</string>
+    <string name="settings_gps_precision_threshold_desc">Les points au-dessus de ce seuil de précision sont rejetés à l’enregistrement.</string>
+    <string name="settings_map_only_reliable_gps">Carte : n’afficher que les points GPS fiables</string>
+    <string name="settings_map_only_reliable_gps_desc">Masquer les tiges dont la précision horizontale dépasse le seuil configuré.</string>
+    <string name="settings_map_reliable_gps_threshold_format">Seuil fiable carte : ≤ %1$.1f m</string>
+    <string name="settings_map_reliable_gps_threshold_desc">Seuls les points sous cette valeur sont considérés fiables sur la carte.</string>
 
     <string name="settings_section_data">Données</string>
     <string name="settings_csv_separator">Séparateur CSV</string>
@@ -250,8 +260,62 @@
     <string name="map_my_location">Ma position</string>
     <string name="map_empty">Aucune tige dans cette parcelle.</string>
     <string name="map_view">Carte</string>
+    <string name="dashboard_title">Tableau de bord</string>
+    <string name="dashboard_total_stems">Nb de tiges</string>
+    <string name="dashboard_avg_diam">Diam. moyen</string>
+    <string name="dashboard_avg_height">Haut. moy.</string>
+    <string name="dashboard_basal_area">Surface terrière</string>
+    <string name="dashboard_species_distribution">Répartition par essence</string>
+    <string name="dashboard_diameter_distribution">Classes de diamètre</string>
+    <string name="dashboard_basal_area_by_species">Surface terrière par essence (m²)</string>
+    <string name="dashboard_others">autres</string>
+    <string name="dashboard_button">Tableau de bord</string>
+
+    <!-- Garde-fou : alertes de cohérence -->
+    <string name="sanity_card_title">Vérification de cohérence</string>
+    <string name="sanity_more_warnings">+ %1$d autres alertes</string>
+    <string name="sanity_diam_zero">Une tige a un diamètre = 0</string>
+    <string name="sanity_diam_too_small">Diamètre %.1f cm anormalement petit</string>
+    <string name="sanity_diam_too_large">Diamètre %.1f cm dépasse les limites physiques</string>
+    <string name="sanity_diam_very_large">Diamètre %.1f cm inhabituellement grand — à vérifier</string>
+    <string name="sanity_height_zero">Une tige a une hauteur = 0</string>
+    <string name="sanity_height_too_small">Hauteur %.1f m anormalement petite</string>
+    <string name="sanity_height_too_large">Hauteur %.1f m dépasse les limites physiques</string>
+    <string name="sanity_height_very_large">Hauteur %.1f m inhabituellement grande — à vérifier</string>
+    <string name="sanity_hd_ratio_extreme">Ratio hauteur/diamètre extrême — erreur de saisie probable</string>
+    <string name="sanity_hd_ratio_high">Ratio hauteur/diamètre très élevé — arbre élancé ou erreur ?</string>
+    <string name="sanity_coef_forme_range">Coefficient de forme %.2f hors plage typique (0.15–0.85)</string>
+    <string name="sanity_volume_negative">Volume calculé négatif — erreur de calcul</string>
+    <string name="sanity_volume_tree_extreme">Volume %.2f m³ par arbre dépasse les limites physiques</string>
+    <string name="sanity_volume_tree_large">Volume %.2f m³ par arbre très élevé — à vérifier</string>
+    <string name="sanity_volume_vs_diam">Volume calculé incohérent avec le diamètre</string>
+    <string name="sanity_many_input_errors">%1$d tiges présentent des anomalies de saisie</string>
+    <string name="sanity_potential_duplicates">%1$d doublons potentiels détectés (même essence + diamètre en moins d\'1 min)</string>
+    <string name="sanity_surface_zero">Surface de la placette = 0 — calculs par hectare impossibles</string>
+    <string name="sanity_surface_very_small">Surface très petite — les valeurs par hectare peuvent être gonflées</string>
+    <string name="sanity_n_ha_extreme">N/ha = %1$d extrême — vérifier la surface</string>
+    <string name="sanity_n_ha_very_high">N/ha = %1$d très élevé — vérifier la surface de la placette</string>
+    <string name="sanity_g_ha_extreme">G/ha = %.1f m² extrême — vérifier les données</string>
+    <string name="sanity_g_ha_very_high">G/ha = %.1f m² très élevé pour une forêt française</string>
+    <string name="sanity_g_ha_very_low">G/ha = %.2f m² très faible — peuplement clair ou données partielles ?</string>
+    <string name="sanity_v_ha_extreme">V/ha = %.0f m³ extrême — vérifier les données</string>
+    <string name="sanity_v_ha_very_high">V/ha = %.0f m³ très élevé — vérifier hauteurs et surface</string>
+    <string name="sanity_vg_ratio_low">Ratio V/G = %.1f anormalement bas — vérifier le calcul de volume</string>
+    <string name="sanity_vg_ratio_high">Ratio V/G = %.1f anormalement haut — vérifier les hauteurs</string>
+    <string name="sanity_revenue_negative">Revenu calculé négatif — vérifier les prix</string>
+    <string name="sanity_revenue_tree_extreme">Revenu par arbre anormalement élevé</string>
+    <string name="sanity_revenue_ha_negative">Revenu/ha négatif — vérifier les tables de prix</string>
+    <string name="sanity_revenue_ha_very_high">Revenu/ha = %.0f € très élevé — à vérifier</string>
+    <string name="gps_periodic_unavailable">⚠ Signal GPS indisponible — la capture de position risque d\'échouer</string>
+    <string name="gps_periodic_poor">⚠ Précision GPS faible (±%.0f m) — seuil : ±%.0f m. Déplacez-vous en zone dégagée.</string>
+    <string name="map_gps_filtered_out">%1$d tiges ont un GPS mais la précision dépasse le seuil de %2$d m.\nDésactivez le filtre de précision ou allez en zone dégagée.</string>
     <string name="map_layer_picker_title">Fonds de carte</string>
     <string name="map_layer_osm">OSM</string>
+    <string name="offline_download">Télécharger les tuiles hors-ligne</string>
+    <string name="offline_downloading">Téléchargement des tuiles…</string>
+    <string name="offline_download_done">Tuiles téléchargées ✓</string>
+    <string name="offline_download_error">Erreur de téléchargement</string>
+    <string name="map_layer_offline_local">Hors ligne local</string>
     <string name="map_layer_satellite">Satellite</string>
     <string name="map_layer_satellite_labels">Sat. + noms</string>
     <string name="map_layer_topo">Topo</string>
@@ -349,6 +413,14 @@
     <string name="choose_color_for_essence">Choisissez une couleur pour cette essence</string>
     <string name="color_long_press_tip">Astuce : appui long sur une couleur pour revenir à la couleur automatique.</string>
     <string name="essence_actions_title_format">Actions : %1$s</string>
+    <string name="essence_info_title">Propriétés de l\'essence</string>
+    <string name="essence_density">Densité du bois</string>
+    <string name="essence_quality">Qualité typique</string>
+    <string name="essence_logging">Coupe préférée</string>
+    <string name="essence_wood_use">Usage du bois</string>
+    <string name="essence_growth">Vitesse de croissance</string>
+    <string name="essence_shade">Tolérance à l\'ombre</string>
+    <string name="essence_max_dims">Dimensions max</string>
     <string name="change_color">Changer la couleur</string>
     <string name="delete_essence_title">Supprimer l’essence</string>
     <string name="delete_essence_confirm_format">Supprimer %1$s de cette placette ? %2$d tiges seront supprimées.</string>
@@ -359,6 +431,7 @@
 
     <string name="gps_permission_required">Autoriser la localisation pour enregistrer le GPS</string>
     <string name="location_unavailable">Localisation indisponible</string>
+    <string name="gps_precision_rejected_format">Précision GPS insuffisante (±%1$.1f m). Maximum accepté : %2$.1f m.</string>
     <string name="gps_save_failed">Échec de l’enregistrement GPS</string>
     <string name="gps_error_format">Erreur GPS : %1$s</string>
 
@@ -412,6 +485,9 @@
     <string name="mandatory_heights_desc">Vous devez renseigner les hauteurs pour calculer le volume.</string>
     <string name="mandatory_heights_desc_tarif">Le tarif actif (%1$s) est à 2 entrées et nécessite les hauteurs pour calculer le volume. Complétez-les maintenant ou passez à un tarif à 1 entrée.</string>
     <string name="mandatory_heights_skip">Ignorer pour le moment</string>
+    <string name="mandatory_heights_snooze_format">Redemander dans %1$d h</string>
+    <string name="mandatory_heights_snooze_title">Rappel des hauteurs</string>
+    <string name="mandatory_heights_snoozed_format">Rappel des hauteurs reporté de %1$d h</string>
     <string name="mandatory_heights_classes_format">Classes manquantes : %1$s</string>
     <string name="height_status_set">H définie</string>
     <string name="height_status_missing">H manquante</string>
@@ -475,6 +551,7 @@
     <string name="martelage_fill_in">Renseigner</string>
 
     <string name="martelage_volume_price_title">Volume &amp; Prix</string>
+    <string name="martelage_volume_partial_format">Résultat partiel (%1$.0f%% complété)</string>
     <string name="martelage_total_volume_format">Volume total : %1$s m³</string>
     <string name="martelage_volume_per_ha_format">Volume / ha : %1$s m³/ha</string>
     <string name="martelage_estimated_revenue_format">Recette estimée : %1$s · /ha : %2$s</string>
@@ -518,10 +595,22 @@
     <string name="martelage_table_eur_per_m3">€/m³</string>
     <string name="martelage_table_revenue">Recette</string>
 
-    <string name="martelage_stats_unavailable_error">Erreur : la synthèse n’a pas pu être calculée avec les données actuelles (tarifs de volume/prix ou hauteurs non compatibles). Les tuiles restent désactivées.</string>
+    <string name="export_shapefile">Shapefile (SHP)</string>
+    <string name="export_shapefile_desc">ZIP ESRI Shapefile (.shp/.dbf/.prj) pour QGIS/ArcGIS</string>
+    <string name="export_shapefile_done">Shapefile exporté (%1$d tiges)</string>
+
+    <string name="martelage_harvest_simulation_title">Simulation de coupe</string>
+    <string name="martelage_harvest_n_pct">Prélèvement N/ha</string>
+    <string name="martelage_harvest_g_pct">Prélèvement G/ha</string>
+    <string name="martelage_residual_stand">Peuplement résiduel</string>
+    <string name="martelage_nha_avant_label">N/ha avant coupe</string>
+    <string name="martelage_gha_avant_label">G/ha avant coupe (m²)</string>
+    <string name="martelage_avant_coupe_hint">Optionnel : saisissez les valeurs du peuplement avant coupe pour calculer les taux de prélèvement</string>
+
+    <string name="martelage_stats_unavailable_error">Erreur : la synthèse n\'a pas pu être calculée avec les données actuelles (tarifs de volume/prix ou hauteurs non compatibles). Les tuiles restent désactivées.</string>
 
     <string name="martelage_missing_heights_title">Hauteurs manquantes</string>
-    <string name="martelage_missing_heights_desc">Le volume est désactivé tant que les hauteurs ne sont pas renseignées pour : %1$s.</string>
+    <string name="martelage_missing_heights_desc">Le volume est partiel tant que les hauteurs ne sont pas renseignées pour : %1$s.</string>
     <string name="martelage_fill_heights">Renseigner les hauteurs</string>
     <string name="badge_to_complete">À compléter</string>
 
@@ -604,6 +693,8 @@
     <string name="tarif_method_ifn_rapide_desc">Tarifs IFN à 1 entrée (n° 1–36). V = f(D130). Inventaire Forestier National.</string>
     <string name="tarif_method_ifn_lent">Tarif lent IFN</string>
     <string name="tarif_method_ifn_lent_desc">Tables IFN à 2 entrées (D130, H). Inventaire Forestier National.</string>
+    <string name="tarif_method_fgh">FGH</string>
+    <string name="tarif_method_fgh_desc">V = F × G × H — Variante explicite avec facteur de forme.</string>
     <string name="tarif_method_coef_forme">Coefficient de forme</string>
     <string name="tarif_method_coef_forme_desc">V = G × H × f — Méthode classique avec coefficient de forme/décroissance.</string>
 
@@ -716,15 +807,54 @@
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Bienvenue sur GeoSylva</string>
     <string name="onboarding_welcome_desc">Votre assistant professionnel de martelage et d\'inventaire forestier, directement sur le terrain.</string>
+    <string name="onboarding_welcome_b1">Conçu pour les forestiers, géomètres et gestionnaires de forêts</string>
+    <string name="onboarding_welcome_b2">Fonctionne hors-ligne — idéal sur le terrain</string>
+    <string name="onboarding_welcome_b3">Toutes vos données forestières au même endroit</string>
     <string name="onboarding_forest_title">Structurez votre forêt</string>
     <string name="onboarding_forest_desc">Organisez vos données en forêts, parcelles et placettes. Ajoutez vos essences et configurez les tarifs de cubage adaptés.</string>
+    <string name="onboarding_forest_b1">Créez forêts, parcelles et placettes librement</string>
+    <string name="onboarding_forest_b2">95+ essences avec données forestières détaillées</string>
+    <string name="onboarding_forest_b3">Configurez les tarifs de cubage (Schaeffer, Algan, FGH…)</string>
     <string name="onboarding_measure_title">Saisissez vos tiges</string>
     <string name="onboarding_measure_desc">Enregistrez diamètre, hauteur, qualité et GPS pour chaque arbre. La géolocalisation permet de visualiser vos tiges sur la carte.</string>
+    <string name="onboarding_measure_b1">Saisie rapide du diamètre par classe avec boutons +/−</string>
+    <string name="onboarding_measure_b2">Notation qualité bois (A/B/C/D) avec classement produit</string>
+    <string name="onboarding_measure_b3">Hauteur optionnelle quand le tarif ne l\'exige pas</string>
+    <string name="onboarding_gps_title">GPS de précision</string>
+    <string name="onboarding_gps_desc">Chaque tige peut être géolocalisée automatiquement. Le moyennage multi-lectures améliore la précision pour une cartographie fiable.</string>
+    <string name="onboarding_gps_b1">Moyennage GPS multi-lectures (3 à 8 lectures)</string>
+    <string name="onboarding_gps_b2">3 modes de capture : Rapide, Standard, Précis</string>
+    <string name="onboarding_gps_b3">Suivi de la précision avec indicateurs de qualité</string>
+    <string name="onboarding_map_title">Carte interactive</string>
+    <string name="onboarding_map_desc">Visualisez vos tiges sur la carte avec 12 couches cartographiques dont IGN, cadastre et cartes forestières.</string>
+    <string name="onboarding_map_b1">12 couches : IGN, satellite, forêts, cadastre…</string>
+    <string name="onboarding_map_b2">Téléchargez les tuiles pour une utilisation hors-ligne</string>
+    <string name="onboarding_map_b3">Cliquez sur les tiges pour voir leurs détails sur la carte</string>
     <string name="onboarding_synthesis_title">Analysez vos résultats</string>
-    <string name="onboarding_synthesis_desc">Synthèse dendrométrique complète : volume, surface terrière, recettes estimées par essence. Exportez en CSV, GeoJSON ou PDF.</string>
+    <string name="onboarding_synthesis_desc">Synthèse dendrométrique complète avec tableaux de bord : volume, surface terrière et recettes estimées par essence.</string>
+    <string name="onboarding_synthesis_b1">Volume, surface terrière, densité par hectare</string>
+    <string name="onboarding_synthesis_b2">Tableau de bord visuel avec graphiques et statistiques</string>
+    <string name="onboarding_synthesis_b3">Simulation de martelage avec taux de prélèvement</string>
+    <string name="onboarding_export_title">Exports professionnels</string>
+    <string name="onboarding_export_desc">Exportez vos données dans plusieurs formats pour le reporting, l\'analyse SIG ou l\'archivage.</string>
+    <string name="onboarding_export_b1">Rapport PDF de synthèse avec tableaux dendrométriques</string>
+    <string name="onboarding_export_b2">GeoJSON et Shapefile pour QGIS / ArcGIS</string>
+    <string name="onboarding_export_b3">Export CSV pour analyse tableur</string>
     <string name="onboarding_start">Commencer</string>
     <string name="onboarding_next">Suivant</string>
     <string name="onboarding_skip">Passer</string>
+
+    <!-- Contextual tips -->
+    <string name="tip_parcelles_title">Pour bien démarrer</string>
+    <string name="tip_parcelles_msg">Créez votre première parcelle pour commencer à enregistrer des tiges. Chaque parcelle peut avoir plusieurs placettes avec différents tarifs.</string>
+    <string name="tip_placettes_title">Placettes</string>
+    <string name="tip_placettes_msg">Ajoutez des placettes pour organiser votre inventaire. Chaque placette peut avoir ses propres essences et classes de diamètre.</string>
+    <string name="tip_essences_title">Astuce</string>
+    <string name="tip_essences_msg">Tapez sur une classe de diamètre pour ajouter une tige. Appui long pour en retirer une. Le GPS est capturé automatiquement si activé dans les paramètres.</string>
+    <string name="tip_map_title">Navigation carte</string>
+    <string name="tip_map_msg">Changez de couche avec le bouton couches. Téléchargez les tuiles pour une utilisation hors-ligne avec le bouton nuage.</string>
+    <string name="tip_martelage_title">Martelage</string>
+    <string name="tip_martelage_msg">Sélectionnez les essences à inclure dans la synthèse. Volume et recettes sont calculés automatiquement selon votre tarif et vos prix.</string>
 
     <!-- Export PDF -->
     <string name="export_pdf">Export PDF</string>

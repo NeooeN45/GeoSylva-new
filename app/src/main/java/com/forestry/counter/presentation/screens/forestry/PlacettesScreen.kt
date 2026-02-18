@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material3.*
@@ -61,7 +62,8 @@ fun PlacettesScreen(
     onNavigateToMartelage: (String, String) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToMartelageForParcelle: ((String) -> Unit)? = null,
-    onNavigateToMap: ((String) -> Unit)? = null
+    onNavigateToMap: ((String) -> Unit)? = null,
+    onNavigateToDashboard: ((String) -> Unit)? = null
 ) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -150,6 +152,14 @@ fun PlacettesScreen(
                         }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back)) }
                     },
                     actions = {
+                        if (onNavigateToDashboard != null) {
+                            IconButton(onClick = {
+                                playClickFeedback()
+                                onNavigateToDashboard(parcelleId)
+                            }) {
+                                Icon(Icons.Default.BarChart, contentDescription = stringResource(R.string.dashboard_button))
+                            }
+                        }
                         if (onNavigateToMap != null) {
                             IconButton(onClick = {
                                 playClickFeedback()

@@ -1,18 +1,14 @@
 package com.forestry.counter.presentation.screens.forestry
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Paint
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -38,9 +34,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -56,19 +49,15 @@ import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.FormatListBulleted
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.ZoomIn
-import androidx.compose.material.icons.filled.ZoomOut
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -93,7 +82,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -127,9 +115,8 @@ import kotlinx.coroutines.launch
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.forestry.counter.domain.location.OfflineTileManager
 import com.mapbox.mapboxsdk.Mapbox
-import com.mapbox.mapboxsdk.annotations.IconFactory
-import com.mapbox.mapboxsdk.annotations.MarkerOptions
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory
 import com.mapbox.mapboxsdk.geometry.LatLng
 import com.mapbox.mapboxsdk.geometry.LatLngBounds
@@ -139,12 +126,16 @@ import com.mapbox.mapboxsdk.location.modes.RenderMode
 import com.mapbox.mapboxsdk.maps.MapView
 import com.mapbox.mapboxsdk.maps.MapboxMap
 import com.mapbox.mapboxsdk.maps.Style
+import com.mapbox.mapboxsdk.style.expressions.Expression.*
+import com.mapbox.mapboxsdk.style.layers.CircleLayer
 import com.mapbox.mapboxsdk.style.layers.FillLayer
 import com.mapbox.mapboxsdk.style.layers.LineLayer
 import com.mapbox.mapboxsdk.style.layers.PropertyFactory
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer
+import com.mapbox.mapboxsdk.style.sources.GeoJsonOptions
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource
 import kotlin.math.roundToInt
+import java.util.Locale
 
 private const val TAG = "MapScreen"
 
@@ -168,6 +159,10 @@ private const val SHP_SOURCE_ID = "shp-parcelles"
 private const val SHP_FILL_ID = "shp-fill"
 private const val SHP_LINE_ID = "shp-line"
 private const val SHP_LABEL_ID = "shp-labels"
+private const val TIGE_SOURCE_ID = "tige-source"
+private const val TIGE_CLUSTER_LAYER_ID = "tige-clusters"
+private const val TIGE_CLUSTER_COUNT_LAYER_ID = "tige-cluster-count"
+private const val TIGE_POINT_LAYER_ID = "tige-points"
 
 /**
  * Applique (ou met à jour) un overlay shapefile GeoJSON sur le style MapLibre courant.
@@ -277,6 +272,215 @@ private fun applyShapefileOverlay(
     return "OK: ${overlay.featureCount}f$labelStatus"
 }
 
+private fun removeTigeLayers(style: Style) {
+    try { style.removeLayer(TIGE_CLUSTER_COUNT_LAYER_ID) } catch (_: Throwable) {}
+    try { style.removeLayer(TIGE_CLUSTER_LAYER_ID) } catch (_: Throwable) {}
+    try { style.removeLayer(TIGE_POINT_LAYER_ID) } catch (_: Throwable) {}
+    try { style.removeSource(TIGE_SOURCE_ID) } catch (_: Throwable) {}
+}
+
+private fun jsonEscape(value: String): String = value
+    .replace("\\", "\\\\")
+    .replace("\"", "\\\"")
+    .replace("\n", "\\n")
+    .replace("\r", "\\r")
+    .replace("\t", "\\t")
+
+private fun buildTigesGeoJson(
+    geoTiges: List<Triple<Tige, Double, Double>>,
+    essenceMap: Map<String, Essence>,
+    essenceColors: Map<String, Int>
+): String {
+    val sb = StringBuilder(geoTiges.size * 256)
+    sb.append("{\"type\":\"FeatureCollection\",\"features\":[")
+
+    geoTiges.forEachIndexed { index, (t, lon, lat) ->
+        if (index > 0) sb.append(',')
+        val code = t.essenceCode.uppercase()
+        val name = essenceMap[code]?.name ?: t.essenceCode
+        val colorInt = essenceColors[code] ?: ESSENCE_COLOR_PALETTE[0]
+        val colorHex = String.format(Locale.US, "#%06X", (0xFFFFFF and colorInt))
+        val label = buildString {
+            append("⌀ ")
+            append(t.diamCm.roundToInt())
+            append(" cm")
+            t.hauteurM?.let {
+                append(" · H ")
+                append(it.roundToInt())
+                append(" m")
+            }
+            t.precisionM?.let {
+                append(" · ±")
+                append(String.format(Locale.US, "%.1f", it))
+                append(" m")
+            }
+        }
+
+        sb.append("{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[")
+        sb.append(String.format(Locale.US, "%.7f", lon))
+        sb.append(',')
+        sb.append(String.format(Locale.US, "%.7f", lat))
+        sb.append("]},\"properties\":{")
+        sb.append("\"essence\":\"").append(jsonEscape(code)).append("\",")
+        sb.append("\"essence_name\":\"").append(jsonEscape(name)).append("\",")
+        sb.append("\"diam\":").append(String.format(Locale.US, "%.2f", t.diamCm)).append(',')
+        sb.append("\"height\":").append(t.hauteurM?.let { String.format(Locale.US, "%.2f", it) } ?: "null").append(',')
+        sb.append("\"precision\":").append(t.precisionM?.let { String.format(Locale.US, "%.2f", it) } ?: "null").append(',')
+        sb.append("\"color\":\"").append(colorHex).append("\",")
+        sb.append("\"label\":\"").append(jsonEscape(label)).append("\"")
+        sb.append("}}")
+    }
+
+    sb.append("]}")
+    return sb.toString()
+}
+
+private fun renderTigesOnMap(
+    style: Style,
+    geoTiges: List<Triple<Tige, Double, Double>>,
+    essenceMap: Map<String, Essence>,
+    essenceColors: Map<String, Int>
+) {
+    removeTigeLayers(style)
+    if (geoTiges.isEmpty()) return
+
+    val geoJson = buildTigesGeoJson(geoTiges, essenceMap, essenceColors)
+    val source = GeoJsonSource(
+        TIGE_SOURCE_ID,
+        geoJson,
+        GeoJsonOptions()
+            .withCluster(true)
+            .withClusterRadius(50)
+            .withClusterMaxZoom(13)
+    )
+    style.addSource(source)
+
+    style.addLayer(
+        CircleLayer(TIGE_CLUSTER_LAYER_ID, TIGE_SOURCE_ID)
+            .withFilter(has("point_count"))
+            .withProperties(
+                PropertyFactory.circleColor(Color(0xFF2E7D32).toArgb()),
+                PropertyFactory.circleOpacity(0.88f),
+                PropertyFactory.circleRadius(
+                    interpolate(
+                        linear(),
+                        get("point_count"),
+                        stop(5, 14f),
+                        stop(20, 20f),
+                        stop(60, 28f)
+                    )
+                ),
+                PropertyFactory.circleStrokeColor(Color.White.toArgb()),
+                PropertyFactory.circleStrokeWidth(1.5f)
+            )
+    )
+
+    style.addLayer(
+        SymbolLayer(TIGE_CLUSTER_COUNT_LAYER_ID, TIGE_SOURCE_ID)
+            .withFilter(has("point_count"))
+            .withProperties(
+                PropertyFactory.textField("{point_count_abbreviated}"),
+                PropertyFactory.textSize(12f),
+                PropertyFactory.textColor(Color.White.toArgb()),
+                PropertyFactory.textAllowOverlap(true),
+                PropertyFactory.textIgnorePlacement(true)
+            )
+    )
+
+    style.addLayer(
+        CircleLayer(TIGE_POINT_LAYER_ID, TIGE_SOURCE_ID)
+            .withFilter(not(has("point_count")))
+            .withProperties(
+                PropertyFactory.circleColor(get("color")),
+                PropertyFactory.circleOpacity(0.95f),
+                PropertyFactory.circleRadius(
+                    interpolate(
+                        linear(),
+                        get("diam"),
+                        stop(8, 4f),
+                        stop(20, 7f),
+                        stop(35, 10f),
+                        stop(60, 14f)
+                    )
+                ),
+                PropertyFactory.circleStrokeColor(Color.White.toArgb()),
+                PropertyFactory.circleStrokeWidth(1.4f)
+            )
+    )
+}
+
+private fun attachTigeTapInfo(map: MapboxMap, context: Context) {
+    map.addOnMapClickListener { latLng ->
+        try {
+            val point = map.projection.toScreenLocation(latLng)
+            val features = map.queryRenderedFeatures(point, TIGE_POINT_LAYER_ID)
+            val f = features.firstOrNull() ?: return@addOnMapClickListener false
+
+            val props = f.properties() ?: return@addOnMapClickListener false
+
+            val essence = try {
+                val v = props.get("essence_name")
+                if (v != null && !v.isJsonNull) v.asString
+                else {
+                    val v2 = props.get("essence")
+                    if (v2 != null && !v2.isJsonNull) v2.asString else "?"
+                }
+            } catch (_: Throwable) { "?" }
+
+            val diam = try {
+                val v = props.get("diam")
+                if (v != null && !v.isJsonNull) v.asDouble else null
+            } catch (_: Throwable) { null }
+
+            val h = try {
+                val v = props.get("height")
+                if (v != null && !v.isJsonNull) v.asDouble else null
+            } catch (_: Throwable) { null }
+
+            val precision = try {
+                val v = props.get("precision")
+                if (v != null && !v.isJsonNull) v.asDouble else null
+            } catch (_: Throwable) { null }
+
+            val msg = buildString {
+                append(essence)
+                diam?.let {
+                    append(" · ⌀ ")
+                    append(it.roundToInt())
+                    append(" cm")
+                }
+                h?.let {
+                    append(" · H ")
+                    append(it.roundToInt())
+                    append(" m")
+                }
+                precision?.let {
+                    append(" · ±")
+                    append(String.format(Locale.US, "%.1f", it))
+                    append(" m")
+                }
+            }
+
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            true
+        } catch (e: Throwable) {
+            Log.e(TAG, "Tige tap handler error", e)
+            false
+        }
+    }
+}
+
+private fun offlineLocalStyle(name: String = "Offline Local"): String {
+    return """{
+  "version": 8,
+  "name": "$name",
+  "sources": {},
+  "layers": [
+    { "id": "background", "type": "background", "paint": { "background-color": "#EFF5EC" } }
+  ]
+}"""
+}
+
 /**
  * Builds a raster-only MapLibre style JSON from a single tile URL template.
  * This is more reliable than inline multi-line JSON strings.
@@ -344,11 +548,18 @@ data class MapLayerDef(
     val emoji: String,
     val styleJson: String,
     val isDark: Boolean = false,
-    val category: LayerCategory = LayerCategory.GENERAL
+    val category: LayerCategory = LayerCategory.GENERAL,
+    val tileUrls: List<String> = emptyList()
 )
 
 private val MAP_LAYERS = listOf(
     // ── Couches générales ──
+    MapLayerDef(
+        key = "OFFLINE_LOCAL",
+        labelResId = R.string.map_layer_offline_local,
+        emoji = "\uD83D\uDCF4",
+        styleJson = offlineLocalStyle("Offline Local")
+    ),
     MapLayerDef(
         key = "OSM",
         labelResId = R.string.map_layer_osm,
@@ -356,7 +567,8 @@ private val MAP_LAYERS = listOf(
         styleJson = rasterStyle(
             "OpenStreetMap",
             "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-        )
+        ),
+        tileUrls = listOf("https://tile.openstreetmap.org/{z}/{x}/{y}.png")
     ),
     MapLayerDef(
         key = "SATELLITE",
@@ -366,7 +578,8 @@ private val MAP_LAYERS = listOf(
             "ESRI Satellite",
             "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
         ),
-        isDark = true
+        isDark = true,
+        tileUrls = listOf("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}")
     ),
     MapLayerDef(
         key = "SAT_LABELS",
@@ -379,7 +592,11 @@ private val MAP_LAYERS = listOf(
                 "https://stamen-tiles.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}@2x.png"
             )
         ),
-        isDark = true
+        isDark = true,
+        tileUrls = listOf(
+            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            "https://stamen-tiles.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}@2x.png"
+        )
     ),
     MapLayerDef(
         key = "TOPO",
@@ -389,7 +606,8 @@ private val MAP_LAYERS = listOf(
             "OpenTopoMap",
             "https://tile.opentopomap.org/{z}/{x}/{y}.png",
             maxZoom = 17
-        )
+        ),
+        tileUrls = listOf("https://tile.opentopomap.org/{z}/{x}/{y}.png")
     ),
     MapLayerDef(
         key = "CARTO_VOYAGER",
@@ -398,7 +616,8 @@ private val MAP_LAYERS = listOf(
         styleJson = rasterStyle(
             "Carto Voyager",
             "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png"
-        )
+        ),
+        tileUrls = listOf("https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png")
     ),
     MapLayerDef(
         key = "CARTO_DARK",
@@ -408,7 +627,8 @@ private val MAP_LAYERS = listOf(
             "Carto Dark",
             "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png"
         ),
-        isDark = true
+        isDark = true,
+        tileUrls = listOf("https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png")
     ),
     MapLayerDef(
         key = "ESRI_TOPO",
@@ -417,7 +637,8 @@ private val MAP_LAYERS = listOf(
         styleJson = rasterStyle(
             "ESRI Topographic",
             "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
-        )
+        ),
+        tileUrls = listOf("https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}")
     ),
     // ── Couches forestières / ONF ──
     MapLayerDef(
@@ -428,7 +649,8 @@ private val MAP_LAYERS = listOf(
             "Plan IGN v2",
             geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2")
         ),
-        category = LayerCategory.GENERAL
+        category = LayerCategory.GENERAL,
+        tileUrls = listOf(geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"))
     ),
     MapLayerDef(
         key = "CADASTRE",
@@ -441,7 +663,11 @@ private val MAP_LAYERS = listOf(
                 geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
             )
         ),
-        category = LayerCategory.GENERAL
+        category = LayerCategory.GENERAL,
+        tileUrls = listOf(
+            "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+            geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
+        )
     ),
     MapLayerDef(
         key = "FORETS_PUBLIQUES",
@@ -454,7 +680,11 @@ private val MAP_LAYERS = listOf(
                 geopfLayer("FORETS.PUBLIQUES")
             )
         ),
-        category = LayerCategory.GENERAL
+        category = LayerCategory.GENERAL,
+        tileUrls = listOf(
+            geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"),
+            geopfLayer("FORETS.PUBLIQUES")
+        )
     ),
     MapLayerDef(
         key = "SAT_FORETS",
@@ -468,7 +698,11 @@ private val MAP_LAYERS = listOf(
             )
         ),
         isDark = true,
-        category = LayerCategory.GENERAL
+        category = LayerCategory.GENERAL,
+        tileUrls = listOf(
+            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            geopfLayer("FORETS.PUBLIQUES")
+        )
     ),
     MapLayerDef(
         key = "BD_FORET",
@@ -481,7 +715,11 @@ private val MAP_LAYERS = listOf(
                 geopfLayer("LANDUSE.FORESTINVENTORY.V2")
             )
         ),
-        category = LayerCategory.GENERAL
+        category = LayerCategory.GENERAL,
+        tileUrls = listOf(
+            geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"),
+            geopfLayer("LANDUSE.FORESTINVENTORY.V2")
+        )
     ),
     MapLayerDef(
         key = "FORET_CADASTRE",
@@ -495,7 +733,12 @@ private val MAP_LAYERS = listOf(
                 geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
             )
         ),
-        category = LayerCategory.GENERAL
+        category = LayerCategory.GENERAL,
+        tileUrls = listOf(
+            geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"),
+            geopfLayer("FORETS.PUBLIQUES"),
+            geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
+        )
     )
 )
 
@@ -548,6 +791,10 @@ fun MapScreen(
     val essences by (essenceRepository?.getAllEssences()
         ?: kotlinx.coroutines.flow.flowOf(emptyList<Essence>())).collectAsState(initial = emptyList())
     val animationsEnabled by preferencesManager.animationsEnabled.collectAsState(initial = true)
+    val mapLastLayerKey by preferencesManager.mapLastLayerKey.collectAsState(initial = "PLAN_IGN")
+    val mapShowLegendPref by preferencesManager.mapShowLegend.collectAsState(initial = false)
+    val mapOnlyReliableGps by preferencesManager.mapOnlyReliableGps.collectAsState(initial = false)
+    val mapReliableGpsThresholdM by preferencesManager.mapReliableGpsThresholdM.collectAsState(initial = 8f)
 
     // Permission localisation
     val locationPermission = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -568,7 +815,13 @@ fun MapScreen(
         true
     }
 
+    val offlineTileManager = remember(context) { OfflineTileManager(context) }
+    val offlineProgress by offlineTileManager.downloadProgress.collectAsState()
+    var showOfflineSnackbar by remember { mutableStateOf(false) }
+
     val essenceMap = remember(essences) { essences.associateBy { it.code.uppercase() } }
+
+    var dismissedGpsBanner by remember { mutableStateOf(false) }
 
     val geoTiges = remember(tiges) {
         tiges.mapNotNull { t ->
@@ -576,14 +829,23 @@ fun MapScreen(
             if (lon != null && lat != null) Triple(t, lon, lat) else null
         }
     }
-    val withGps = geoTiges.size
+    val reliableGeoTiges = remember(geoTiges, mapReliableGpsThresholdM) {
+        geoTiges.filter { (t, _, _) ->
+            val precision = t.precisionM ?: Double.MAX_VALUE
+            precision <= mapReliableGpsThresholdM.toDouble()
+        }
+    }
+    val displayedGeoTiges = remember(geoTiges, reliableGeoTiges, mapOnlyReliableGps) {
+        if (mapOnlyReliableGps) reliableGeoTiges else geoTiges
+    }
+    val withGps = displayedGeoTiges.size
     val total = tiges.size
 
     // Couleurs par essence (stables)
-    val essenceColors = remember(geoTiges) {
+    val essenceColors = remember(displayedGeoTiges) {
         val map = mutableMapOf<String, Int>()
         var idx = 0
-        geoTiges.forEach { (t, _, _) ->
+        displayedGeoTiges.forEach { (t, _, _) ->
             map.getOrPut(t.essenceCode.uppercase()) {
                 ESSENCE_COLOR_PALETTE[idx++ % ESSENCE_COLOR_PALETTE.size]
             }
@@ -592,17 +854,21 @@ fun MapScreen(
     }
 
     // Compteurs par essence
-    val essenceCounts = remember(geoTiges) {
-        geoTiges.groupBy { it.first.essenceCode.uppercase() }.mapValues { it.value.size }
+    val essenceCounts = remember(displayedGeoTiges) {
+        displayedGeoTiges.groupBy { it.first.essenceCode.uppercase() }.mapValues { it.value.size }
     }
 
     var mapReady by remember { mutableStateOf(false) }
     var mapLibreMap by remember { mutableStateOf<MapboxMap?>(null) }
-    var currentLayerIdx by remember { mutableIntStateOf(0) }
-    var showLegend by remember { mutableStateOf(false) }
+    val initialLayerIdx = remember(mapLastLayerKey) {
+        MAP_LAYERS.indexOfFirst { it.key == mapLastLayerKey }.takeIf { it >= 0 } ?: 0
+    }
+    var currentLayerIdx by remember(mapLastLayerKey) { mutableIntStateOf(initialLayerIdx) }
+    var showLegend by remember(mapShowLegendPref) { mutableStateOf(mapShowLegendPref) }
     var showLayerPicker by remember { mutableStateOf(false) }
     var showCoords by remember { mutableStateOf(false) }
     var coordsText by remember { mutableStateOf("") }
+    var tigeTapAttached by remember { mutableStateOf(false) }
 
     // ── Shapefile overlay state ──
     val scope = rememberCoroutineScope()
@@ -641,8 +907,6 @@ fun MapScreen(
         }
     }
 
-    val currentLayer = MAP_LAYERS.getOrElse(currentLayerIdx) { MAP_LAYERS[0] }
-
     // Appliquer l'overlay shapefile quand le fichier ou les paramètres changent
     fun applyCurrentShpOverlay(style: Style): String {
         val file = shpGeoJsonFile ?: return "no file"
@@ -654,13 +918,28 @@ fun MapScreen(
         currentLayerIdx = index
         val map = mapLibreMap ?: return
         val layer = MAP_LAYERS.getOrElse(index) { MAP_LAYERS[0] }
+        scope.launch { preferencesManager.setMapLastLayerKey(layer.key) }
+
+        // Pour la couche offline, utiliser le style avec tuiles locales si disponible
+        val styleJson = if (layer.key == "OFFLINE_LOCAL" && offlineTileManager.hasOfflineTiles()) {
+            offlineTileManager.buildOfflineStyle(offlineTileManager.downloadedLayerCount().coerceAtLeast(1))
+        } else {
+            layer.styleJson
+        }
+
         try {
-            map.setStyle(Style.Builder().fromJson(layer.styleJson)) { style ->
+            map.setStyle(Style.Builder().fromJson(styleJson)) { style ->
                 enableLocationComponent(map, style, context)
                 applyCurrentShpOverlay(style)
+                renderTigesOnMap(style, displayedGeoTiges, essenceMap, essenceColors)
             }
         } catch (e: Throwable) {
             Log.w(TAG, "Style switch failed", e)
+            map.setStyle(Style.Builder().fromJson(offlineLocalStyle("Offline fallback"))) { style ->
+                enableLocationComponent(map, style, context)
+                applyCurrentShpOverlay(style)
+                renderTigesOnMap(style, displayedGeoTiges, essenceMap, essenceColors)
+            }
         }
     }
 
@@ -688,6 +967,32 @@ fun MapScreen(
                     }
                 },
                 actions = {
+                    // Télécharger tuiles hors-ligne
+                    IconButton(onClick = {
+                        val map = mapLibreMap
+                        if (map != null) {
+                            val bounds = map.projection.visibleRegion.latLngBounds
+                            val layer = MAP_LAYERS.getOrElse(currentLayerIdx) { MAP_LAYERS[0] }
+                            offlineTileManager.downloadRegion(
+                                name = parcelleId,
+                                latSouth = bounds.southWest.latitude,
+                                latNorth = bounds.northEast.latitude,
+                                lonWest = bounds.southWest.longitude,
+                                lonEast = bounds.northEast.longitude,
+                                tileUrlTemplates = layer.tileUrls,
+                                minZoom = map.cameraPosition.zoom.toInt().coerceAtLeast(8),
+                                maxZoom = (map.cameraPosition.zoom.toInt() + 4).coerceAtMost(17)
+                            )
+                        }
+                    }) {
+                        Icon(
+                            Icons.Default.CloudDownload,
+                            contentDescription = stringResource(R.string.offline_download),
+                            tint = if (offlineProgress != null && !offlineProgress!!.isComplete)
+                                MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                     // Shapefile overlay
                     IconButton(onClick = { showShpPanel = !showShpPanel }) {
                         Icon(
@@ -699,7 +1004,11 @@ fun MapScreen(
                         )
                     }
                     // Toggle légende
-                    IconButton(onClick = { showLegend = !showLegend }) {
+                    IconButton(onClick = {
+                        val next = !showLegend
+                        showLegend = next
+                        scope.launch { preferencesManager.setMapShowLegend(next) }
+                    }) {
                         Icon(
                             Icons.Default.FormatListBulleted,
                             contentDescription = stringResource(R.string.map_legend),
@@ -766,11 +1075,22 @@ fun MapScreen(
                                 onCreate(null)
                                 getMapAsync { map ->
                                     try {
-                                        map.setStyle(Style.Builder().fromJson(MAP_LAYERS[currentLayerIdx].styleJson)) { style ->
+                                        val selectedLayer = MAP_LAYERS.getOrElse(currentLayerIdx) { MAP_LAYERS[0] }
+                                        val initStyleJson = if (selectedLayer.key == "OFFLINE_LOCAL" && offlineTileManager.hasOfflineTiles()) {
+                                            offlineTileManager.buildOfflineStyle(offlineTileManager.downloadedLayerCount().coerceAtLeast(1))
+                                        } else {
+                                            selectedLayer.styleJson
+                                        }
+                                        map.setStyle(Style.Builder().fromJson(initStyleJson)) { style ->
                                             mapLibreMap = map
                                             mapReady = true
                                             enableLocationComponent(map, style, context)
                                             applyCurrentShpOverlay(style)
+                                            renderTigesOnMap(style, displayedGeoTiges, essenceMap, essenceColors)
+                                            if (!tigeTapAttached) {
+                                                attachTigeTapInfo(map, context)
+                                                tigeTapAttached = true
+                                            }
                                         }
                                         map.uiSettings.apply {
                                             isCompassEnabled = true
@@ -781,8 +1101,18 @@ fun MapScreen(
                                             setAttributionMargins(16, 0, 0, 16)
                                         }
                                     } catch (e: Throwable) {
-                                        Log.e(TAG, "Error setting map style", e)
-                                        mapError = true
+                                        Log.w(TAG, "Error setting selected map style, fallback to offline local", e)
+                                        map.setStyle(Style.Builder().fromJson(offlineLocalStyle("Offline fallback"))) { style ->
+                                            mapLibreMap = map
+                                            mapReady = true
+                                            enableLocationComponent(map, style, context)
+                                            applyCurrentShpOverlay(style)
+                                            renderTigesOnMap(style, displayedGeoTiges, essenceMap, essenceColors)
+                                            if (!tigeTapAttached) {
+                                                attachTigeTapInfo(map, context)
+                                                tigeTapAttached = true
+                                            }
+                                        }
                                     }
                                 }
                             } catch (e: Throwable) {
@@ -801,7 +1131,7 @@ fun MapScreen(
                 if (!mapReady) return@LaunchedEffect
                 // Attendre un peu pour laisser le LocationComponent s'initialiser
                 kotlinx.coroutines.delay(600)
-                if (geoTiges.isNotEmpty()) return@LaunchedEffect
+                if (displayedGeoTiges.isNotEmpty()) return@LaunchedEffect
                 try {
                     val lc = map.locationComponent
                     val lastLoc = lc.lastKnownLocation
@@ -815,50 +1145,30 @@ fun MapScreen(
                 } catch (_: Throwable) { /* permission pas encore accordée */ }
             }
 
-            // Ajouter les marqueurs quand la carte et les données sont prêtes
-            LaunchedEffect(mapReady, geoTiges) {
+            // Ajouter/mettre à jour les tiges (source GeoJSON + clusters) quand la carte et les données sont prêtes
+            LaunchedEffect(mapReady, displayedGeoTiges, essenceColors) {
                 val map = mapLibreMap ?: return@LaunchedEffect
-                if (!mapReady || geoTiges.isEmpty()) return@LaunchedEffect
+                if (!mapReady) return@LaunchedEffect
 
-                map.removeAnnotations()
-
-                val iconFactory = IconFactory.getInstance(context)
-                val boundsBuilder = LatLngBounds.Builder()
-
-                for ((tige, lon, lat) in geoTiges) {
-                    val pos = LatLng(lat, lon)
-                    boundsBuilder.include(pos)
-
-                    val color = essenceColors[tige.essenceCode.uppercase()] ?: ESSENCE_COLOR_PALETTE[0]
-                    val radiusPx = ((tige.diamCm / 3.0).coerceIn(6.0, 24.0)).toInt()
-                    val bmp = createCircleMarker(radiusPx * 2, color)
-                    val icon = iconFactory.fromBitmap(bmp)
-
-                    val essName = essenceMap[tige.essenceCode.uppercase()]?.name ?: tige.essenceCode
-                    val snippet = buildString {
-                        append("⌀ ${tige.diamCm.roundToInt()} cm")
-                        tige.hauteurM?.let { append("  ·  H ${it.roundToInt()} m") }
-                        tige.precisionM?.let { append("  ·  ±${"%.1f".format(it)} m") }
-                    }
-
-                    map.addMarker(
-                        MarkerOptions()
-                            .position(pos)
-                            .title(essName)
-                            .snippet(snippet)
-                            .icon(icon)
-                    )
+                map.getStyle { style ->
+                    renderTigesOnMap(style, displayedGeoTiges, essenceMap, essenceColors)
                 }
 
-                try {
-                    val bounds = boundsBuilder.build()
-                    map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100), 800)
-                } catch (_: Throwable) {
-                    val first = geoTiges.first()
-                    map.animateCamera(
-                        CameraUpdateFactory.newLatLngZoom(LatLng(first.third, first.second), 17.0),
-                        800
-                    )
+                if (displayedGeoTiges.isNotEmpty()) {
+                    val boundsBuilder = LatLngBounds.Builder()
+                    displayedGeoTiges.forEach { (_, lon, lat) ->
+                        boundsBuilder.include(LatLng(lat, lon))
+                    }
+                    try {
+                        val bounds = boundsBuilder.build()
+                        map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100), 800)
+                    } catch (_: Throwable) {
+                        val first = displayedGeoTiges.first()
+                        map.animateCamera(
+                            CameraUpdateFactory.newLatLngZoom(LatLng(first.third, first.second), 17.0),
+                            800
+                        )
+                    }
                 }
             }
 
@@ -870,7 +1180,6 @@ fun MapScreen(
                 map.getStyle { style ->
                     val result = applyCurrentShpOverlay(style)
                     Log.d(TAG, "SHP apply result: $result")
-                    Toast.makeText(context, "SHP: $result", Toast.LENGTH_LONG).show()
                 }
             }
 
@@ -1470,13 +1779,13 @@ fun MapScreen(
                     Icon(Icons.Default.GpsFixed, contentDescription = stringResource(R.string.map_my_location))
                 }
                 // Recentrer sur les arbres
-                if (geoTiges.isNotEmpty()) {
+                if (displayedGeoTiges.isNotEmpty()) {
                     FloatingActionButton(
                         onClick = {
                             val map = mapLibreMap ?: return@FloatingActionButton
                             try {
                                 val builder = LatLngBounds.Builder()
-                                geoTiges.forEach { (_, lon, lat) -> builder.include(LatLng(lat, lon)) }
+                                displayedGeoTiges.forEach { (_, lon, lat) -> builder.include(LatLng(lat, lon)) }
                                 map.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 100), 600)
                             } catch (_: Throwable) {}
                             showCoords = false
@@ -1490,35 +1799,120 @@ fun MapScreen(
                 }
             }
 
-            // ── Message si aucun GPS ──
-            if (total > 0 && withGps == 0) {
+            // ── Barre de progression téléchargement hors-ligne ──
+            val progress = offlineProgress
+            if (progress != null) {
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 64.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val sizeMb = String.format("%.1f", progress.completedSize / 1_048_576.0)
+                            Text(
+                                when {
+                                    progress.isComplete && progress.error == null ->
+                                        "${stringResource(R.string.offline_download_done)} (${progress.completedResources} tuiles, $sizeMb Mo)"
+                                    progress.isComplete && progress.error != null ->
+                                        progress.error ?: stringResource(R.string.offline_download_error)
+                                    else -> stringResource(R.string.offline_downloading)
+                                },
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (progress.error != null && progress.isComplete) MaterialTheme.colorScheme.error
+                                       else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (progress.isComplete) {
+                                IconButton(
+                                    onClick = { offlineTileManager.clearProgress() },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        }
+                        if (!progress.isComplete) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            LinearProgressIndicator(
+                                progress = { (progress.progressPct / 100.0).toFloat().coerceIn(0f, 1f) },
+                                modifier = Modifier.fillMaxWidth(),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            )
+                            val sizeMbDl = String.format("%.1f", progress.completedSize / 1_048_576.0)
+                            Text(
+                                "${progress.completedResources}/${progress.requiredResources} tuiles · $sizeMbDl Mo (${String.format("%.0f", progress.progressPct)}%)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ── Message si aucun GPS (fermable) ──
+            if (total > 0 && withGps == 0 && !dismissedGpsBanner) {
+                // Distinguer : points GPS absents vs filtrés (imprécis)
+                val allGeoTigesCount = geoTiges.size
+                val isFilteredOut = allGeoTigesCount > 0 && mapOnlyReliableGps
+                val bannerBg = if (isFilteredOut)
+                    MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.95f)
+                else
+                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.95f)
+                val bannerIcon = if (isFilteredOut)
+                    MaterialTheme.colorScheme.tertiary
+                else
+                    MaterialTheme.colorScheme.error
+
                 Card(
                     modifier = Modifier
                         .align(Alignment.Center)
                         .padding(32.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.95f)
-                    ),
+                    colors = CardDefaults.cardColors(containerColor = bannerBg),
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                     shape = RoundedCornerShape(20.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(28.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.LocationOn,
-                            contentDescription = null,
-                            modifier = Modifier.size(40.dp),
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                        Text(
-                            text = stringResource(R.string.map_no_gps_data),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            textAlign = TextAlign.Center
-                        )
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        // Close button
+                        IconButton(
+                            onClick = { dismissedGpsBanner = true },
+                            modifier = Modifier.align(Alignment.TopEnd).size(32.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(18.dp))
+                        }
+                        Column(
+                            modifier = Modifier.padding(28.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.LocationOn,
+                                contentDescription = null,
+                                modifier = Modifier.size(40.dp),
+                                tint = bannerIcon
+                            )
+                            Text(
+                                text = if (isFilteredOut)
+                                    stringResource(R.string.map_gps_filtered_out, allGeoTigesCount, mapReliableGpsThresholdM.toInt())
+                                else
+                                    stringResource(R.string.map_no_gps_data),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = if (isFilteredOut) MaterialTheme.colorScheme.onTertiaryContainer
+                                       else MaterialTheme.colorScheme.onErrorContainer,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
@@ -1657,31 +2051,4 @@ private fun enableLocationComponent(map: MapboxMap, style: Style, context: andro
     } catch (e: Throwable) {
         Log.w(TAG, "Could not enable location component", e)
     }
-}
-
-private fun createCircleMarker(sizePx: Int, color: Int): Bitmap {
-    val size = sizePx.coerceAtLeast(8)
-    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bmp)
-    val r = size / 2f
-    // Ombre légère
-    val shadow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        this.color = 0x40000000
-        style = Paint.Style.FILL
-    }
-    canvas.drawCircle(r + 1f, r + 1f, r - 1f, shadow)
-    // Remplissage
-    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        this.color = color
-        style = Paint.Style.FILL
-    }
-    canvas.drawCircle(r, r, r - 2f, fill)
-    // Bordure blanche
-    val border = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        this.color = 0xFFFFFFFF.toInt()
-        style = Paint.Style.STROKE
-        strokeWidth = 2.5f
-    }
-    canvas.drawCircle(r, r, r - 2f, border)
-    return bmp
 }

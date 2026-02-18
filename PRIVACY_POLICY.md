@@ -38,11 +38,12 @@ This privacy policy explains what data the App collects, how it is used, and how
 
 ## Network Usage
 
-The App uses an internet connection **only** for the following purpose:
+The App uses an internet connection **only** for the following purposes:
 
 - **Map tile loading**: downloading map background images (satellite, topographic, cadastral) from public tile servers (IGN/GeoPortail, OpenStreetMap, MapLibre).
+- **Price table sync** (optional, user-initiated): downloading wood market prices from a URL configured by the user in Settings. No user data is sent; the app only performs an HTTP GET request to fetch price data.
 
-No user data is sent over the network. Map tile requests contain only standard HTTP headers and geographic coordinates of the visible map area.
+No personal or forestry data is sent over the network. Map tile requests contain only standard HTTP headers and geographic coordinates of the visible map area.
 
 ## Location Data
 

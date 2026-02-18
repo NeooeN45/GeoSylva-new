@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.forestry.counter.data.preferences.FontSize
+import com.forestry.counter.data.preferences.GpsCaptureMode
 import com.forestry.counter.data.preferences.ThemeMode
 import com.forestry.counter.data.preferences.UserPreferencesManager
 import kotlinx.coroutines.launch
@@ -134,6 +135,10 @@ fun SettingsScreen(
     val hapticLevel by preferencesManager.hapticIntensity.collectAsState(initial = 2)
     val appLanguage by preferencesManager.appLanguage.collectAsState(initial = "system")
     val keepScreenOn by preferencesManager.keepScreenOn.collectAsState(initial = false)
+    val gpsCaptureMode by preferencesManager.gpsCaptureMode.collectAsState(initial = GpsCaptureMode.STANDARD)
+    val gpsMaxAcceptablePrecisionM by preferencesManager.gpsMaxAcceptablePrecisionM.collectAsState(initial = 15f)
+    val mapOnlyReliableGps by preferencesManager.mapOnlyReliableGps.collectAsState(initial = false)
+    val mapReliableGpsThresholdM by preferencesManager.mapReliableGpsThresholdM.collectAsState(initial = 8f)
     var showCsvDialog by remember { mutableStateOf(false) }
 
     // Tarif de cubage
@@ -164,6 +169,7 @@ fun SettingsScreen(
                             TarifMethod.ALGAN -> R.string.tarif_method_algan
                             TarifMethod.IFN_RAPIDE -> R.string.tarif_method_ifn_rapide
                             TarifMethod.IFN_LENT -> R.string.tarif_method_ifn_lent
+                            TarifMethod.FGH -> R.string.tarif_method_fgh
                             TarifMethod.COEF_FORME -> R.string.tarif_method_coef_forme
                         }
                         val descRes = when (method) {
@@ -172,6 +178,7 @@ fun SettingsScreen(
                             TarifMethod.ALGAN -> R.string.tarif_method_algan_desc
                             TarifMethod.IFN_RAPIDE -> R.string.tarif_method_ifn_rapide_desc
                             TarifMethod.IFN_LENT -> R.string.tarif_method_ifn_lent_desc
+                            TarifMethod.FGH -> R.string.tarif_method_fgh_desc
                             TarifMethod.COEF_FORME -> R.string.tarif_method_coef_forme_desc
                         }
                         Row(
@@ -603,6 +610,111 @@ fun SettingsScreen(
                     }
                 )
 
+                // GPS capture profile
+                var gpsModeExpanded by remember { mutableStateOf(false) }
+                Box {
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.settings_gps_capture_mode_title)) },
+                        supportingContent = {
+                            Text(
+                                when (gpsCaptureMode) {
+                                    GpsCaptureMode.FAST -> stringResource(R.string.settings_gps_capture_mode_fast)
+                                    GpsCaptureMode.STANDARD -> stringResource(R.string.settings_gps_capture_mode_standard)
+                                    GpsCaptureMode.PRECISE -> stringResource(R.string.settings_gps_capture_mode_precise)
+                                }
+                            )
+                        },
+                        leadingContent = { Icon(Icons.Default.GpsFixed, contentDescription = null) },
+                        modifier = Modifier.clickable { gpsModeExpanded = true }
+                    )
+                    DropdownMenu(
+                        expanded = gpsModeExpanded,
+                        onDismissRequest = { gpsModeExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.settings_gps_capture_mode_fast)) },
+                            onClick = {
+                                scope.launch { preferencesManager.setGpsCaptureMode(GpsCaptureMode.FAST) }
+                                gpsModeExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.settings_gps_capture_mode_standard)) },
+                            onClick = {
+                                scope.launch { preferencesManager.setGpsCaptureMode(GpsCaptureMode.STANDARD) }
+                                gpsModeExpanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.settings_gps_capture_mode_precise)) },
+                            onClick = {
+                                scope.launch { preferencesManager.setGpsCaptureMode(GpsCaptureMode.PRECISE) }
+                                gpsModeExpanded = false
+                            }
+                        )
+                    }
+                }
+
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Text(
+                        text = stringResource(
+                            R.string.settings_gps_precision_threshold_format,
+                            gpsMaxAcceptablePrecisionM
+                        ),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Slider(
+                        value = gpsMaxAcceptablePrecisionM,
+                        onValueChange = { value ->
+                            scope.launch { preferencesManager.setGpsMaxAcceptablePrecisionM(value) }
+                        },
+                        valueRange = 3f..40f,
+                        steps = 36
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_gps_precision_threshold_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.settings_map_only_reliable_gps)) },
+                    supportingContent = { Text(stringResource(R.string.settings_map_only_reliable_gps_desc)) },
+                    leadingContent = { Icon(Icons.Default.Map, contentDescription = null) },
+                    trailingContent = {
+                        Switch(
+                            checked = mapOnlyReliableGps,
+                            onCheckedChange = { enabled ->
+                                scope.launch { preferencesManager.setMapOnlyReliableGps(enabled) }
+                            }
+                        )
+                    }
+                )
+
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Text(
+                        text = stringResource(
+                            R.string.settings_map_reliable_gps_threshold_format,
+                            mapReliableGpsThresholdM
+                        ),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Slider(
+                        value = mapReliableGpsThresholdM,
+                        onValueChange = { value ->
+                            scope.launch { preferencesManager.setMapReliableGpsThresholdM(value) }
+                        },
+                        valueRange = 3f..40f,
+                        steps = 36
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_map_reliable_gps_threshold_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
                 
             }
 
@@ -616,6 +728,7 @@ fun SettingsScreen(
                     TarifMethod.ALGAN -> R.string.tarif_method_algan
                     TarifMethod.IFN_RAPIDE -> R.string.tarif_method_ifn_rapide
                     TarifMethod.IFN_LENT -> R.string.tarif_method_ifn_lent
+                    TarifMethod.FGH -> R.string.tarif_method_fgh
                     TarifMethod.COEF_FORME -> R.string.tarif_method_coef_forme
                 }
                 val currentLabel = stringResource(tarifLabelRes)

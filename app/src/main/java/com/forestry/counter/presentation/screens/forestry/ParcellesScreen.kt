@@ -46,6 +46,7 @@ import com.forestry.counter.domain.repository.PlacetteRepository
 import com.forestry.counter.domain.repository.TigeRepository
 import com.forestry.counter.data.preferences.UserPreferencesManager
 import com.forestry.counter.presentation.components.AppMiniDialog
+import com.forestry.counter.presentation.components.TipCard
 import com.forestry.counter.presentation.utils.rememberHapticFeedback
 import com.forestry.counter.presentation.utils.rememberSoundFeedback
 import com.forestry.counter.domain.repository.GroupRepository
@@ -316,6 +317,13 @@ fun ParcellesScreen(
                                             }
                                         }
                                     }
+                                }
+                                item {
+                                    TipCard(
+                                        tipKey = "parcelles_tip",
+                                        title = stringResource(R.string.tip_parcelles_title),
+                                        message = stringResource(R.string.tip_parcelles_msg)
+                                    )
                                 }
                                 items(displayedParcelles, key = { it.id }) { p ->
                                     ParcelleCard(

@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.Print
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -72,6 +73,7 @@ import com.forestry.counter.domain.calculation.tarifs.TarifSelection
 import com.forestry.counter.domain.calculation.tarifs.TarifCalculator
 import com.forestry.counter.domain.usecase.export.QgisExportHelper
 import com.forestry.counter.domain.usecase.export.PdfSynthesisExporter
+import com.forestry.counter.domain.usecase.export.ShapefileExporter
 import com.forestry.counter.data.preferences.UserPreferencesManager
 import com.forestry.counter.presentation.components.AppMiniDialog
 import com.forestry.counter.presentation.utils.parseHeightInputMean
@@ -144,6 +146,8 @@ fun MartelageScreen(
 
     val savedSurface by userPreferences.martelageSurfaceFlow(scopeKey).collectAsState(initial = null)
     val savedHo by userPreferences.martelageHoFlow(scopeKey).collectAsState(initial = null)
+    val savedNhaAvant by userPreferences.martelageNhaAvantFlow(scopeKey).collectAsState(initial = null)
+    val savedGhaAvant by userPreferences.martelageGhaAvantFlow(scopeKey).collectAsState(initial = null)
 
     val martelageHeightsLocal by userPreferences.martelageHeightsFlow(scopeKey).collectAsState(initial = emptyMap())
     val forestIdForHeights = remember(forestId, parcelleId, parcelles) {
@@ -259,6 +263,8 @@ fun MartelageScreen(
 
     var surfaceInput by remember { mutableStateOf("") }
     var hoInput by remember { mutableStateOf("") }
+    var nHaAvantInput by remember { mutableStateOf("") }
+    var gHaAvantInput by remember { mutableStateOf("") }
     val hauteurParClasseState = remember {
         mutableStateMapOf<Int, String>().apply {
             fixedClasses.forEach { put(it, "") }
@@ -271,6 +277,11 @@ fun MartelageScreen(
     var showParamPanel by remember { mutableStateOf(false) }
     var editingHeightsEssenceCode by remember { mutableStateOf<String?>(null) }
     var persistParamsRequested by remember { mutableStateOf(false) }
+    var showHeightPromptDialog by remember { mutableStateOf(false) }
+    var showHeightSnoozeDialog by remember { mutableStateOf(false) }
+    var heightSnoozeHours by rememberSaveable { mutableStateOf(1) }
+    val heightPromptSnoozeUntilMs by userPreferences.heightPromptSnoozeUntilMs.collectAsState(initial = 0L)
+    val isHeightPromptSnoozed = heightPromptSnoozeUntilMs > System.currentTimeMillis()
 
     // Tarif de cubage — sélection depuis le martelage
     var showTarifMethodDialog by remember { mutableStateOf(false) }
@@ -332,6 +343,33 @@ fun MartelageScreen(
         }
     }
 
+    val exportShapefileLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                runCatching {
+                    context.contentResolver.openOutputStream(uri)?.use { os ->
+                        ShapefileExporter.exportToZip(
+                            tiges = tigesInScope,
+                            essences = essences,
+                            outputStream = os
+                        )
+                    }
+                }.onSuccess { result ->
+                    val count = result?.stemCount ?: 0
+                    if (count == 0) {
+                        snackbar.showSnackbar(context.getString(R.string.export_qgis_no_gps_stems))
+                    } else {
+                        snackbar.showSnackbar(context.getString(R.string.export_shapefile_done, count))
+                    }
+                }.onFailure { e ->
+                    snackbar.showSnackbar(context.getString(R.string.export_failed_format, e.message ?: ""))
+                }
+            }
+        }
+    }
+
     // Pré-remplissage des champs si des valeurs ont déjà été enregistrées pour cette portée
     LaunchedEffect(savedSurface) {
         if (savedSurface != null && surfaceInput.isBlank()) {
@@ -341,6 +379,16 @@ fun MartelageScreen(
     LaunchedEffect(savedHo) {
         if (savedHo != null && hoInput.isBlank()) {
             hoInput = String.format(Locale.US, "%.1f", savedHo)
+        }
+    }
+    LaunchedEffect(savedNhaAvant) {
+        if (savedNhaAvant != null && nHaAvantInput.isBlank()) {
+            nHaAvantInput = String.format(Locale.US, "%.0f", savedNhaAvant)
+        }
+    }
+    LaunchedEffect(savedGhaAvant) {
+        if (savedGhaAvant != null && gHaAvantInput.isBlank()) {
+            gHaAvantInput = String.format(Locale.US, "%.1f", savedGhaAvant)
         }
     }
 
@@ -398,6 +446,24 @@ fun MartelageScreen(
         }
     }
 
+    val nHaAvantValue = nHaAvantInput.replace(',', '.').toDoubleOrNull()
+    val nHaAvant = nHaAvantValue ?: savedNhaAvant
+    val gHaAvantValue = gHaAvantInput.replace(',', '.').toDoubleOrNull()
+    val gHaAvant = gHaAvantValue ?: savedGhaAvant
+
+    LaunchedEffect(nHaAvantValue, scopeKey) {
+        if (nHaAvantValue != null && nHaAvantValue > 0.0) {
+            kotlinx.coroutines.delay(800L)
+            userPreferences.setMartelageNhaAvant(scopeKey, nHaAvantValue)
+        }
+    }
+    LaunchedEffect(gHaAvantValue, scopeKey) {
+        if (gHaAvantValue != null && gHaAvantValue > 0.0) {
+            kotlinx.coroutines.delay(800L)
+            userPreferences.setMartelageGhaAvant(scopeKey, gHaAvantValue)
+        }
+    }
+
     val synthesisParams by produceState<ForestrySynthesisParams?>(
         initialValue = null,
         forestryCalculator
@@ -446,16 +512,17 @@ fun MartelageScreen(
         }.sorted()
     }
     val missingHeightsForPrompt = missingHeightEssenceCodesForPrompt.isNotEmpty()
+    val shouldPromptHeightsNow = missingHeightsForPrompt && !isHeightPromptSnoozed
 
-    LaunchedEffect(missingParams, missingHeightsForPrompt, tigesInScope.size, missingHeightEssenceCodesForPrompt) {
-        if (!askedParamsOnce && tigesInScope.isNotEmpty() && (missingParams || missingHeightsForPrompt)) {
+    LaunchedEffect(missingParams, shouldPromptHeightsNow, tigesInScope.size, missingHeightEssenceCodesForPrompt) {
+        if (!askedParamsOnce && tigesInScope.isNotEmpty() && (missingParams || shouldPromptHeightsNow)) {
             askedParamsOnce = true
             showParamPanel = true
             if (missingParams) {
                 showParamDialog = true
             }
-            if (missingHeightsForPrompt && editingHeightsEssenceCode == null) {
-                editingHeightsEssenceCode = missingHeightEssenceCodesForPrompt.firstOrNull()
+            if (shouldPromptHeightsNow && editingHeightsEssenceCode == null) {
+                showHeightPromptDialog = true
             }
         }
     }
@@ -471,7 +538,9 @@ fun MartelageScreen(
         hoM,
         hauteurMap,
         synthesisParams,
-        diameterClasses
+        diameterClasses,
+        nHaAvant,
+        gHaAvant
     ) {
         value = if (surfaceM2 != null && surfaceM2 > 0.0) {
             computeMartelageStats(
@@ -482,7 +551,9 @@ fun MartelageScreen(
                 synthesisParams = synthesisParams,
                 diameterClasses = diameterClasses,
                 essences = essences,
-                forestryCalculator = forestryCalculator
+                forestryCalculator = forestryCalculator,
+                nHaAvant = nHaAvant,
+                gHaAvant = gHaAvant
             )
         } else null
     }
@@ -501,7 +572,7 @@ fun MartelageScreen(
                     context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { w ->
                         val now = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date())
                         w.write("martelage_export_at;${now}\n")
-                        w.write("scope;view;surface_m2;ho_m;volume_total_m3;volume_per_ha_m3;g_total_m2;g_per_ha_m2;revenue_total_eur;revenue_per_ha_eur;unpriced_volume_m3;unpriced_essences;dm_cm;h_mean_m;dg_cm;h_lorey_m\n")
+                        w.write("scope;view;surface_m2;ho_m;volume_total_m3;volume_per_ha_m3;volume_completeness_pct;g_total_m2;g_per_ha_m2;revenue_total_eur;revenue_per_ha_eur;unpriced_volume_m3;unpriced_essences;dm_cm;h_mean_m;dg_cm;h_lorey_m\n")
                         val unpricedNames = s.unpricedEssenceNames.distinct().joinToString(",")
                         val missingNames = s.missingHeightEssenceNames.distinct().joinToString(",")
                         w.write(
@@ -512,6 +583,7 @@ fun MartelageScreen(
                                 String.format(Locale.US, "%.1f", hoM ?: 0.0),
                                 String.format(Locale.US, "%.3f", s.vTotal),
                                 String.format(Locale.US, "%.3f", s.vPerHa),
+                                String.format(Locale.US, "%.1f", s.volumeCompletenessPct),
                                 String.format(Locale.US, "%.3f", s.gTotal),
                                 String.format(Locale.US, "%.3f", s.gPerHa),
                                 s.revenueTotal?.let { String.format(Locale.US, "%.2f", it) } ?: "",
@@ -525,7 +597,7 @@ fun MartelageScreen(
                             ).joinToString(";") + "\n"
                         )
 
-                        if (!s.volumeAvailable) {
+                        if (s.missingHeightEssenceCodes.isNotEmpty()) {
                             w.write("missing_heights;${missingNames}\n")
                         }
 
@@ -935,6 +1007,44 @@ fun MartelageScreen(
                                     singleLine = true
                                 )
 
+                                // ── Peuplement avant coupe (simulation) ──
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                Text(
+                                    stringResource(R.string.martelage_avant_coupe_hint),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = nHaAvantInput,
+                                        onValueChange = { nHaAvantInput = it },
+                                        label = { Text(stringResource(R.string.martelage_nha_avant_label)) },
+                                        modifier = Modifier.weight(1f),
+                                        keyboardOptions = KeyboardOptions(
+                                            keyboardType = KeyboardType.Decimal,
+                                            imeAction = ImeAction.Next
+                                        ),
+                                        placeholder = { Text("ex : 450") },
+                                        singleLine = true
+                                    )
+                                    OutlinedTextField(
+                                        value = gHaAvantInput,
+                                        onValueChange = { gHaAvantInput = it },
+                                        label = { Text(stringResource(R.string.martelage_gha_avant_label)) },
+                                        modifier = Modifier.weight(1f),
+                                        keyboardOptions = KeyboardOptions(
+                                            keyboardType = KeyboardType.Decimal,
+                                            imeAction = ImeAction.Done
+                                        ),
+                                        placeholder = { Text("ex : 28.5") },
+                                        suffix = { Text("m²") },
+                                        singleLine = true
+                                    )
+                                }
+
                                 // ── Sélecteur de méthode de cubage ──
                                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                                 Row(
@@ -1082,27 +1192,27 @@ fun MartelageScreen(
                         val s = stats!!
 
                         val vTotalAnim by animateFloatAsState(
-                            targetValue = if (s.volumeAvailable) s.vTotal.toFloat() else 0f,
+                            targetValue = s.vTotal.toFloat(),
                             animationSpec = tween(durationMillis = if (animationsEnabled) 380 else 0, easing = FastOutSlowInEasing),
                             label = "vTotalAnim"
                         )
                         val vPerHaAnim by animateFloatAsState(
-                            targetValue = if (s.volumeAvailable) s.vPerHa.toFloat() else 0f,
+                            targetValue = s.vPerHa.toFloat(),
                             animationSpec = tween(durationMillis = if (animationsEnabled) 380 else 0, easing = FastOutSlowInEasing),
                             label = "vPerHaAnim"
                         )
                         val revenueTotalAnim by animateFloatAsState(
-                            targetValue = if (s.volumeAvailable) (s.revenueTotal ?: 0.0).toFloat() else 0f,
+                            targetValue = (s.revenueTotal ?: 0.0).toFloat(),
                             animationSpec = tween(durationMillis = if (animationsEnabled) 380 else 0, easing = FastOutSlowInEasing),
                             label = "revenueTotalAnim"
                         )
                         val revenuePerHaAnim by animateFloatAsState(
-                            targetValue = if (s.volumeAvailable) (s.revenuePerHa ?: 0.0).toFloat() else 0f,
+                            targetValue = (s.revenuePerHa ?: 0.0).toFloat(),
                             animationSpec = tween(durationMillis = if (animationsEnabled) 380 else 0, easing = FastOutSlowInEasing),
                             label = "revenuePerHaAnim"
                         )
                         val missingPriceVolAnim by animateFloatAsState(
-                            targetValue = if (s.volumeAvailable) s.unpricedVolumeTotal.toFloat() else 0f,
+                            targetValue = s.unpricedVolumeTotal.toFloat(),
                             animationSpec = tween(durationMillis = if (animationsEnabled) 380 else 0, easing = FastOutSlowInEasing),
                             label = "missingPriceVolAnim"
                         )
@@ -1114,7 +1224,7 @@ fun MartelageScreen(
                         val missingPriceVisible = missingPriceVol > 0.0 && s.vTotal > 0.0
 
                         AnimatedVisibility(
-                            visible = !s.volumeAvailable,
+                            visible = s.missingHeightEssenceCodes.isNotEmpty(),
                             enter = fadeIn(animationSpec = tween(durationMillis = if (animationsEnabled) 180 else 0, easing = FastOutSlowInEasing)) +
                                 expandVertically(animationSpec = tween(durationMillis = if (animationsEnabled) 220 else 0, easing = FastOutSlowInEasing)),
                             exit = fadeOut(animationSpec = tween(durationMillis = if (animationsEnabled) 180 else 0, easing = FastOutSlowInEasing)) +
@@ -1167,7 +1277,7 @@ fun MartelageScreen(
                         }
 
                         AnimatedVisibility(
-                            visible = s.volumeAvailable && missingPriceVisible,
+                            visible = missingPriceVisible,
                             enter = fadeIn(animationSpec = tween(durationMillis = if (animationsEnabled) 180 else 0, easing = FastOutSlowInEasing)) +
                                 slideInVertically(
                                     animationSpec = tween(durationMillis = if (animationsEnabled) 220 else 0, easing = FastOutSlowInEasing),
@@ -1181,7 +1291,7 @@ fun MartelageScreen(
                                 ) +
                                 shrinkVertically(animationSpec = tween(durationMillis = if (animationsEnabled) 220 else 0, easing = FastOutSlowInEasing))
                         ) {
-                            val pct = ((missingPriceVol / s.vTotal) * 100.0)
+                            val pct = ((missingPriceVol / s.vTotal.coerceAtLeast(1e-9)) * 100.0)
                                 .coerceIn(0.0, 100.0)
                                 .roundToInt()
 
@@ -1253,8 +1363,8 @@ fun MartelageScreen(
                             vPerHaText = formatVolume(vPerHaAnim.toDouble()),
                             revenueTotalText = revenueTotalText,
                             revenuePerHaText = revenuePerHaText,
-                            animationsEnabled = animationsEnabled,
-                            volumeAvailable = s.volumeAvailable
+                            volumeAvailable = s.volumeAvailable,
+                            volumeCompletenessPct = s.volumeCompletenessPct
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -1281,12 +1391,27 @@ fun MartelageScreen(
                             placeholderDash = placeholderDash
                         )
 
+                        if (s.sanityWarnings.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            SanityWarningsCard(warnings = s.sanityWarnings)
+                        }
+
+                        if (s.harvestNhaPct != null || s.harvestGhaPct != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            HarvestSimulationCard(
+                                harvestNhaPct = s.harvestNhaPct,
+                                harvestGhaPct = s.harvestGhaPct,
+                                residualNha = s.residualNha,
+                                residualGha = s.residualGha,
+                                nPerHa = s.nPerHa,
+                                gPerHa = s.gPerHa
+                            )
+                        }
+
                         if (s.classDistribution.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(8.dp))
                             ClassDistributionCard(
-                                classDistribution = s.classDistribution,
-                                volumeAvailable = s.volumeAvailable,
-                                animationsEnabled = animationsEnabled
+                                classDistribution = s.classDistribution
                             )
                         }
 
@@ -1366,6 +1491,69 @@ fun MartelageScreen(
                 stringResource(R.string.martelage_params_dialog_hint),
                 style = MaterialTheme.typography.bodySmall
             )
+        }
+    }
+
+    if (showHeightPromptDialog) {
+        val names = missingHeightEssenceCodesForPrompt
+            .map { code ->
+                availableEssences.firstOrNull { normalizeEssenceCode(it.code) == normalizeEssenceCode(code) }?.name ?: code
+            }
+            .joinToString(", ")
+        AppMiniDialog(
+            onDismissRequest = { showHeightPromptDialog = false },
+            animationsEnabled = animationsEnabled,
+            icon = Icons.Default.Warning,
+            title = stringResource(R.string.martelage_missing_heights_title),
+            description = stringResource(R.string.martelage_missing_heights_desc, names.ifBlank { "—" }),
+            confirmText = stringResource(R.string.martelage_fill_heights),
+            dismissText = stringResource(R.string.mandatory_heights_skip),
+            neutralText = stringResource(R.string.mandatory_heights_snooze_title),
+            onDismiss = { showHeightPromptDialog = false },
+            onNeutral = {
+                showHeightPromptDialog = false
+                heightSnoozeHours = 1
+                showHeightSnoozeDialog = true
+            },
+            onConfirm = {
+                showHeightPromptDialog = false
+                editingHeightsEssenceCode = missingHeightEssenceCodesForPrompt.firstOrNull()
+            }
+        )
+    }
+
+    if (showHeightSnoozeDialog) {
+        AppMiniDialog(
+            onDismissRequest = { showHeightSnoozeDialog = false },
+            animationsEnabled = animationsEnabled,
+            icon = Icons.Default.Warning,
+            title = stringResource(R.string.mandatory_heights_snooze_title),
+            description = stringResource(R.string.mandatory_heights_desc),
+            confirmText = stringResource(R.string.validate),
+            dismissText = stringResource(R.string.cancel),
+            onConfirm = {
+                val hours = heightSnoozeHours.coerceAtLeast(1)
+                showHeightSnoozeDialog = false
+                coroutineScope.launch {
+                    userPreferences.snoozeHeightPromptForHours(hours)
+                    snackbar.showSnackbar(context.getString(R.string.mandatory_heights_snoozed_format, hours))
+                }
+            }
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                listOf(1, 4, 24).forEach { hours ->
+                    Row(
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        RadioButton(
+                            selected = heightSnoozeHours == hours,
+                            onClick = { heightSnoozeHours = hours }
+                        )
+                        Text(stringResource(R.string.mandatory_heights_snooze_format, hours))
+                    }
+                }
+            }
         }
     }
 
@@ -1591,6 +1779,7 @@ fun MartelageScreen(
             onPlayClick = { playClickFeedback() },
             exportGeoJsonLauncher = exportGeoJsonLauncher,
             exportCsvXyLauncher = exportCsvXyLauncher,
+            exportShapefileLauncher = exportShapefileLauncher,
             exportCsvMartelageLauncher = exportMartelageCsv,
             exportPdfLauncher = exportPdfLauncher,
             viewScopeName = viewScope.name
