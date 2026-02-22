@@ -280,28 +280,50 @@ fun GroupsScreen(
                 val groups = (uiState as? GroupsUiState.Success)?.groups.orEmpty()
                 AlertDialog(
                     onDismissRequest = { showMartelageScopeDialog = false },
-                    title = { Text(stringResource(R.string.martelage_choose_project_title)) },
+                    icon = { Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp)) },
+                    title = { Text(stringResource(R.string.martelage_choose_project_title), style = MaterialTheme.typography.titleMedium) },
                     text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextButton(
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Surface(
                                 onClick = {
                                     showMartelageScopeDialog = false
                                     onNavigateToMartelage(null)
                                 },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = MaterialTheme.shapes.medium,
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                                tonalElevation = 2.dp
                             ) {
-                                Text(stringResource(R.string.martelage_view_global))
-                            }
-                            HorizontalDivider()
-                            groups.forEach { g ->
-                                TextButton(
-                                    onClick = {
-                                        showMartelageScopeDialog = false
-                                        onNavigateToMartelage(g.id)
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    Text(g.name)
+                                    Icon(Icons.Default.Public, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+                                    Text(stringResource(R.string.martelage_view_global), style = MaterialTheme.typography.bodyLarge)
+                                }
+                            }
+                            if (groups.isNotEmpty()) {
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
+                                groups.forEach { g ->
+                                    Surface(
+                                        onClick = {
+                                            showMartelageScopeDialog = false
+                                            onNavigateToMartelage(g.id)
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = MaterialTheme.shapes.medium,
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            Icon(Icons.Default.Forest, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                                            Text(g.name, style = MaterialTheme.typography.bodyMedium)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -318,38 +340,74 @@ fun GroupsScreen(
                 val groups = (uiState as? GroupsUiState.Success)?.groups.orEmpty()
                 AlertDialog(
                     onDismissRequest = { showMapScopeDialog = false },
-                    title = { Text(stringResource(R.string.map_choose_scope_title)) },
+                    icon = { Icon(Icons.Default.Map, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp)) },
+                    title = { Text(stringResource(R.string.map_choose_scope_title), style = MaterialTheme.typography.titleMedium) },
                     text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            TextButton(
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Surface(
                                 onClick = {
                                     showMapScopeDialog = false
                                     onNavigateToMap("all")
                                 },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = MaterialTheme.shapes.medium,
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                                tonalElevation = 2.dp
                             ) {
-                                Text(stringResource(R.string.map_scope_all))
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Icon(Icons.Default.Park, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+                                    Column {
+                                        Text(stringResource(R.string.map_scope_all), style = MaterialTheme.typography.bodyLarge)
+                                        Text(stringResource(R.string.map_scope_all_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
                             }
-                            TextButton(
+                            Surface(
                                 onClick = {
                                     showMapScopeDialog = false
                                     onNavigateToMap("none")
                                 },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = MaterialTheme.shapes.medium,
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                             ) {
-                                Text(stringResource(R.string.map_scope_empty))
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Icon(Icons.Default.Map, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
+                                    Column {
+                                        Text(stringResource(R.string.map_scope_empty), style = MaterialTheme.typography.bodyLarge)
+                                        Text(stringResource(R.string.map_scope_empty_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
                             }
                             if (groups.isNotEmpty()) {
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
+                                Text(stringResource(R.string.map_scope_by_project), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, top = 4.dp))
                                 groups.forEach { g ->
-                                    TextButton(
+                                    Surface(
                                         onClick = {
                                             showMapScopeDialog = false
                                             onNavigateToMap("forest_${g.id}")
                                         },
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = MaterialTheme.shapes.medium,
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                     ) {
-                                        Text(g.name)
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            Icon(Icons.Default.Forest, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                                            Text(g.name, style = MaterialTheme.typography.bodyMedium)
+                                        }
                                     }
                                 }
                             }

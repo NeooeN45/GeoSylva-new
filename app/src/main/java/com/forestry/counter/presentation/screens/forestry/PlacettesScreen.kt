@@ -90,6 +90,9 @@ fun PlacettesScreen(
     var editPlacette by remember { mutableStateOf<Placette?>(null) }
     var deletePlacette by remember { mutableStateOf<Placette?>(null) }
     var editName by remember { mutableStateOf("") }
+    var editSurfaceM2 by remember { mutableStateOf("") }
+    var editRayonM by remember { mutableStateOf("") }
+    var editType by remember { mutableStateOf("CIRC") }
 
     fun addPlacette() {
         playClickFeedback()
@@ -246,6 +249,9 @@ fun PlacettesScreen(
                                         playClickFeedback()
                                         editPlacette = pl
                                         editName = pl.name ?: ""
+                                        editSurfaceM2 = pl.surfaceM2?.let { String.format(java.util.Locale.US, "%.0f", it) } ?: ""
+                                        editRayonM = pl.rayonM?.let { String.format(java.util.Locale.US, "%.2f", it) } ?: ""
+                                        editType = pl.type ?: "CIRC"
                                     },
                                     onDelete = {
                                         playClickFeedback()
@@ -266,25 +272,65 @@ fun PlacettesScreen(
             onDismissRequest = { editPlacette = null },
             animationsEnabled = animationsEnabled,
             icon = Icons.Default.Edit,
-            title = stringResource(R.string.placette_name_dialog_title),
+            title = stringResource(R.string.placette_info_dialog_title),
             confirmText = stringResource(R.string.save),
             dismissText = stringResource(R.string.cancel),
             onConfirm = {
                 val p = editPlacette ?: return@AppMiniDialog
+                val newSurface = editSurfaceM2.replace(',', '.').toDoubleOrNull()
+                val newRayon = editRayonM.replace(',', '.').toDoubleOrNull()
                 scope.launch {
-                    placetteRepository.updatePlacette(p.copy(name = editName.trim().ifBlank { null }))
-                    snackbar.showSnackbar(context.getString(R.string.placette_renamed))
+                    placetteRepository.updatePlacette(
+                        p.copy(
+                            name = editName.trim().ifBlank { null },
+                            surfaceM2 = newSurface ?: p.surfaceM2,
+                            rayonM = newRayon ?: p.rayonM,
+                            type = editType.ifBlank { p.type },
+                            updatedAt = System.currentTimeMillis()
+                        )
+                    )
+                    snackbar.showSnackbar(context.getString(R.string.placette_updated))
                     editPlacette = null
                 }
             }
         ) {
-            OutlinedTextField(
-                value = editName,
-                onValueChange = { editName = it },
-                label = { Text(stringResource(R.string.name)) },
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = editName,
+                    onValueChange = { editName = it },
+                    label = { Text(stringResource(R.string.name)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = editSurfaceM2,
+                    onValueChange = { txt -> editSurfaceM2 = txt.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' } },
+                    label = { Text(stringResource(R.string.placette_surface_m2)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    suffix = { Text("m\u00B2") }
+                )
+                OutlinedTextField(
+                    value = editRayonM,
+                    onValueChange = { txt -> editRayonM = txt.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' } },
+                    label = { Text(stringResource(R.string.placette_rayon_m)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    suffix = { Text("m") }
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("CIRC" to stringResource(R.string.sampling_mode_circular), "FIXED_AREA" to stringResource(R.string.sampling_mode_fixed_area)).forEach { (key, label) ->
+                        FilterChip(
+                            selected = editType == key,
+                            onClick = { editType = key },
+                            label = { Text(label, style = MaterialTheme.typography.labelSmall) }
+                        )
+                    }
+                }
+            }
         }
     }
 

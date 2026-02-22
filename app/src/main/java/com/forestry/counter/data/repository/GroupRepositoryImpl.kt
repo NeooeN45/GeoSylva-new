@@ -4,6 +4,9 @@ import com.forestry.counter.data.local.dao.CounterDao
 import com.forestry.counter.data.local.dao.FormulaDao
 import com.forestry.counter.data.local.dao.GroupDao
 import com.forestry.counter.data.local.dao.GroupVariableDao
+import com.forestry.counter.data.local.dao.ParcelleDao
+import com.forestry.counter.data.local.dao.PlacetteDao
+import com.forestry.counter.data.local.dao.TigeDao
 import com.forestry.counter.data.local.entity.GroupEntity
 import com.forestry.counter.data.mapper.toCounter
 import com.forestry.counter.data.mapper.toCounterEntity
@@ -26,7 +29,10 @@ class GroupRepositoryImpl(
     private val groupDao: GroupDao,
     private val counterDao: CounterDao,
     private val formulaDao: FormulaDao,
-    private val groupVariableDao: GroupVariableDao
+    private val groupVariableDao: GroupVariableDao,
+    private val parcelleDao: ParcelleDao? = null,
+    private val placetteDao: PlacetteDao? = null,
+    private val tigeDao: TigeDao? = null
 ) : GroupRepository {
 
     override fun getAllGroups(): Flow<List<Group>> {
@@ -116,6 +122,65 @@ class GroupRepositoryImpl(
             )
         }
         if (newVariables.isNotEmpty()) groupVariableDao.insertVariables(newVariables)
+
+        // Duplicate parcelles, placettes and tiges (forestry data)
+        if (parcelleDao != null) {
+            val parcelles = parcelleDao.getParcellesByForest(groupId).first()
+            if (parcelles.isNotEmpty()) {
+                // Map old parcelleId -> new parcelleId
+                val parcelleIdMap = mutableMapOf<String, String>()
+                val newParcelles = parcelles.map { p ->
+                    val newId = UUID.randomUUID().toString()
+                    parcelleIdMap[p.parcelleId] = newId
+                    p.copy(
+                        parcelleId = newId,
+                        forestOwnerId = newGroupId,
+                        createdAt = System.currentTimeMillis(),
+                        updatedAt = System.currentTimeMillis()
+                    )
+                }
+                parcelleDao.insertParcelles(newParcelles)
+
+                // Duplicate placettes for each parcelle
+                val placetteIdMap = mutableMapOf<String, String>()
+                if (placetteDao != null) {
+                    for ((oldParcelleId, newParcelleId) in parcelleIdMap) {
+                        val placettes = placetteDao.getPlacettesByParcelle(oldParcelleId).first()
+                        if (placettes.isNotEmpty()) {
+                            val newPlacettes = placettes.map { pl ->
+                                val newPlId = UUID.randomUUID().toString()
+                                placetteIdMap[pl.placetteId] = newPlId
+                                pl.copy(
+                                    placetteId = newPlId,
+                                    parcelleOwnerId = newParcelleId,
+                                    createdAt = System.currentTimeMillis(),
+                                    updatedAt = System.currentTimeMillis()
+                                )
+                            }
+                            placetteDao.insertPlacettes(newPlacettes)
+                        }
+                    }
+                }
+
+                // Duplicate tiges for each parcelle
+                if (tigeDao != null) {
+                    for ((oldParcelleId, newParcelleId) in parcelleIdMap) {
+                        val tiges = tigeDao.getTigesByParcelle(oldParcelleId).first()
+                        if (tiges.isNotEmpty()) {
+                            val newTiges = tiges.map { t ->
+                                t.copy(
+                                    tigeId = UUID.randomUUID().toString(),
+                                    parcelleOwnerId = newParcelleId,
+                                    placetteOwnerId = t.placetteOwnerId?.let { placetteIdMap[it] },
+                                    timestamp = System.currentTimeMillis()
+                                )
+                            }
+                            tigeDao.insertTiges(newTiges)
+                        }
+                    }
+                }
+            }
+        }
 
         return newGroupId
     }

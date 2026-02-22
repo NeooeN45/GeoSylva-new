@@ -4,7 +4,7 @@
 
 ### Application Android professionnelle d'inventaire forestier et de martelage
 
-[![Version](https://img.shields.io/badge/version-1.1.0-green?style=for-the-badge)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.3.0-green?style=for-the-badge)](CHANGELOG.md)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)](LICENSE)
@@ -40,15 +40,18 @@ GeoSylva remplace le carnet de terrain et les tableurs Excel par une application
 
 - **Saisie rapide** — comptage par essence et classe de diamètre avec boutons +/−
 - **95+ essences** pré-configurées avec données forestières détaillées (densité, qualité, croissance, usage bois, tolérance ombre, dimensions max)
-- **6 méthodes de cubage** : Schaeffer, Chaudet, Algan, IFN rapide/lent, FGH, coefficient de forme
+- **7 méthodes de cubage** : Schaeffer 1E/2E, Algan, IFN Rapide/Lent, FGH, Coefficient de forme
 - **Classification produit automatique** — bois d'œuvre (BO), bois d'industrie (BI), bois de chauffage (BCh), déroulage, traverse, charpente…
 - **Notation qualité bois** A/B/C/D avec défauts visuels
 
 ### 📍 GPS de précision
 
+- **Capture immédiate au tap** — GPS déclenché instantanément lors de l'ajout d'une tige
+- **Profil optimal unique** — 6 lectures (max 20m, timeout 15s) équilibre rapidité + précision
+- **Réutilisation intelligente** — si une tige est supprimée puis re-ajoutée (même classe + essence), le dernier point GPS est réutilisé
+- **Persistance hors-page** — la capture GPS continue en arrière-plan même si vous quittez l'écran
+- **Visualisation de la précision** — cercles colorés sur la carte : 🟢 ≤3m (excellent) 🟡 ≤6m (bon) 🟠 ≤12m (modéré) 🔴 >12m (mauvais)
 - **Moyennage multi-lectures** avec rejet d'outliers (MAD-based)
-- **3 profils de capture** : Rapide (3 lectures), Standard (5), Précis (8)
-- **Seuil de précision configurable** — rejette automatiquement les points GPS imprécis
 - **Monitoring périodique** de la qualité du signal GPS
 
 ### 🗺️ Cartographie interactive
@@ -66,7 +69,9 @@ GeoSylva remplace le carnet de terrain et les tableurs Excel par une application
 - **Volume partiel intelligent** — affiche les résultats disponibles avec % de complétude au lieu de bloquer
 - **Simulation de coupe** — taux de prélèvement N/ha et G/ha, peuplement résiduel
 - **Garde-fous automatiques** — vérification de cohérence des données (30+ contrôles)
-- **Tables de prix** éditables par essence et classe de diamètre
+- **Tables de prix** éditables par essence, produit et classe de diamètre
+- **Qualité bois A/B/C/D** avec multiplicateurs automatiques (A=×2.5, B=×1.5, C=×1.0, D=×0.4)
+- **Ventilation par produit** — décomposition du volume par essence (BO/BI/BCh/PATE) avec valorisation détaillée
 
 ### 📤 Exports professionnels
 

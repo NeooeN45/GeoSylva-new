@@ -1,9 +1,17 @@
 # Changelog — GeoSylva
 
 All notable changes to this project will be documented in this file.
-Format follows [Keep a Changelog](https://keepachangelog.com/).
+Format follows [Keep a Changelog](https://keepachangelog.com).
 
-## [1.2.0] — 2026-02-18
+## [1.3.0] — 2026-02-22
+
+### Changed
+- **GPS capture behavior** — immediate trigger on tap (before snackbar), persists even if user leaves the screen using GlobalScope
+- **GPS profile simplification** — removed FAST/STANDARD/PRECISE modes and precision threshold slider, replaced with single optimal profile (6 readings, max 20m, timeout 15s)
+- **GPS point reuse** — when a stem is deleted and re-added with same essence and diameter class, the last GPS point is automatically reused
+- **Map precision visualization** — colored precision circles around GPS points: ≤3m (excellent) ≤6m (good) ≤12m (moderate) >12m (poor)  no GPS (gray)
+
+## [1.2.0] — 2026-02-20
 
 ### Added
 - **GPS averaging with outlier rejection** — multi-reading averaging using MAD (Median Absolute Deviation) to reject outlier readings. 3 configurable profiles: Fast (3 readings), Standard (5), Precise (8).
@@ -28,6 +36,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/).
 - **Map stem rendering overhaul** — GeoJSON source with clustering (CircleLayer + SymbolLayer), tap-to-inspect stems, dynamic color/size by essence and diameter.
 - **SanityCheckerTest** — unit tests for data coherence validation.
 - **QgisExportHelperTest** — 11 tests for GeoJSON, CSV-XY, and WKT export.
+- **Price system overhaul** — quality-adjusted pricing (A=×2.5, B=×1.5, C=×1.0, D=×0.4) with per-essence coefficients.
+- **Product breakdown UI** — expandable cards in MartelageScreen showing volume ventilation (BO/BI/BCh/PATE) with quality-adjusted pricing per essence.
+- **Enriched price defaults** — ~100 entries with essence×product×diameter ranges (e.g., Douglas BO 25-34cm = 80€, 35-44cm = 95€, 45+ = 120€).
+- **Documentation refresh** — `docs/methodes_calcul_volume.md` rewritten to match actual TarifCalculator implementation (7 methods + price system).
 
 ### Improved
 - **Partial volume results** — synthesis shows partial volumes with completeness percentage instead of zeroing when some heights are missing.

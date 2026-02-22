@@ -486,4 +486,106 @@ class TarifCalculatorTest {
             assertNotNull("IFN rapide recommended n° for $ess should not be null", n)
         }
     }
+
+    // ═══════════════════════════════════════════════════════════
+    // ENRICHED ESSENCES — New canonical species coverage
+    // ═══════════════════════════════════════════════════════════
+
+    @Test
+    fun `Algan — all enriched feuillus have coefficients and positive volume`() {
+        val essences = listOf(
+            "CH_PUBESCENT", "CH_ROUGE", "CH_VERT", "CH_LIEGE", "CH_TAUZIN", "CH_KERMES",
+            "FRENE_OXYPHYLLE", "FRENE_FLEURS", "ERABLE_MONTPELLIER", "ERABLE_OBIER",
+            "AULNE_CORSE", "SAULE_FRAGILE", "PEUPLIER_TREMB", "PLATANE", "MICOCOULIER",
+            "MARRONNIER", "TULIPIER", "OLIVIER", "ARBRE_JUDEE", "FIGUIER", "MURIER_BLANC",
+            "SORBIER_DOMESTIQUE", "CORNOUILLER_MALE", "CORNOUILLER_SANG", "SUREAU_NOIR",
+            "AUBEPINE_MONOGYNE", "PRUNELLIER", "BUIS", "TROENE", "VIORNE_LANTANE",
+            "VIORNE_OBIER", "GENETS_SCORPION", "EUCALYPTUS_GUNNII", "EUCALYPTUS_GLOBULUS"
+        )
+        for (ess in essences) {
+            val coefs = TarifCalculator.alganCoefsFor(ess)
+            assertNotNull("Missing Algan coefficients for $ess", coefs)
+            val v = TarifCalculator.computeVolume(TarifMethod.ALGAN, ess, 30.0, 18.0)
+            assertNotNull("Volume null for $ess", v)
+            assertTrue("Volume should be positive for $ess (got $v)", v!! > 0.0)
+        }
+    }
+
+    @Test
+    fun `Algan — all enriched résineux have coefficients and positive volume`() {
+        val essences = listOf(
+            "PIN_ALEP", "PIN_PIGNON", "PIN_CEMBRO", "PIN_MUGO", "PIN_SALZMANN", "PIN_MONTEREY",
+            "EPICEA_SITKA", "EPICEA_OMORIKA", "SAPIN_NORDMANN", "SAPIN_GRANDIS",
+            "SAPIN_CEPHALONIE", "SAPIN_ESPAGNE", "MEL_JAPON", "CEDRE_ATLAS", "CEDRE_LIBAN",
+            "THUYA_GEANT", "CYPRES_PROVENCE", "SEQUOIA_TOUJOURS_VERT", "CRYPTOMERE",
+            "CYPRES_CHAUVE", "TSUGA_HETEROPHYLLE", "GENEVRIER_CADE", "GENEVRIER_PHENICIE"
+        )
+        for (ess in essences) {
+            val coefs = TarifCalculator.alganCoefsFor(ess)
+            assertNotNull("Missing Algan coefficients for $ess", coefs)
+            val v = TarifCalculator.computeVolume(TarifMethod.ALGAN, ess, 35.0, 22.0)
+            assertNotNull("Volume null for $ess", v)
+            assertTrue("Volume should be positive for $ess (got $v)", v!! > 0.0)
+        }
+    }
+
+    @Test
+    fun `CoefForme — all enriched essences have form coefficients`() {
+        val essences = listOf(
+            "CH_PUBESCENT", "CH_ROUGE", "PLATANE", "TULIPIER", "EUCALYPTUS_GUNNII",
+            "PIN_ALEP", "SAPIN_GRANDIS", "CEDRE_ATLAS", "CYPRES_PROVENCE", "SEQUOIA_TOUJOURS_VERT",
+            "CRYPTOMERE", "TSUGA_HETEROPHYLLE", "GENEVRIER_CADE"
+        )
+        for (ess in essences) {
+            val f = TarifCalculator.defaultCoefForme(ess)
+            assertTrue("CoefForme for $ess ($f) should be in 0.35..0.55", f in 0.35..0.55)
+        }
+    }
+
+    @Test
+    fun `IFN Rapide — enriched essences have auto-selected tarif`() {
+        val essences = listOf(
+            "SAPIN_GRANDIS", "CEDRE_ATLAS", "SEQUOIA_TOUJOURS_VERT",
+            "EUCALYPTUS_GLOBULUS", "PLATANE", "TULIPIER", "PIN_ALEP"
+        )
+        for (ess in essences) {
+            val v = TarifCalculator.computeVolume(TarifMethod.IFN_RAPIDE, ess, 40.0, null, tarifNumero = null)
+            assertNotNull("IFN rapide auto-select should work for $ess", v)
+            assertTrue("Volume should be positive for $ess", v!! > 0.0)
+        }
+    }
+
+    @Test
+    fun `Alias — FRENE resolves to FRENE_ELEVE`() {
+        val v1 = TarifCalculator.computeVolume(TarifMethod.ALGAN, "FRENE", 35.0, 22.0)
+        val v2 = TarifCalculator.computeVolume(TarifMethod.ALGAN, "FRENE_ELEVE", 35.0, 22.0)
+        assertNotNull(v1)
+        assertNotNull(v2)
+        assertApprox(v1!!, v2, delta = 1e-12, msg = "FRENE alias -> FRENE_ELEVE")
+    }
+
+    @Test
+    fun `Alias — SAPIN resolves to SAPIN_PECTINE`() {
+        val v1 = TarifCalculator.computeVolume(TarifMethod.ALGAN, "SAPIN", 35.0, 22.0)
+        val v2 = TarifCalculator.computeVolume(TarifMethod.ALGAN, "SAPIN_PECTINE", 35.0, 22.0)
+        assertNotNull(v1)
+        assertNotNull(v2)
+        assertApprox(v1!!, v2, delta = 1e-12, msg = "SAPIN alias -> SAPIN_PECTINE")
+    }
+
+    @Test
+    fun `Alias — CEDRE resolves to CEDRE_ATLAS`() {
+        val v1 = TarifCalculator.computeVolume(TarifMethod.ALGAN, "CEDRE", 35.0, 22.0)
+        val v2 = TarifCalculator.computeVolume(TarifMethod.ALGAN, "CEDRE_ATLAS", 35.0, 22.0)
+        assertNotNull(v1)
+        assertNotNull(v2)
+        assertApprox(v1!!, v2, delta = 1e-12, msg = "CEDRE alias -> CEDRE_ATLAS")
+    }
+
+    @Test
+    fun `Alias — EUCALYPTUS resolves`() {
+        val v = TarifCalculator.computeVolume(TarifMethod.ALGAN, "EUCALYPTUS", 35.0, 22.0)
+        assertNotNull("EUCALYPTUS alias should resolve", v)
+        assertTrue(v!! > 0.0)
+    }
 }

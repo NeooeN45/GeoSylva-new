@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import com.forestry.counter.R
 import com.forestry.counter.data.local.CanonicalEssences
 import com.forestry.counter.data.parameters.ParameterDefaults
+import com.forestry.counter.data.parameters.RegionalPricePresets
 import com.forestry.counter.domain.calculation.PriceEntry
 import com.forestry.counter.domain.model.ParameterItem
 import com.forestry.counter.domain.parameters.ParameterKeys
@@ -83,12 +84,22 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
+private val QUALITY_CODES = listOf("*", "A", "B", "C", "D")
+private val QUALITY_LABELS = mapOf(
+    "*" to "Toutes qualités",
+    "A" to "A — Excellente",
+    "B" to "B — Bonne",
+    "C" to "C — Moyenne",
+    "D" to "D — Médiocre"
+)
+
 private data class EditablePriceRow(
     val essence: String,
     val product: String,
     val min: String,
     val max: String,
     val eurPerM3: String,
+    val quality: String = "*",
     val expanded: Boolean = false
 )
 
@@ -122,6 +133,7 @@ fun PriceTablesEditorScreen(
     val json = remember { Json { ignoreUnknownKeys = true } }
 
     var showResetDialog by remember { mutableStateOf(false) }
+    var showPresetDialog by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
 
     val rows = remember { mutableStateListOf<EditablePriceRow>() }
@@ -147,7 +159,8 @@ fun PriceTablesEditorScreen(
                 product = product,
                 min = min,
                 max = max,
-                eurPerM3 = eur
+                eurPerM3 = eur,
+                quality = r.quality.trim().takeIf { it != "*" && it.isNotEmpty() }
             )
         }
         return result to null
@@ -168,7 +181,8 @@ fun PriceTablesEditorScreen(
                     product = e.product,
                     min = e.min.toString(),
                     max = e.max.toString(),
-                    eurPerM3 = e.eurPerM3.toString()
+                    eurPerM3 = e.eurPerM3.toString(),
+                    quality = e.quality ?: "*"
                 )
             }
         }
@@ -213,6 +227,51 @@ fun PriceTablesEditorScreen(
         )
     }
 
+    if (showPresetDialog) {
+        AlertDialog(
+            onDismissRequest = { showPresetDialog = false },
+            confirmButton = {},
+            title = { Text(stringResource(R.string.price_preset_dialog_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        stringResource(R.string.price_preset_dialog_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    RegionalPricePresets.ALL.forEach { preset ->
+                        val label = preset.labelFr
+                        val count = preset.prices.size
+                        FilledTonalButton(
+                            onClick = {
+                                scope.launch {
+                                    val presetJson = json.encodeToString(preset.prices)
+                                    parameterRepository.setParameter(ParameterItem(ParameterKeys.PRIX_MARCHE, presetJson))
+                                    loadFromJsonString(presetJson)
+                                    showPresetDialog = false
+                                    snackbarHostState.showSnackbar(
+                                        context.getString(R.string.price_preset_loaded_format, label)
+                                    )
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(horizontalAlignment = Alignment.Start, modifier = Modifier.fillMaxWidth()) {
+                                Text(label, style = MaterialTheme.typography.labelLarge)
+                                Text(
+                                    "$count ${context.getString(R.string.price_preset_entries_suffix)}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -223,6 +282,9 @@ fun PriceTablesEditorScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showPresetDialog = true }) {
+                        Icon(Icons.Default.Forest, contentDescription = stringResource(R.string.price_preset_dialog_title))
+                    }
                     IconButton(onClick = { showResetDialog = true }) {
                         Icon(Icons.Default.Restore, contentDescription = null)
                     }
@@ -370,8 +432,9 @@ private fun PriceRowCard(
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
+                    val qualityTag = if (row.quality != "*") " \u00b7 Q.${row.quality}" else ""
                     Text(
-                        text = "$productLabel · D ${row.min}–${row.max} cm · $priceDisplay",
+                        text = "$productLabel \u00b7 D ${row.min}\u2013${row.max} cm$qualityTag \u00b7 $priceDisplay",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -454,6 +517,36 @@ private fun PriceRowCard(
                                     onClick = {
                                         onUpdate(row.copy(product = code))
                                         productExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Dropdown qualité
+                    var qualityExpanded by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(
+                        expanded = qualityExpanded,
+                        onExpandedChange = { qualityExpanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = QUALITY_LABELS[row.quality] ?: row.quality,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Qualit\u00e9") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = qualityExpanded) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = qualityExpanded,
+                            onDismissRequest = { qualityExpanded = false }
+                        ) {
+                            QUALITY_CODES.forEach { code ->
+                                DropdownMenuItem(
+                                    text = { Text(QUALITY_LABELS[code] ?: code) },
+                                    onClick = {
+                                        onUpdate(row.copy(quality = code))
+                                        qualityExpanded = false
                                     }
                                 )
                             }

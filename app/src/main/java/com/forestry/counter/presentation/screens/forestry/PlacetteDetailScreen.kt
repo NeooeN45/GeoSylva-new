@@ -25,11 +25,15 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInRoot
@@ -243,48 +247,7 @@ fun PlacetteDetailScreen(
                             val containerColor: Color? = essenceColor(essence)
 
                             val baseModifier = if (animationsEnabled) Modifier.animateItemPlacement() else Modifier
-                            val itemModifier = if (reorderMode) {
-                                baseModifier.pointerInput(orderOverride) {
-                                    detectDragGesturesAfterLongPress(
-                                        onDragStart = {
-                                            draggingCode = code
-                                            dragAccum = 0f
-                                            if (orderOverride.isEmpty()) orderOverride = displayOrder
-                                        },
-                                        onDrag = { change, dragAmount ->
-                                            change.consume()
-                                            dragAccum += dragAmount.y
-                                            var idx = orderOverride.indexOf(code)
-                                            while (dragAccum <= -itemStepPx && idx > 0) {
-                                                val list = orderOverride.toMutableList()
-                                                list.removeAt(idx)
-                                                list.add(idx - 1, code)
-                                                orderOverride = list
-                                                idx -= 1
-                                                dragAccum += itemStepPx
-                                            }
-                                            while (dragAccum >= itemStepPx && idx < orderOverride.lastIndex) {
-                                                val list = orderOverride.toMutableList()
-                                                list.removeAt(idx)
-                                                list.add(idx + 1, code)
-                                                orderOverride = list
-                                                idx += 1
-                                                dragAccum -= itemStepPx
-                                            }
-                                        },
-                                        onDragEnd = {
-                                            draggingCode = null
-                                            scope.launch { userPreferences.setEssenceOrder(placetteId, orderOverride) }
-                                        },
-                                        onDragCancel = {
-                                            draggingCode = null
-                                            scope.launch { userPreferences.setEssenceOrder(placetteId, orderOverride) }
-                                        }
-                                    )
-                                }
-                            } else {
-                                baseModifier
-                            }
+                            val itemModifier = baseModifier
 
                             EssenceBlock(
                                 code = code,
@@ -292,23 +255,34 @@ fun PlacetteDetailScreen(
                                 count = usageByEssence[code] ?: 0,
                                 reorderMode = reorderMode,
                                 animationsEnabled = animationsEnabled,
-                                onMoveUp = {
-                                    val idx = orderOverride.indexOf(code)
-                                    if (idx > 0) {
-                                        orderOverride = orderOverride.toMutableList().apply {
-                                            add(idx - 1, removeAt(idx))
-                                        }
-                                        scope.launch { userPreferences.setEssenceOrder(placetteId, orderOverride) }
+                                onDragStart = {
+                                    draggingCode = code
+                                    dragAccum = 0f
+                                    if (orderOverride.isEmpty()) orderOverride = displayOrder
+                                },
+                                onDrag = { dragY ->
+                                    dragAccum += dragY
+                                    var idx = orderOverride.indexOf(code)
+                                    while (dragAccum <= -itemStepPx && idx > 0) {
+                                        val list = orderOverride.toMutableList()
+                                        list.removeAt(idx)
+                                        list.add(idx - 1, code)
+                                        orderOverride = list
+                                        idx -= 1
+                                        dragAccum += itemStepPx
+                                    }
+                                    while (dragAccum >= itemStepPx && idx < orderOverride.lastIndex) {
+                                        val list = orderOverride.toMutableList()
+                                        list.removeAt(idx)
+                                        list.add(idx + 1, code)
+                                        orderOverride = list
+                                        idx += 1
+                                        dragAccum -= itemStepPx
                                     }
                                 },
-                                onMoveDown = {
-                                    val idx = orderOverride.indexOf(code)
-                                    if (idx >= 0 && idx < orderOverride.lastIndex) {
-                                        orderOverride = orderOverride.toMutableList().apply {
-                                            add(idx + 1, removeAt(idx))
-                                        }
-                                        scope.launch { userPreferences.setEssenceOrder(placetteId, orderOverride) }
-                                    }
+                                onDragEnd = {
+                                    draggingCode = null
+                                    scope.launch { userPreferences.setEssenceOrder(placetteId, orderOverride) }
                                 },
                                 onClick = {
                                     playClickFeedback()
@@ -586,8 +560,9 @@ private fun EssenceBlock(
     count: Int,
     reorderMode: Boolean,
     animationsEnabled: Boolean,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit,
+    onDragStart: () -> Unit,
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit,
     onClick: () -> Unit,
     onLongPress: () -> Unit,
     modifier: Modifier = Modifier,
@@ -608,17 +583,37 @@ private fun EssenceBlock(
                 Text(code, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(count.toString(), style = MaterialTheme.typography.titleLarge)
-                AnimatedVisibility(
-                    visible = reorderMode,
-                    enter = fadeIn(animationSpec = tween(durationMillis = if (animationsEnabled) 160 else 0, easing = FastOutSlowInEasing)) +
-                        expandVertically(animationSpec = tween(durationMillis = if (animationsEnabled) 200 else 0, easing = FastOutSlowInEasing)),
-                    exit = fadeOut(animationSpec = tween(durationMillis = if (animationsEnabled) 160 else 0, easing = FastOutSlowInEasing)) +
-                        shrinkVertically(animationSpec = tween(durationMillis = if (animationsEnabled) 200 else 0, easing = FastOutSlowInEasing))
-                ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                        FilledTonalButton(onClick = onMoveUp, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)) { Text(stringResource(R.string.move_up)) }
-                        FilledTonalButton(onClick = onMoveDown, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)) { Text(stringResource(R.string.move_down)) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(count.toString(), style = MaterialTheme.typography.titleLarge)
+                    
+                    AnimatedVisibility(
+                        visible = reorderMode,
+                        enter = fadeIn(animationSpec = tween(durationMillis = if (animationsEnabled) 160 else 0, easing = FastOutSlowInEasing)) +
+                            expandHorizontally(animationSpec = tween(durationMillis = if (animationsEnabled) 200 else 0, easing = FastOutSlowInEasing)),
+                        exit = fadeOut(animationSpec = tween(durationMillis = if (animationsEnabled) 160 else 0, easing = FastOutSlowInEasing)) +
+                            shrinkHorizontally(animationSpec = tween(durationMillis = if (animationsEnabled) 200 else 0, easing = FastOutSlowInEasing))
+                    ) {
+                        Row {
+                            Spacer(Modifier.width(16.dp))
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = stringResource(R.string.reorder),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .pointerInput(Unit) {
+                                        detectDragGestures(
+                                            onDragStart = { _ -> onDragStart() },
+                                            onDrag = { change, dragAmount -> 
+                                                change.consume()
+                                                onDrag(dragAmount.y) 
+                                            },
+                                            onDragEnd = { onDragEnd() },
+                                            onDragCancel = { onDragEnd() }
+                                        )
+                                    }
+                            )
+                        }
                     }
                 }
             }

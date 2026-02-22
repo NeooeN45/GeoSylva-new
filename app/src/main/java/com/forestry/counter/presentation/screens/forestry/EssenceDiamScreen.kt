@@ -104,8 +104,6 @@ fun EssenceDiamScreen(
     val soundEnabled by userPreferences.soundEnabled.collectAsState(initial = true)
     val hapticIntensity by userPreferences.hapticIntensity.collectAsState(initial = 2)
     val animationsEnabled by userPreferences.animationsEnabled.collectAsState(initial = true)
-    val gpsCaptureMode by userPreferences.gpsCaptureMode.collectAsState(initial = GpsCaptureMode.STANDARD)
-    val gpsMaxAcceptablePrecisionM by userPreferences.gpsMaxAcceptablePrecisionM.collectAsState(initial = 15f)
     val haptic = rememberHapticFeedback()
     val sound = rememberSoundFeedback()
 
@@ -118,69 +116,27 @@ fun EssenceDiamScreen(
         }
     }
 
-    fun attemptAutoGpsForTige(tigeId: String) {
-        scope.launch {
-            val hasPermission = ContextCompat.checkSelfPermission(appContext, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(appContext, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-            if (!hasPermission) {
-                if (!finePermission.status.isGranted) finePermission.launchPermissionRequest()
-                snackbar.showSnackbar(appContext.getString(R.string.gps_permission_required))
-                return@launch
-            }
-
+    // Profil GPS unique : équilibre rapidité + précision (6 lectures, max 20m, timeout 15s)
+    fun captureGpsForTige(tigeId: String) {
+        val appCtx = appContext
+        kotlinx.coroutines.GlobalScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val hasPermission = ContextCompat.checkSelfPermission(appCtx, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(appCtx, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            if (!hasPermission) return@launch
             try {
-                val profile = when (gpsCaptureMode) {
-                    GpsCaptureMode.FAST -> Triple(3, 35f, 7_000L)
-                    GpsCaptureMode.STANDARD -> Triple(5, 25f, 12_000L)
-                    GpsCaptureMode.PRECISE -> Triple(8, 12f, 18_000L)
-                }
-
-                // Moyennage multi-lectures pour une meilleure précision
                 val averaged = GpsAverager.collectAndAverage(
-                    context = appContext,
-                    targetReadings = profile.first,
-                    maxAccuracyM = profile.second,
-                    timeoutMs = profile.third
-                )
-
-                if (averaged == null) {
-                    snackbar.showSnackbar(appContext.getString(R.string.location_unavailable))
-                    return@launch
-                }
-
-                if (averaged.precisionM > gpsMaxAcceptablePrecisionM.toDouble()) {
-                    snackbar.showSnackbar(
-                        appContext.getString(
-                            R.string.gps_precision_rejected_format,
-                            averaged.precisionM,
-                            gpsMaxAcceptablePrecisionM
-                        )
-                    )
-                    return@launch
-                }
-
-                val ok = tigeRepository.setTigeGps(
+                    context = appCtx,
+                    targetReadings = 6,
+                    maxAccuracyM = 20f,
+                    timeoutMs = 15_000L
+                ) ?: return@launch
+                tigeRepository.setTigeGps(
                     tigeId = tigeId,
                     wkt = averaged.wkt,
                     precisionM = averaged.precisionM,
                     altitudeM = averaged.altitude
                 )
-                if (ok) {
-                    val qualityMsg = when (averaged.qualityLabel) {
-                        GpsQuality.EXCELLENT -> appContext.getString(R.string.gps_precision_excellent, averaged.precisionM)
-                        GpsQuality.GOOD -> appContext.getString(R.string.gps_precision_good, averaged.precisionM)
-                        GpsQuality.MODERATE -> appContext.getString(R.string.gps_precision_moderate, averaged.precisionM)
-                        GpsQuality.POOR -> appContext.getString(R.string.gps_precision_poor, averaged.precisionM)
-                    }
-                    snackbar.showSnackbar("${appContext.getString(R.string.gps_averaging_done)} · $qualityMsg")
-                } else {
-                    snackbar.showSnackbar(appContext.getString(R.string.gps_save_failed))
-                }
-            } catch (e: SecurityException) {
-                snackbar.showSnackbar(appContext.getString(R.string.gps_permission_required))
-            } catch (e: Exception) {
-                snackbar.showSnackbar(appContext.getString(R.string.gps_error_format, e.message ?: ""))
-            }
+            } catch (_: Throwable) { /* permission lost or GPS error — silent */ }
         }
     }
 
@@ -204,9 +160,9 @@ fun EssenceDiamScreen(
                         appContext.getString(R.string.gps_periodic_unavailable),
                         duration = SnackbarDuration.Long
                     )
-                } else if (quick.precisionM > gpsMaxAcceptablePrecisionM.toDouble()) {
+                } else if (quick.precisionM > 20.0) {
                     snackbar.showSnackbar(
-                        appContext.getString(R.string.gps_periodic_poor, quick.precisionM, gpsMaxAcceptablePrecisionM),
+                        appContext.getString(R.string.gps_periodic_poor, quick.precisionM, 20f),
                         duration = SnackbarDuration.Long
                     )
                 }
@@ -571,6 +527,11 @@ fun EssenceDiamScreen(
                                 playClickFeedback()
                                 scope.launch {
                                     val id = UUID.randomUUID().toString()
+                                    // Récupérer un point GPS existant pour cette classe+essence
+                                    val existingGps = tigesEssence
+                                        .filter { it.diamCm.toInt() == d && it.gpsWkt != null }
+                                        .maxByOrNull { it.timestamp }
+
                                     val ok = runCatching {
                                         tigeRepository.insertTige(
                                             com.forestry.counter.domain.model.Tige(
@@ -580,9 +541,9 @@ fun EssenceDiamScreen(
                                                 essenceCode = essenceCode,
                                                 diamCm = d.toDouble(),
                                                 hauteurM = null,
-                                                gpsWkt = null,
-                                                precisionM = null,
-                                                altitudeM = null,
+                                                gpsWkt = existingGps?.gpsWkt,
+                                                precisionM = existingGps?.precisionM,
+                                                altitudeM = existingGps?.altitudeM,
                                                 note = null,
                                                 produit = null,
                                                 fCoef = null,
@@ -591,21 +552,23 @@ fun EssenceDiamScreen(
                                         )
                                     }.isSuccess
                                     if (ok) {
-                                        attemptAutoGpsForTige(id)
+                                        // Déclencher le GPS immédiatement — persiste même si l'utilisateur quitte
+                                        // Seulement si pas de point GPS existant pour cette classe
+                                        if (existingGps == null) {
+                                            captureGpsForTige(id)
+                                        }
                                         val res = snackbar.showSnackbar(
                                             message = appContext.getString(R.string.tige_added),
                                             actionLabel = appContext.getString(R.string.undo)
                                         )
                                         if (res == SnackbarResult.ActionPerformed) {
-                                            val undone = tigeRepository.deleteLatest(
+                                            tigeRepository.deleteLatest(
                                                 parcelleId = parcelleId,
                                                 placetteId = placetteId,
                                                 essenceCode = essenceCode,
                                                 diamCm = d.toDouble()
                                             )
-                                            if (undone) {
-                                                snackbar.showSnackbar(appContext.getString(R.string.add_undone))
-                                            }
+                                            snackbar.showSnackbar(appContext.getString(R.string.add_undone))
                                         }
                                     } else {
                                         snackbar.showSnackbar(appContext.getString(R.string.insert_failed))
@@ -1026,7 +989,7 @@ fun EssenceDiamScreen(
                     }.isSuccess
                     if (ok) {
                         playClickFeedback()
-                        attemptAutoGpsForTige(id)
+                        captureGpsForTige(id)
                         snackbar.showSnackbar(appContext.getString(R.string.tree_added))
                     } else {
                         snackbar.showSnackbar(appContext.getString(R.string.insert_failed))

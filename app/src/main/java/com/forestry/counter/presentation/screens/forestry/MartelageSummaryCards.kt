@@ -699,6 +699,266 @@ private fun SanityRow(warning: SanityWarning, iconColor: Color) {
     }
 }
 
+/**
+ * Carte résumé des arbres spéciaux (dépérissant, bio, mort, parasité)
+ * avec détails par arbre : essence, diamètre, hauteur, type parasite.
+ */
+@Composable
+internal fun SpecialTreesCard(
+    specialTrees: List<SpecialTreeEntry>
+) {
+    if (specialTrees.isEmpty()) return
+    val cardBg = MaterialTheme.colorScheme.surfaceVariant
+    val cardContent = ColorUtils.getContrastingTextColor(cardBg)
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp)),
+        colors = CardDefaults.cardColors(
+            containerColor = cardBg,
+            contentColor = cardContent
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                stringResource(R.string.martelage_special_trees_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            specialTrees.forEach { entry ->
+                val (icon, label, color) = when (entry.categorie) {
+                    "DEPERISSANT" -> Triple("\u26A0\uFE0F", stringResource(R.string.special_tree_dying), Color(0xFFFF9800))
+                    "ARBRE_BIO" -> Triple("\uD83C\uDF3F", stringResource(R.string.special_tree_bio), Color(0xFF4CAF50))
+                    "MORT" -> Triple("\uD83D\uDC80", stringResource(R.string.special_tree_dead), Color(0xFF424242))
+                    "PARASITE" -> Triple("\uD83D\uDC1B", stringResource(R.string.special_tree_parasite), Color(0xFFF44336))
+                    else -> Triple("\uD83C\uDF32", entry.categorie, cardContent)
+                }
+                // Category header row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        color = color.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            icon,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Surface(
+                        color = color.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            "${entry.count}",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = color,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                // Per-tree detail rows
+                entry.trees.forEach { tree ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 32.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val detail = buildString {
+                            append(tree.essenceName)
+                            append(" \u00b7 \u2300 ")
+                            append(String.format(Locale.getDefault(), "%.0f", tree.diamCm))
+                            append(" cm")
+                            tree.hauteurM?.let {
+                                append(" \u00b7 H ")
+                                append(String.format(Locale.getDefault(), "%.1f", it))
+                                append(" m")
+                            }
+                            if (!tree.defauts.isNullOrEmpty()) {
+                                append(" \u00b7 ")
+                                append(tree.defauts.joinToString(", "))
+                            }
+                            if (tree.hasGps) append(" \uD83D\uDCCD")
+                        }
+                        Text(
+                            detail,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = cardContent.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Carte indice de biodiversité (Shannon, Piélou, IBP simplifié).
+ */
+@Composable
+internal fun BiodiversityCard(
+    bio: BiodiversityIndex
+) {
+    val cardBg = MaterialTheme.colorScheme.surfaceVariant
+    val cardContent = ColorUtils.getContrastingTextColor(cardBg)
+    // Score color: green if ≥7, orange if ≥4, red otherwise
+    val scoreColor = when {
+        bio.ibpScore >= 7 -> Color(0xFF2E7D32)
+        bio.ibpScore >= 4 -> Color(0xFFEF6C00)
+        else -> Color(0xFFC62828)
+    }
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp)),
+        colors = CardDefaults.cardColors(
+            containerColor = cardBg,
+            contentColor = cardContent
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    stringResource(R.string.biodiversity_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                Surface(
+                    color = scoreColor.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text(
+                        stringResource(R.string.biodiversity_ibp_score, bio.ibpScore, bio.ibpMax),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = scoreColor,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            // Shannon + Piélou
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        stringResource(R.string.biodiversity_shannon),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = cardContent.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        String.format(Locale.getDefault(), "%.2f", bio.shannonH),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        stringResource(R.string.biodiversity_pielou),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = cardContent.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        bio.pielou?.let { String.format(Locale.getDefault(), "%.2f", it) } ?: "–",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        stringResource(R.string.biodiversity_species),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = cardContent.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        "${bio.speciesCount}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            // IBP detail badges
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (bio.tgbCount > 0) {
+                    Surface(color = Color(0xFF795548).copy(alpha = 0.15f), shape = RoundedCornerShape(6.dp)) {
+                        Text(
+                            stringResource(R.string.biodiversity_tgb, bio.tgbCount),
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                if (bio.bioTreeCount > 0) {
+                    Surface(color = Color(0xFF4CAF50).copy(alpha = 0.15f), shape = RoundedCornerShape(6.dp)) {
+                        Text(
+                            stringResource(R.string.biodiversity_bio_trees, bio.bioTreeCount),
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                if (bio.deadTreeCount > 0) {
+                    Surface(color = Color(0xFF424242).copy(alpha = 0.15f), shape = RoundedCornerShape(6.dp)) {
+                        Text(
+                            stringResource(R.string.biodiversity_dead_trees, bio.deadTreeCount),
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+                if (bio.dyingTreeCount > 0) {
+                    Surface(color = Color(0xFFFF9800).copy(alpha = 0.15f), shape = RoundedCornerShape(6.dp)) {
+                        Text(
+                            stringResource(R.string.biodiversity_dying_trees, bio.dyingTreeCount),
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+
+            // IBP progress bar
+            LinearProgressIndicator(
+                progress = { bio.ibpScore.toFloat() / bio.ibpMax.toFloat() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = scoreColor,
+                trackColor = cardContent.copy(alpha = 0.08f)
+            )
+        }
+    }
+}
+
 @Composable
 private fun sanityMessage(w: SanityWarning): String {
     return when (w.code) {

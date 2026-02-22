@@ -81,6 +81,7 @@ fun SettingsScreen(
     forestryCalculator: ForestryCalculator? = null,
     parcelleRepository: ParcelleRepository? = null,
     placetteRepository: PlacetteRepository? = null,
+    offlineTileManager: com.forestry.counter.domain.location.OfflineTileManager? = null,
     onNavigateToPriceTablesEditor: () -> Unit = {},
     onNavigateBack: () -> Unit
 ) {
@@ -135,8 +136,6 @@ fun SettingsScreen(
     val hapticLevel by preferencesManager.hapticIntensity.collectAsState(initial = 2)
     val appLanguage by preferencesManager.appLanguage.collectAsState(initial = "system")
     val keepScreenOn by preferencesManager.keepScreenOn.collectAsState(initial = false)
-    val gpsCaptureMode by preferencesManager.gpsCaptureMode.collectAsState(initial = GpsCaptureMode.STANDARD)
-    val gpsMaxAcceptablePrecisionM by preferencesManager.gpsMaxAcceptablePrecisionM.collectAsState(initial = 15f)
     val mapOnlyReliableGps by preferencesManager.mapOnlyReliableGps.collectAsState(initial = false)
     val mapReliableGpsThresholdM by preferencesManager.mapReliableGpsThresholdM.collectAsState(initial = 8f)
     var showCsvDialog by remember { mutableStateOf(false) }
@@ -610,73 +609,11 @@ fun SettingsScreen(
                     }
                 )
 
-                // GPS capture profile
-                var gpsModeExpanded by remember { mutableStateOf(false) }
-                Box {
-                    ListItem(
-                        headlineContent = { Text(stringResource(R.string.settings_gps_capture_mode_title)) },
-                        supportingContent = {
-                            Text(
-                                when (gpsCaptureMode) {
-                                    GpsCaptureMode.FAST -> stringResource(R.string.settings_gps_capture_mode_fast)
-                                    GpsCaptureMode.STANDARD -> stringResource(R.string.settings_gps_capture_mode_standard)
-                                    GpsCaptureMode.PRECISE -> stringResource(R.string.settings_gps_capture_mode_precise)
-                                }
-                            )
-                        },
-                        leadingContent = { Icon(Icons.Default.GpsFixed, contentDescription = null) },
-                        modifier = Modifier.clickable { gpsModeExpanded = true }
-                    )
-                    DropdownMenu(
-                        expanded = gpsModeExpanded,
-                        onDismissRequest = { gpsModeExpanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.settings_gps_capture_mode_fast)) },
-                            onClick = {
-                                scope.launch { preferencesManager.setGpsCaptureMode(GpsCaptureMode.FAST) }
-                                gpsModeExpanded = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.settings_gps_capture_mode_standard)) },
-                            onClick = {
-                                scope.launch { preferencesManager.setGpsCaptureMode(GpsCaptureMode.STANDARD) }
-                                gpsModeExpanded = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.settings_gps_capture_mode_precise)) },
-                            onClick = {
-                                scope.launch { preferencesManager.setGpsCaptureMode(GpsCaptureMode.PRECISE) }
-                                gpsModeExpanded = false
-                            }
-                        )
-                    }
-                }
-
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    Text(
-                        text = stringResource(
-                            R.string.settings_gps_precision_threshold_format,
-                            gpsMaxAcceptablePrecisionM
-                        ),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Slider(
-                        value = gpsMaxAcceptablePrecisionM,
-                        onValueChange = { value ->
-                            scope.launch { preferencesManager.setGpsMaxAcceptablePrecisionM(value) }
-                        },
-                        valueRange = 3f..40f,
-                        steps = 36
-                    )
-                    Text(
-                        text = stringResource(R.string.settings_gps_precision_threshold_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.settings_gps_capture_mode_title)) },
+                    supportingContent = { Text(stringResource(R.string.settings_gps_capture_mode_standard)) },
+                    leadingContent = { Icon(Icons.Default.GpsFixed, contentDescription = null) }
+                )
 
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.settings_map_only_reliable_gps)) },
@@ -811,6 +748,76 @@ fun SettingsScreen(
             }
 
             HorizontalDivider()
+
+            // Carte hors-ligne
+            if (offlineTileManager != null) {
+                var cacheStats by remember { mutableStateOf<Pair<Int, Long>?>(null) }
+                var showClearDialog by remember { mutableStateOf(false) }
+
+                LaunchedEffect(Unit) {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        cacheStats = offlineTileManager.cacheStats()
+                    }
+                }
+
+                SettingsSection(title = stringResource(R.string.settings_section_offline_map)) {
+                    val stats = cacheStats
+                    val tileCount = stats?.first ?: 0
+                    val sizeMb = stats?.second?.let { String.format("%.1f", it / 1_048_576.0) } ?: "0"
+
+                    ListItem(
+                        headlineContent = { Text(stringResource(R.string.offline_cache_title)) },
+                        supportingContent = {
+                            Text(
+                                if (tileCount > 0) stringResource(R.string.offline_cache_stats_format, tileCount, sizeMb)
+                                else stringResource(R.string.offline_cache_empty)
+                            )
+                        },
+                        leadingContent = { Icon(Icons.Default.CloudDownload, contentDescription = null) }
+                    )
+
+                    if (tileCount > 0) {
+                        ListItem(
+                            headlineContent = { Text(stringResource(R.string.offline_cache_clear)) },
+                            supportingContent = { Text(stringResource(R.string.offline_cache_clear_desc)) },
+                            leadingContent = { Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                            modifier = Modifier.clickable { showClearDialog = true }
+                        )
+                    }
+                }
+
+                if (showClearDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showClearDialog = false },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    scope.launch {
+                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                            offlineTileManager.clearCache()
+                                        }
+                                        cacheStats = 0 to 0L
+                                        showClearDialog = false
+                                        snackbarHostState.showSnackbar(context.getString(R.string.offline_cache_cleared))
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            ) { Text(stringResource(R.string.delete)) }
+                        },
+                        dismissButton = {
+                            FilledTonalButton(onClick = { showClearDialog = false }) {
+                                Text(stringResource(R.string.cancel))
+                            }
+                        },
+                        icon = { Icon(Icons.Default.DeleteSweep, contentDescription = null) },
+                        title = { Text(stringResource(R.string.offline_cache_clear)) },
+                        text = { Text(stringResource(R.string.offline_cache_clear_confirm)) }
+                    )
+                }
+
+                HorizontalDivider()
+            }
+
 
             // Exports Forestry
             if (tigeRepository != null && forestryCalculator != null) {

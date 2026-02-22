@@ -603,9 +603,10 @@ class ForestryCalculator(
                         )
                         val treeProduct = t.produit?.trim()?.takeIf { it.isNotEmpty() } ?: ruleProduct
 
-                        val priceFromRules = priceFor(essenceCode, treeProduct, d, prices)
+                        val qualityCode = quality?.let { q -> WoodQualityGrade.entries.getOrNull(q)?.code }
+                        val priceFromRules = priceFor(essenceCode, treeProduct, d, prices, qualityCode)
                             ?: if (!treeProduct.equals(defaultProd, ignoreCase = true)) {
-                                priceFor(essenceCode, defaultProd, d, prices)
+                                priceFor(essenceCode, defaultProd, d, prices, qualityCode)
                             } else {
                                 null
                             }
@@ -654,6 +655,8 @@ class ForestryCalculator(
         if (str.isBlank()) return emptyList()
         return runCatching { json.decodeFromString<List<ProductRule>>(str) }.getOrElse { emptyList() }
     }
+
+    suspend fun loadPriceEntries(): List<PriceEntry> = priceEntries()
 
     private suspend fun priceEntries(): List<PriceEntry> {
         val item = parameterRepository.getParameter(ParameterKeys.PRIX_MARCHE).first()
@@ -710,28 +713,48 @@ class ForestryCalculator(
         }
     }
 
-    private fun priceFor(essence: String, product: String, diamClass: Int, prices: List<PriceEntry>): Double? {
+    private fun priceFor(essence: String, product: String, diamClass: Int, prices: List<PriceEntry>, qualityCode: String? = null): Double? {
         val codes = essenceCodeCandidates(essence)
         val p = product.trim()
-        for (c in codes) {
-            val exact = prices.firstOrNull {
-                it.essence.trim().equals(c, true) && it.product.trim().equals(p, true) && diamClass >= it.min && diamClass <= it.max
-            }?.eurPerM3
-            if (exact != null) return exact
 
-            val productWildcard = prices.firstOrNull {
-                it.essence.trim().equals(c, true) && it.product.trim() == "*" && diamClass >= it.min && diamClass <= it.max
-            }?.eurPerM3
-            if (productWildcard != null) return productWildcard
+        fun matchesQuality(entry: PriceEntry): Boolean {
+            val eq = entry.quality?.trim()?.uppercase()
+            if (eq.isNullOrEmpty() || eq == "*") return true
+            return eq.equals(qualityCode, ignoreCase = true)
         }
 
-        val essenceWildcard = prices.firstOrNull {
-            it.essence.trim() == "*" && it.product.trim().equals(p, true) && diamClass >= it.min && diamClass <= it.max
-        }?.eurPerM3
-        if (essenceWildcard != null) return essenceWildcard
+        // Try quality-specific first, then fallback to quality-agnostic
+        for (qualityPass in listOf(true, false)) {
+            for (c in codes) {
+                val exact = prices.firstOrNull {
+                    it.essence.trim().equals(c, true) && it.product.trim().equals(p, true) &&
+                    diamClass >= it.min && diamClass <= it.max &&
+                    if (qualityPass) (it.quality != null && matchesQuality(it)) else (it.quality == null)
+                }?.eurPerM3
+                if (exact != null) return exact
 
-        return prices.firstOrNull {
-            it.essence.trim() == "*" && it.product.trim() == "*" && diamClass >= it.min && diamClass <= it.max
-        }?.eurPerM3
+                val productWildcard = prices.firstOrNull {
+                    it.essence.trim().equals(c, true) && it.product.trim() == "*" &&
+                    diamClass >= it.min && diamClass <= it.max &&
+                    if (qualityPass) (it.quality != null && matchesQuality(it)) else (it.quality == null)
+                }?.eurPerM3
+                if (productWildcard != null) return productWildcard
+            }
+
+            val essenceWildcard = prices.firstOrNull {
+                it.essence.trim() == "*" && it.product.trim().equals(p, true) &&
+                diamClass >= it.min && diamClass <= it.max &&
+                if (qualityPass) (it.quality != null && matchesQuality(it)) else (it.quality == null)
+            }?.eurPerM3
+            if (essenceWildcard != null) return essenceWildcard
+
+            val fullWildcard = prices.firstOrNull {
+                it.essence.trim() == "*" && it.product.trim() == "*" &&
+                diamClass >= it.min && diamClass <= it.max &&
+                if (qualityPass) (it.quality != null && matchesQuality(it)) else (it.quality == null)
+            }?.eurPerM3
+            if (fullWildcard != null) return fullWildcard
+        }
+        return null
     }
 }

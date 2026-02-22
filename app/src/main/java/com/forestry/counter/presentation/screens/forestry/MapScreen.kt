@@ -51,6 +51,8 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -73,6 +75,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -101,6 +104,8 @@ import com.forestry.counter.data.preferences.UserPreferencesManager
 import com.forestry.counter.domain.geo.LabelField
 import com.forestry.counter.domain.geo.ShapefileOverlay
 import com.forestry.counter.domain.geo.ShapefileOverlayManager
+import com.forestry.counter.domain.location.GpsParcelTracer
+import com.forestry.counter.domain.location.TreeNavigator
 import com.forestry.counter.domain.location.WktUtils
 import com.forestry.counter.domain.model.Essence
 import com.forestry.counter.domain.model.Tige
@@ -163,6 +168,13 @@ private const val TIGE_SOURCE_ID = "tige-source"
 private const val TIGE_CLUSTER_LAYER_ID = "tige-clusters"
 private const val TIGE_CLUSTER_COUNT_LAYER_ID = "tige-cluster-count"
 private const val TIGE_POINT_LAYER_ID = "tige-points"
+private const val TIGE_SPECIAL_LAYER_ID = "tige-special"
+private const val TIGE_PRECISION_LAYER_ID = "tige-precision"
+private const val TRACE_SOURCE_ID = "trace-source"
+private const val TRACE_FILL_ID = "trace-fill"
+private const val TRACE_LINE_ID = "trace-line"
+private const val TRACE_POINTS_SOURCE_ID = "trace-points-source"
+private const val TRACE_POINTS_LAYER_ID = "trace-points"
 
 /**
  * Applique (ou met à jour) un overlay shapefile GeoJSON sur le style MapLibre courant.
@@ -273,6 +285,8 @@ private fun applyShapefileOverlay(
 }
 
 private fun removeTigeLayers(style: Style) {
+    try { style.removeLayer(TIGE_PRECISION_LAYER_ID) } catch (_: Throwable) {}
+    try { style.removeLayer(TIGE_SPECIAL_LAYER_ID) } catch (_: Throwable) {}
     try { style.removeLayer(TIGE_CLUSTER_COUNT_LAYER_ID) } catch (_: Throwable) {}
     try { style.removeLayer(TIGE_CLUSTER_LAYER_ID) } catch (_: Throwable) {}
     try { style.removeLayer(TIGE_POINT_LAYER_ID) } catch (_: Throwable) {}
@@ -326,8 +340,27 @@ private fun buildTigesGeoJson(
         sb.append("\"diam\":").append(String.format(Locale.US, "%.2f", t.diamCm)).append(',')
         sb.append("\"height\":").append(t.hauteurM?.let { String.format(Locale.US, "%.2f", it) } ?: "null").append(',')
         sb.append("\"precision\":").append(t.precisionM?.let { String.format(Locale.US, "%.2f", it) } ?: "null").append(',')
-        sb.append("\"color\":\"").append(colorHex).append("\",")
-        sb.append("\"label\":\"").append(jsonEscape(label)).append("\"")
+        val cat = t.categorie?.uppercase() ?: ""
+        val specialColor = when (cat) {
+            "DEPERISSANT" -> "#FF9800"
+            "ARBRE_BIO" -> "#4CAF50"
+            "MORT" -> "#424242"
+            "PARASITE" -> "#F44336"
+            else -> ""
+        }
+        sb.append("\"color\":\"").append(if (specialColor.isNotEmpty()) specialColor else colorHex).append("\",")
+        sb.append("\"categorie\":\"").append(jsonEscape(cat)).append("\",")
+        sb.append("\"is_special\":").append(if (cat.isNotEmpty()) "1" else "0").append(',')
+        // Couleur du cercle de précision selon la qualité GPS
+        val precisionColor = when {
+            t.precisionM == null -> "#9E9E9E"   // gris = pas de GPS
+            t.precisionM <= 3.0  -> "#4CAF50"   // vert = excellent
+            t.precisionM <= 6.0  -> "#8BC34A"   // vert clair = bon
+            t.precisionM <= 12.0 -> "#FF9800"   // orange = modéré
+            else                 -> "#F44336"   // rouge = mauvais
+        }
+        sb.append("\"label\":\"").append(jsonEscape(label)).append("\",")
+        sb.append("\"precision_color\":\"").append(precisionColor).append("\"")
         sb.append("}}")
     }
 
@@ -365,13 +398,13 @@ private fun renderTigesOnMap(
                     interpolate(
                         linear(),
                         get("point_count"),
-                        stop(5, 14f),
-                        stop(20, 20f),
-                        stop(60, 28f)
+                        stop(5, 10f),
+                        stop(20, 14f),
+                        stop(60, 20f)
                     )
                 ),
                 PropertyFactory.circleStrokeColor(Color.White.toArgb()),
-                PropertyFactory.circleStrokeWidth(1.5f)
+                PropertyFactory.circleStrokeWidth(1f)
             )
     )
 
@@ -389,7 +422,52 @@ private fun renderTigesOnMap(
 
     style.addLayer(
         CircleLayer(TIGE_POINT_LAYER_ID, TIGE_SOURCE_ID)
+            .withFilter(all(not(has("point_count")), eq(get("is_special"), literal(0))))
+            .withProperties(
+                PropertyFactory.circleColor(get("color")),
+                PropertyFactory.circleOpacity(0.95f),
+                PropertyFactory.circleRadius(
+                    interpolate(
+                        linear(),
+                        get("diam"),
+                        stop(8, 3f),
+                        stop(20, 4.5f),
+                        stop(35, 6f),
+                        stop(60, 8f)
+                    )
+                ),
+                PropertyFactory.circleStrokeColor(Color.White.toArgb()),
+                PropertyFactory.circleStrokeWidth(1f)
+            )
+    )
+
+    // Couche de précision GPS : anneau coloré selon la qualité (excellent=vert, bon=vert clair, modéré=orange, mauvais=rouge, absent=gris)
+    style.addLayer(
+        CircleLayer(TIGE_PRECISION_LAYER_ID, TIGE_SOURCE_ID)
             .withFilter(not(has("point_count")))
+            .withProperties(
+                PropertyFactory.circleColor(get("precision_color")),
+                PropertyFactory.circleOpacity(0.25f),
+                PropertyFactory.circleRadius(
+                    interpolate(
+                        linear(),
+                        get("diam"),
+                        stop(8, 7f),
+                        stop(20, 9f),
+                        stop(35, 12f),
+                        stop(60, 16f)
+                    )
+                ),
+                PropertyFactory.circleStrokeColor(get("precision_color")),
+                PropertyFactory.circleStrokeWidth(2f),
+                PropertyFactory.circleStrokeOpacity(0.8f)
+            )
+    )
+
+    // Special trees layer (DEPERISSANT, ARBRE_BIO, MORT, PARASITE) with thicker stroke
+    style.addLayer(
+        CircleLayer(TIGE_SPECIAL_LAYER_ID, TIGE_SOURCE_ID)
+            .withFilter(all(not(has("point_count")), eq(get("is_special"), literal(1))))
             .withProperties(
                 PropertyFactory.circleColor(get("color")),
                 PropertyFactory.circleOpacity(0.95f),
@@ -398,33 +476,109 @@ private fun renderTigesOnMap(
                         linear(),
                         get("diam"),
                         stop(8, 4f),
-                        stop(20, 7f),
-                        stop(35, 10f),
-                        stop(60, 14f)
+                        stop(20, 5.5f),
+                        stop(35, 7f),
+                        stop(60, 9f)
                     )
                 ),
-                PropertyFactory.circleStrokeColor(Color.White.toArgb()),
-                PropertyFactory.circleStrokeWidth(1.4f)
+                PropertyFactory.circleStrokeColor(Color.Black.toArgb()),
+                PropertyFactory.circleStrokeWidth(2.5f)
             )
     )
 }
 
-private fun attachTigeTapInfo(map: MapboxMap, context: Context) {
+/**
+ * Dessine le tracé GPS (ligne + polygone + points) sur la carte.
+ */
+private fun renderTraceOnMap(style: Style, tracer: GpsParcelTracer) {
+    // Remove existing trace layers
+    try { style.removeLayer(TRACE_POINTS_LAYER_ID) } catch (_: Throwable) {}
+    try { style.removeLayer(TRACE_LINE_ID) } catch (_: Throwable) {}
+    try { style.removeLayer(TRACE_FILL_ID) } catch (_: Throwable) {}
+    try { style.removeSource(TRACE_POINTS_SOURCE_ID) } catch (_: Throwable) {}
+    try { style.removeSource(TRACE_SOURCE_ID) } catch (_: Throwable) {}
+
+    val state = tracer.state.value
+    if (state.points.isEmpty()) return
+
+    // Polygon fill + line (if ≥3 points)
+    val polyJson = tracer.toGeoJsonPolygon()
+    val lineJson = tracer.toGeoJsonLine()
+    val geom = polyJson ?: lineJson ?: return
+
+    style.addSource(GeoJsonSource(TRACE_SOURCE_ID, geom))
+
+    if (polyJson != null) {
+        style.addLayer(
+            FillLayer(TRACE_FILL_ID, TRACE_SOURCE_ID).withProperties(
+                PropertyFactory.fillColor(android.graphics.Color.parseColor("#1B5E20")),
+                PropertyFactory.fillOpacity(0.20f)
+            )
+        )
+    }
+
+    style.addLayer(
+        LineLayer(TRACE_LINE_ID, TRACE_SOURCE_ID).withProperties(
+            PropertyFactory.lineColor(android.graphics.Color.parseColor("#2E7D32")),
+            PropertyFactory.lineWidth(3f),
+            PropertyFactory.lineOpacity(0.9f)
+        )
+    )
+
+    // Points
+    val pointsJson = tracer.toGeoJsonPoints()
+    style.addSource(GeoJsonSource(TRACE_POINTS_SOURCE_ID, pointsJson))
+    style.addLayer(
+        CircleLayer(TRACE_POINTS_LAYER_ID, TRACE_POINTS_SOURCE_ID).withProperties(
+            PropertyFactory.circleColor(android.graphics.Color.parseColor("#4CAF50")),
+            PropertyFactory.circleRadius(5f),
+            PropertyFactory.circleStrokeColor(android.graphics.Color.WHITE),
+            PropertyFactory.circleStrokeWidth(2f),
+            PropertyFactory.circleOpacity(0.95f)
+        )
+    )
+}
+
+/**
+ * Info d'un arbre tapé sur la carte.
+ */
+data class TappedTreeInfo(
+    val essenceName: String,
+    val essenceCode: String,
+    val diamCm: Double?,
+    val hauteurM: Double?,
+    val precisionM: Double?,
+    val categorie: String?,
+    val lat: Double,
+    val lon: Double
+)
+
+private fun attachTigeTapInfo(
+    map: MapboxMap,
+    context: Context,
+    onTreeTapped: (TappedTreeInfo) -> Unit
+) {
     map.addOnMapClickListener { latLng ->
         try {
             val point = map.projection.toScreenLocation(latLng)
-            val features = map.queryRenderedFeatures(point, TIGE_POINT_LAYER_ID)
+            val features = map.queryRenderedFeatures(point, TIGE_POINT_LAYER_ID, TIGE_SPECIAL_LAYER_ID)
             val f = features.firstOrNull() ?: return@addOnMapClickListener false
 
             val props = f.properties() ?: return@addOnMapClickListener false
+            val geom = f.geometry()
 
-            val essence = try {
+            val essenceName = try {
                 val v = props.get("essence_name")
                 if (v != null && !v.isJsonNull) v.asString
                 else {
                     val v2 = props.get("essence")
                     if (v2 != null && !v2.isJsonNull) v2.asString else "?"
                 }
+            } catch (_: Throwable) { "?" }
+
+            val essenceCode = try {
+                val v = props.get("essence")
+                if (v != null && !v.isJsonNull) v.asString else "?"
             } catch (_: Throwable) { "?" }
 
             val diam = try {
@@ -442,26 +596,34 @@ private fun attachTigeTapInfo(map: MapboxMap, context: Context) {
                 if (v != null && !v.isJsonNull) v.asDouble else null
             } catch (_: Throwable) { null }
 
-            val msg = buildString {
-                append(essence)
-                diam?.let {
-                    append(" · ⌀ ")
-                    append(it.roundToInt())
-                    append(" cm")
-                }
-                h?.let {
-                    append(" · H ")
-                    append(it.roundToInt())
-                    append(" m")
-                }
-                precision?.let {
-                    append(" · ±")
-                    append(String.format(Locale.US, "%.1f", it))
-                    append(" m")
-                }
+            val categorie = try {
+                val v = props.get("categorie")
+                if (v != null && !v.isJsonNull) v.asString.takeIf { it.isNotEmpty() } else null
+            } catch (_: Throwable) { null }
+
+            // Extract coordinates from geometry
+            val treeLat: Double
+            val treeLon: Double
+            if (geom != null && geom is com.mapbox.geojson.Point) {
+                treeLon = geom.longitude()
+                treeLat = geom.latitude()
+            } else {
+                treeLon = latLng.longitude
+                treeLat = latLng.latitude
             }
 
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            onTreeTapped(
+                TappedTreeInfo(
+                    essenceName = essenceName,
+                    essenceCode = essenceCode,
+                    diamCm = diam,
+                    hauteurM = h,
+                    precisionM = precision,
+                    categorie = categorie,
+                    lat = treeLat,
+                    lon = treeLon
+                )
+            )
             true
         } catch (e: Throwable) {
             Log.e(TAG, "Tige tap handler error", e)
@@ -526,11 +688,10 @@ private fun rasterStyleMulti(
 }
 
 // ── URL WMTS GéoPortail (data.geopf.fr) ──
-private const val GEOPF_WMTS = "https://data.geopf.fr/wmts?" +
-    "SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=normal&FORMAT=image/png" +
-    "&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}"
-
-private fun geopfLayer(layer: String) = "$GEOPF_WMTS&LAYER=$layer"
+private fun geopfLayer(layer: String, format: String = "image/png") =
+    "https://data.geopf.fr/wmts?" +
+    "SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=normal&FORMAT=$format" +
+    "&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&LAYER=$layer"
 
 /**
  * Catégorie de couche (pour organiser le sélecteur).
@@ -553,55 +714,72 @@ data class MapLayerDef(
 )
 
 private val MAP_LAYERS = listOf(
-    // ── Couches générales ──
+    // ── Couches Principales IGN ──
     MapLayerDef(
-        key = "OFFLINE_LOCAL",
-        labelResId = R.string.map_layer_offline_local,
-        emoji = "\uD83D\uDCF4",
-        styleJson = offlineLocalStyle("Offline Local")
-    ),
-    MapLayerDef(
-        key = "OSM",
-        labelResId = R.string.map_layer_osm,
-        emoji = "\uD83C\uDF0D",
+        key = "PLAN_IGN",
+        labelResId = R.string.map_layer_plan_ign,
+        emoji = "🗺️", // Carte classique
         styleJson = rasterStyle(
-            "OpenStreetMap",
-            "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            "Plan IGN v2",
+            geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2")
         ),
-        tileUrls = listOf("https://tile.openstreetmap.org/{z}/{x}/{y}.png")
+        category = LayerCategory.GENERAL,
+        tileUrls = listOf(geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"))
     ),
     MapLayerDef(
-        key = "SATELLITE",
-        labelResId = R.string.map_layer_satellite,
-        emoji = "\uD83D\uDEF0\uFE0F",
+        key = "ORTHO_IGN",
+        labelResId = R.string.map_layer_ortho_ign,
+        emoji = "🛰️", // Satellite
         styleJson = rasterStyle(
-            "ESRI Satellite",
-            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            "Ortho IGN",
+            geopfLayer("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg")
         ),
         isDark = true,
-        tileUrls = listOf("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}")
+        tileUrls = listOf(geopfLayer("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"))
     ),
+    
+    // ── Couches Cadastre ──
     MapLayerDef(
-        key = "SAT_LABELS",
-        labelResId = R.string.map_layer_satellite_labels,
-        emoji = "\uD83C\uDF10",
+        key = "PLAN_IGN_CADASTRE",
+        labelResId = R.string.map_layer_plan_ign_cadastre,
+        emoji = "📐", // Règle/Mesure (Cadastre)
         styleJson = rasterStyleMulti(
-            "Satellite + Labels",
-            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            "Plan IGN + Cadastre",
+            geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"),
             overlayTileUrls = listOf(
-                "https://stamen-tiles.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}@2x.png"
+                geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
             )
         ),
-        isDark = true,
+        category = LayerCategory.GENERAL,
         tileUrls = listOf(
-            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-            "https://stamen-tiles.a.ssl.fastly.net/toner-labels/{z}/{x}/{y}@2x.png"
+            geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"),
+            geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
         )
     ),
     MapLayerDef(
+        key = "ORTHO_CADASTRE",
+        labelResId = R.string.map_layer_ortho_cadastre,
+        emoji = "🏘️", // Maisons (Parcelles)
+        styleJson = rasterStyleMulti(
+            "Ortho IGN + Cadastre",
+            geopfLayer("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"),
+            overlayTileUrls = listOf(
+                geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
+            )
+        ),
+        isDark = true,
+        category = LayerCategory.GENERAL,
+        tileUrls = listOf(
+            geopfLayer("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"),
+            geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
+        )
+    ),
+
+    // ── Couches Internationales & Spéciales ──
+    MapLayerDef(
         key = "TOPO",
         labelResId = R.string.map_layer_topo,
-        emoji = "\u26F0\uFE0F",
+        emoji = "⛰️", // Montagne
         styleJson = rasterStyle(
             "OpenTopoMap",
             "https://tile.opentopomap.org/{z}/{x}/{y}.png",
@@ -612,7 +790,7 @@ private val MAP_LAYERS = listOf(
     MapLayerDef(
         key = "CARTO_VOYAGER",
         labelResId = R.string.map_layer_carto,
-        emoji = "\uD83D\uDDFA\uFE0F",
+        emoji = "🧭", // Boussole (Carto claire)
         styleJson = rasterStyle(
             "Carto Voyager",
             "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png"
@@ -620,125 +798,15 @@ private val MAP_LAYERS = listOf(
         tileUrls = listOf("https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png")
     ),
     MapLayerDef(
-        key = "CARTO_DARK",
-        labelResId = R.string.map_layer_dark,
-        emoji = "\uD83C\uDF19",
+        key = "SATELLITE",
+        labelResId = R.string.map_layer_satellite,
+        emoji = "🌍", // Globe
         styleJson = rasterStyle(
-            "Carto Dark",
-            "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png"
+            "ESRI Satellite",
+            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
         ),
         isDark = true,
-        tileUrls = listOf("https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png")
-    ),
-    MapLayerDef(
-        key = "ESRI_TOPO",
-        labelResId = R.string.map_layer_esri_topo,
-        emoji = "\uD83C\uDFDE\uFE0F",
-        styleJson = rasterStyle(
-            "ESRI Topographic",
-            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
-        ),
-        tileUrls = listOf("https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}")
-    ),
-    // ── Couches forestières / ONF ──
-    MapLayerDef(
-        key = "PLAN_IGN",
-        labelResId = R.string.map_layer_plan_ign,
-        emoji = "\uD83C\uDDEB\uD83C\uDDF7",
-        styleJson = rasterStyle(
-            "Plan IGN v2",
-            geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2")
-        ),
-        category = LayerCategory.GENERAL,
-        tileUrls = listOf(geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"))
-    ),
-    MapLayerDef(
-        key = "CADASTRE",
-        labelResId = R.string.map_layer_cadastre,
-        emoji = "\uD83D\uDCCF",
-        styleJson = rasterStyleMulti(
-            "Cadastre",
-            "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-            overlayTileUrls = listOf(
-                geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
-            )
-        ),
-        category = LayerCategory.GENERAL,
-        tileUrls = listOf(
-            "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-            geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
-        )
-    ),
-    MapLayerDef(
-        key = "FORETS_PUBLIQUES",
-        labelResId = R.string.map_layer_forets_publiques,
-        emoji = "\uD83C\uDF32",
-        styleJson = rasterStyleMulti(
-            "Forêts publiques",
-            geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"),
-            overlayTileUrls = listOf(
-                geopfLayer("FORETS.PUBLIQUES")
-            )
-        ),
-        category = LayerCategory.GENERAL,
-        tileUrls = listOf(
-            geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"),
-            geopfLayer("FORETS.PUBLIQUES")
-        )
-    ),
-    MapLayerDef(
-        key = "SAT_FORETS",
-        labelResId = R.string.map_layer_sat_forets,
-        emoji = "\uD83D\uDEF0\uD83C\uDF32",
-        styleJson = rasterStyleMulti(
-            "Satellite + Forêts publiques",
-            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-            overlayTileUrls = listOf(
-                geopfLayer("FORETS.PUBLIQUES")
-            )
-        ),
-        isDark = true,
-        category = LayerCategory.GENERAL,
-        tileUrls = listOf(
-            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-            geopfLayer("FORETS.PUBLIQUES")
-        )
-    ),
-    MapLayerDef(
-        key = "BD_FORET",
-        labelResId = R.string.map_layer_bd_foret,
-        emoji = "\uD83C\uDF33",
-        styleJson = rasterStyleMulti(
-            "BD Forêt (IFN)",
-            geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"),
-            overlayTileUrls = listOf(
-                geopfLayer("LANDUSE.FORESTINVENTORY.V2")
-            )
-        ),
-        category = LayerCategory.GENERAL,
-        tileUrls = listOf(
-            geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"),
-            geopfLayer("LANDUSE.FORESTINVENTORY.V2")
-        )
-    ),
-    MapLayerDef(
-        key = "FORET_CADASTRE",
-        labelResId = R.string.map_layer_foret_cadastre,
-        emoji = "\uD83C\uDF32\uD83D\uDCCF",
-        styleJson = rasterStyleMulti(
-            "Forêts + Cadastre",
-            geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"),
-            overlayTileUrls = listOf(
-                geopfLayer("FORETS.PUBLIQUES"),
-                geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
-            )
-        ),
-        category = LayerCategory.GENERAL,
-        tileUrls = listOf(
-            geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"),
-            geopfLayer("FORETS.PUBLIQUES"),
-            geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
-        )
+        tileUrls = listOf("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}")
     )
 )
 
@@ -763,7 +831,12 @@ fun MapScreen(
     essenceRepository: EssenceRepository? = null,
     parcelleRepository: ParcelleRepository? = null,
     preferencesManager: UserPreferencesManager,
-    onNavigateBack: () -> Unit
+    offlineTileManager: OfflineTileManager? = null,
+    onNavigateBack: () -> Unit,
+    initialNavLat: Double? = null,
+    initialNavLon: Double? = null,
+    initialNavEssence: String? = null,
+    initialNavDiam: Double? = null
 ) {
     val context = LocalContext.current
 
@@ -815,7 +888,8 @@ fun MapScreen(
         true
     }
 
-    val offlineTileManager = remember(context) { OfflineTileManager(context) }
+    @Suppress("NAME_SHADOWING")
+    val offlineTileManager = offlineTileManager ?: remember(context) { OfflineTileManager(context) }
     val offlineProgress by offlineTileManager.downloadProgress.collectAsState()
     var showOfflineSnackbar by remember { mutableStateOf(false) }
 
@@ -877,6 +951,41 @@ fun MapScreen(
     var shpGeoJsonFile by remember { mutableStateOf<java.io.File?>(null) }
     var showShpPanel by remember { mutableStateOf(false) }
     var shpImporting by remember { mutableStateOf(false) }
+
+    // ── GPS Parcel Trace state ──
+    val gpsTracer = remember(context) { GpsParcelTracer(context) }
+    val traceState by gpsTracer.state.collectAsState()
+    var showTraceSaveDialog by remember { mutableStateOf(false) }
+    var traceName by remember { mutableStateOf("") }
+
+    // ── Tree navigation state ──
+    val treeNavigator = remember(context) { TreeNavigator(context) }
+    val navState by treeNavigator.state.collectAsState()
+    var tappedTree by remember { mutableStateOf<TappedTreeInfo?>(null) }
+
+    // Cleanup navigator on dispose
+    DisposableEffect(Unit) {
+        onDispose {
+            treeNavigator.stopNavigation()
+            gpsTracer.clearTrace()
+        }
+    }
+
+    // ── Auto-start navigation if initial nav params are provided ──
+    LaunchedEffect(initialNavLat, initialNavLon, hasLocationPermission) {
+        if (initialNavLat != null && initialNavLon != null && hasLocationPermission) {
+            val target = TreeNavigator.Target(
+                tigeId = "",
+                essenceName = initialNavEssence ?: "?",
+                essenceCode = initialNavEssence ?: "?",
+                diamCm = initialNavDiam ?: 0.0,
+                hauteurM = null,
+                lat = initialNavLat,
+                lon = initialNavLon
+            )
+            treeNavigator.startNavigation(target)
+        }
+    }
 
     // Résoudre le fichier GeoJSON au démarrage si un overlay existe
     LaunchedEffect(shpOverlay?.id) {
@@ -1088,7 +1197,7 @@ fun MapScreen(
                                             applyCurrentShpOverlay(style)
                                             renderTigesOnMap(style, displayedGeoTiges, essenceMap, essenceColors)
                                             if (!tigeTapAttached) {
-                                                attachTigeTapInfo(map, context)
+                                                attachTigeTapInfo(map, context) { info -> tappedTree = info }
                                                 tigeTapAttached = true
                                             }
                                         }
@@ -1106,19 +1215,10 @@ fun MapScreen(
                                             mapLibreMap = map
                                             mapReady = true
                                             enableLocationComponent(map, style, context)
-                                            applyCurrentShpOverlay(style)
-                                            renderTigesOnMap(style, displayedGeoTiges, essenceMap, essenceColors)
-                                            if (!tigeTapAttached) {
-                                                attachTigeTapInfo(map, context)
-                                                tigeTapAttached = true
-                                            }
                                         }
                                     }
                                 }
-                            } catch (e: Throwable) {
-                                Log.e(TAG, "Error creating map", e)
-                                mapError = true
-                            }
+                            } catch (_: Throwable) {}
                         }
                     },
                     modifier = Modifier.fillMaxSize()
@@ -1170,6 +1270,13 @@ fun MapScreen(
                         )
                     }
                 }
+            }
+
+            // ── Mettre à jour le tracé GPS sur la carte ──
+            LaunchedEffect(mapReady, traceState) {
+                val map = mapLibreMap ?: return@LaunchedEffect
+                if (!mapReady) return@LaunchedEffect
+                map.getStyle { style -> renderTraceOnMap(style, gpsTracer) }
             }
 
             // ── Appliquer/mettre à jour overlay shapefile quand les données changent ──
@@ -1739,6 +1846,357 @@ fun MapScreen(
                 )
             }
 
+            // ── Tapped tree info card (top center) ──
+            val currentTapped = tappedTree
+            if (currentTapped != null && !navState.isActive) {
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 70.dp, start = 16.dp, end = 16.dp)
+                        .widthIn(max = 340.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val catLabel = when (currentTapped.categorie) {
+                                "DEPERISSANT" -> "\u26A0 Dépérissant"
+                                "ARBRE_BIO" -> "\uD83C\uDF3F Arbre bio"
+                                "MORT" -> "\uD83D\uDC80 Mort"
+                                "PARASITE" -> "\uD83D\uDC1B Parasité"
+                                else -> null
+                            }
+                            Column {
+                                if (catLabel != null) {
+                                    Text(catLabel, style = MaterialTheme.typography.labelSmall, color = Color(0xFFEF6C00))
+                                }
+                                Text(
+                                    currentTapped.essenceName,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            IconButton(
+                                onClick = { tappedTree = null },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            currentTapped.diamCm?.let {
+                                Text("\u2300 ${it.roundToInt()} cm", style = MaterialTheme.typography.bodySmall)
+                            }
+                            currentTapped.hauteurM?.let {
+                                Text("H ${it.roundToInt()} m", style = MaterialTheme.typography.bodySmall)
+                            }
+                            currentTapped.precisionM?.let {
+                                Text("\u00B1${String.format(Locale.US, "%.1f", it)} m", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        // Navigate button
+                        SmallFloatingActionButton(
+                            onClick = {
+                                val target = TreeNavigator.Target(
+                                    tigeId = "",
+                                    essenceName = currentTapped.essenceName,
+                                    essenceCode = currentTapped.essenceCode,
+                                    diamCm = currentTapped.diamCm ?: 0.0,
+                                    hauteurM = currentTapped.hauteurM,
+                                    lat = currentTapped.lat,
+                                    lon = currentTapped.lon
+                                )
+                                if (!hasLocationPermission) {
+                                    locationPermission.launchPermissionRequest()
+                                } else {
+                                    treeNavigator.startNavigation(target)
+                                    tappedTree = null
+                                }
+                            },
+                            containerColor = Color(0xFF1565C0),
+                            contentColor = Color.White,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.padding(horizontal = 12.dp)
+                            ) {
+                                Icon(Icons.Default.Navigation, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Text(stringResource(R.string.nav_navigate_to), style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Navigation compass overlay (top center) ──
+            if (navState.isActive) {
+                Card(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 70.dp, start = 16.dp, end = 16.dp)
+                        .widthIn(max = 300.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (navState.arrived) Color(0xFF2E7D32).copy(alpha = 0.95f)
+                                         else MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Close button
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                stringResource(R.string.nav_title),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (navState.arrived) Color.White else MaterialTheme.colorScheme.onSurface
+                            )
+                            IconButton(
+                                onClick = { treeNavigator.stopNavigation() },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = stringResource(R.string.nav_stop),
+                                    modifier = Modifier.size(16.dp),
+                                    tint = if (navState.arrived) Color.White else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+
+                        // Target info
+                        navState.target?.let { target ->
+                            Text(
+                                "${target.essenceName} · \u2300 ${target.diamCm.roundToInt()} cm",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (navState.arrived) Color.White.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        if (navState.arrived) {
+                            // Arrived!
+                            Text(
+                                stringResource(R.string.nav_arrived),
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        } else {
+                            // Compass
+                            val relativeBearing = navState.relativeBearingDeg ?: 0f
+                            val compassColor = if (navState.arrived) Color.White else Color(0xFF1565C0)
+
+                            Box(
+                                modifier = Modifier.size(120.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Canvas(modifier = Modifier.size(120.dp)) {
+                                    // Outer ring
+                                    drawCircle(
+                                        color = compassColor.copy(alpha = 0.15f),
+                                        radius = size.minDimension / 2f
+                                    )
+                                    drawCircle(
+                                        color = compassColor.copy(alpha = 0.3f),
+                                        radius = size.minDimension / 2f,
+                                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f)
+                                    )
+
+                                    // Arrow
+                                    val angleRad = Math.toRadians(relativeBearing.toDouble()).toFloat()
+                                    val cx = center.x
+                                    val cy = center.y
+                                    val arrowLen = size.minDimension / 2f - 10f
+
+                                    val tipX = cx + arrowLen * kotlin.math.sin(angleRad)
+                                    val tipY = cy - arrowLen * kotlin.math.cos(angleRad)
+
+                                    val baseLen = 12f
+                                    val leftX = cx + baseLen * kotlin.math.sin(angleRad - Math.PI.toFloat() * 0.85f)
+                                    val leftY = cy - baseLen * kotlin.math.cos(angleRad - Math.PI.toFloat() * 0.85f)
+                                    val rightX = cx + baseLen * kotlin.math.sin(angleRad + Math.PI.toFloat() * 0.85f)
+                                    val rightY = cy - baseLen * kotlin.math.cos(angleRad + Math.PI.toFloat() * 0.85f)
+
+                                    val path = androidx.compose.ui.graphics.Path().apply {
+                                        moveTo(tipX, tipY)
+                                        lineTo(leftX, leftY)
+                                        lineTo(cx, cy)
+                                        lineTo(rightX, rightY)
+                                        close()
+                                    }
+                                    drawPath(path, color = compassColor)
+                                }
+                            }
+
+                            // Distance
+                            navState.distanceM?.let { dist ->
+                                val distText = if (dist >= 1000f) {
+                                    String.format(Locale.getDefault(), "%.1f km", dist / 1000f)
+                                } else {
+                                    String.format(Locale.getDefault(), "%.0f m", dist)
+                                }
+                                Text(
+                                    distText,
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1565C0)
+                                )
+                            }
+
+                            // Accuracy
+                            navState.userAccuracyM?.let { acc ->
+                                Text(
+                                    stringResource(R.string.nav_accuracy, String.format(Locale.getDefault(), "%.1f", acc)),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── GPS Trace control panel (bas gauche) ──
+            AnimatedVisibility(
+                visible = traceState.isRecording || traceState.points.isNotEmpty(),
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 12.dp, bottom = 16.dp),
+                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+                exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
+            ) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        // Info line
+                        Text(
+                            stringResource(R.string.trace_title),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (traceState.isRecording) Color(0xFF2E7D32)
+                                    else MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            stringResource(R.string.trace_points_count, traceState.points.size),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        traceState.surfaceHa?.let { ha ->
+                            Text(
+                                stringResource(R.string.trace_surface_ha, String.format(Locale.getDefault(), "%.4f", ha)),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF2E7D32)
+                            )
+                        }
+                        traceState.perimeterM?.let { p ->
+                            Text(
+                                stringResource(R.string.trace_perimeter_m, String.format(Locale.getDefault(), "%.0f", p)),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        // Action buttons
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            if (traceState.isRecording) {
+                                // Add manual point
+                                SmallFloatingActionButton(
+                                    onClick = {
+                                        val map = mapLibreMap ?: return@SmallFloatingActionButton
+                                        try {
+                                            val loc = map.locationComponent.lastKnownLocation
+                                            if (loc != null) {
+                                                gpsTracer.addManualPoint(
+                                                    lat = loc.latitude,
+                                                    lon = loc.longitude,
+                                                    alt = if (loc.hasAltitude()) loc.altitude else null,
+                                                    precisionM = loc.accuracy
+                                                )
+                                            }
+                                        } catch (_: Throwable) {}
+                                    },
+                                    containerColor = Color(0xFF4CAF50),
+                                    contentColor = Color.White,
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.trace_add_point), modifier = Modifier.size(18.dp))
+                                }
+                                // Undo last point
+                                SmallFloatingActionButton(
+                                    onClick = { gpsTracer.undoLastPoint() },
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.trace_undo), modifier = Modifier.size(18.dp))
+                                }
+                                // Stop recording
+                                SmallFloatingActionButton(
+                                    onClick = { gpsTracer.stopRecording() },
+                                    containerColor = Color(0xFFC62828),
+                                    contentColor = Color.White,
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.trace_stop), modifier = Modifier.size(18.dp))
+                                }
+                            } else if (traceState.points.isNotEmpty()) {
+                                // Save trace
+                                if (traceState.points.size >= 3) {
+                                    SmallFloatingActionButton(
+                                        onClick = {
+                                            traceName = ""
+                                            showTraceSaveDialog = true
+                                        },
+                                        containerColor = Color(0xFF2E7D32),
+                                        contentColor = Color.White,
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(Icons.Default.LocationOn, contentDescription = stringResource(R.string.trace_save), modifier = Modifier.size(18.dp))
+                                    }
+                                }
+                                // Clear trace
+                                SmallFloatingActionButton(
+                                    onClick = { gpsTracer.clearTrace() },
+                                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.trace_clear), modifier = Modifier.size(18.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             // ── FABs principaux (bas droite) ──
             Column(
                 modifier = Modifier
@@ -1777,6 +2235,23 @@ fun MapScreen(
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     Icon(Icons.Default.GpsFixed, contentDescription = stringResource(R.string.map_my_location))
+                }
+                // Start GPS trace
+                if (!traceState.isRecording && traceState.points.isEmpty()) {
+                    SmallFloatingActionButton(
+                        onClick = {
+                            if (!hasLocationPermission) {
+                                locationPermission.launchPermissionRequest()
+                                return@SmallFloatingActionButton
+                            }
+                            gpsTracer.startRecording()
+                        },
+                        containerColor = Color(0xFF2E7D32),
+                        contentColor = Color.White,
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Icon(Icons.Default.LocationOn, contentDescription = stringResource(R.string.trace_start))
+                    }
                 }
                 // Recentrer sur les arbres
                 if (displayedGeoTiges.isNotEmpty()) {
@@ -1917,8 +2392,8 @@ fun MapScreen(
                 }
             }
 
-            // ── Message si aucune tige ──
-            if (total == 0) {
+            // ── Message si aucune tige (fermable) ──
+            if (total == 0 && !dismissedGpsBanner) {
                 Card(
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -1929,27 +2404,111 @@ fun MapScreen(
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                     shape = RoundedCornerShape(20.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(28.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.LocationOn,
-                            contentDescription = null,
-                            modifier = Modifier.size(40.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = stringResource(R.string.map_empty),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        IconButton(
+                            onClick = { dismissedGpsBanner = true },
+                            modifier = Modifier.align(Alignment.TopEnd).size(32.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(18.dp))
+                        }
+                        Column(
+                            modifier = Modifier.padding(28.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.LocationOn,
+                                contentDescription = null,
+                                modifier = Modifier.size(40.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = stringResource(R.string.map_empty),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+
+    // ── Save trace dialog ──
+    if (showTraceSaveDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showTraceSaveDialog = false },
+            title = { Text(stringResource(R.string.trace_save_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    traceState.surfaceHa?.let { ha ->
+                        Text(
+                            stringResource(R.string.trace_surface_ha, String.format(Locale.getDefault(), "%.4f", ha)),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    traceState.perimeterM?.let { p ->
+                        Text(
+                            stringResource(R.string.trace_perimeter_m, String.format(Locale.getDefault(), "%.0f", p)),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    Text(
+                        stringResource(R.string.trace_points_count, traceState.points.size),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    androidx.compose.material3.OutlinedTextField(
+                        value = traceName,
+                        onValueChange = { traceName = it },
+                        label = { Text(stringResource(R.string.trace_name_label)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        val wkt = gpsTracer.toWktPolygon()
+                        val surfHa = traceState.surfaceHa
+                        if (wkt != null && parcelleRepository != null) {
+                            scope.launch {
+                                // Update existing parcelle shape, or create note
+                                if (parcelleId != "none" && parcelleId != "all" && !parcelleId.startsWith("forest_")) {
+                                    val flow = parcelleRepository.getParcelleById(parcelleId)
+                                    flow.collect { parcelle ->
+                                        if (parcelle != null) {
+                                            parcelleRepository.updateParcelle(
+                                                parcelle.copy(
+                                                    shape = wkt,
+                                                    surfaceHa = surfHa ?: parcelle.surfaceHa,
+                                                    updatedAt = System.currentTimeMillis()
+                                                )
+                                            )
+                                        }
+                                        return@collect
+                                    }
+                                }
+                                gpsTracer.clearTrace()
+                                showTraceSaveDialog = false
+                            }
+                        } else {
+                            gpsTracer.clearTrace()
+                            showTraceSaveDialog = false
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.trace_save))
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showTraceSaveDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 }
 

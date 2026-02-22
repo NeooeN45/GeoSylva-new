@@ -18,6 +18,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /**
+ * Global set of dismissed tip keys — persists across recompositions for the
+ * entire application session.  Once the user taps the close button, the tip
+ * will not reappear until the app process is restarted.
+ */
+private val dismissedTips = mutableSetOf<String>()
+
+/**
  * Carte de conseil contextuel non-intrusive, affichée une seule fois par session.
  * Peut être fermée par l'utilisateur.
  *
@@ -34,8 +41,8 @@ fun TipCard(
     icon: ImageVector = Icons.Default.Lightbulb,
     modifier: Modifier = Modifier
 ) {
-    // Garde en mémoire les tips fermés pour cette session (composition)
-    var dismissed by remember(tipKey) { mutableStateOf(false) }
+    // Use process-level set so dismissal survives recomposition and navigation
+    var dismissed by remember(tipKey) { mutableStateOf(tipKey in dismissedTips) }
 
     AnimatedVisibility(
         visible = !dismissed,
@@ -81,7 +88,7 @@ fun TipCard(
                     )
                 }
                 IconButton(
-                    onClick = { dismissed = true },
+                    onClick = { dismissedTips.add(tipKey); dismissed = true },
                     modifier = Modifier.size(32.dp)
                 ) {
                     Icon(

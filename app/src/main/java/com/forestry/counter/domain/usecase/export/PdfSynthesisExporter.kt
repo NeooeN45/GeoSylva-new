@@ -8,7 +8,10 @@ import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import com.forestry.counter.R
+import com.forestry.counter.domain.model.Parcelle
+import com.forestry.counter.presentation.screens.forestry.BiodiversityIndex
 import com.forestry.counter.presentation.screens.forestry.MartelageStats
+import com.forestry.counter.presentation.screens.forestry.SpecialTreeEntry
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -29,7 +32,8 @@ object PdfSynthesisExporter {
         uri: Uri,
         stats: MartelageStats,
         scopeLabel: String,
-        surfaceM2: Double?
+        surfaceM2: Double?,
+        parcelle: Parcelle? = null
     ) {
         val doc = PdfDocument()
         try {
@@ -37,7 +41,7 @@ object PdfSynthesisExporter {
             val page = doc.startPage(pageInfo)
             val canvas = page.canvas
 
-            val y = drawContent(canvas, context, stats, scopeLabel, surfaceM2)
+            val y = drawContent(canvas, context, stats, scopeLabel, surfaceM2, parcelle)
 
             // Footer
             val footerPaint = paint(9f, Color.GRAY)
@@ -62,7 +66,8 @@ object PdfSynthesisExporter {
         ctx: Context,
         s: MartelageStats,
         scopeLabel: String,
-        surfaceM2: Double?
+        surfaceM2: Double?,
+        parcelle: Parcelle? = null
     ): Float {
         var y = MARGIN + 10f
 
@@ -94,6 +99,22 @@ object PdfSynthesisExporter {
             val surfaceHa = surfaceM2 / 10_000.0
             val surfaceStr = if (surfaceHa >= 1.0) fmt1(surfaceHa) + " ha" else fmt0(surfaceM2) + " m²"
             y = drawKvRow(canvas, y, ctx.getString(R.string.pdf_surface), surfaceStr, labelPaint, valuePaint)
+        }
+
+        // Info parcelle
+        if (parcelle != null) {
+            y += 6f
+            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, thinLine())
+            y += 14f
+            canvas.drawText("Parcelle", MARGIN, y, sectionPaint)
+            y += 18f
+            y = drawKvRow(canvas, y, "Nom", parcelle.name, labelPaint, valuePaint)
+            parcelle.surfaceHa?.let { y = drawKvRow(canvas, y, "Surface", "${fmt2(it)} ha", labelPaint, valuePaint) }
+            parcelle.slopePct?.let { y = drawKvRow(canvas, y, "Pente", "${fmt1(it)} %", labelPaint, valuePaint) }
+            parcelle.aspect?.let { y = drawKvRow(canvas, y, "Exposition", it, labelPaint, valuePaint) }
+            parcelle.altitudeM?.let { y = drawKvRow(canvas, y, "Altitude", "${fmt0(it)} m", labelPaint, valuePaint) }
+            parcelle.access?.let { y = drawKvRow(canvas, y, "Accès", it, labelPaint, valuePaint) }
+            parcelle.remarks?.let { y = drawKvRow(canvas, y, "Remarques", it, labelPaint, valuePaint) }
         }
 
         y += 6f
@@ -138,6 +159,76 @@ object PdfSynthesisExporter {
             canvas.drawText(ctx.getString(R.string.pdf_per_essence_title), MARGIN, y, sectionPaint)
             y += 18f
             y = drawEssenceTable(canvas, ctx, s, y)
+        }
+
+        // ── Arbres spéciaux (avec détails) ──
+        if (s.specialTrees.isNotEmpty()) {
+            y += 10f
+            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, thinLine())
+            y += 16f
+            canvas.drawText(ctx.getString(R.string.martelage_special_trees_title), MARGIN, y, sectionPaint)
+            y += 18f
+
+            val detailPaint = paint(8f, Color.DKGRAY)
+            val catPaint = paint(10f, Color.BLACK, bold = true)
+
+            s.specialTrees.forEach { entry ->
+                val catLabel = when (entry.categorie) {
+                    "DEPERISSANT" -> ctx.getString(R.string.special_tree_dying)
+                    "ARBRE_BIO" -> ctx.getString(R.string.special_tree_bio)
+                    "MORT" -> ctx.getString(R.string.special_tree_dead)
+                    "PARASITE" -> ctx.getString(R.string.special_tree_parasite)
+                    else -> entry.categorie
+                }
+                // Category header
+                canvas.drawText("$catLabel (${entry.count})", MARGIN, y, catPaint)
+                y += 14f
+
+                // Per-tree details
+                entry.trees.forEach { tree ->
+                    val line = buildString {
+                        append("  \u2022 ")
+                        append(tree.essenceName)
+                        append(" \u2014 \u2300 ")
+                        append(fmt0(tree.diamCm))
+                        append(" cm")
+                        tree.hauteurM?.let {
+                            append(" \u2014 H ")
+                            append(fmt1(it))
+                            append(" m")
+                        }
+                        if (!tree.defauts.isNullOrEmpty()) {
+                            append(" \u2014 ")
+                            append(tree.defauts.joinToString(", "))
+                        }
+                        if (!tree.note.isNullOrBlank()) {
+                            append(" \u2014 ")
+                            append(tree.note)
+                        }
+                        if (tree.hasGps) append(" \uD83D\uDCCD")
+                    }
+                    canvas.drawText(line, MARGIN + 8f, y, detailPaint)
+                    y += 12f
+                }
+                y += 4f
+            }
+        }
+
+        // ── Biodiversité ──
+        s.biodiversity?.let { bio ->
+            y += 10f
+            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, thinLine())
+            y += 16f
+            canvas.drawText(ctx.getString(R.string.biodiversity_title), MARGIN, y, sectionPaint)
+            y += 18f
+            y = drawKvRow(canvas, y, "Shannon H'", fmt2(bio.shannonH), labelPaint, valuePaint)
+            bio.pielou?.let { y = drawKvRow(canvas, y, "Piélou J", fmt2(it), labelPaint, valuePaint) }
+            y = drawKvRow(canvas, y, ctx.getString(R.string.biodiversity_species), bio.speciesCount.toString(), labelPaint, valuePaint)
+            y = drawKvRow(canvas, y, "IBP", "${bio.ibpScore}/${bio.ibpMax}", labelPaint, valuePaint)
+            if (bio.tgbCount > 0) y = drawKvRow(canvas, y, "TGB \u226570cm", bio.tgbCount.toString(), labelPaint, valuePaint)
+            if (bio.bioTreeCount > 0) y = drawKvRow(canvas, y, ctx.getString(R.string.special_tree_bio), bio.bioTreeCount.toString(), labelPaint, valuePaint)
+            if (bio.deadTreeCount > 0) y = drawKvRow(canvas, y, ctx.getString(R.string.special_tree_dead), bio.deadTreeCount.toString(), labelPaint, valuePaint)
+            if (bio.dyingTreeCount > 0) y = drawKvRow(canvas, y, ctx.getString(R.string.special_tree_dying), bio.dyingTreeCount.toString(), labelPaint, valuePaint)
         }
 
         return y

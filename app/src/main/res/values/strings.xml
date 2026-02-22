@@ -243,6 +243,15 @@
     <string name="price_tables_invalid_row_format">Invalid row %1$d: %2$s</string>
     <string name="reset_price_tables_title">Reset to default prices</string>
     <string name="reset_price_tables_desc">Replace current price tables with default values?</string>
+    <string name="price_preset_dialog_title">Regional price presets</string>
+    <string name="price_preset_dialog_desc">Load indicative timber prices for a French region. This will replace your current price table.</string>
+    <string name="price_preset_loaded_format">Preset "%1$s" loaded</string>
+    <string name="price_preset_entries_suffix">price entries</string>
+    <string name="product_breakdown_title">Product breakdown</string>
+    <string name="total_estimated_value">Total estimated value</string>
+    <string name="product_price_updated">Price updated for %1$s</string>
+    <string name="product_changed">Product changed from %1$s to %2$s</string>
+    <string name="quality_affected_price">Quality %1$s affects price by %2$.0f%%</string>
 
     <string name="diameter_card_hint">Tap = +1, long press = -1</string>
 
@@ -312,6 +321,14 @@
     <string name="gps_periodic_poor">⚠ Poor GPS accuracy (±%.0f m) — threshold is ±%.0f m. Move to an open area for better signal.</string>
     <string name="map_gps_filtered_out">%1$d stems have GPS but precision exceeds %2$d m threshold.\nDisable the precision filter or move to open sky.</string>
     <string name="offline_download">Download tiles for offline</string>
+    <string name="settings_section_offline_map">Offline map</string>
+    <string name="offline_cache_title">Tile cache</string>
+    <string name="offline_cache_stats_format">%1$d tiles cached (%2$s MB)</string>
+    <string name="offline_cache_empty">No offline tiles cached</string>
+    <string name="offline_cache_clear">Clear tile cache</string>
+    <string name="offline_cache_clear_desc">Free disk space by removing all offline tiles</string>
+    <string name="offline_cache_clear_confirm">Delete all offline tiles? You will need to re-download them from the map screen.</string>
+    <string name="offline_cache_cleared">Offline cache cleared</string>
     <string name="offline_downloading">Downloading tiles…</string>
     <string name="offline_download_done">Tiles downloaded ✓</string>
     <string name="offline_download_error">Download error</string>
@@ -320,23 +337,23 @@
     <string name="map_layer_satellite_labels">Sat. + labels</string>
     <string name="map_layer_topo">Topo</string>
     <string name="map_layer_carto">Carto</string>
-    <string name="map_layer_dark">Dark</string>
-    <string name="map_layer_esri_topo">ESRI Topo</string>
     <string name="map_layer_cadastre">Cadastre</string>
+    <string name="map_layer_ortho_ign">Ortho IGN</string>
+    <string name="map_layer_sat_cadastre">Sat. + Cad.</string>
     <string name="map_zoom_in">Zoom in</string>
     <string name="map_zoom_out">Zoom out</string>
     <string name="map_north">North</string>
     <string name="map_category_general">General</string>
-    <string name="map_category_forestry">Forestry / ONF</string>
     <string name="map_layer_plan_ign">Plan IGN</string>
-    <string name="map_layer_forets_publiques">Public forests</string>
-    <string name="map_layer_sat_forets">Sat. + Forests</string>
-    <string name="map_layer_bd_foret">BD Forêt</string>
-    <string name="map_layer_foret_cadastre">Forests + Cad.</string>
+    <string name="map_layer_plan_ign_cadastre">IGN + Cad.</string>
+    <string name="map_layer_ortho_cadastre">Ortho + Cad.</string>
 
     <string name="map_choose_scope_title">Open map</string>
     <string name="map_scope_all">All trees</string>
+    <string name="map_scope_all_desc">Display all GPS-tagged trees</string>
     <string name="map_scope_empty">Map only (no trees)</string>
+    <string name="map_scope_empty_desc">Open empty map with overlays</string>
+    <string name="map_scope_by_project">By project</string>
 
     <string name="shp_overlay">Parcels overlay</string>
     <string name="shp_no_overlay">No shapefile imported. Import a .zip containing a shapefile (.shp + .dbf + .prj) to display forest parcels on the map.</string>
@@ -396,8 +413,10 @@
     <string name="create_placette">Create plot</string>
     <string name="placette_default_name_format">Plot %1$d</string>
     <string name="placette_added">Plot added</string>
-    <string name="placette_name_dialog_title">Plot name</string>
-    <string name="placette_renamed">Plot renamed</string>
+    <string name="placette_info_dialog_title">Plot info</string>
+    <string name="placette_updated">Plot updated</string>
+    <string name="placette_surface_m2">Plot area (m²)</string>
+    <string name="placette_rayon_m">Radius (m)</string>
     <string name="placette_deleted">Plot deleted</string>
     <string name="delete_placette_confirm_name_format">Delete plot "%1$s"? All stems will be removed.</string>
 
@@ -587,6 +606,8 @@
     <string name="martelage_quality_assessed_format">%1$d / %2$d assessed</string>
     <string name="martelage_quality_coverage_hint">Assess remaining stems quality to refine pricing</string>
 
+    <string name="martelage_special_trees_title">Special trees</string>
+
     <string name="martelage_per_species_title">Per species</string>
     <string name="martelage_table_species">Species</string>
     <string name="martelage_table_v_m3">V (m³)</string>
@@ -598,6 +619,16 @@
     <string name="export_shapefile">Shapefile (SHP)</string>
     <string name="export_shapefile_desc">ESRI Shapefile ZIP (.shp/.dbf/.prj) for QGIS/ArcGIS</string>
     <string name="export_shapefile_done">Shapefile exported (%1$d stems)</string>
+
+    <string name="biodiversity_title">Biodiversity index</string>
+    <string name="biodiversity_shannon">Shannon H\'</string>
+    <string name="biodiversity_pielou">Piélou J</string>
+    <string name="biodiversity_species">Species</string>
+    <string name="biodiversity_ibp_score">IBP %1$d/%2$d</string>
+    <string name="biodiversity_tgb">TGB ≥70cm: %1$d</string>
+    <string name="biodiversity_bio_trees">Bio: %1$d</string>
+    <string name="biodiversity_dead_trees">Dead: %1$d</string>
+    <string name="biodiversity_dying_trees">Dying: %1$d</string>
 
     <string name="martelage_harvest_simulation_title">Harvest simulation</string>
     <string name="martelage_harvest_n_pct">Removal N/ha</string>
@@ -616,6 +647,7 @@
     <string name="badge_to_complete">To complete</string>
 
     <string name="martelage_params_dialog_desc">These values are required to compute the pre-cut table.</string>
+    <string name="martelage_surface_hint">Enter in m² (e.g. 2000) or in hectares (e.g. 0.2 ha)</string>
     <string name="martelage_params_dialog_hint">You can then refine heights by species and diameter class in the mini-menu.</string>
 
     <string name="martelage_heights_dialog_title_format">Heights – %1$s</string>
@@ -886,4 +918,27 @@
     <string name="pdf_col_revenue">Revenue (\u20ac)</string>
     <string name="pdf_exported">PDF exported</string>
     <string name="pdf_footer">GeoSylva \u2014 Professional forestry synthesis</string>
+
+    <string name="trace_title">GPS Trace</string>
+    <string name="trace_start">Start trace</string>
+    <string name="trace_stop">Stop recording</string>
+    <string name="trace_add_point">Add point</string>
+    <string name="trace_undo">Undo last point</string>
+    <string name="trace_save">Save</string>
+    <string name="trace_save_title">Save parcel trace</string>
+    <string name="trace_clear">Clear trace</string>
+    <string name="trace_points_count">%1$d points</string>
+    <string name="trace_surface_ha">Surface: %1$s ha</string>
+    <string name="trace_perimeter_m">Perimeter: %1$s m</string>
+    <string name="trace_name_label">Parcel name</string>
+    <string name="trace_saved">Parcel trace saved (%1$s ha)</string>
+
+    <string name="nav_title">Navigation</string>
+    <string name="nav_navigate_to">Navigate</string>
+    <string name="nav_stop">Stop navigation</string>
+    <string name="nav_arrived">Arrived!</string>
+    <string name="nav_accuracy">GPS ±%1$s m</string>
+    <string name="tab_synthesis">Synthesis</string>
+    <string name="tab_valuation">Valuation</string>
+    <string name="tab_analysis">Analysis</string>
 </resources>

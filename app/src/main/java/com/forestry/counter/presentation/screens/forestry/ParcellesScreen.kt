@@ -479,13 +479,6 @@ fun ParcellesScreen(
                 }
 
                 OutlinedTextField(
-                    value = sampleArea,
-                    onValueChange = { sampleArea = it },
-                    label = { Text(stringResource(R.string.sample_plot_area_m2)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
                     value = tolerance,
                     onValueChange = { txt ->
                         tolerance = txt.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' }

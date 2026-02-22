@@ -68,8 +68,15 @@ sealed class Screen(val route: String) {
         fun forParcelle(parcelleId: String): String = "martelage/PARCELLE/none/$parcelleId/none"
         fun forPlacette(parcelleId: String, placetteId: String): String = "martelage/PLACETTE/none/$parcelleId/$placetteId"
     }
-    object Map : Screen("map/{parcelleId}") {
+    object Map : Screen("map/{parcelleId}?navLat={navLat}&navLon={navLon}&navEssence={navEssence}&navDiam={navDiam}") {
         fun createRoute(parcelleId: String) = "map/$parcelleId"
+        fun createRouteWithNav(
+            parcelleId: String,
+            lat: Double,
+            lon: Double,
+            essenceName: String,
+            diamCm: Double
+        ) = "map/$parcelleId?navLat=$lat&navLon=$lon&navEssence=$essenceName&navDiam=$diamCm"
     }
     object EssenceDiam : Screen("placette/{parcelleId}/{placetteId}/essence/{essenceCode}") {
         fun createRoute(parcelleId: String, placetteId: String, essenceCode: String) = "placette/$parcelleId/$placetteId/essence/$essenceCode"
@@ -91,7 +98,6 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
     // Courbes Material 3 Emphasized (M3 spec)
     val emphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
     val emphasizedAccelerate = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f)
-    val standard = CubicBezierEasing(0.2f, 0.0f, 0.0f, 1.0f)
 
     // Durées M3 : entrée 400ms, sortie 200ms pour un enchaînement fluide
     val enterMs = 400
@@ -367,20 +373,35 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
 
         composable(
             route = Screen.Map.route,
-            arguments = listOf(navArgument("parcelleId") { type = NavType.StringType }),
+            arguments = listOf(
+                navArgument("parcelleId") { type = NavType.StringType },
+                navArgument("navLat") { type = NavType.StringType; nullable = true; defaultValue = null },
+                navArgument("navLon") { type = NavType.StringType; nullable = true; defaultValue = null },
+                navArgument("navEssence") { type = NavType.StringType; nullable = true; defaultValue = null },
+                navArgument("navDiam") { type = NavType.StringType; nullable = true; defaultValue = null }
+            ),
             enterTransition = navEnterTransition,
             exitTransition = navExitTransition,
             popEnterTransition = navPopEnterTransition,
             popExitTransition = navPopExitTransition
         ) { backStackEntry ->
             val parcelleId = backStackEntry.arguments?.getString("parcelleId") ?: return@composable
+            val navLat = backStackEntry.arguments?.getString("navLat")?.toDoubleOrNull()
+            val navLon = backStackEntry.arguments?.getString("navLon")?.toDoubleOrNull()
+            val navEssence = backStackEntry.arguments?.getString("navEssence")
+            val navDiam = backStackEntry.arguments?.getString("navDiam")?.toDoubleOrNull()
             MapScreen(
                 parcelleId = parcelleId,
                 tigeRepository = app.tigeRepository,
                 essenceRepository = app.essenceRepository,
                 parcelleRepository = app.parcelleRepository,
                 preferencesManager = app.userPreferences,
-                onNavigateBack = { navController.popBackStack() }
+                offlineTileManager = app.offlineTileManager,
+                onNavigateBack = { navController.popBackStack() },
+                initialNavLat = navLat,
+                initialNavLon = navLon,
+                initialNavEssence = navEssence,
+                initialNavDiam = navDiam
             )
         }
 
@@ -477,6 +498,7 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                 forestryCalculator = app.forestryCalculator,
                 parcelleRepository = app.parcelleRepository,
                 placetteRepository = app.placetteRepository,
+                offlineTileManager = app.offlineTileManager,
                 onNavigateToPriceTablesEditor = { navController.navigate(Screen.PriceTablesEditor.route) },
                 onNavigateBack = { navController.popBackStack() }
             )

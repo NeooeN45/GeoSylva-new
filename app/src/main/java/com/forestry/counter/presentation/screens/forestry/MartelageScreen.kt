@@ -45,7 +45,9 @@ import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberCoroutineScope
@@ -80,6 +82,8 @@ import com.forestry.counter.presentation.utils.parseHeightInputMean
 import com.forestry.counter.presentation.utils.rememberHapticFeedback
 import com.forestry.counter.presentation.utils.rememberSoundFeedback
 import com.forestry.counter.presentation.utils.ColorUtils
+import com.forestry.counter.domain.calculation.PriceCalculator
+import com.forestry.counter.domain.calculation.ProductBreakdownRow
 import kotlinx.coroutines.launch
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.isGranted
@@ -287,6 +291,8 @@ fun MartelageScreen(
     var showTarifMethodDialog by remember { mutableStateOf(false) }
     var currentTarifMethod by remember { mutableStateOf(TarifMethod.ALGAN) }
     var currentTarifNumero by remember { mutableStateOf<Int?>(null) }
+    var selectedTabIndex by remember { mutableStateOf(0) }
+    var breakdownByEssence by remember { mutableStateOf<Map<String, List<ProductBreakdownRow>>>(emptyMap()) }
 
     LaunchedEffect(Unit) {
         val sel = forestryCalculator.loadTarifSelection()
@@ -1276,161 +1282,161 @@ fun MartelageScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                         }
 
-                        AnimatedVisibility(
-                            visible = missingPriceVisible,
-                            enter = fadeIn(animationSpec = tween(durationMillis = if (animationsEnabled) 180 else 0, easing = FastOutSlowInEasing)) +
-                                slideInVertically(
-                                    animationSpec = tween(durationMillis = if (animationsEnabled) 220 else 0, easing = FastOutSlowInEasing),
-                                    initialOffsetY = { -it / 12 }
-                                ) +
-                                expandVertically(animationSpec = tween(durationMillis = if (animationsEnabled) 220 else 0, easing = FastOutSlowInEasing)),
-                            exit = fadeOut(animationSpec = tween(durationMillis = if (animationsEnabled) 180 else 0, easing = FastOutSlowInEasing)) +
-                                slideOutVertically(
-                                    animationSpec = tween(durationMillis = if (animationsEnabled) 220 else 0, easing = FastOutSlowInEasing),
-                                    targetOffsetY = { -it / 12 }
-                                ) +
-                                shrinkVertically(animationSpec = tween(durationMillis = if (animationsEnabled) 220 else 0, easing = FastOutSlowInEasing))
-                        ) {
-                            val pct = ((missingPriceVol / s.vTotal.coerceAtLeast(1e-9)) * 100.0)
-                                .coerceIn(0.0, 100.0)
-                                .roundToInt()
+                        // ── Onglets ──
+                        TabRow(selectedTabIndex = selectedTabIndex) {
+                            Tab(
+                                selected = selectedTabIndex == 0,
+                                onClick = { selectedTabIndex = 0 },
+                                text = { Text(stringResource(R.string.tab_synthesis), style = MaterialTheme.typography.labelMedium) },
+                                icon = { Icon(Icons.Default.Dashboard, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                            )
+                            Tab(
+                                selected = selectedTabIndex == 1,
+                                onClick = { selectedTabIndex = 1 },
+                                text = { Text(stringResource(R.string.tab_valuation), style = MaterialTheme.typography.labelMedium) },
+                                icon = { Icon(Icons.Default.AttachMoney, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                            )
+                            Tab(
+                                selected = selectedTabIndex == 2,
+                                onClick = { selectedTabIndex = 2 },
+                                text = { Text(stringResource(R.string.tab_analysis), style = MaterialTheme.typography.labelMedium) },
+                                icon = { Icon(Icons.Default.Analytics, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                            )
+                        }
 
-                            Column {
-                                val warnBg = MaterialTheme.colorScheme.errorContainer
-                                val warnFg = ColorUtils.getContrastingTextColor(warnBg)
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(18.dp)),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = warnBg,
-                                        contentColor = warnFg
-                                    )
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(12.dp),
-                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                        // ── TAB 0 : Synthèse ──
+                        if (selectedTabIndex == 0) {
+                            VolumeCard(
+                                vTotalText = formatVolume(vTotalAnim.toDouble()),
+                                vPerHaText = formatVolume(vPerHaAnim.toDouble()),
+                                revenueTotalText = revenueTotalText,
+                                revenuePerHaText = revenuePerHaText,
+                                volumeAvailable = s.volumeAvailable,
+                                volumeCompletenessPct = s.volumeCompletenessPct
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            BasalAreaCard(
+                                gTotal = s.gTotal,
+                                gPerHa = s.gPerHa,
+                                surfaceHa = s.surfaceHa,
+                                ratioVG = s.ratioVG
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            DensityCard(
+                                nTotal = s.nTotal,
+                                nPerHa = s.nPerHa,
+                                dm = s.dm,
+                                meanH = s.meanH,
+                                dg = s.dg,
+                                hLorey = s.hLorey,
+                                dMin = s.dMin,
+                                dMax = s.dMax,
+                                cvDiam = s.cvDiam,
+                                placeholderDash = placeholderDash
+                            )
+                        }
+
+                        // ── TAB 1 : Valorisation ──
+                        if (selectedTabIndex == 1) {
+                            AnimatedVisibility(visible = missingPriceVisible) {
+                                val pct = ((missingPriceVol / s.vTotal.coerceAtLeast(1e-9)) * 100.0).coerceIn(0.0, 100.0).roundToInt()
+                                Column {
+                                    val warnBg = MaterialTheme.colorScheme.errorContainer
+                                    val warnFg = ColorUtils.getContrastingTextColor(warnBg)
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)),
+                                        colors = CardDefaults.cardColors(containerColor = warnBg, contentColor = warnFg)
                                     ) {
-                                        Row(
-                                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            Icon(Icons.Default.Warning, contentDescription = null)
-                                            Text(
-                                                stringResource(R.string.martelage_missing_prices_title),
-                                                style = MaterialTheme.typography.titleMedium
-                                            )
-                                        }
-
-                                        Text(
-                                            stringResource(
-                                                R.string.martelage_missing_prices_desc,
-                                                formatVolume(missingPriceVolAnim.toDouble()),
-                                                pct
-                                            ),
-                                            style = MaterialTheme.typography.bodyMedium
-                                        )
-
-                                        if (s.unpricedEssenceNames.isNotEmpty()) {
-                                            val names = s.unpricedEssenceNames.take(3).joinToString(", ") +
-                                                if (s.unpricedEssenceNames.size > 3) ellipsis else ""
-                                            Text(
-                                                stringResource(R.string.martelage_missing_prices_essences, names),
-                                                style = MaterialTheme.typography.bodySmall
-                                            )
-                                        }
-
-                                        (onNavigateToPriceTablesEditor ?: onNavigateToSettings)?.let { nav ->
-                                            TextButton(
-                                                onClick = {
-                                                    playClickFeedback()
-                                                    nav()
+                                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                Icon(Icons.Default.Warning, contentDescription = null)
+                                                Text(stringResource(R.string.martelage_missing_prices_title), style = MaterialTheme.typography.titleMedium)
+                                            }
+                                            Text(stringResource(R.string.martelage_missing_prices_desc, formatVolume(missingPriceVolAnim.toDouble()), pct), style = MaterialTheme.typography.bodyMedium)
+                                            if (s.unpricedEssenceNames.isNotEmpty()) {
+                                                val names = s.unpricedEssenceNames.take(3).joinToString(", ") + if (s.unpricedEssenceNames.size > 3) ellipsis else ""
+                                                Text(stringResource(R.string.martelage_missing_prices_essences, names), style = MaterialTheme.typography.bodySmall)
+                                            }
+                                            (onNavigateToPriceTablesEditor ?: onNavigateToSettings)?.let { nav ->
+                                                TextButton(onClick = { playClickFeedback(); nav() }) {
+                                                    Text(stringResource(R.string.martelage_configure_prices))
                                                 }
-                                            ) {
-                                                Text(stringResource(R.string.martelage_configure_prices))
                                             }
                                         }
                                     }
+                                    Spacer(modifier = Modifier.height(8.dp))
                                 }
+                            }
 
-                                Spacer(modifier = Modifier.height(8.dp))
+                            // Ventilation produits par essence
+                            LaunchedEffect(s.perEssence) {
+                                val prices = forestryCalculator.loadPriceEntries()
+                                val result = mutableMapOf<String, List<ProductBreakdownRow>>()
+                                s.perEssence.forEach { ess ->
+                                    if (ess.vTotal <= 0.0) return@forEach
+                                    val diam = (ess.dm ?: ess.dg ?: 30.0).toInt()
+                                    val q = ess.dominantQuality?.code
+                                    val v = ess.vTotal
+                                    val products: Map<String, Double> = when {
+                                        diam >= 45 -> mapOf("BO" to v * 0.75, "BI" to v * 0.15, "BCh" to v * 0.10)
+                                        diam >= 35 -> mapOf("BO" to v * 0.55, "BI" to v * 0.30, "BCh" to v * 0.15)
+                                        diam >= 25 -> mapOf("BO" to v * 0.30, "BI" to v * 0.45, "BCh" to v * 0.25)
+                                        diam >= 15 -> mapOf("BI" to v * 0.40, "BCh" to v * 0.35, "PATE" to v * 0.25)
+                                        else       -> mapOf("BCh" to v * 0.50, "PATE" to v * 0.50)
+                                    }
+                                    result[ess.essenceCode] = PriceCalculator.buildBreakdown(
+                                        prices = prices, essenceCode = ess.essenceCode,
+                                        volumeByProduct = products, diamCm = diam, quality = q
+                                    )
+                                }
+                                breakdownByEssence = result
+                            }
+
+                            s.perEssence.filter { it.vTotal > 0.0 }.forEach { ess ->
+                                val rows = breakdownByEssence[ess.essenceCode]
+                                if (!rows.isNullOrEmpty()) {
+                                    ProductBreakdownCard(essenceName = ess.essenceName, quality = ess.dominantQuality?.code, rows = rows)
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
+                            }
+
+                            if (s.perEssence.isNotEmpty()) {
+                                PerEssenceTable(perEssence = s.perEssence, essences = essences, placeholderDash = placeholderDash, euroSymbol = euroSymbol)
                             }
                         }
 
-                        VolumeCard(
-                            vTotalText = formatVolume(vTotalAnim.toDouble()),
-                            vPerHaText = formatVolume(vPerHaAnim.toDouble()),
-                            revenueTotalText = revenueTotalText,
-                            revenuePerHaText = revenuePerHaText,
-                            volumeAvailable = s.volumeAvailable,
-                            volumeCompletenessPct = s.volumeCompletenessPct
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        BasalAreaCard(
-                            gTotal = s.gTotal,
-                            gPerHa = s.gPerHa,
-                            surfaceHa = s.surfaceHa,
-                            ratioVG = s.ratioVG
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        DensityCard(
-                            nTotal = s.nTotal,
-                            nPerHa = s.nPerHa,
-                            dm = s.dm,
-                            meanH = s.meanH,
-                            dg = s.dg,
-                            hLorey = s.hLorey,
-                            dMin = s.dMin,
-                            dMax = s.dMax,
-                            cvDiam = s.cvDiam,
-                            placeholderDash = placeholderDash
-                        )
-
-                        if (s.sanityWarnings.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            SanityWarningsCard(warnings = s.sanityWarnings)
-                        }
-
-                        if (s.harvestNhaPct != null || s.harvestGhaPct != null) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            HarvestSimulationCard(
-                                harvestNhaPct = s.harvestNhaPct,
-                                harvestGhaPct = s.harvestGhaPct,
-                                residualNha = s.residualNha,
-                                residualGha = s.residualGha,
-                                nPerHa = s.nPerHa,
-                                gPerHa = s.gPerHa
-                            )
-                        }
-
-                        if (s.classDistribution.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            ClassDistributionCard(
-                                classDistribution = s.classDistribution
-                            )
-                        }
-
-                        if (s.qualityDistribution.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            QualityDistributionCard(
-                                qualityDistribution = s.qualityDistribution,
-                                assessedCount = s.qualityAssessedCount,
-                                totalCount = s.qualityTotalCount
-                            )
-                        }
-
-                        if (s.perEssence.isNotEmpty()) {
-                            PerEssenceTable(
-                                perEssence = s.perEssence,
-                                essences = essences,
-                                placeholderDash = placeholderDash,
-                                euroSymbol = euroSymbol
-                            )
+                        // ── TAB 2 : Analyse ──
+                        if (selectedTabIndex == 2) {
+                            if (s.sanityWarnings.isNotEmpty()) {
+                                SanityWarningsCard(warnings = s.sanityWarnings)
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                            if (s.harvestNhaPct != null || s.harvestGhaPct != null) {
+                                HarvestSimulationCard(
+                                    harvestNhaPct = s.harvestNhaPct, harvestGhaPct = s.harvestGhaPct,
+                                    residualNha = s.residualNha, residualGha = s.residualGha,
+                                    nPerHa = s.nPerHa, gPerHa = s.gPerHa
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                            if (s.classDistribution.isNotEmpty()) {
+                                ClassDistributionCard(classDistribution = s.classDistribution)
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                            if (s.qualityDistribution.isNotEmpty()) {
+                                QualityDistributionCard(qualityDistribution = s.qualityDistribution, assessedCount = s.qualityAssessedCount, totalCount = s.qualityTotalCount)
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                            if (s.specialTrees.isNotEmpty()) {
+                                SpecialTreesCard(specialTrees = s.specialTrees)
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                            s.biodiversity?.let { bio ->
+                                BiodiversityCard(bio = bio)
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
                         }
                     }
 

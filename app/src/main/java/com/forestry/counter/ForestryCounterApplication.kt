@@ -81,6 +81,10 @@ class ForestryCounterApplication : Application() {
     lateinit var peuplementAvantCoupeCalculator: PeuplementAvantCoupeCalculator
         private set
 
+    // Offline tiles
+    lateinit var offlineTileManager: com.forestry.counter.domain.location.OfflineTileManager
+        private set
+
     override fun onCreate() {
         super.onCreate()
 
@@ -104,7 +108,10 @@ class ForestryCounterApplication : Application() {
             database.groupDao(),
             database.counterDao(),
             database.formulaDao(),
-            database.groupVariableDao()
+            database.groupVariableDao(),
+            database.parcelleDao(),
+            database.placetteDao(),
+            database.tigeDao()
         )
 
         counterRepository = CounterRepositoryImpl(
@@ -132,6 +139,9 @@ class ForestryCounterApplication : Application() {
         forestryCalculator = ForestryCalculator(parameterRepository)
         // Initialize pre-harvest stand calculator
         peuplementAvantCoupeCalculator = PeuplementAvantCoupeCalculator()
+
+        // Initialize offline tile manager
+        offlineTileManager = com.forestry.counter.domain.location.OfflineTileManager(applicationContext)
 
         // Initialize preferences
         userPreferences = UserPreferencesManager(applicationContext)

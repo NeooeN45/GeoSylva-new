@@ -11,6 +11,7 @@ import com.forestry.counter.domain.model.Essence
 import com.forestry.counter.domain.model.Tige
 import java.util.Locale
 import kotlin.math.PI
+import kotlin.math.ln
 import kotlin.math.sqrt
 
 // Vue locale pour la synthèse (indépendante du scope de navigation)
@@ -208,7 +209,29 @@ suspend fun computeMartelageStats(
         )
     }
 
-    if (nTotal == 0 && vTotal == 0.0 && gTotal == 0.0) return null
+    // Special trees count (DEPERISSANT, ARBRE_BIO, MORT, PARASITE)
+    val specialCategories = setOf("DEPERISSANT", "ARBRE_BIO", "MORT", "PARASITE")
+    val specialByCategory = mutableMapOf<String, MutableList<SpecialTreeDetail>>()
+    tigesInScope.forEach { t ->
+        val cat = t.categorie?.uppercase(Locale.getDefault())
+        if (cat != null && cat in specialCategories) {
+            val essName = essences.firstOrNull { normalizeEssenceCode(it.code) == normalizeEssenceCode(t.essenceCode) }?.name ?: t.essenceCode
+            specialByCategory.getOrPut(cat) { mutableListOf() } += SpecialTreeDetail(
+                essenceName = essName,
+                essenceCode = normalizeEssenceCode(t.essenceCode),
+                diamCm = t.diamCm,
+                hauteurM = t.hauteurM,
+                defauts = t.defauts,
+                note = t.note,
+                hasGps = t.gpsWkt != null
+            )
+        }
+    }
+    val specialTreeEntries = specialByCategory.entries
+        .sortedBy { it.key }
+        .map { (cat, trees) -> SpecialTreeEntry(cat, trees.size, trees) }
+
+    if (nTotal == 0 && vTotal == 0.0 && gTotal == 0.0 && specialTreeEntries.isEmpty()) return null
 
     // ── Garde-fou : vérification de cohérence ──
     val sanityWarnings = mutableListOf<SanityWarning>()
@@ -278,6 +301,9 @@ suspend fun computeMartelageStats(
     val residualGha = if (gHaAvant != null && gPerHa > 0.0) (gHaAvant - gPerHa).coerceAtLeast(0.0) else null
     val residualVha: Double? = null // Cannot estimate without V/ha avant
 
+    // ── Indice de biodiversité ──
+    val biodiversity = computeBiodiversityIndex(tigesInScope, specialTreeEntries, nTotal, perEssenceWithPct)
+
     sanityWarnings.addAll(
         SanityChecker.checkAggregates(
             nPerHa = nPerHa,
@@ -325,7 +351,75 @@ suspend fun computeMartelageStats(
         residualNha = residualNha,
         residualGha = residualGha,
         residualVha = residualVha,
-        sanityWarnings = sanityWarnings
+        sanityWarnings = sanityWarnings,
+        specialTrees = specialTreeEntries,
+        biodiversity = biodiversity
+    )
+}
+
+/**
+ * Calcule l'indice de biodiversité : Shannon, Piélou, IBP simplifié.
+ */
+private fun computeBiodiversityIndex(
+    tiges: List<Tige>,
+    specialTrees: List<SpecialTreeEntry>,
+    nTotal: Int,
+    perEssence: List<PerEssenceStats>
+): BiodiversityIndex? {
+    if (nTotal == 0) return null
+    val speciesCount = perEssence.size
+
+    // Shannon H' = -Σ(pi * ln(pi))
+    var shannon = 0.0
+    perEssence.forEach { row ->
+        val pi = row.n.toDouble() / nTotal
+        if (pi > 0.0) shannon -= pi * ln(pi)
+    }
+
+    // Piélou J = H' / ln(S)
+    val pielou = if (speciesCount > 1) shannon / ln(speciesCount.toDouble()) else if (speciesCount == 1) 0.0 else null
+
+    // IBP simplifié (0–10 points)
+    var ibpScore = 0
+    val ibpDetails = mutableListOf<String>()
+
+    // 1. Diversité spécifique (≥3 essences = 1pt, ≥6 = 2pt)
+    if (speciesCount >= 6) { ibpScore += 2; ibpDetails += "diversite_6+" }
+    else if (speciesCount >= 3) { ibpScore += 1; ibpDetails += "diversite_3+" }
+
+    // 2. Très gros bois (TGB ≥ 70cm) présents
+    val tgbCount = tiges.count { it.diamCm >= 70.0 }
+    if (tgbCount >= 3) { ibpScore += 2; ibpDetails += "tgb_3+" }
+    else if (tgbCount >= 1) { ibpScore += 1; ibpDetails += "tgb_1+" }
+
+    // 3. Arbres bio vivants
+    val bioCount = specialTrees.firstOrNull { it.categorie == "ARBRE_BIO" }?.count ?: 0
+    if (bioCount >= 3) { ibpScore += 2; ibpDetails += "bio_3+" }
+    else if (bioCount >= 1) { ibpScore += 1; ibpDetails += "bio_1+" }
+
+    // 4. Bois mort sur pied
+    val deadCount = specialTrees.firstOrNull { it.categorie == "MORT" }?.count ?: 0
+    if (deadCount >= 3) { ibpScore += 2; ibpDetails += "mort_3+" }
+    else if (deadCount >= 1) { ibpScore += 1; ibpDetails += "mort_1+" }
+
+    // 5. Arbres dépérissants
+    val dyingCount = specialTrees.firstOrNull { it.categorie == "DEPERISSANT" }?.count ?: 0
+    if (dyingCount >= 1) { ibpScore += 1; ibpDetails += "deperissant_1+" }
+
+    // 6. Régularité de Shannon (Piélou > 0.6)
+    if (pielou != null && pielou >= 0.6) { ibpScore += 1; ibpDetails += "equitabilite" }
+
+    return BiodiversityIndex(
+        shannonH = shannon,
+        pielou = pielou,
+        speciesCount = speciesCount,
+        tgbCount = tgbCount,
+        bioTreeCount = bioCount,
+        deadTreeCount = deadCount,
+        dyingTreeCount = dyingCount,
+        ibpScore = ibpScore.coerceAtMost(10),
+        ibpMax = 10,
+        ibpDetails = ibpDetails
     )
 }
 
@@ -368,7 +462,11 @@ data class MartelageStats(
     val residualGha: Double? = null,
     val residualVha: Double? = null,
     // Garde-fou
-    val sanityWarnings: List<SanityWarning> = emptyList()
+    val sanityWarnings: List<SanityWarning> = emptyList(),
+    // Arbres spéciaux (dépérissant, bio, mort, parasité)
+    val specialTrees: List<SpecialTreeEntry> = emptyList(),
+    // Indice de biodiversité
+    val biodiversity: BiodiversityIndex? = null
 )
 
 data class ClassDistEntry(
@@ -382,6 +480,35 @@ data class QualityDistEntry(
     val grade: WoodQualityGrade,
     val count: Int,
     val pct: Double
+)
+
+data class BiodiversityIndex(
+    val shannonH: Double,
+    val pielou: Double?,
+    val speciesCount: Int,
+    val tgbCount: Int,       // Très gros bois (≥70cm)
+    val bioTreeCount: Int,
+    val deadTreeCount: Int,
+    val dyingTreeCount: Int,
+    val ibpScore: Int,       // Score IBP simplifié (0–10)
+    val ibpMax: Int,
+    val ibpDetails: List<String>
+)
+
+data class SpecialTreeDetail(
+    val essenceName: String,
+    val essenceCode: String,
+    val diamCm: Double,
+    val hauteurM: Double?,
+    val defauts: List<String>?,
+    val note: String?,
+    val hasGps: Boolean = false
+)
+
+data class SpecialTreeEntry(
+    val categorie: String, // DEPERISSANT, ARBRE_BIO, MORT, PARASITE
+    val count: Int,
+    val trees: List<SpecialTreeDetail> = emptyList()
 )
 
 // Agrégats par essence pour le tableau

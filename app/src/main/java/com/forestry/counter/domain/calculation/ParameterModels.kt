@@ -63,5 +63,6 @@ data class PriceEntry(
     val product: String,
     val min: Int,
     val max: Int,
-    val eurPerM3: Double
+    val eurPerM3: Double,
+    val quality: String? = null // "A", "B", "C", "D" or null = all qualities
 )
