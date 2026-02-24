@@ -268,15 +268,16 @@ Requise pour une utilisation **sans les obligations AGPL-3.0** (intégration pro
 
 ## 👥 Contribution
 
-Les contributions sont bienvenues !
+**Pour le moment, les forks ne sont pas autorisés.**
 
-1. **Fork** le projet
-2. Créez votre branche : `git checkout -b feature/ma-fonctionnalite`
-3. Committez : `git commit -m 'Ajout de ma fonctionnalité'`
-4. Pushez : `git push origin feature/ma-fonctionnalite`
-5. Ouvrez une **Pull Request**
+GeoSylva est actuellement en phase de développement contrôlé. Nous apprécions votre intérêt et vous invitons à :
 
-Merci de consulter le [SECURITY.md](SECURITY.md) pour le signalement de vulnérabilités.
+- 🐛 **Signaler des bugs** via les [issues](../../issues)
+- 💡 **Proposer des fonctionnalités** dans les [discussions](../../discussions)
+- 📖 **Améliorer la documentation** en signalant des erreurs
+- 🔒 **Signaler des vulnérabilités** selon [SECURITY.md](SECURITY.md)
+
+Si vous souhaitez contribuer au code, merci de nous contacter directement pour discuter des possibilités de collaboration.
 
 ---
 

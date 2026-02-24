@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoSylva - Application Android d'inventaire forestier</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            color: #2e7d32;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 1.3rem;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .version-badge {
+            background: #4caf50;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .feature-title {
+            font-size: 1.4rem;
+            color: #2e7d32;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .feature-description {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .cta-section {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: #2e7d32;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: background 0.3s ease;
+            margin: 0 10px;
+        }
+        
+        .cta-button:hover {
+            background: #1b5e20;
+        }
+        
+        .cta-button.secondary {
+            background: #667eea;
+        }
+        
+        .cta-button.secondary:hover {
+            background: #5a67d8;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+        }
+        
+        .gps-precision {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .precision-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .precision-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid currentColor;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .logo {
+                font-size: 3rem;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🌲</div>
+            <h1>GeoSylva</h1>
+            <p class="subtitle">Application Android professionnelle d'inventaire forestier et de martelage</p>
+            <div class="version-badge">Version 1.3.0</div>
+            <p><strong>Conçue pour les forestiers, géomètres et gestionnaires de forêts.</strong><br>
+            Fonctionne intégralement hors-ligne — idéal sur le terrain.</p>
+        </header>
+        
+        <section class="features">
+            <div class="feature-card">
+                <div class="feature-icon">📐</div>
+                <h3 class="feature-title">Inventaire & Dendrométrie</h3>
+                <p class="feature-description">
+                    Saisie rapide par essence et classe de diamètre, 95+ essences pré-configurées, 
+                    7 méthodes de cubage, classification produit automatique, notation qualité bois A/B/C/D.
+                </p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📍</div>
+                <h3 class="feature-title">GPS de précision</h3>
+                <p class="feature-description">
+                    Capture immédiate au tap, profil optimal unique (6 lectures, max 20m), 
+                    réutilisation intelligente des points GPS, persistance hors-page.
+                </p>
+                <div class="gps-precision">
+                    <div class="precision-item">
+                        <div class="precision-circle" style="background: rgba(76, 175, 80, 0.3); border-color: #4caf50;"></div>
+                        <span>≤3m</span>
+                    </div>
+                    <div class="precision-item">
+                        <div class="precision-circle" style="background: rgba(139, 195, 74, 0.3); border-color: #8bc34a;"></div>
+                        <span>≤6m</span>
+                    </div>
+                    <div class="precision-item">
+                        <div class="precision-circle" style="background: rgba(255, 152, 0, 0.3); border-color: #ff9800;"></div>
+                        <span>≤12m</span>
+                    </div>
+                    <div class="precision-item">
+                        <div class="precision-circle" style="background: rgba(244, 67, 54, 0.3); border-color: #f44336;"></div>
+                        <span>>12m</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🗺️</div>
+                <h3 class="feature-title">Cartographie interactive</h3>
+                <p class="feature-description">
+                    12 couches cartographiques (IGN, satellite, cadastre), affichage des tiges avec clustering, 
+                    tuiles hors-ligne, import de shapefiles, filtre de fiabilité GPS.
+                </p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3 class="feature-title">Synthèse & Martelage</h3>
+                <p class="feature-description">
+                    Tableau de bord visuel, synthèse dendrométrique complète, volume partiel intelligent, 
+                    simulation de coupe, garde-fous automatiques, tables de prix éditables.
+                </p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📤</div>
+                <h3 class="feature-title">Exports professionnels</h3>
+                <p class="feature-description">
+                    PDF, Shapefile (SHP/SHX/DBF/PRJ), GeoJSON, CSV/CSV-XY, Excel (XLSX) — 
+                    formats standards pour QGIS, ArcGIS et autres outils SIG.
+                </p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🛡️</div>
+                <h3 class="feature-title">Fiabilité terrain</h3>
+                <p class="feature-description">
+                    100% hors-ligne, sauvegarde automatique quotidienne, rappel hauteurs avec snooze, 
+                    tips contextuels, onboarding complet de 7 écrans interactifs.
+                </p>
+            </div>
+        </section>
+        
+        <section class="cta-section">
+            <h2 style="color: #2e7d32; margin-bottom: 20px;">Découvrez GeoSylva</h2>
+            <p style="margin-bottom: 30px; color: #666;">
+                Remplacez le carnet de terrain et les tableurs Excel par une application unique 
+                qui couvre l'ensemble du workflow forestier.
+            </p>
+            <p style="margin-bottom: 20px; color: #888; font-size: 0.9rem;">
+                <strong>Note :</strong> Les forks ne sont pas autorisés pour le moment. 
+                Pour contribuer, merci de nous contacter directement.
+            </p>
+            <div>
+                <a href="https://github.com/NeooeN45/GeoSylva-new" class="cta-button" target="_blank">
+                    Voir sur GitHub
+                </a>
+                <a href="CHANGELOG.md" class="cta-button secondary">
+                    Notes de version
+                </a>
+            </div>
+        </section>
+        
+        <footer>
+            <p>&copy; 2026 GeoSylva - Licence AGPL-3.0</p>
+            <p style="margin-top: 10px; opacity: 0.8;">
+                Développé avec ❤️ pour les professionnels de la forêt
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
