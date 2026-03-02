@@ -946,10 +946,22 @@ fun MartelageScreen(
                                     verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text(
-                                        stringResource(R.string.martelage_calc_parameters_title),
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
+                                    Row(
+                                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Tune,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            stringResource(R.string.martelage_calc_parameters_title),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
                                     Row(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
@@ -996,6 +1008,15 @@ fun MartelageScreen(
                                     suffix = { Text("m²") },
                                     singleLine = true
                                 )
+                                // Hint de conversion en hectares
+                                if (surfaceInputValueM2 != null && surfaceInputValueM2 > 0) {
+                                    Text(
+                                        "≈ ${String.format(Locale.getDefault(), "%.4f", surfaceInputValueM2 / 10_000.0)} ha",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                                        modifier = Modifier.padding(start = 4.dp, top = 2.dp)
+                                    )
+                                }
 
                                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -1015,11 +1036,22 @@ fun MartelageScreen(
 
                                 // ── Peuplement avant coupe (simulation) ──
                                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                                Text(
-                                    stringResource(R.string.martelage_avant_coupe_hint),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                )
+                                Row(
+                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Analytics,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
+                                    )
+                                    Text(
+                                        stringResource(R.string.martelage_avant_coupe_hint),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                    )
+                                }
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1059,10 +1091,21 @@ fun MartelageScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            stringResource(R.string.martelage_cubage_method),
-                                            style = MaterialTheme.typography.titleSmall
-                                        )
+                                        Row(
+                                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Dashboard,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(15.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                            Text(
+                                                stringResource(R.string.martelage_cubage_method),
+                                                style = MaterialTheme.typography.titleSmall
+                                            )
+                                        }
                                         Text(
                                             stringResource(R.string.martelage_cubage_method_current_format, currentTarifMethod.label),
                                             style = MaterialTheme.typography.bodySmall,
@@ -1088,10 +1131,21 @@ fun MartelageScreen(
 
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                Text(
-                                    stringResource(R.string.martelage_heights_by_species_or_ho_desc),
-                                    style = MaterialTheme.typography.titleMedium
-                                )
+                                Row(
+                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Height,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        stringResource(R.string.martelage_heights_by_species_or_ho_desc),
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                }
 
                                 val heightModes = synthesisParams?.heightModes.orEmpty()
                                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

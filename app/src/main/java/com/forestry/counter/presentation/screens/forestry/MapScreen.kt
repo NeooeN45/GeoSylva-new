@@ -807,6 +807,15 @@ private val MAP_LAYERS = listOf(
         ),
         isDark = true,
         tileUrls = listOf("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}")
+    ),
+
+    // ── Couche hors-ligne locale ──
+    MapLayerDef(
+        key = "OFFLINE_LOCAL",
+        labelResId = R.string.map_layer_offline_local,
+        emoji = "📥",
+        styleJson = offlineLocalStyle("Offline Local"),
+        tileUrls = emptyList()
     )
 )
 
@@ -892,6 +901,14 @@ fun MapScreen(
     val offlineTileManager = offlineTileManager ?: remember(context) { OfflineTileManager(context) }
     val offlineProgress by offlineTileManager.downloadProgress.collectAsState()
     var showOfflineSnackbar by remember { mutableStateOf(false) }
+
+    // Présence de tuiles hors-ligne (se met à jour après un téléchargement)
+    var hasOfflineTilesState by remember { mutableStateOf(offlineTileManager.hasOfflineTiles()) }
+    LaunchedEffect(offlineProgress) {
+        if (offlineProgress?.isComplete == true && offlineProgress?.error == null) {
+            hasOfflineTilesState = offlineTileManager.hasOfflineTiles()
+        }
+    }
 
     val essenceMap = remember(essences) { essences.associateBy { it.code.uppercase() } }
 
@@ -1343,6 +1360,7 @@ fun MapScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             MAP_LAYERS.forEachIndexed { index, layer ->
+                                if (layer.key == "OFFLINE_LOCAL") return@forEachIndexed
                                 LayerChip(
                                     layer = layer,
                                     isSelected = index == currentLayerIdx,
@@ -1351,6 +1369,40 @@ fun MapScreen(
                                         showLayerPicker = false
                                     }
                                 )
+                            }
+                            // Couche hors-ligne : visible uniquement si des tuiles sont téléchargées
+                            val offlineIdx = MAP_LAYERS.indexOfFirst { it.key == "OFFLINE_LOCAL" }
+                            if (hasOfflineTilesState && offlineIdx >= 0) {
+                                val (tileCount, _) = remember(hasOfflineTilesState) {
+                                    offlineTileManager.cacheStats()
+                                }
+                                Box {
+                                    LayerChip(
+                                        layer = MAP_LAYERS[offlineIdx],
+                                        isSelected = offlineIdx == currentLayerIdx,
+                                        onClick = {
+                                            switchLayer(offlineIdx)
+                                            showLayerPicker = false
+                                        }
+                                    )
+                                    if (tileCount > 0) {
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.primary,
+                                            shape = RoundedCornerShape(8.dp),
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .padding(2.dp)
+                                        ) {
+                                            Text(
+                                                "$tileCount",
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onPrimary,
+                                                fontSize = 8.sp
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

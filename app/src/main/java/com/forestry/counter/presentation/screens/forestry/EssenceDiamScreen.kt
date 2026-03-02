@@ -862,28 +862,68 @@ fun EssenceDiamScreen(
                 heightByClassInput.clear()
                 populatedClasses.forEach { d ->
                     val v = manual[d] ?: fixed[d]
-                    heightByClassInput[d] = v?.let { String.format(Locale.getDefault(), "%.1f", it) } ?: ""
+                    if (v != null && v > 0.0) heightByClassInput[d] = v.toString()
                 }
                 showHeightDialog = true
             }
         ) {
+            // Contenu amélioré : barre de progression + chips des classes manquantes
             if (list.isNotEmpty()) {
-                Surface(
-                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(
-                            text = stringResource(R.string.mandatory_heights_classes_format,
-                                list.joinToString(", ") { d -> "$d cm" }),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold
+                val configured = heightTotalPopulated - list.size
+                val progress = if (heightTotalPopulated > 0) configured.toFloat() / heightTotalPopulated else 0f
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // Barre de progression classes configurées / total
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        LinearProgressIndicator(
+                            progress = progress,
+                            modifier = Modifier.weight(1f).height(6.dp),
+                            color = if (progress >= 1f) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.error,
+                            trackColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
                         )
                         Text(
-                            text = "${list.size} / $heightTotalPopulated",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer
+                            "$configured / $heightTotalPopulated",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (configured < heightTotalPopulated) MaterialTheme.colorScheme.error
+                                    else MaterialTheme.colorScheme.primary
                         )
+                    }
+                    // Classes manquantes
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Height,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                                Text(
+                                    "${list.size} / $heightTotalPopulated",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                            Text(
+                                list.joinToString("  ·  ") { d -> "$d cm" },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.85f)
+                            )
+                        }
                     }
                 }
             }
