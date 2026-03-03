@@ -937,6 +937,50 @@
     <string name="nav_stop">Arrêter la navigation</string>
     <string name="nav_arrived">Arrivé !</string>
     <string name="nav_accuracy">GPS ±%1$s m</string>
+
+    <!-- Mesure de hauteur d'arbre -->
+    <string name="height_measure_title">Mesurer la hauteur d\'un arbre</string>
+    <string name="height_sensor_high">Haute précision (vecteur rotation ±0,5°)</string>
+    <string name="height_sensor_medium">Précision moyenne (accél. + gyro ±1°)</string>
+    <string name="height_sensor_basic">Précision de base (accéléromètre ±2°)</string>
+    <string name="height_sensor_none">Aucun capteur — saisie manuelle de l\'angle</string>
+    <string name="height_measure_waist_title">Positionnez le téléphone à hauteur de taille</string>
+    <string name="height_measure_waist_desc">Avant de mesurer, tenez le téléphone à l\'horizontale à hauteur de taille (environ 1 m du sol). C\'est la hauteur de référence utilisée pour tous les calculs. Ajustez la valeur ci-dessous si besoin.</string>
+    <string name="height_measure_waist_ok">OK, téléphone positionné</string>
+    <string name="height_measure_waist_never_show">Ne plus afficher ce rappel</string>
+    <string name="height_measure_distance_desc">Placez-vous à une distance connue du pied de l\'arbre. Plus vous êtes loin, plus la mesure est précise. 15–25 m est idéal.</string>
+    <string name="height_measure_distance">Distance horizontale à l\'arbre</string>
+    <string name="height_measure_phone_height">Hauteur du téléphone (sol → téléphone)</string>
+    <string name="height_measure_phone_height_hint">Par défaut : 1,0 m (taille). Ajustez selon votre morphologie.</string>
+    <string name="height_measure_use_base_angle">Mesurer l\'angle à la base (terrain en pente)</string>
+    <string name="height_measure_use_base_angle_hint">Activez sur terrain incliné pour améliorer la précision.</string>
+    <string name="height_measure_aim_top">Visez la cime de l\'arbre</string>
+    <string name="height_measure_aim_top_desc">Inclinez le téléphone vers le haut et visez le sommet du houppier. Attendez que l\'angle se stabilise, puis appuyez sur Capturer.</string>
+    <string name="height_measure_aim_base">Visez la base de l\'arbre</string>
+    <string name="height_measure_aim_base_desc">Inclinez le téléphone vers le bas et visez la base du tronc. Attendez que l\'angle se stabilise, puis appuyez sur Capturer.</string>
+    <string name="height_measure_capture">Capturer l\'angle</string>
+    <string name="height_measure_next">Suivant</string>
+    <string name="height_measure_back">Retour</string>
+    <string name="height_measure_use_result">Utiliser cette hauteur</string>
+    <string name="height_measure_stability_format">Stabilité : %1$d%%</string>
+    <string name="height_measure_captured_format">Capturé : %1$s°</string>
+    <string name="height_measure_result_title">Hauteur calculée</string>
+    <string name="height_measure_precision_format">Précision : ±%1$s m</string>
+    <string name="height_measure_result_incomplete">Données insuffisantes pour calculer la hauteur.</string>
+    <string name="height_measure_detail_distance">Distance</string>
+    <string name="height_measure_detail_angle_top">Angle cime</string>
+    <string name="height_measure_detail_angle_base">Angle base</string>
+    <string name="height_measure_detail_phone_h">Hauteur téléphone</string>
+    <string name="height_measure_angle_manual">Angle d\'élévation vers la cime</string>
+    <string name="height_measure_angle_manual_hint">Valeur positive : téléphone incliné vers le haut. Exemple : 35,0°</string>
+    <string name="height_measure_open_button">Mesurer avec le capteur</string>
+
+    <!-- Onboarding - nouvelles chaînes -->
+    <string name="onboarding_height_title">Mesurer les hauteurs d\'arbres</string>
+    <string name="onboarding_height_desc">Utilisez les capteurs de votre téléphone pour mesurer la hauteur d\'un arbre avec précision — sans aucun équipement. La méthode clinométrique calcule la hauteur à partir de l\'angle d\'inclinaison et de la distance.</string>
+    <string name="onboarding_height_b1">Détection automatique des capteurs disponibles (vecteur rotation, gyro, accéléromètre)</string>
+    <string name="onboarding_height_b2">Estimation de précision affichée pour chaque mesure (±0,5° à ±2°)</string>
+    <string name="onboarding_height_b3">Hauteur de référence réglable, guide de positionnement à hauteur de taille</string>
     <string name="tab_synthesis">Synthèse</string>
     <string name="tab_valuation">Valorisation</string>
     <string name="tab_analysis">Analyse</string>

@@ -58,6 +58,7 @@ import androidx.activity.compose.BackHandler
 import androidx.core.content.ContextCompat
 import com.forestry.counter.R
 import com.forestry.counter.presentation.components.AppMiniDialog
+import com.forestry.counter.presentation.components.TreeHeightMeasureDialog
 import com.forestry.counter.presentation.components.WoodQualityDialog
 import com.forestry.counter.presentation.components.TipCard
 import com.forestry.counter.domain.calculation.ForestryCalculator
@@ -301,6 +302,9 @@ fun EssenceDiamScreen(
 
     var showMissingHeightsDialog by remember { mutableStateOf(false) }
     var showSnoozeHeightsDialog by remember { mutableStateOf(false) }
+    var showHeightMeasureDialog by remember { mutableStateOf(false) }
+    val skipWaistWarning by userPreferences.skipWaistWarning.collectAsState(initial = false)
+    val phoneHeightMPref by userPreferences.phoneHeightM.collectAsState(initial = 1.0f)
     var snoozeHours by rememberSaveable { mutableStateOf(1) }
     var skipMissingHeightsPrompt by rememberSaveable { mutableStateOf(false) }
     val heightPromptSnoozeUntilMs by userPreferences.heightPromptSnoozeUntilMs.collectAsState(initial = 0L)
@@ -594,9 +598,33 @@ fun EssenceDiamScreen(
         }
     }
 
-    // Dialogue de configuration des hauteurs (amélioré)
     var quickFillInput by remember { mutableStateOf("") }
 
+    // Dialogue mesure clinométrique via capteur
+    if (showHeightMeasureDialog) {
+        TreeHeightMeasureDialog(
+            skipWaistWarning = skipWaistWarning,
+            phoneHeightM     = phoneHeightMPref,
+            onDismiss = { showHeightMeasureDialog = false },
+            onResult  = { measuredH ->
+                showHeightMeasureDialog = false
+                val formatted = String.format(Locale.getDefault(), "%.1f", measuredH)
+                // Pré-remplir toutes les classes vides avec la hauteur mesurée
+                populatedClasses.forEach { d ->
+                    if (heightByClassInput[d].isNullOrBlank()) {
+                        heightByClassInput[d] = formatted
+                    }
+                }
+                quickFillInput = formatted
+                scope.launch { userPreferences.setPhoneHeightM(phoneHeightMPref) }
+            },
+            onSkipWarningForever = {
+                scope.launch { userPreferences.setSkipWaistWarning(true) }
+            }
+        )
+    }
+
+    // Dialogue de configuration des hauteurs (amélioré)
     if (showHeightDialog && calculator != null) {
         AppMiniDialog(
             onDismissRequest = { showHeightDialog = false },
@@ -676,6 +704,20 @@ fun EssenceDiamScreen(
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
+                }
+
+                // Bouton mesure clinométrique par capteur
+                FilledTonalButton(
+                    onClick = { showHeightMeasureDialog = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        Icons.Default.Height,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(stringResource(R.string.height_measure_open_button))
                 }
 
                 // Quick-fill : appliquer une même hauteur à toutes les classes vides

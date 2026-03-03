@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.GpsFixed
+import androidx.compose.material.icons.filled.Height
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.PictureAsPdf
@@ -72,6 +73,13 @@ private val pages = listOf(
         R.string.onboarding_measure_desc,
         listOf(R.string.onboarding_measure_b1, R.string.onboarding_measure_b2, R.string.onboarding_measure_b3),
         Color(0xFF00695C)
+    ),
+    OnboardingPage(
+        Icons.Default.Height,
+        R.string.onboarding_height_title,
+        R.string.onboarding_height_desc,
+        listOf(R.string.onboarding_height_b1, R.string.onboarding_height_b2, R.string.onboarding_height_b3),
+        Color(0xFF006064)
     ),
     OnboardingPage(
         Icons.Default.GpsFixed,

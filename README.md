@@ -4,17 +4,18 @@
 
 ### Application Android professionnelle d'inventaire forestier et de martelage
 
-[![Version](https://img.shields.io/badge/version-1.3.0-green?style=for-the-badge)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.4.0-green?style=for-the-badge)](CHANGELOG.md)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)](LICENSE)
+[![No Forks](https://img.shields.io/badge/Forks-NOT%20ALLOWED-red?style=for-the-badge)](CONTRIBUTING.md)
 
-**Conçue pour les forestiers, géomètres et gestionnaires de forêts.**
-Fonctionne intégralement hors-ligne — idéal sur le terrain.
+**Conçue par des forestiers, pour les forestiers.**  
+Inventaire terrain, martelage, cartographie et synthèse dendrométrique — entièrement hors-ligne.
 
 ---
 
-[Fonctionnalités](#-fonctionnalités) · [Captures d'écran](#-captures-décran) · [Installation](#-installation) · [Documentation](#-documentation) · [Licence](#-licence)
+[Fonctionnalités](#-fonctionnalités) · [Captures d'écran](#-captures-décran) · [Architecture](#-architecture) · [Installation](#-installation) · [Contribuer](#-contribution) · [Licence](#-licence)
 
 </div>
 
@@ -22,15 +23,17 @@ Fonctionne intégralement hors-ligne — idéal sur le terrain.
 
 ## 🎯 Pourquoi GeoSylva ?
 
-GeoSylva remplace le carnet de terrain et les tableurs Excel par une application unique qui couvre **l'ensemble du workflow forestier** : de la saisie des tiges sur le terrain jusqu'au rapport PDF de synthèse dendrométrique, en passant par la cartographie, le calcul de volume et la simulation de martelage.
+GeoSylva remplace le carnet de terrain et les tableurs Excel par une **application unique couvrant l'ensemble du workflow forestier** : de la saisie des tiges sur le terrain jusqu'au rapport PDF de synthèse dendrométrique, en passant par la mesure de hauteur par clinomètre numérique, la cartographie, le calcul de volume et la simulation de martelage.
 
 | Problème terrain | Solution GeoSylva |
 |---|---|
-| Saisie papier lente et sujette aux erreurs | Comptage par classe avec boutons +/−, GPS automatique |
-| Calculs manuels fastidieux | 6 méthodes de cubage intégrées, calcul temps réel |
-| Pas de visualisation sur place | Carte interactive avec 12 couches (IGN, satellite, cadastre…) |
+| Saisie papier lente et sujette aux erreurs | Comptage par classe de diamètre avec boutons +/−, GPS automatique |
+| Mesure de hauteur sans clinomètre physique | Clinomètre numérique intégré (capteur téléphone, ±0,5° à ±2°) |
+| Calculs manuels fastidieux | 7 méthodes de cubage intégrées, calcul temps réel |
+| Pas de visualisation sur place | Carte interactive avec 12 couches cartographiques (IGN, satellite, cadastre…) |
 | Export compliqué vers SIG | Export Shapefile, GeoJSON, CSV-XY en un clic |
 | Pas de réseau en forêt | 100% hors-ligne, tuiles cartographiques téléchargeables |
+| Analyse difficile sur le terrain | Tableau de bord visuel avec graphiques temps réel |
 
 ---
 
@@ -43,6 +46,15 @@ GeoSylva remplace le carnet de terrain et les tableurs Excel par une application
 - **7 méthodes de cubage** : Schaeffer 1E/2E, Algan, IFN Rapide/Lent, FGH, Coefficient de forme
 - **Classification produit automatique** — bois d'œuvre (BO), bois d'industrie (BI), bois de chauffage (BCh), déroulage, traverse, charpente…
 - **Notation qualité bois** A/B/C/D avec défauts visuels
+
+### 📏 Mesure de hauteur par clinomètre numérique *(nouveau)*
+
+- **Auto-détection des capteurs disponibles** — vecteur de rotation (±0,5°), gyroscope+accéléromètre (±1°), accéléromètre seul (±2°), ou saisie manuelle
+- **Méthode des tangentes** — inclinaison vers la cime et la base pour un calcul précis (terrain plat ou en pente)
+- **Indicateur de stabilité en temps réel** — jauge d'angle live et barre de stabilité pour capturer au bon moment
+- **Hauteur de référence réglable** — réglée par défaut à 1,0 m (taille), ajustable selon la morphologie
+- **Avertissement de positionnement** — rappel de placer le téléphone à hauteur de taille, désactivable définitivement
+- **Application directe** — la hauteur mesurée pré-remplit automatiquement toutes les classes de diamètre vides
 
 ### 📍 GPS de précision
 
@@ -268,16 +280,23 @@ Requise pour une utilisation **sans les obligations AGPL-3.0** (intégration pro
 
 ## 👥 Contribution
 
-**Pour le moment, les forks ne sont pas autorisés.**
+> ⛔ **Les forks de ce dépôt sont strictement interdits.**
+>
+> GeoSylva est un projet en développement actif et contrôlé. Toute copie du code source dans un dépôt tiers, redistribution sous un autre nom ou réutilisation commerciale sans licence commerciale explicite constitue une violation des conditions d'utilisation et de la licence AGPL-3.0.
 
-GeoSylva est actuellement en phase de développement contrôlé. Nous apprécions votre intérêt et vous invitons à :
+### 💬 Vos retours sont précieux — et fortement encouragés !
 
-- 🐛 **Signaler des bugs** via les [issues](../../issues)
-- 💡 **Proposer des fonctionnalités** dans les [discussions](../../discussions)
-- 📖 **Améliorer la documentation** en signalant des erreurs
-- 🔒 **Signaler des vulnérabilités** selon [SECURITY.md](SECURITY.md)
+Ce projet est développé **pour les professionnels de la forêt**, et vos retours d'expérience terrain sont la meilleure source d'amélioration. N'hésitez pas, votre avis compte vraiment :
 
-Si vous souhaitez contribuer au code, merci de nous contacter directement pour discuter des possibilités de collaboration.
+| Type de retour | Comment contribuer |
+|---|---|
+| 🐛 **Bug constaté** | Ouvrez une [issue](../../issues) avec la description, les étapes de reproduction et votre version Android |
+| 💡 **Idée de fonctionnalité** | Démarrez une [discussion](../../discussions) — les meilleures idées sont intégrées directement |
+| 🌲 **Retour d'usage terrain** | Partagez vos cas d'utilisation réels — ils guident directement les priorités de développement |
+| 📖 **Erreur dans la doc** | Signalez-la via une issue ou une discussion |
+| 🔒 **Vulnérabilité de sécurité** | Suivez le processus décrit dans [SECURITY.md](SECURITY.md) — ne pas publier publiquement |
+
+**Vous souhaitez contribuer au code ?** Contactez-nous directement via les [discussions](../../discussions) pour discuter des modalités de collaboration. Certaines contributions peuvent être acceptées sous forme de patches ou de pull requests au cas par cas.
 
 ---
 

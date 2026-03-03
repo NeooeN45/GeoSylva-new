@@ -941,4 +941,48 @@
     <string name="tab_synthesis">Synthesis</string>
     <string name="tab_valuation">Valuation</string>
     <string name="tab_analysis">Analysis</string>
+
+    <!-- Tree height measurement -->
+    <string name="height_measure_title">Measure tree height</string>
+    <string name="height_sensor_high">High precision (rotation vector ±0.5°)</string>
+    <string name="height_sensor_medium">Medium precision (accel. + gyro ±1°)</string>
+    <string name="height_sensor_basic">Basic precision (accelerometer ±2°)</string>
+    <string name="height_sensor_none">No sensor — manual angle entry</string>
+    <string name="height_measure_waist_title">Position the phone at waist height</string>
+    <string name="height_measure_waist_desc">Before measuring, hold your phone horizontally at waist height (approx. 1 m from the ground). This is the reference height used for all calculations. Adjust the value below if needed.</string>
+    <string name="height_measure_waist_ok">OK, phone positioned</string>
+    <string name="height_measure_waist_never_show">Do not show this reminder again</string>
+    <string name="height_measure_distance_desc">Stand at a known distance from the tree base. The farther you are, the more accurate the result. 15–25 m is ideal.</string>
+    <string name="height_measure_distance">Horizontal distance to tree</string>
+    <string name="height_measure_phone_height">Phone height from ground</string>
+    <string name="height_measure_phone_height_hint">Default: 1.0 m (waist). Adjust to your body height.</string>
+    <string name="height_measure_use_base_angle">Measure base angle (sloped terrain)</string>
+    <string name="height_measure_use_base_angle_hint">Enable for sloped ground to improve accuracy.</string>
+    <string name="height_measure_aim_top">Aim at the treetop</string>
+    <string name="height_measure_aim_top_desc">Tilt your phone upward and aim at the highest point of the tree crown. Wait for the angle to stabilise, then tap Capture.</string>
+    <string name="height_measure_aim_base">Aim at the tree base</string>
+    <string name="height_measure_aim_base_desc">Tilt your phone downward and aim at the base of the trunk. Wait for the angle to stabilise, then tap Capture.</string>
+    <string name="height_measure_capture">Capture angle</string>
+    <string name="height_measure_next">Next</string>
+    <string name="height_measure_back">Back</string>
+    <string name="height_measure_use_result">Use this height</string>
+    <string name="height_measure_stability_format">Stability: %1$d%%</string>
+    <string name="height_measure_captured_format">Captured: %1$s°</string>
+    <string name="height_measure_result_title">Calculated height</string>
+    <string name="height_measure_precision_format">Precision: ±%1$s m</string>
+    <string name="height_measure_result_incomplete">Insufficient data to calculate height.</string>
+    <string name="height_measure_detail_distance">Distance</string>
+    <string name="height_measure_detail_angle_top">Top angle</string>
+    <string name="height_measure_detail_angle_base">Base angle</string>
+    <string name="height_measure_detail_phone_h">Phone height</string>
+    <string name="height_measure_angle_manual">Elevation angle to treetop</string>
+    <string name="height_measure_angle_manual_hint">Positive value: phone tilted upward. Example: 35.0°</string>
+    <string name="height_measure_open_button">Measure with sensor</string>
+
+    <!-- Onboarding updated strings -->
+    <string name="onboarding_height_title">Measure tree heights</string>
+    <string name="onboarding_height_desc">Use your phone\'s sensors to measure tree height precisely — no equipment needed. The clinometer method calculates height from tilt angle and distance.</string>
+    <string name="onboarding_height_b1">Auto-detects available sensors (rotation vector, gyro, accelerometer)</string>
+    <string name="onboarding_height_b2">Precision estimate shown for each measurement (±0.5° to ±2°)</string>
+    <string name="onboarding_height_b3">Adjustable phone height reference, waist positioning guide</string>
 </resources>
