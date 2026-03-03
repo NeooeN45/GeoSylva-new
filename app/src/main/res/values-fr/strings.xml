@@ -951,7 +951,7 @@
     <string name="height_measure_distance_desc">Placez-vous à une distance connue du pied de l\'arbre. Plus vous êtes loin, plus la mesure est précise. 15–25 m est idéal.</string>
     <string name="height_measure_distance">Distance horizontale à l\'arbre</string>
     <string name="height_measure_phone_height">Hauteur du téléphone (sol → téléphone)</string>
-    <string name="height_measure_phone_height_hint">Par défaut : 1,0 m (taille). Ajustez selon votre morphologie.</string>
+    <string name="height_measure_phone_height_hint">Par défaut : 1,5 m (hauteur de taille). Ajustez selon votre morphologie.</string>
     <string name="height_measure_use_base_angle">Mesurer l\'angle à la base (terrain en pente)</string>
     <string name="height_measure_use_base_angle_hint">Activez sur terrain incliné pour améliorer la précision.</string>
     <string name="height_measure_aim_top">Visez la cime de l\'arbre</string>
@@ -974,6 +974,14 @@
     <string name="height_measure_angle_manual">Angle d\'élévation vers la cime</string>
     <string name="height_measure_angle_manual_hint">Valeur positive : téléphone incliné vers le haut. Exemple : 35,0°</string>
     <string name="height_measure_open_button">Mesurer avec le capteur</string>
+    <string name="height_measure_step_format">Étape %1$d / %2$d</string>
+    <string name="height_measure_auto_capture_countdown">Capture auto dans %1$d s…</string>
+    <string name="height_measure_recapture">Recapturer</string>
+    <string name="height_measure_angle_warning_high">Angle très élevé (&gt;…80°) — reculez du pied de l’arbre pour améliorer la précision.</string>
+    <string name="height_measure_angle_warning_low">Angle très faible (&lt;…5°) — vous êtes peut-être trop loin, ou l’arbre est très court.</string>
+    <string name="height_measure_angle_warning_base_pos">L’angle à la base doit être négatif (téléphone incliné vers le bas).</string>
+    <string name="height_measure_distance_chips">Sélection rapide :</string>
+    <string name="height_measure_tip_steps">Astuce : 1 pas adulte ≈ 0,7 m. Comptez vos pas et multipliez.</string>
 
     <!-- Onboarding - nouvelles chaînes -->
     <string name="onboarding_height_title">Mesurer les hauteurs d\'arbres</string>

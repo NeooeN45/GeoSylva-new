@@ -19,6 +19,7 @@ enum class SensorCapability {
 
 data class AngleMeasurement(
     val pitchDeg: Float,
+    val avgPitchDeg: Float,      // Moyenne lissée des dernières lectures stables
     val stabilityScore: Float   // 0.0 (instable) → 1.0 (stable)
 )
 
@@ -58,6 +59,11 @@ object TreeHeightMeasureTool {
                 return (1f - (range / 8f).coerceIn(0f, 1f))
             }
 
+            fun computeAvg(): Float {
+                if (buffer.isEmpty()) return 0f
+                return buffer.average().toFloat()
+            }
+
             when (capability) {
                 SensorCapability.HIGH -> {
                     val sensor = sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
@@ -73,7 +79,7 @@ object TreeHeightMeasureTool {
                             val pitchDeg = Math.toDegrees(orientation[1].toDouble()).toFloat()
                             buffer.addLast(pitchDeg)
                             if (buffer.size > 8) buffer.removeFirst()
-                            trySend(AngleMeasurement(pitchDeg, computeStability()))
+                            trySend(AngleMeasurement(pitchDeg, computeAvg(), computeStability()))
                         }
                     }
                     sm.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME)
@@ -93,7 +99,7 @@ object TreeHeightMeasureTool {
                             val pitchDeg = Math.toDegrees(pitchRad).toFloat()
                             buffer.addLast(pitchDeg)
                             if (buffer.size > 8) buffer.removeFirst()
-                            trySend(AngleMeasurement(pitchDeg, computeStability()))
+                            trySend(AngleMeasurement(pitchDeg, computeAvg(), computeStability()))
                         }
                     }
                     sm.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_GAME)
@@ -120,7 +126,7 @@ object TreeHeightMeasureTool {
         distanceM: Double,
         angleTopDeg: Double,
         angleBaseDeg: Double = 0.0,
-        phoneHeightM: Double = 1.0,
+        phoneHeightM: Double = 1.5,
         capability: SensorCapability = SensorCapability.BASIC
     ): TreeHeightResult {
         val topRad  = Math.toRadians(angleTopDeg)

@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [1.4.0] — 2026-03-03
+
+### Added
+- **Digital clinometer** — measure tree height with the phone's sensors (rotation vector ±0.5°, gyro+accel ±1°, accelerometer ±2°, or manual fallback). Multi-step dialog with live angle gauge, stability bar, result with precision estimate.
+- **Auto-capture** — angle automatically locked after ~1.5 s of stability ≥ 82 %, with green countdown ring on the gauge and haptic feedback on capture.
+- **Averaged capture** — uses the rolling average of the last 8 sensor readings for more accurate angle lock (smoother than single-reading snap).
+- **Predefined distance chips** — quick-select 10 / 15 / 20 / 25 / 30 m in the distance step, plus step-counting tip (1 step ≈ 0.7 m).
+- **Angle validation warnings** — orange warning banner when top angle > 80° (too close), < 5° (too far/too short), or base angle is unexpectedly positive.
+- **Recapture button** — after locking an angle, one-tap reset to redo the measurement without restarting the dialog.
+- **Step indicator** — "Step X / Y" subtitle in dialog title, adapts to waist-warning and base-angle toggle state.
+- **Screen-always-on** during measurement (`keepScreenOn`) so the display never dims in the field.
+- **Waist-warning dismissable forever** — "Never show again" checkbox persisted in DataStore (`skipWaistWarning`).
+- **Phone height preference** — adjustable from 0.3 to 2.5 m, default **1.5 m**, persisted across sessions (`phoneHeightM`).
+- **Height auto-fill** — measured height pre-fills all empty diameter-class height fields in EssenceDiamScreen.
+- **Onboarding page** — new "Measure tree heights" page (Height icon, teal #006064) with 3 bullet points.
+
+### Changed
+- Default phone height changed from 1.0 m to **1.5 m** (closer to average waist height for forestry technicians).
+- versionCode 3 → 4, versionName 1.2.0 → 1.4.0.
+
 ## [1.3.0] — 2026-02-22
 
 ### Changed

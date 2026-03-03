@@ -4,8 +4,10 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -16,7 +18,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -26,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.forestry.counter.R
 import com.forestry.counter.domain.location.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlin.math.*
 
@@ -41,43 +47,45 @@ import kotlin.math.*
 @Composable
 fun TreeHeightMeasureDialog(
     skipWaistWarning: Boolean,
-    phoneHeightM: Float = 1.0f,
+    phoneHeightM: Float = 1.5f,
     onDismiss: () -> Unit,
     onResult: (heightM: Double) -> Unit,
     onSkipWarningForever: () -> Unit
 ) {
     val context = LocalContext.current
+    val haptic  = LocalHapticFeedback.current
+    val view    = LocalView.current
     val capability = remember { TreeHeightMeasureTool.detectCapability(context) }
+
+    // Garde l'écran allumé pendant toute la mesure (essentiel en forêt)
+    DisposableEffect(Unit) {
+        view.keepScreenOn = true
+        onDispose { view.keepScreenOn = false }
+    }
 
     val startStep = if (skipWaistWarning) MeasureStep.DISTANCE else MeasureStep.WAIST_WARNING
     var step by remember { mutableStateOf(startStep) }
 
-    var distanceInput by remember { mutableStateOf("") }
-    var angleTop  by remember { mutableStateOf<Double?>(null) }
-    var angleBase by remember { mutableStateOf<Double?>(null) }
-    var liveAngle by remember { mutableStateOf<AngleMeasurement?>(null) }
-    var phoneHeight by remember { mutableStateOf(phoneHeightM.toDouble()) }
-    var useBaseAngle by remember { mutableStateOf(false) }
-    var neverShowWarning by remember { mutableStateOf(false) }
-    // Manual fallback for NONE sensor
+    var distanceInput        by remember { mutableStateOf("") }
+    var angleTop             by remember { mutableStateOf<Double?>(null) }
+    var angleBase            by remember { mutableStateOf<Double?>(null) }
+    var liveAngle            by remember { mutableStateOf<AngleMeasurement?>(null) }
+    var phoneHeight          by remember { mutableStateOf(phoneHeightM.toDouble()) }
+    var useBaseAngle         by remember { mutableStateOf(false) }
+    var neverShowWarning     by remember { mutableStateOf(false) }
     var manualAngleTopInput  by remember { mutableStateOf("") }
     var manualAngleBaseInput by remember { mutableStateOf("") }
+    var autoCaptureProgress  by remember { mutableStateOf(0f) }
 
     val distanceM = distanceInput.replace(',', '.').toDoubleOrNull()
 
-    // Angle effectif utilisé dans le calcul
-    val effectiveAngleTop: Double? = if (capability != SensorCapability.NONE) {
-        angleTop
-    } else {
-        manualAngleTopInput.replace(',', '.').toDoubleOrNull()
-    }
-    val effectiveAngleBase: Double? = if (capability != SensorCapability.NONE) {
-        angleBase
-    } else {
-        manualAngleBaseInput.replace(',', '.').toDoubleOrNull()
-    }
+    val effectiveAngleTop: Double? = if (capability != SensorCapability.NONE) angleTop
+    else manualAngleTopInput.replace(',', '.').toDoubleOrNull()
 
-    // Collecte du capteur en arrière-plan
+    val effectiveAngleBase: Double? = if (capability != SensorCapability.NONE) angleBase
+    else manualAngleBaseInput.replace(',', '.').toDoubleOrNull()
+
+    // Collecte du capteur
     LaunchedEffect(capability) {
         if (capability != SensorCapability.NONE) {
             TreeHeightMeasureTool.pitchFlow(context, capability).collectLatest { meas ->
@@ -86,16 +94,55 @@ fun TreeHeightMeasureDialog(
         }
     }
 
+    // Auto-capture : déclenche après ~1,5 s de stabilité ≥ 82 %
+    val isAngleStep   = step == MeasureStep.ANGLE_TOP || step == MeasureStep.ANGLE_BASE
+    val alreadyCaught = if (step == MeasureStep.ANGLE_TOP) angleTop != null else angleBase != null
+
+    LaunchedEffect(step, alreadyCaught) {
+        autoCaptureProgress = 0f
+        if (!isAngleStep || alreadyCaught || capability == SensorCapability.NONE) return@LaunchedEffect
+        while (true) {
+            delay(100L)
+            val s = liveAngle?.stabilityScore ?: 0f
+            if (s >= 0.82f) {
+                autoCaptureProgress = (autoCaptureProgress + 0.067f).coerceAtMost(1f)
+                if (autoCaptureProgress >= 1f) {
+                    val avg = liveAngle?.avgPitchDeg?.toDouble()
+                    if (avg != null) {
+                        if (step == MeasureStep.ANGLE_TOP) angleTop = avg else angleBase = avg
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        autoCaptureProgress = 0f
+                    }
+                    break
+                }
+            } else {
+                autoCaptureProgress = (autoCaptureProgress - 0.15f).coerceAtLeast(0f)
+            }
+        }
+    }
+
+    // Indicateur d'étape
+    val hasBaseStep   = useBaseAngle && capability != SensorCapability.NONE
+    val hasWaistStep  = !skipWaistWarning
+    val totalSteps = 2 + (if (hasWaistStep) 1 else 0) + (if (hasBaseStep) 1 else 0) + 1
+    val currentStepNum = when (step) {
+        MeasureStep.WAIST_WARNING -> 1
+        MeasureStep.DISTANCE      -> if (hasWaistStep) 2 else 1
+        MeasureStep.ANGLE_TOP     -> if (hasWaistStep) 3 else 2
+        MeasureStep.ANGLE_BASE    -> if (hasWaistStep) 4 else 3
+        MeasureStep.RESULT        -> totalSteps
+    }
+
     val result = remember(effectiveAngleTop, distanceM, phoneHeight, effectiveAngleBase, useBaseAngle, capability) {
         val top = effectiveAngleTop
         val d   = distanceM
         if (top != null && d != null && d > 0) {
             TreeHeightMeasureTool.calculateHeight(
-                distanceM     = d,
-                angleTopDeg   = top,
-                angleBaseDeg  = if (useBaseAngle) (effectiveAngleBase ?: 0.0) else 0.0,
-                phoneHeightM  = phoneHeight,
-                capability    = capability
+                distanceM    = d,
+                angleTopDeg  = top,
+                angleBaseDeg = if (useBaseAngle) (effectiveAngleBase ?: 0.0) else 0.0,
+                phoneHeightM = phoneHeight,
+                capability   = capability
             )
         } else null
     }
@@ -103,58 +150,89 @@ fun TreeHeightMeasureDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         modifier = Modifier.fillMaxWidth(),
-        icon = { Icon(Icons.Default.Height, contentDescription = null) },
-        title = { Text(stringResource(R.string.height_measure_title)) },
+        icon  = { Icon(Icons.Default.Height, contentDescription = null) },
+        title = {
+            Column {
+                Text(stringResource(R.string.height_measure_title))
+                if (step != MeasureStep.WAIST_WARNING) {
+                    Text(
+                        stringResource(R.string.height_measure_step_format, currentStepNum, totalSteps),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Badge capteur (toujours visible sauf sur l'avertissement)
                 if (step != MeasureStep.WAIST_WARNING) {
                     SensorCapabilityBadge(capability)
                 }
-
                 when (step) {
                     MeasureStep.WAIST_WARNING -> WaistWarningStep(
                         neverShow = neverShowWarning,
                         onNeverShowChange = { neverShowWarning = it }
                     )
                     MeasureStep.DISTANCE -> DistanceStep(
-                        distanceInput = distanceInput,
-                        onDistanceChange = { distanceInput = it },
-                        distanceM = distanceM,
-                        phoneHeight = phoneHeight,
-                        onPhoneHeightChange = { phoneHeight = it },
-                        useBaseAngle = useBaseAngle,
+                        distanceInput        = distanceInput,
+                        onDistanceChange     = { distanceInput = it },
+                        distanceM            = distanceM,
+                        phoneHeight          = phoneHeight,
+                        onPhoneHeightChange  = { phoneHeight = it },
+                        useBaseAngle         = useBaseAngle,
                         onUseBaseAngleChange = { useBaseAngle = it },
-                        capability = capability
+                        capability           = capability
                     )
                     MeasureStep.ANGLE_TOP -> AngleCaptureStep(
-                        label       = stringResource(R.string.height_measure_aim_top),
-                        description = stringResource(R.string.height_measure_aim_top_desc),
-                        liveAngle   = liveAngle,
-                        capability  = capability,
-                        capturedAngle = angleTop,
-                        manualInput   = manualAngleTopInput,
-                        onManualChange = { manualAngleTopInput = it },
-                        onCapture = { liveAngle?.let { angleTop = it.pitchDeg.toDouble() } }
+                        label               = stringResource(R.string.height_measure_aim_top),
+                        description         = stringResource(R.string.height_measure_aim_top_desc),
+                        liveAngle           = liveAngle,
+                        capability          = capability,
+                        capturedAngle       = angleTop,
+                        autoCaptureProgress = autoCaptureProgress,
+                        isBaseAngle         = false,
+                        manualInput         = manualAngleTopInput,
+                        onManualChange      = { manualAngleTopInput = it },
+                        onCapture = {
+                            val avg = liveAngle?.avgPitchDeg?.toDouble()
+                                ?: liveAngle?.pitchDeg?.toDouble()
+                            if (avg != null) {
+                                angleTop = avg
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            }
+                        },
+                        onRecapture = { angleTop = null; autoCaptureProgress = 0f }
                     )
                     MeasureStep.ANGLE_BASE -> AngleCaptureStep(
-                        label       = stringResource(R.string.height_measure_aim_base),
-                        description = stringResource(R.string.height_measure_aim_base_desc),
-                        liveAngle   = liveAngle,
-                        capability  = capability,
-                        capturedAngle = angleBase,
-                        manualInput   = manualAngleBaseInput,
-                        onManualChange = { manualAngleBaseInput = it },
-                        onCapture = { liveAngle?.let { angleBase = it.pitchDeg.toDouble() } }
+                        label               = stringResource(R.string.height_measure_aim_base),
+                        description         = stringResource(R.string.height_measure_aim_base_desc),
+                        liveAngle           = liveAngle,
+                        capability          = capability,
+                        capturedAngle       = angleBase,
+                        autoCaptureProgress = autoCaptureProgress,
+                        isBaseAngle         = true,
+                        manualInput         = manualAngleBaseInput,
+                        onManualChange      = { manualAngleBaseInput = it },
+                        onCapture = {
+                            val avg = liveAngle?.avgPitchDeg?.toDouble()
+                                ?: liveAngle?.pitchDeg?.toDouble()
+                            if (avg != null) {
+                                angleBase = avg
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            }
+                        },
+                        onRecapture = { angleBase = null; autoCaptureProgress = 0f }
                     )
                     MeasureStep.RESULT -> ResultStep(
-                        result    = result,
-                        angleTop  = effectiveAngleTop,
-                        angleBase = if (useBaseAngle) effectiveAngleBase else null,
-                        distanceM = distanceM,
+                        result      = result,
+                        angleTop    = effectiveAngleTop,
+                        angleBase   = if (useBaseAngle) effectiveAngleBase else null,
+                        distanceM   = distanceM,
                         phoneHeight = phoneHeight
                     )
                 }
@@ -162,66 +240,45 @@ fun TreeHeightMeasureDialog(
         },
         confirmButton = {
             when (step) {
-                MeasureStep.WAIST_WARNING -> {
-                    Button(onClick = {
-                        if (neverShowWarning) onSkipWarningForever()
-                        step = MeasureStep.DISTANCE
-                    }) {
-                        Text(stringResource(R.string.height_measure_waist_ok))
-                    }
-                }
-                MeasureStep.DISTANCE -> {
-                    Button(
-                        onClick = { step = MeasureStep.ANGLE_TOP },
-                        enabled = distanceM != null && distanceM > 0
-                    ) {
-                        Text(stringResource(R.string.height_measure_next))
-                    }
-                }
-                MeasureStep.ANGLE_TOP -> {
-                    val canProceed = effectiveAngleTop != null
-                    Button(
-                        onClick = {
-                            if (useBaseAngle && capability != SensorCapability.NONE)
-                                step = MeasureStep.ANGLE_BASE
-                            else
-                                step = MeasureStep.RESULT
-                        },
-                        enabled = canProceed
-                    ) {
-                        Text(stringResource(R.string.height_measure_next))
-                    }
-                }
-                MeasureStep.ANGLE_BASE -> {
-                    Button(
-                        onClick = { step = MeasureStep.RESULT },
-                        enabled = effectiveAngleBase != null
-                    ) {
-                        Text(stringResource(R.string.height_measure_next))
-                    }
-                }
-                MeasureStep.RESULT -> {
-                    Button(
-                        onClick = { result?.let { onResult(it.heightM) } },
-                        enabled = result != null
-                    ) {
-                        Text(stringResource(R.string.height_measure_use_result))
-                    }
-                }
+                MeasureStep.WAIST_WARNING -> Button(onClick = {
+                    if (neverShowWarning) onSkipWarningForever()
+                    step = MeasureStep.DISTANCE
+                }) { Text(stringResource(R.string.height_measure_waist_ok)) }
+
+                MeasureStep.DISTANCE -> Button(
+                    onClick  = { step = MeasureStep.ANGLE_TOP },
+                    enabled  = distanceM != null && distanceM > 0
+                ) { Text(stringResource(R.string.height_measure_next)) }
+
+                MeasureStep.ANGLE_TOP -> Button(
+                    onClick = {
+                        step = if (useBaseAngle && capability != SensorCapability.NONE)
+                            MeasureStep.ANGLE_BASE else MeasureStep.RESULT
+                    },
+                    enabled = effectiveAngleTop != null
+                ) { Text(stringResource(R.string.height_measure_next)) }
+
+                MeasureStep.ANGLE_BASE -> Button(
+                    onClick  = { step = MeasureStep.RESULT },
+                    enabled  = effectiveAngleBase != null
+                ) { Text(stringResource(R.string.height_measure_next)) }
+
+                MeasureStep.RESULT -> Button(
+                    onClick  = { result?.let { onResult(it.heightM) } },
+                    enabled  = result != null
+                ) { Text(stringResource(R.string.height_measure_use_result)) }
             }
         },
         dismissButton = {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (step.ordinal > 0) {
                     TextButton(onClick = {
-                        step = MeasureStep.values()[step.ordinal - 1]
-                    }) {
-                        Text(stringResource(R.string.height_measure_back))
-                    }
+                        val prev = MeasureStep.values()[step.ordinal - 1]
+                        step = if (prev == MeasureStep.ANGLE_BASE && !useBaseAngle)
+                            MeasureStep.ANGLE_TOP else prev
+                    }) { Text(stringResource(R.string.height_measure_back)) }
                 }
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.cancel))
-                }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
             }
         }
     )
@@ -331,6 +388,24 @@ private fun DistanceStep(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        // Chips de distances prédéfinies
+        Text(
+            stringResource(R.string.height_measure_distance_chips),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            listOf(10, 15, 20, 25, 30).forEach { d ->
+                val selected = distanceInput == d.toString()
+                FilterChip(
+                    selected = selected,
+                    onClick  = { onDistanceChange(d.toString()) },
+                    label    = { Text("${d}m", style = MaterialTheme.typography.labelSmall) }
+                )
+            }
+        }
+
         OutlinedTextField(
             value = distanceInput,
             onValueChange = onDistanceChange,
@@ -343,8 +418,16 @@ private fun DistanceStep(
             ),
             singleLine = true,
             isError = distanceInput.isNotEmpty() && distanceM == null,
-            placeholder = { Text("ex : 15") }
+            placeholder = { Text("ex : 15") },
+            supportingText = {
+                Text(
+                    stringResource(R.string.height_measure_tip_steps),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         )
+
         var phoneInput by remember(phoneHeight) {
             mutableStateOf(String.format("%.1f", phoneHeight))
         }
@@ -371,6 +454,7 @@ private fun DistanceStep(
                 )
             }
         )
+
         if (capability != SensorCapability.NONE) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -400,10 +484,15 @@ private fun AngleCaptureStep(
     liveAngle: AngleMeasurement?,
     capability: SensorCapability,
     capturedAngle: Double?,
+    autoCaptureProgress: Float,
+    isBaseAngle: Boolean,
     manualInput: String,
     onManualChange: (String) -> Unit,
-    onCapture: () -> Unit
+    onCapture: () -> Unit,
+    onRecapture: () -> Unit
 ) {
+    val warningColor = Color(0xFFE65100)
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -418,11 +507,14 @@ private fun AngleCaptureStep(
         )
 
         if (capability != SensorCapability.NONE) {
-            val stability = liveAngle?.stabilityScore ?: 0f
+            val stability   = liveAngle?.stabilityScore ?: 0f
+            val displayDeg  = liveAngle?.avgPitchDeg ?: 0f
 
+            // Anneau auto-capture + jauge d'angle
             AngleGauge(
-                angleDeg = liveAngle?.pitchDeg ?: 0f,
-                captured = capturedAngle != null
+                angleDeg            = displayDeg,
+                captured            = capturedAngle != null,
+                autoCaptureProgress = autoCaptureProgress
             )
 
             liveAngle?.let { meas ->
@@ -432,48 +524,115 @@ private fun AngleCaptureStep(
                     label = "angleColor"
                 )
                 Text(
-                    "${String.format("%.1f", meas.pitchDeg)}°",
+                    "${String.format("%.1f", meas.avgPitchDeg)}°",
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
                     color = angleColor
                 )
                 StabilityBar(stability)
+
+                // Auto-capture countdown
+                if (stability >= 0.82f && capturedAngle == null) {
+                    val secsLeft = ((1f - autoCaptureProgress) / 0.067f * 0.1f).toInt().coerceAtLeast(0)
+                    Text(
+                        stringResource(R.string.height_measure_auto_capture_countdown, secsLeft),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                // Avertissements d'angle
+                val livePitch = meas.avgPitchDeg.toDouble()
+                val angleWarning: String? = when {
+                    !isBaseAngle && livePitch > 80.0  -> stringResource(R.string.height_measure_angle_warning_high)
+                    !isBaseAngle && livePitch < 5.0 && livePitch > -5.0 -> stringResource(R.string.height_measure_angle_warning_low)
+                    isBaseAngle  && livePitch > 5.0   -> stringResource(R.string.height_measure_angle_warning_base_pos)
+                    else -> null
+                }
+                angleWarning?.let { msg ->
+                    Surface(
+                        color = warningColor.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = warningColor
+                            )
+                            Text(
+                                msg,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = warningColor
+                            )
+                        }
+                    }
+                }
             }
 
-            FilledTonalButton(
-                onClick = onCapture,
-                enabled = (liveAngle?.stabilityScore ?: 0f) > 0.35f
-            ) {
-                Icon(
-                    Icons.Default.Adjust,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(stringResource(R.string.height_measure_capture))
-            }
-
-            capturedAngle?.let { angle ->
+            if (capturedAngle == null) {
+                FilledTonalButton(
+                    onClick  = onCapture,
+                    enabled  = stability > 0.35f
+                ) {
+                    Icon(Icons.Default.Adjust, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(stringResource(R.string.height_measure_capture))
+                }
+            } else {
+                // Résultat capturé + bouton recapturer
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            stringResource(R.string.height_measure_captured_format, String.format("%.1f", angle)),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                stringResource(
+                                    R.string.height_measure_captured_format,
+                                    String.format("%.1f", capturedAngle)
+                                ),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        TextButton(
+                            onClick = onRecapture,
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                stringResource(R.string.height_measure_recapture),
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
                     }
                 }
             }
@@ -498,18 +657,24 @@ private fun AngleCaptureStep(
 }
 
 @Composable
-private fun AngleGauge(angleDeg: Float, captured: Boolean) {
-    val primary = MaterialTheme.colorScheme.primary
-    val onSurface = MaterialTheme.colorScheme.onSurface
+private fun AngleGauge(angleDeg: Float, captured: Boolean, autoCaptureProgress: Float = 0f) {
+    val primary       = MaterialTheme.colorScheme.primary
+    val onSurface     = MaterialTheme.colorScheme.onSurface
     val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
+    val autoColor     = Color(0xFF2E7D32)  // vert auto-capture
 
     val animAngle by animateFloatAsState(
         targetValue = angleDeg.coerceIn(-90f, 90f),
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow
+            stiffness    = Spring.StiffnessMediumLow
         ),
         label = "gaugeAngle"
+    )
+    val animAutoCapture by animateFloatAsState(
+        targetValue = autoCaptureProgress,
+        animationSpec = tween(100),
+        label = "autoCapture"
     )
     val needleColor = if (captured) primary else onSurface.copy(alpha = 0.6f)
 
@@ -526,13 +691,23 @@ private fun AngleGauge(angleDeg: Float, captured: Boolean) {
             useCenter = false,
             style = Stroke(width = 6f)
         )
-        // Arc de l'angle
+        // Anneau d'auto-capture (vert, tourne dans le sens horaire)
+        if (animAutoCapture > 0f) {
+            drawArc(
+                color = autoColor.copy(alpha = 0.8f),
+                startAngle = -90f,
+                sweepAngle = 360f * animAutoCapture,
+                useCenter = false,
+                style = Stroke(width = 6f, cap = StrokeCap.Round)
+            )
+        }
+        // Arc de l'angle courant
         drawArc(
             color = needleColor.copy(alpha = 0.25f),
             startAngle = -90f,
             sweepAngle = animAngle * 2.5f,
             useCenter = false,
-            style = Stroke(width = 6f, cap = StrokeCap.Round)
+            style = Stroke(width = 4f, cap = StrokeCap.Round)
         )
         // Aiguille
         val rad = Math.toRadians((animAngle - 90.0))
@@ -541,7 +716,7 @@ private fun AngleGauge(angleDeg: Float, captured: Boolean) {
         drawLine(
             color = needleColor,
             start = Offset(cx, cy),
-            end = Offset(nx, ny),
+            end   = Offset(nx, ny),
             strokeWidth = 3.5f,
             cap = StrokeCap.Round
         )

@@ -955,7 +955,7 @@
     <string name="height_measure_distance_desc">Stand at a known distance from the tree base. The farther you are, the more accurate the result. 15–25 m is ideal.</string>
     <string name="height_measure_distance">Horizontal distance to tree</string>
     <string name="height_measure_phone_height">Phone height from ground</string>
-    <string name="height_measure_phone_height_hint">Default: 1.0 m (waist). Adjust to your body height.</string>
+    <string name="height_measure_phone_height_hint">Default: 1.5 m (waist height). Adjust to your own height.</string>
     <string name="height_measure_use_base_angle">Measure base angle (sloped terrain)</string>
     <string name="height_measure_use_base_angle_hint">Enable for sloped ground to improve accuracy.</string>
     <string name="height_measure_aim_top">Aim at the treetop</string>
@@ -978,6 +978,14 @@
     <string name="height_measure_angle_manual">Elevation angle to treetop</string>
     <string name="height_measure_angle_manual_hint">Positive value: phone tilted upward. Example: 35.0°</string>
     <string name="height_measure_open_button">Measure with sensor</string>
+    <string name="height_measure_step_format">Step %1$d / %2$d</string>
+    <string name="height_measure_auto_capture_countdown">Auto-capture in %1$d s…</string>
+    <string name="height_measure_recapture">Recapture</string>
+    <string name="height_measure_angle_warning_high">Very steep angle (&gt; 80°) — move back from the tree for better accuracy.</string>
+    <string name="height_measure_angle_warning_low">Very low angle (&lt; 5°) — you may be too far away, or the tree is very short.</string>
+    <string name="height_measure_angle_warning_base_pos">Base angle should be negative (phone pointing downward).</string>
+    <string name="height_measure_distance_chips">Quick select:</string>
+    <string name="height_measure_tip_steps">Tip: 1 adult step ≈ 0.7 m. Count your steps and multiply.</string>
 
     <!-- Onboarding updated strings -->
     <string name="onboarding_height_title">Measure tree heights</string>

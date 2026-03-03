@@ -553,7 +553,7 @@ class UserPreferencesManager(private val context: Context) {
 
     // Tree height measurement
     val phoneHeightM: Flow<Float> = dataStore.data.map { prefs ->
-        (prefs[PHONE_HEIGHT_M] ?: 1.0f).coerceIn(0.3f, 2.5f)
+        (prefs[PHONE_HEIGHT_M] ?: 1.5f).coerceIn(0.3f, 2.5f)
     }
 
     suspend fun setPhoneHeightM(value: Float) {
