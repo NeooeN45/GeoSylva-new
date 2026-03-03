@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.SwapVert
@@ -27,6 +28,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -111,6 +115,8 @@ fun PlacetteDetailScreen(
     var showEssenceActionsDialog by remember { mutableStateOf(false) }
     var deleteTargetEssenceCode by remember { mutableStateOf<String?>(null) }
     var showDeletePlacetteDialog by remember { mutableStateOf(false) }
+    var searchActive by remember { mutableStateOf(false) }
+    var searchQuery  by remember { mutableStateOf("") }
 
     val allEssences by essenceRepository.getAllEssences().collectAsState(initial = emptyList())
     val tiges by tigeRepository.getTigesByPlacette(placetteId).collectAsState(initial = emptyList())
@@ -199,6 +205,16 @@ fun PlacetteDetailScreen(
                     }
                     IconButton(onClick = {
                         playClickFeedback()
+                        searchActive = !searchActive
+                        if (!searchActive) searchQuery = ""
+                    }) {
+                        Icon(
+                            if (searchActive) Icons.Default.Close else Icons.Default.Search,
+                            contentDescription = stringResource(R.string.search_essences)
+                        )
+                    }
+                    IconButton(onClick = {
+                        playClickFeedback()
                         reorderMode = !reorderMode; if (reorderMode && orderOverride.isEmpty()) orderOverride = displayEssenceOrder()
                     }) {
                         Icon(Icons.Default.SwapVert, contentDescription = stringResource(R.string.reorder))
@@ -223,7 +239,41 @@ fun PlacetteDetailScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(12.dp)) {
-            val displayOrder = displayEssenceOrder()
+            // Barre de recherche animée
+            androidx.compose.animation.AnimatedVisibility(
+                visible = searchActive,
+                enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
+                exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut()
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    placeholder = { Text(stringResource(R.string.search_essences)) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Close, contentDescription = null)
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
+                )
+            }
+
+            val rawOrder = displayEssenceOrder()
+            val displayOrder = remember(rawOrder, searchQuery, allEssences) {
+                if (searchQuery.isBlank()) rawOrder
+                else {
+                    val q = searchQuery.trim().lowercase()
+                    rawOrder.filter { code ->
+                        val name = allEssences.firstOrNull { it.code == code }?.name ?: code
+                        code.lowercase().contains(q) || name.lowercase().contains(q)
+                    }
+                }
+            }
 
             Crossfade(
                 targetState = displayOrder.isEmpty(),
@@ -235,7 +285,10 @@ fun PlacetteDetailScreen(
                 label = "placetteDetailEssencesCrossfade"
             ) { isEmpty ->
                 if (isEmpty) {
-                    Text(stringResource(R.string.placette_essences_empty_desc))
+                    Text(
+                        if (searchQuery.isNotBlank()) stringResource(R.string.search_no_result)
+                        else stringResource(R.string.placette_essences_empty_desc)
+                    )
                 } else {
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(minSize = 140.dp),

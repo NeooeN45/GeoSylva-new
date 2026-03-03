@@ -61,8 +61,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import android.content.Intent
 import android.widget.ImageView
 import android.net.Uri
+import androidx.compose.material.icons.filled.Share
 import com.forestry.counter.domain.repository.EssenceRepository
 import com.forestry.counter.domain.repository.TigeRepository
 import com.forestry.counter.domain.repository.ParcelleRepository
@@ -716,6 +718,39 @@ fun MartelageScreen(
                         ) {
                             Icon(Icons.Default.Map, contentDescription = stringResource(R.string.map_view))
                         }
+                    }
+                    // Partager synthèse (texte)
+                    IconButton(
+                        onClick = {
+                            playClickFeedback()
+                            val s = stats
+                            if (s != null) {
+                                val surfHa = (surfaceM2 ?: 0.0) / 10_000.0
+                                val text = buildString {
+                                    appendLine(context.getString(R.string.share_synthesis_header))
+                                    appendLine("${context.getString(R.string.share_scope)}: $scopeKey")
+                                    if (surfHa > 0) appendLine("${context.getString(R.string.share_surface)}: ${String.format("%.2f", surfHa)} ha")
+                                    appendLine("N: ${s.nTotal} ${context.getString(R.string.stems)} (${String.format("%.0f", s.nPerHa)} /ha)")
+                                    appendLine("G: ${String.format("%.2f", s.gTotal)} m² (${String.format("%.2f", s.gPerHa)} m²/ha)")
+                                    if (s.vTotal > 0) appendLine("V: ${String.format("%.1f", s.vTotal)} m³ (${String.format("%.1f", s.vPerHa)} m³/ha)")
+                                    s.dg?.let { appendLine("Dg: ${String.format("%.1f", it)} cm") }
+                                    s.dm?.let { appendLine("Dm: ${String.format("%.1f", it)} cm") }
+                                    s.hLorey?.let { appendLine("Hdom: ${String.format("%.1f", it)} m") }
+                                    s.revenueTotal?.let { appendLine("${context.getString(R.string.share_revenue)}: ${String.format("%.0f", it)} €") }
+                                    appendLine(context.getString(R.string.share_footer))
+                                }
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.share_synthesis_header))
+                                    putExtra(Intent.EXTRA_TEXT, text)
+                                }
+                                context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_synthesis_header)))
+                            } else {
+                                coroutineScope.launch { snackbar.showSnackbar(context.getString(R.string.martelage_stats_unavailable_error)) }
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = stringResource(R.string.share))
                     }
                     // Export (ouvre le dialogue avec toutes les options)
                     IconButton(

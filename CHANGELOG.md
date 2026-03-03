@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [1.5.0] — 2026-03-03
+
+### Added
+- **Live G/ha counter** — basal area (G m²/ha) and stem count (N) displayed as real-time badges in EssenceDiamScreen during tally entry; falls back to G total (m²) when no plot surface is configured.
+- **Species search bar** — instant filter by name or code in the species grid (PlacetteDetailScreen); animated slide-in/out, clears on close, shows "no results" state.
+- **Share synthesis** — one-tap Share button (✉) in MartelageScreen toolbar sends a plain-text report (N, G, V, Dg, Dm, Hdom, revenue) to any messaging/email app via Android Intent.
+
+### Changed
+- versionCode 4 → 5, versionName 1.4.0 → **1.5.0**.
+
+---
+
 ## [1.4.0] — 2026-03-03
 
 ### Added

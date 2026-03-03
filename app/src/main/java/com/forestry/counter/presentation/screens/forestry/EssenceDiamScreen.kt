@@ -196,6 +196,7 @@ fun EssenceDiamScreen(
 
     val scopeKey = remember(placetteId) { "PLACETTE_${placetteId}" }
     val martelageHeights by userPreferences.martelageHeightsFlow(scopeKey).collectAsState(initial = emptyMap())
+    val savedSurface by userPreferences.martelageSurfaceFlow(scopeKey).collectAsState(initial = null)
 
     val tigesByDiamClass = remember(tigesEssence) {
         tigesEssence.groupBy { it.diamCm.toInt() }
@@ -402,7 +403,49 @@ fun EssenceDiamScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Compteur G/ha live
+            val gTotal = remember(tigesEssence) {
+                tigesEssence.sumOf { t ->
+                    val r = t.diamCm / 200.0
+                    kotlin.math.PI * r * r
+                }
+            }
+            val gHa = remember(gTotal, savedSurface) {
+                val s = savedSurface
+                if (s != null && s > 0.0) gTotal * 10_000.0 / s else null
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                ) {
+                    Text(
+                        stringResource(R.string.live_n_total, tigesEssence.size),
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+                Surface(
+                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.7f),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+                ) {
+                    Text(
+                        if (gHa != null)
+                            stringResource(R.string.live_g_ha, String.format("%.2f", gHa))
+                        else
+                            stringResource(R.string.live_g_total, String.format("%.3f", gTotal)),
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Bouton Hauteur amélioré avec badge de statut
             val heightSetCount = remember(populatedClasses, martelageHeights) {

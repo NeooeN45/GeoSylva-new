@@ -983,6 +983,24 @@
     <string name="height_measure_distance_chips">Sélection rapide :</string>
     <string name="height_measure_tip_steps">Astuce : 1 pas adulte ≈ 0,7 m. Comptez vos pas et multipliez.</string>
 
+    <!-- Share synthèse -->
+    <string name="share">Partager</string>
+    <string name="share_synthesis_header">🌲 GeoSylva — Rapport de peuplement</string>
+    <string name="share_scope">Portée</string>
+    <string name="share_surface">Surface</string>
+    <string name="share_revenue">Valorisation</string>
+    <string name="share_footer">Généré par GeoSylva</string>
+    <string name="stems">tiges</string>
+
+    <!-- Recherche essences -->
+    <string name="search_essences">Rechercher une essence…</string>
+    <string name="search_no_result">Aucune essence ne correspond à votre recherche.</string>
+
+    <!-- Compteur G/ha live -->
+    <string name="live_g_total">G = %1$s m²</string>
+    <string name="live_g_ha">G = %1$s m²/ha</string>
+    <string name="live_n_total">N = %1$d tiges</string>
+
     <!-- Onboarding - nouvelles chaînes -->
     <string name="onboarding_height_title">Mesurer les hauteurs d\'arbres</string>
     <string name="onboarding_height_desc">Utilisez les capteurs de votre téléphone pour mesurer la hauteur d\'un arbre avec précision — sans aucun équipement. La méthode clinométrique calcule la hauteur à partir de l\'angle d\'inclinaison et de la distance.</string>

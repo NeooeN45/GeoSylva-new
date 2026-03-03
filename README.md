@@ -4,7 +4,7 @@
 
 ### Application Android professionnelle d'inventaire forestier et de martelage
 
-[![Version](https://img.shields.io/badge/version-1.4.0-green?style=for-the-badge)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.5.0-green?style=for-the-badge)](CHANGELOG.md)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)](LICENSE)
@@ -42,19 +42,25 @@ GeoSylva remplace le carnet de terrain et les tableurs Excel par une **applicati
 ### 📐 Inventaire & Dendrométrie
 
 - **Saisie rapide** — comptage par essence et classe de diamètre avec boutons +/−
+- **Compteur G/ha en temps réel** — surface terrière de l'essence affichée en live (N et G m²/ha) pendant la saisie
+- **Recherche d'essence** — barre de recherche instantanée par nom ou code dans la grille des essences
 - **95+ essences** pré-configurées avec données forestières détaillées (densité, qualité, croissance, usage bois, tolérance ombre, dimensions max)
 - **7 méthodes de cubage** : Schaeffer 1E/2E, Algan, IFN Rapide/Lent, FGH, Coefficient de forme
 - **Classification produit automatique** — bois d'œuvre (BO), bois d'industrie (BI), bois de chauffage (BCh), déroulage, traverse, charpente…
 - **Notation qualité bois** A/B/C/D avec défauts visuels
 
-### 📏 Mesure de hauteur par clinomètre numérique *(nouveau)*
+### 📏 Clinomètre numérique intégré
 
-- **Auto-détection des capteurs disponibles** — vecteur de rotation (±0,5°), gyroscope+accéléromètre (±1°), accéléromètre seul (±2°), ou saisie manuelle
-- **Méthode des tangentes** — inclinaison vers la cime et la base pour un calcul précis (terrain plat ou en pente)
-- **Indicateur de stabilité en temps réel** — jauge d'angle live et barre de stabilité pour capturer au bon moment
-- **Hauteur de référence réglable** — réglée par défaut à 1,0 m (taille), ajustable selon la morphologie
-- **Avertissement de positionnement** — rappel de placer le téléphone à hauteur de taille, désactivable définitivement
-- **Application directe** — la hauteur mesurée pré-remplit automatiquement toutes les classes de diamètre vides
+- **Auto-détection des capteurs** — vecteur rotation (±0,5°), gyro+accél. (±1°), accél. seul (±2°), ou saisie manuelle
+- **Méthode des tangentes** — angles vers la cime et la base pour précision sur terrain plat ou en pente
+- **Hauteur de référence par défaut 1,5 m** — correspond à la hauteur de taille standard, ajustable
+- **Capture moyennée** — moyenne des 8 dernières lectures pour éliminer les micro-vibrations
+- **Auto-capture** — verrouillage automatique après 1,5 s de stabilité ≥ 82 %, anneau de progression visuel
+- **Retour haptique** à chaque capture ; **écran allumé** pendant toute la mesure
+- **Chips de distances prédéfinies** (10/15/20/25/30 m) + astuce comptage de pas
+- **Validation d'angle** — avertissement orange si angle > 80° (trop près) ou < 5° (trop loin)
+- **Bouton Recapturer** pour relancer sans quitter le dialogue ; **indicateur d'étape** (1/5, 2/5…)
+- **Application directe** — pré-remplit automatiquement toutes les classes de diamètre vides
 
 ### 📍 GPS de précision
 
@@ -81,6 +87,7 @@ GeoSylva remplace le carnet de terrain et les tableurs Excel par une **applicati
 - **Volume partiel intelligent** — affiche les résultats disponibles avec % de complétude au lieu de bloquer
 - **Simulation de coupe** — taux de prélèvement N/ha et G/ha, peuplement résiduel
 - **Garde-fous automatiques** — vérification de cohérence des données (30+ contrôles)
+- **Partage en un tap** — bouton ✉ envoie les métriques clés (N, G, V, Dg, valorisation) via toute appli de messagerie
 - **Tables de prix** éditables par essence, produit et classe de diamètre
 - **Qualité bois A/B/C/D** avec multiplicateurs automatiques (A=×2.5, B=×1.5, C=×1.0, D=×0.4)
 - **Ventilation par produit** — décomposition du volume par essence (BO/BI/BCh/PATE) avec valorisation détaillée
@@ -98,6 +105,7 @@ GeoSylva remplace le carnet de terrain et les tableurs Excel par une **applicati
 - **100% hors-ligne** — aucune connexion requise pour toutes les fonctionnalités
 - **Sauvegarde automatique** quotidienne via WorkManager
 - **Rappel hauteurs avec snooze** — reportez les alertes de hauteurs manquantes (1h, 4h, 24h)
+- **Tri des parcelles** — par nom, surface ou date de mise à jour
 - **Tips contextuels** — aide intégrée sur chaque écran
 - **Onboarding complet** — 7 écrans d'introduction interactifs
 
