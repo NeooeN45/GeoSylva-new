@@ -31,6 +31,7 @@ import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.EmojiNature
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -104,6 +105,7 @@ fun PlacetteDetailScreen(
     userPreferences: UserPreferencesManager,
     onNavigateToDiametres: (parcelleId: String, placetteId: String, essenceCode: String) -> Unit,
     onNavigateToMartelage: (parcelleId: String, placetteId: String) -> Unit,
+    onNavigateToIbp: ((parcelleId: String, placetteId: String) -> Unit)? = null,
     onNavigateBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -220,6 +222,14 @@ fun PlacetteDetailScreen(
                         Icon(Icons.Default.SwapVert, contentDescription = stringResource(R.string.reorder))
                     }
 
+                    if (onNavigateToIbp != null) {
+                        IconButton(onClick = {
+                            playClickFeedback()
+                            onNavigateToIbp(parcelleId, placetteId)
+                        }) {
+                            Icon(Icons.Default.EmojiNature, contentDescription = stringResource(R.string.ibp_title))
+                        }
+                    }
                     IconButton(onClick = {
                         playClickFeedback()
                         showDeletePlacetteDialog = true

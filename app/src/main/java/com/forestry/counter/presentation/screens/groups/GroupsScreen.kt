@@ -66,7 +66,8 @@ fun GroupsScreen(
     onNavigateToSettings: () -> Unit,
     preferencesManager: UserPreferencesManager,
     onNavigateToMartelage: ((String?) -> Unit)? = null,
-    onNavigateToMap: ((String) -> Unit)? = null
+    onNavigateToMap: ((String) -> Unit)? = null,
+    onNavigateToIbp: (() -> Unit)? = null
 ) {
     val viewModel = remember { GroupsViewModel(groupRepository) }
     val uiState by viewModel.uiState.collectAsState()
@@ -193,6 +194,11 @@ fun GroupsScreen(
                                             Spacer(modifier = Modifier.width(2.dp))
                                             Icon(Icons.Default.Description, contentDescription = stringResource(R.string.martelage))
                                         }
+                                    }
+                                }
+                                if (onNavigateToIbp != null) {
+                                    IconButton(onClick = { onNavigateToIbp() }) {
+                                        Icon(Icons.Default.EmojiNature, contentDescription = stringResource(R.string.ibp_title))
                                     }
                                 }
                                 IconButton(onClick = onNavigateToSettings) {

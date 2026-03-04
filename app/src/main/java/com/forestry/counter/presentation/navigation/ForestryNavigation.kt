@@ -35,6 +35,7 @@ import com.forestry.counter.presentation.screens.forestry.MapScreen
 import com.forestry.counter.presentation.screens.forestry.PlacetteDetailScreen
 import com.forestry.counter.presentation.screens.forestry.EssenceDiamScreen
 import com.forestry.counter.presentation.screens.forestry.DashboardScreen
+import com.forestry.counter.presentation.screens.forestry.IbpEvaluationScreen
 import com.forestry.counter.presentation.screens.settings.PriceTablesEditorScreen
 import com.forestry.counter.presentation.screens.onboarding.OnboardingScreen
 import kotlinx.coroutines.launch
@@ -84,6 +85,12 @@ sealed class Screen(val route: String) {
     object Dashboard : Screen("dashboard/{parcelleId}") {
         fun createRoute(parcelleId: String) = "dashboard/$parcelleId"
     }
+    object IbpEvaluation : Screen("ibp/{parcelleId}/{placetteId}?evalId={evalId}") {
+        fun createRoute(parcelleId: String, placetteId: String, evalId: String? = null): String =
+            if (evalId != null) "ibp/$parcelleId/$placetteId?evalId=$evalId"
+            else "ibp/$parcelleId/$placetteId"
+    }
+    object IbpStandalone : Screen("ibp/standalone")
     object Onboarding : Screen("onboarding")
 }
 
@@ -333,6 +340,9 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                 onNavigateToMartelage = { pid, plid ->
                     navController.navigate(Screen.Martelage.forPlacette(pid, plid))
                 },
+                onNavigateToIbp = { pid, plid ->
+                    navController.navigate(Screen.IbpEvaluation.createRoute(pid, plid))
+                },
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -367,6 +377,10 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                 onNavigateToPriceTablesEditor = { navController.navigate(Screen.PriceTablesEditor.route) },
                 onNavigateToMap = { pid -> navController.navigate(Screen.Map.createRoute(pid)) },
+                ibpRepository = app.ibpRepository,
+                onNavigateToIbp = { pid, plid ->
+                    navController.navigate(Screen.IbpEvaluation.createRoute(pid, plid))
+                },
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -423,6 +437,46 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
         }
 
         composable(
+            route = Screen.IbpStandalone.route,
+            enterTransition = navEnterTransition,
+            exitTransition = navExitTransition,
+            popEnterTransition = navPopEnterTransition,
+            popExitTransition = navPopExitTransition
+        ) {
+            IbpEvaluationScreen(
+                parcelleId = "GLOBAL",
+                placetteId = "GLOBAL",
+                ibpRepository = app.ibpRepository,
+                evaluationId = null,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.IbpEvaluation.route,
+            arguments = listOf(
+                navArgument("parcelleId") { type = NavType.StringType },
+                navArgument("placetteId") { type = NavType.StringType },
+                navArgument("evalId") { type = NavType.StringType; nullable = true; defaultValue = null }
+            ),
+            enterTransition = navEnterTransition,
+            exitTransition = navExitTransition,
+            popEnterTransition = navPopEnterTransition,
+            popExitTransition = navPopExitTransition
+        ) { backStackEntry ->
+            val parcelleId = backStackEntry.arguments?.getString("parcelleId") ?: return@composable
+            val placetteId = backStackEntry.arguments?.getString("placetteId") ?: return@composable
+            val evalId = backStackEntry.arguments?.getString("evalId")
+            IbpEvaluationScreen(
+                parcelleId = parcelleId,
+                placetteId = placetteId,
+                ibpRepository = app.ibpRepository,
+                evaluationId = evalId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
             route = Screen.Groups.route,
             enterTransition = navEnterTransition,
             exitTransition = navExitTransition,
@@ -437,7 +491,8 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
                 },
-                preferencesManager = app.userPreferences
+                preferencesManager = app.userPreferences,
+                onNavigateToIbp = { navController.navigate(Screen.IbpStandalone.route) }
             )
         }
 

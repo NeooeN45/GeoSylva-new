@@ -1001,6 +1001,139 @@
     <string name="live_g_ha">G = %1$s m²/ha</string>
     <string name="live_n_total">N = %1$d tiges</string>
 
+    <string name="ok">OK</string>
+    <string name="export_error">Échec de l\'export</string>
+
+    <!-- IBP — Indice de Biodiversité Potentielle -->
+    <string name="ibp_title">IBP — Indice de Biodiversité Potentielle</string>
+    <string name="ibp_result">Résultat</string>
+    <string name="ibp_export_pdf">Exporter PDF</string>
+    <string name="ibp_saved">Évaluation IBP sauvegardée</string>
+    <string name="ibp_score_label">Score IBP</string>
+    <string name="ibp_answered">renseignés</string>
+    <string name="ibp_evaluator">Évaluateur</string>
+    <string name="ibp_date">Date</string>
+    <string name="ibp_global_note">Notes de terrain</string>
+    <string name="ibp_global_note_hint">Observations, description du peuplement, remarques…</string>
+    <string name="ibp_result_title">Résultat IBP</string>
+    <string name="ibp_recommendations">Recommandations de gestion</string>
+    <string name="ibp_new_evaluation">Nouvelle évaluation IBP</string>
+    <string name="ibp_view_evaluation">Voir les résultats IBP</string>
+    <string name="ibp_no_evaluation">Aucune évaluation IBP pour cette placette.</string>
+    <string name="ibp_start">Lancer le diagnostic IBP</string>
+    <string name="ibp_edit">Modifier l\'IBP</string>
+    <string name="ibp_delete">Supprimer l\'IBP</string>
+    <string name="ibp_delete_confirm">Supprimer cette évaluation IBP ?</string>
+    <string name="ibp_in_martelage">IBP : %1$s / 20 (%2$s)</string>
+    <string name="ibp_not_done">IBP : non évalué</string>
+
+    <!-- IBP Groupes -->
+    <string name="ibp_group_a_title">Groupe A — Peuplement</string>
+    <string name="ibp_group_a_subtitle">7 critères évalués dans le peuplement (max. 14 pts)</string>
+    <string name="ibp_group_a_short">Groupe A</string>
+    <string name="ibp_group_b_title">Groupe B — Contexte</string>
+    <string name="ibp_group_b_subtitle">3 critères à l\'échelle du paysage (max. 6 pts)</string>
+    <string name="ibp_group_b_short">Groupe B</string>
+
+    <!-- IBP Niveaux -->
+    <string name="ibp_level_very_low">Très faible</string>
+    <string name="ibp_level_low">Faible</string>
+    <string name="ibp_level_medium">Moyen</string>
+    <string name="ibp_level_good">Bon</string>
+    <string name="ibp_level_very_good">Très bon</string>
+
+    <!-- IBP Commentaires d'interprétation -->
+    <string name="ibp_comment_very_low">Peuplement à très faible potentiel de biodiversité. Des mesures urgentes sont nécessaires pour diversifier les habitats et réduire la pression sylvicole.</string>
+    <string name="ibp_comment_low">Potentiel de biodiversité limité. Plusieurs éléments peuvent être améliorés par des ajustements sylvicoles ciblés.</string>
+    <string name="ibp_comment_medium">Potentiel de biodiversité moyen. Le peuplement dispose d\'atouts réels — maintien et enrichissement progressif des éléments habitats recommandés.</string>
+    <string name="ibp_comment_good">Bon potentiel de biodiversité. Le peuplement présente de nombreux éléments favorables. Maintenir la gestion actuelle et renforcer les arbres habitats clés.</string>
+    <string name="ibp_comment_very_good">Excellent potentiel de biodiversité ! Ce peuplement est un modèle de diversité d\'habitats — le préserver avec une gestion très douce.</string>
+
+    <!-- IBP Recommandations par niveau -->
+    <string name="ibp_rec_vl_1">Diversifier les essences en favorisant les espèces indigènes lors des plantations.</string>
+    <string name="ibp_rec_vl_2">Laisser en place le bois mort debout et au sol — objectif ≥ 4 par ha.</string>
+    <string name="ibp_rec_vl_3">Réduire la pression de coupe ; créer des îlots de sénescence (≥ 5 % du peuplement).</string>
+    <string name="ibp_rec_l_1">Identifier et protéger les essences à très forte valeur biologique (chêne, hêtre, saule, aulne…).</string>
+    <string name="ibp_rec_l_2">Conserver le bois mort existant et permettre la formation de nouveau bois mort.</string>
+    <string name="ibp_rec_l_3">Favoriser le développement du sous-bois arbustif en lisière et dans les trouées.</string>
+    <string name="ibp_rec_m_1">Conserver les gros bois et les arbres porteurs de dendromicrohabitats (cavités, coulées de sève, lierre).</string>
+    <string name="ibp_rec_m_2">Renforcer les connexions avec les habitats naturels voisins via des haies ou corridors.</string>
+    <string name="ibp_rec_m_3">Enrichir la lisière avec des espèces arbustives indigènes (aubépine, sureau, fusain).</string>
+    <string name="ibp_rec_g_1">Maintenir la gestion actuelle favorable à la biodiversité.</string>
+    <string name="ibp_rec_g_2">Renforcer la continuité forestière en préservant les vieux arbres sur le long terme.</string>
+    <string name="ibp_rec_vg_1">Gestion très douce recommandée — préserver tous les éléments habitats.</string>
+    <string name="ibp_rec_vg_2">Documenter et valoriser ce peuplement comme référence de biodiversité territoriale.</string>
+
+    <!-- IBP Critère E1 -->
+    <string name="ibp_e1_title">Essences à très forte valeur biologique</string>
+    <string name="ibp_e1_subtitle">Chênes, hêtre, saules indigènes, aulne, frêne commun, if, vieux pommier/poirier sauvages, vieux châtaignier…</string>
+    <string name="ibp_e1_o0">Absent — aucune essence à très forte valeur biologique</string>
+    <string name="ibp_e1_o1">1 essence à très forte valeur biologique présente</string>
+    <string name="ibp_e1_o2">2 essences ou plus à très forte valeur biologique</string>
+
+    <!-- IBP Critère E2 -->
+    <string name="ibp_e2_title">Nombre d\'essences indigènes</string>
+    <string name="ibp_e2_subtitle">Toutes strates confondues : arbres, arbustes et sous-bois (toutes couches comptées)</string>
+    <string name="ibp_e2_o0">1 à 2 essences indigènes</string>
+    <string name="ibp_e2_o1">3 à 5 essences indigènes</string>
+    <string name="ibp_e2_o2">6 essences indigènes ou plus</string>
+
+    <!-- IBP Critère GB -->
+    <string name="ibp_gb_title">Gros et très gros bois vivants</string>
+    <string name="ibp_gb_subtitle">Arbres avec un diamètre ≥ 67,5 cm et houppier bien développé</string>
+    <string name="ibp_gb_o0">Absent — aucun arbre ≥ 67,5 cm de diamètre</string>
+    <string name="ibp_gb_o1">1 à 3 gros bois par hectare</string>
+    <string name="ibp_gb_o2">4 gros bois ou plus par hectare</string>
+
+    <!-- IBP Critère BMS -->
+    <string name="ibp_bms_title">Bois mort sur pied</string>
+    <string name="ibp_bms_subtitle">Arbres morts debout (chicots), base creuse ou tronc en décomposition, diamètre ≥ 7,5 cm</string>
+    <string name="ibp_bms_o0">Absent — aucun bois mort sur pied</string>
+    <string name="ibp_bms_o1">1 à 3 chicots par hectare</string>
+    <string name="ibp_bms_o2">4 chicots ou plus par hectare</string>
+
+    <!-- IBP Critère BMC -->
+    <string name="ibp_bmc_title">Bois mort au sol</string>
+    <string name="ibp_bmc_subtitle">Troncs couchés sur le sol, diamètre ≥ 20 cm, longueur ≥ 1 m</string>
+    <string name="ibp_bmc_o0">Absent — aucun bois mort au sol</string>
+    <string name="ibp_bmc_o1">Présent mais moins de 3 m³/ha</string>
+    <string name="ibp_bmc_o2">3 m³/ha ou plus</string>
+
+    <!-- IBP Critère DMH -->
+    <string name="ibp_dmh_title">Dendromicrohabitats</string>
+    <string name="ibp_dmh_subtitle">Cavités, fissures, coulées de sève, nids, lierre épais, écorce décollée, carpophores…</string>
+    <string name="ibp_dmh_o0">Absent — aucun arbre porteur de dendromicrohabitats</string>
+    <string name="ibp_dmh_o1">1 à 3 arbres avec dendromicrohabitats par hectare</string>
+    <string name="ibp_dmh_o2">4 arbres ou plus avec dendromicrohabitats par hectare</string>
+
+    <!-- IBP Critère VS -->
+    <string name="ibp_vs_title">Végétation du sous-bois</string>
+    <string name="ibp_vs_subtitle">Strates arbustive et herbacée — évaluées à l\'intérieur du peuplement</string>
+    <string name="ibp_vs_o0">Absente ou très clairsemée (couverture &lt; 10 %)</string>
+    <string name="ibp_vs_o1">Présente par taches ou couverture incomplète (10–50 %)</string>
+    <string name="ibp_vs_o2">Bien développée, couverture &gt; 50 %</string>
+
+    <!-- IBP Critère CF -->
+    <string name="ibp_cf_title">Continuité forestière</string>
+    <string name="ibp_cf_subtitle">Âge estimé du peuplement — la présence de vieux arbres indique une longue continuité</string>
+    <string name="ibp_cf_o0">Forêt récente — moins de 30 ans, sans vieil arbre</string>
+    <string name="ibp_cf_o1">De 30 à 100 ans</string>
+    <string name="ibp_cf_o2">Forêt ancienne — plus de 100 ans, vieux arbres présents</string>
+
+    <!-- IBP Critère CO -->
+    <string name="ibp_co_title">Connexion aux habitats naturels</string>
+    <string name="ibp_co_subtitle">Haies, prairies, cours d\'eau, forêts adjacentes autour de la placette</string>
+    <string name="ibp_co_o0">Isolée — entourée de cultures ou d\'artificiel sur 3 côtés ou plus</string>
+    <string name="ibp_co_o1">Connexion limitée — habitat naturel sur 1 ou 2 côtés</string>
+    <string name="ibp_co_o2">Bien connectée — reliée à des habitats naturels sur 3 ou 4 côtés</string>
+
+    <!-- IBP Critère HC -->
+    <string name="ibp_hc_title">Habitats complémentaires</string>
+    <string name="ibp_hc_subtitle">Mares, affleurements rocheux, zones humides, larges lisières, tas de pierres, vieux murs…</string>
+    <string name="ibp_hc_o0">Aucun habitat complémentaire présent</string>
+    <string name="ibp_hc_o1">1 type d\'habitat complémentaire</string>
+    <string name="ibp_hc_o2">2 types ou plus d\'habitats complémentaires</string>
+
     <!-- Onboarding - nouvelles chaînes -->
     <string name="onboarding_height_title">Mesurer les hauteurs d\'arbres</string>
     <string name="onboarding_height_desc">Utilisez les capteurs de votre téléphone pour mesurer la hauteur d\'un arbre avec précision — sans aucun équipement. La méthode clinométrique calcule la hauteur à partir de l\'angle d\'inclinaison et de la distance.</string>

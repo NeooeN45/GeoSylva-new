@@ -113,10 +113,30 @@ object DatabaseMigrations {
         }
     }
 
+    val MIGRATION_11_12 = object : Migration(11, 12) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS ibp_evaluations (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    placetteId TEXT NOT NULL,
+                    parcelleId TEXT NOT NULL,
+                    observationDate INTEGER NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL,
+                    evaluatorName TEXT NOT NULL DEFAULT '',
+                    answersJson TEXT NOT NULL DEFAULT '{}',
+                    globalNote TEXT NOT NULL DEFAULT ''
+                )
+            """.trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_ibp_placetteId ON ibp_evaluations(placetteId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_ibp_parcelleId ON ibp_evaluations(parcelleId)")
+        }
+    }
+
     /** Liste ordonnée de toutes les migrations pour Room.databaseBuilder */
     val ALL = arrayOf(
         MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
         MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
-        MIGRATION_9_10, MIGRATION_10_11
+        MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12
     )
 }

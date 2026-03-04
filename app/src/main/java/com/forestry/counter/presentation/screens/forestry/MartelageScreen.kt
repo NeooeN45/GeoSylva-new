@@ -75,6 +75,11 @@ import com.forestry.counter.domain.calculation.SynthesisTotals
 import com.forestry.counter.domain.calculation.tarifs.TarifMethod
 import com.forestry.counter.domain.calculation.tarifs.TarifSelection
 import com.forestry.counter.domain.calculation.tarifs.TarifCalculator
+import com.forestry.counter.domain.repository.IbpRepository
+import com.forestry.counter.domain.model.IbpLevel
+import com.forestry.counter.presentation.screens.forestry.ibpLevelColor
+import com.forestry.counter.presentation.screens.forestry.IbpLevelBadge
+import com.forestry.counter.presentation.screens.forestry.ibpLevelLabel
 import com.forestry.counter.domain.usecase.export.QgisExportHelper
 import com.forestry.counter.domain.usecase.export.PdfSynthesisExporter
 import com.forestry.counter.domain.usecase.export.ShapefileExporter
@@ -124,6 +129,8 @@ fun MartelageScreen(
     onNavigateToSettings: (() -> Unit)? = null,
     onNavigateToPriceTablesEditor: (() -> Unit)? = null,
     onNavigateToMap: ((String) -> Unit)? = null,
+    ibpRepository: IbpRepository? = null,
+    onNavigateToIbp: ((parcelleId: String, placetteId: String) -> Unit)? = null,
     onNavigateBack: () -> Unit
 ) {
     val snackbar = remember { SnackbarHostState() }
@@ -149,6 +156,15 @@ fun MartelageScreen(
             else -> "GLOBAL"
         }
     }
+
+    val ibpEvaluations by remember(ibpRepository, placetteId) {
+        if (ibpRepository != null && placetteId != null)
+            ibpRepository.getByPlacette(placetteId)
+        else if (ibpRepository != null && parcelleId != null)
+            ibpRepository.getByParcelle(parcelleId)
+        else kotlinx.coroutines.flow.flowOf(emptyList())
+    }.collectAsState(initial = emptyList())
+    val latestIbp = remember(ibpEvaluations) { ibpEvaluations.firstOrNull() }
 
     val savedSurface by userPreferences.martelageSurfaceFlow(scopeKey).collectAsState(initial = null)
     val savedHo by userPreferences.martelageHoFlow(scopeKey).collectAsState(initial = null)
@@ -1526,6 +1542,13 @@ fun MartelageScreen(
                                 BiodiversityCard(bio = bio)
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
+                            // IBP badge card
+                            IbpMartelageCard(
+                                ibpEval = latestIbp,
+                                parcelleId = parcelleId,
+                                placetteId = placetteId,
+                                onNavigateToIbp = onNavigateToIbp
+                            )
                         }
                     }
 

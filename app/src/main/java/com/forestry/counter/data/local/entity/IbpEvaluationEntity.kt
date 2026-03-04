@@ -1,0 +1,24 @@
+package com.forestry.counter.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
+
+@Entity(
+    tableName = "ibp_evaluations",
+    indices = [
+        Index(name = "index_ibp_placetteId", value = ["placetteId"]),
+        Index(name = "index_ibp_parcelleId", value = ["parcelleId"])
+    ]
+)
+data class IbpEvaluationEntity(
+    @PrimaryKey val id: String,
+    val placetteId: String,
+    val parcelleId: String,
+    val observationDate: Long,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val evaluatorName: String = "",
+    val answersJson: String = "{}",
+    val globalNote: String = ""
+)
