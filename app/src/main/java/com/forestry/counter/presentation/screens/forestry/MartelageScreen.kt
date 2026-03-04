@@ -35,6 +35,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.Height
@@ -131,6 +132,7 @@ fun MartelageScreen(
     onNavigateToMap: ((String) -> Unit)? = null,
     ibpRepository: IbpRepository? = null,
     onNavigateToIbp: ((parcelleId: String, placetteId: String) -> Unit)? = null,
+    onNavigateToIbpHistory: ((parcelleId: String, placetteId: String?) -> Unit)? = null,
     onNavigateBack: () -> Unit
 ) {
     val snackbar = remember { SnackbarHostState() }
@@ -295,7 +297,6 @@ fun MartelageScreen(
 
     var showParamDialog by remember { mutableStateOf(false) }
     var askedParamsOnce by remember { mutableStateOf(false) }
-    var showDetails by remember { mutableStateOf(false) }
     var showParamPanel by remember { mutableStateOf(false) }
     var editingHeightsEssenceCode by remember { mutableStateOf<String?>(null) }
     var persistParamsRequested by remember { mutableStateOf(false) }
@@ -311,6 +312,7 @@ fun MartelageScreen(
     var currentTarifNumero by remember { mutableStateOf<Int?>(null) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     var breakdownByEssence by remember { mutableStateOf<Map<String, List<ProductBreakdownRow>>>(emptyMap()) }
+    var essenceSortKey by remember { mutableStateOf("name") }
 
     LaunchedEffect(Unit) {
         val sel = forestryCalculator.loadTarifSelection()
@@ -1508,7 +1510,39 @@ fun MartelageScreen(
                             }
 
                             if (s.perEssence.isNotEmpty()) {
-                                PerEssenceTable(perEssence = s.perEssence, essences = essences, placeholderDash = placeholderDash, euroSymbol = euroSymbol)
+                                val sortedPerEssence = remember(s.perEssence, essenceSortKey) {
+                                    when (essenceSortKey) {
+                                        "n"       -> s.perEssence.sortedByDescending { it.n }
+                                        "volume"  -> s.perEssence.sortedByDescending { it.vTotal }
+                                        "revenue" -> s.perEssence.sortedByDescending { it.revenueTotal ?: 0.0 }
+                                        "g"       -> s.perEssence.sortedByDescending { it.gTotal }
+                                        else      -> s.perEssence.sortedBy { it.essenceName }
+                                    }
+                                }
+                                val sortKeys = listOf(
+                                    "name" to stringResource(R.string.sort_name),
+                                    "n" to "N",
+                                    "g" to "G",
+                                    "volume" to "V",
+                                    "revenue" to stringResource(R.string.sort_revenue)
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    sortKeys.forEach { (key, label) ->
+                                        FilterChip(
+                                            selected = essenceSortKey == key,
+                                            onClick = { essenceSortKey = key },
+                                            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                                            modifier = Modifier.height(28.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                PerEssenceTable(perEssence = sortedPerEssence, essences = essences, placeholderDash = placeholderDash, euroSymbol = euroSymbol)
                             }
                         }
 
@@ -1521,8 +1555,7 @@ fun MartelageScreen(
                             if (s.harvestNhaPct != null || s.harvestGhaPct != null) {
                                 HarvestSimulationCard(
                                     harvestNhaPct = s.harvestNhaPct, harvestGhaPct = s.harvestGhaPct,
-                                    residualNha = s.residualNha, residualGha = s.residualGha,
-                                    nPerHa = s.nPerHa, gPerHa = s.gPerHa
+                                    residualNha = s.residualNha, residualGha = s.residualGha
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
                             }
@@ -1547,7 +1580,9 @@ fun MartelageScreen(
                                 ibpEval = latestIbp,
                                 parcelleId = parcelleId,
                                 placetteId = placetteId,
-                                onNavigateToIbp = onNavigateToIbp
+                                onNavigateToIbp = onNavigateToIbp,
+                                onNavigateToHistory = onNavigateToIbpHistory,
+                                evaluationCount = ibpEvaluations.size
                             )
                         }
                     }

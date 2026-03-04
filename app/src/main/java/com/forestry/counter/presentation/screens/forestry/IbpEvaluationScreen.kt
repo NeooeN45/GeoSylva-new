@@ -1,5 +1,6 @@
 package com.forestry.counter.presentation.screens.forestry
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -19,7 +20,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -45,6 +50,7 @@ fun IbpEvaluationScreen(
     placetteId: String,
     ibpRepository: IbpRepository,
     placetteRepository: PlacetteRepository? = null,
+    userPreferences: com.forestry.counter.data.preferences.UserPreferencesManager? = null,
     evaluationId: String? = null,
     onNavigateBack: () -> Unit
 ) {
@@ -65,6 +71,12 @@ fun IbpEvaluationScreen(
     var observationDate by rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
     var initialized by rememberSaveable { mutableStateOf(false) }
 
+    val placetteFlow = remember(placetteRepository, placetteId) {
+        placetteRepository?.getPlacetteById(placetteId) ?: kotlinx.coroutines.flow.flowOf(null)
+    }
+    val placette by placetteFlow.collectAsState(initial = null)
+    val placetteLabel = placette?.name?.takeIf { it.isNotBlank() } ?: placetteId.take(8)
+
     LaunchedEffect(existing) {
         if (!initialized && existing != null) {
             answers = existing!!.answers
@@ -78,7 +90,15 @@ fun IbpEvaluationScreen(
     }
 
     var showResultDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showUnsavedDialog by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
+
+    val ibpOnboardingSeen by remember(userPreferences) {
+        userPreferences?.ibpOnboardingSeen ?: kotlinx.coroutines.flow.flowOf(true)
+    }.collectAsState(initial = true)
+    var onboardingStep by remember { mutableStateOf(0) }
+    val showOnboarding = !ibpOnboardingSeen && onboardingStep < 3
 
     val exportPdfLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/pdf")
@@ -98,7 +118,7 @@ fun IbpEvaluationScreen(
                 )
                 runCatching {
                     context.contentResolver.openOutputStream(uri)?.use { out ->
-                        IbpPdfExporter.export(context, eval, out)
+                        IbpPdfExporter.export(context, eval, out, placetteLabel)
                     }
                     snackbar.showSnackbar(context.getString(R.string.pdf_exported))
                 }.onFailure {
@@ -128,6 +148,13 @@ fun IbpEvaluationScreen(
         }
     }
 
+    val savedAnswers = existing?.answers ?: IbpAnswers()
+    val savedName = existing?.evaluatorName ?: ""
+    val savedNote = existing?.globalNote ?: ""
+    val hasUnsavedChanges = initialized && (answers != savedAnswers || evaluatorName != savedName || globalNote != savedNote)
+
+    BackHandler(enabled = hasUnsavedChanges) { showUnsavedDialog = true }
+
     val scoreTotal = answers.scoreTotal
     val scoreA = answers.scoreA
     val scoreB = answers.scoreB
@@ -140,7 +167,7 @@ fun IbpEvaluationScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.ibp_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = { if (hasUnsavedChanges) showUnsavedDialog = true else onNavigateBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
@@ -158,6 +185,11 @@ fun IbpEvaluationScreen(
                     }
                     IconButton(onClick = { saveEvaluation() }) {
                         Icon(Icons.Default.Save, contentDescription = stringResource(R.string.save))
+                    }
+                    if (evaluationId != null) {
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.ibp_delete), tint = MaterialTheme.colorScheme.error)
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -187,7 +219,8 @@ fun IbpEvaluationScreen(
                 IbpMetaSection(
                     evaluatorName = evaluatorName,
                     onEvaluatorChange = { evaluatorName = it },
-                    observationDate = observationDate
+                    observationDate = observationDate,
+                    onDateClick = { showDatePicker = true }
                 )
             }
 
@@ -260,6 +293,109 @@ fun IbpEvaluationScreen(
                 }
             }
         }
+    }
+
+    if (showOnboarding) {
+        AlertDialog(
+            onDismissRequest = {},
+            icon = { Icon(Icons.Default.EmojiNature, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(36.dp)) },
+            title = {
+                Text(stringResource(when (onboardingStep) {
+                    0 -> R.string.ibp_onboarding_title_1
+                    1 -> R.string.ibp_onboarding_title_2
+                    else -> R.string.ibp_onboarding_title_3
+                }))
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(when (onboardingStep) {
+                        0 -> R.string.ibp_onboarding_body_1
+                        1 -> R.string.ibp_onboarding_body_2
+                        else -> R.string.ibp_onboarding_body_3
+                    }))
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
+                        repeat(3) { i ->
+                            Surface(
+                                modifier = Modifier.size(if (i == onboardingStep) 10.dp else 6.dp),
+                                shape = CircleShape,
+                                color = if (i == onboardingStep) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                            ) {}
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    if (onboardingStep < 2) {
+                        onboardingStep++
+                    } else {
+                        scope.launch { userPreferences?.setIbpOnboardingSeen() }
+                        onboardingStep = 3
+                    }
+                }) {
+                    Text(if (onboardingStep < 2) stringResource(R.string.ibp_onboarding_next) else stringResource(R.string.ibp_onboarding_start))
+                }
+            }
+        )
+    }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = observationDate)
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { observationDate = it }
+                    showDatePicker = false
+                }) { Text(stringResource(R.string.ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.cancel)) }
+            }
+        ) { DatePicker(state = datePickerState) }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            icon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text(stringResource(R.string.ibp_delete)) },
+            text = { Text(stringResource(R.string.ibp_delete_confirm)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    scope.launch {
+                        if (evaluationId != null) ibpRepository.delete(evaluationId)
+                        onNavigateBack()
+                    }
+                }, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) {
+                    Text(stringResource(R.string.delete))
+                }
+            },
+            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.cancel)) } }
+        )
+    }
+
+    if (showUnsavedDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnsavedDialog = false },
+            icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary) },
+            title = { Text(stringResource(R.string.ibp_unsaved_title)) },
+            text = { Text(stringResource(R.string.ibp_unsaved_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showUnsavedDialog = false
+                    saveEvaluation()
+                    onNavigateBack()
+                }) { Text(stringResource(R.string.save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showUnsavedDialog = false
+                    onNavigateBack()
+                }) { Text(stringResource(R.string.discard)) }
+            }
+        )
     }
 
     if (showResultDialog) {
@@ -377,7 +513,8 @@ fun ibpLevelColor(level: IbpLevel): Color = when (level) {
 private fun IbpMetaSection(
     evaluatorName: String,
     onEvaluatorChange: (String) -> Unit,
-    observationDate: Long
+    observationDate: Long,
+    onDateClick: () -> Unit = {}
 ) {
     val dateStr = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(observationDate))
     Row(
@@ -392,15 +529,24 @@ private fun IbpMetaSection(
             singleLine = true,
             leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(18.dp)) }
         )
-        OutlinedTextField(
-            value = dateStr,
-            onValueChange = {},
-            modifier = Modifier.width(140.dp),
-            label = { Text(stringResource(R.string.ibp_date), style = MaterialTheme.typography.bodySmall) },
-            readOnly = true,
-            singleLine = true,
-            leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(18.dp)) }
-        )
+        Box(modifier = Modifier.width(140.dp).clickable { onDateClick() }) {
+            OutlinedTextField(
+                value = dateStr,
+                onValueChange = {},
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.ibp_date), style = MaterialTheme.typography.bodySmall) },
+                readOnly = true,
+                enabled = false,
+                singleLine = true,
+                leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+        }
     }
 }
 
@@ -628,6 +774,8 @@ private fun IbpResultDialog(
                     }
                 }
                 HorizontalDivider()
+                IbpRadarChart(answers = answers, color = levelColor, modifier = Modifier.fillMaxWidth().height(200.dp))
+                HorizontalDivider()
                 Text(ibpLevelComment(level, scoreTotal), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, fontStyle = FontStyle.Italic)
                 HorizontalDivider()
                 Text(stringResource(R.string.ibp_recommendations), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
@@ -703,7 +851,9 @@ fun IbpMartelageCard(
     ibpEval: com.forestry.counter.domain.model.IbpEvaluation?,
     parcelleId: String?,
     placetteId: String?,
-    onNavigateToIbp: ((parcelleId: String, placetteId: String) -> Unit)? = null
+    onNavigateToIbp: ((parcelleId: String, placetteId: String) -> Unit)? = null,
+    onNavigateToHistory: ((parcelleId: String, placetteId: String?) -> Unit)? = null,
+    evaluationCount: Int = 0
 ) {
     val canNavigate = onNavigateToIbp != null && parcelleId != null && placetteId != null
     Card(
@@ -730,9 +880,18 @@ fun IbpMartelageCard(
                     Text(stringResource(R.string.ibp_no_evaluation), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            if (canNavigate) {
-                TextButton(onClick = { onNavigateToIbp!!(parcelleId!!, placetteId!!) }) {
-                    Text(if (ibpEval != null) stringResource(R.string.ibp_edit) else stringResource(R.string.ibp_start))
+            Column(horizontalAlignment = Alignment.End) {
+                if (canNavigate) {
+                    TextButton(onClick = { onNavigateToIbp!!(parcelleId!!, placetteId!!) }) {
+                        Text(if (ibpEval != null) stringResource(R.string.ibp_edit) else stringResource(R.string.ibp_start))
+                    }
+                }
+                if (evaluationCount >= 2 && onNavigateToHistory != null && parcelleId != null) {
+                    TextButton(onClick = { onNavigateToHistory(parcelleId, placetteId) }) {
+                        Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.ibp_history_title), style = MaterialTheme.typography.labelSmall)
+                    }
                 }
             }
         }
@@ -765,4 +924,66 @@ fun ibpLevelRecommendations(level: IbpLevel): List<String> = when (level) {
         stringResource(R.string.ibp_rec_vg_1),
         stringResource(R.string.ibp_rec_vg_2)
     )
+}
+
+/* ─────────────── Radar Chart ────────────────────────────────────── */
+@Composable
+fun IbpRadarChart(
+    answers: IbpAnswers,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    val criteria = IbpCriterionId.ALL
+    val n = criteria.size
+    val values = criteria.map { id -> answers.get(id).coerceAtLeast(0).toFloat() / 2f }
+
+    val gridColor = color.copy(alpha = 0.15f)
+    val fillColor = color.copy(alpha = 0.25f)
+    val strokeColor = color
+
+    Canvas(modifier = modifier) {
+        val cx = size.width / 2f
+        val cy = size.height / 2f
+        val radius = minOf(cx, cy) * 0.72f
+        val angleStep = (2 * Math.PI / n).toFloat()
+        val startAngle = (-Math.PI / 2).toFloat()
+
+        fun axisPoint(index: Int, r: Float): Offset {
+            val angle = startAngle + index * angleStep
+            return Offset(cx + r * kotlin.math.cos(angle), cy + r * kotlin.math.sin(angle))
+        }
+
+        // Draw grid rings (0.5 and 1.0)
+        listOf(0.5f, 1.0f).forEach { fraction ->
+            val gridPath = Path()
+            for (i in 0 until n) {
+                val pt = axisPoint(i, radius * fraction)
+                if (i == 0) gridPath.moveTo(pt.x, pt.y) else gridPath.lineTo(pt.x, pt.y)
+            }
+            gridPath.close()
+            drawPath(gridPath, color = gridColor, style = Stroke(width = 1.dp.toPx()))
+        }
+
+        // Draw axes
+        for (i in 0 until n) {
+            val outer = axisPoint(i, radius)
+            drawLine(color = gridColor, start = Offset(cx, cy), end = outer, strokeWidth = 1.dp.toPx())
+        }
+
+        // Draw filled polygon
+        val dataPath = Path()
+        for (i in 0 until n) {
+            val pt = axisPoint(i, radius * values[i])
+            if (i == 0) dataPath.moveTo(pt.x, pt.y) else dataPath.lineTo(pt.x, pt.y)
+        }
+        dataPath.close()
+        drawPath(dataPath, color = fillColor)
+        drawPath(dataPath, color = strokeColor, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
+
+        // Draw dots at each vertex
+        for (i in 0 until n) {
+            val pt = axisPoint(i, radius * values[i])
+            drawCircle(color = strokeColor, radius = 4.dp.toPx(), center = pt)
+        }
+    }
 }

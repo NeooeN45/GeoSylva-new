@@ -1002,7 +1002,12 @@
     <string name="live_n_total">N = %1$d tiges</string>
 
     <string name="ok">OK</string>
+    <string name="discard">Ignorer</string>
     <string name="export_error">Échec de l\'export</string>
+    <string name="ibp_unsaved_title">Modifications non sauvegardées</string>
+    <string name="sort_name">Nom</string>
+    <string name="sort_revenue">Valeur</string>
+    <string name="ibp_unsaved_message">Vous avez des modifications non sauvegardées. Sauvegarder avant de quitter ?</string>
 
     <!-- IBP — Indice de Biodiversité Potentielle -->
     <string name="ibp_title">IBP — Indice de Biodiversité Potentielle</string>
@@ -1026,6 +1031,16 @@
     <string name="ibp_delete_confirm">Supprimer cette évaluation IBP ?</string>
     <string name="ibp_in_martelage">IBP : %1$s / 20 (%2$s)</string>
     <string name="ibp_not_done">IBP : non évalué</string>
+    <string name="ibp_history_title">Historique IBP</string>
+    <string name="ibp_onboarding_title_1">Bienvenue dans l\'IBP</string>
+    <string name="ibp_onboarding_body_1">L\'Indice de Biodiversité Potentielle (IBP) évalue la biodiversité d\'un peuplement forestier à travers 10 critères répartis en deux groupes.</string>
+    <string name="ibp_onboarding_title_2">Groupe A — Peuplement (7 critères)</string>
+    <string name="ibp_onboarding_body_2">E1, E2 : richesse en essences. GB : très gros bois. BMS/BMC : bois mort debout/couché. DMH : micro-habitats. VS : végétation du sous-bois. Score max : 14 pts.</string>
+    <string name="ibp_onboarding_title_3">Groupe B — Contexte (3 critères)</string>
+    <string name="ibp_onboarding_body_3">CF : habitats adjacents. CO : continuité forestière. HC : taux de couverture. Score max : 6 pts. IBP total = A + B (max 20).</string>
+    <string name="ibp_onboarding_next">Suivant</string>
+    <string name="ibp_onboarding_start">Démarrer l\'évaluation</string>
+    <string name="ibp_evolution_title">Évolution du score</string>
 
     <!-- IBP Groupes -->
     <string name="ibp_group_a_title">Groupe A — Peuplement</string>

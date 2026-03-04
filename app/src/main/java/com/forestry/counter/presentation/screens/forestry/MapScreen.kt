@@ -49,7 +49,7 @@ import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.FormatListBulleted
+import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.NearMe
@@ -1136,7 +1136,7 @@ fun MapScreen(
                         scope.launch { preferencesManager.setMapShowLegend(next) }
                     }) {
                         Icon(
-                            Icons.Default.FormatListBulleted,
+                            Icons.AutoMirrored.Filled.FormatListBulleted,
                             contentDescription = stringResource(R.string.map_legend),
                             tint = if (showLegend) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )

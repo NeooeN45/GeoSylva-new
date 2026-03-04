@@ -77,7 +77,12 @@ class UserPreferencesManager(private val context: Context) {
 
         // Onboarding
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        val IBP_ONBOARDING_SEEN = booleanPreferencesKey("ibp_onboarding_seen")
     }
+
+    // IBP onboarding
+    val ibpOnboardingSeen: Flow<Boolean> = dataStore.data.map { prefs -> prefs[IBP_ONBOARDING_SEEN] ?: false }
+    suspend fun setIbpOnboardingSeen() { dataStore.edit { it[IBP_ONBOARDING_SEEN] = true } }
 
     // Theme preferences
     val themeMode: Flow<ThemeMode> = dataStore.data.map { prefs ->

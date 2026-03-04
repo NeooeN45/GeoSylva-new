@@ -200,9 +200,7 @@ internal fun HarvestSimulationCard(
     harvestNhaPct: Double?,
     harvestGhaPct: Double?,
     residualNha: Double?,
-    residualGha: Double?,
-    nPerHa: Double,
-    gPerHa: Double
+    residualGha: Double?
 ) {
     if (harvestNhaPct == null && harvestGhaPct == null) return
     val cardBg = MaterialTheme.colorScheme.tertiaryContainer

@@ -1006,7 +1006,12 @@
     <string name="live_n_total">N = %1$d stems</string>
 
     <string name="ok">OK</string>
+    <string name="discard">Discard</string>
     <string name="export_error">Export failed</string>
+    <string name="ibp_unsaved_title">Unsaved changes</string>
+    <string name="sort_name">Name</string>
+    <string name="sort_revenue">Value</string>
+    <string name="ibp_unsaved_message">You have unsaved changes. Save before leaving?</string>
 
     <!-- IBP — Indice de Biodiversité Potentielle -->
     <string name="ibp_title">IBP — Biodiversity Index</string>
@@ -1030,6 +1035,16 @@
     <string name="ibp_delete_confirm">Delete this IBP evaluation?</string>
     <string name="ibp_in_martelage">IBP: %1$s / 20 (%2$s)</string>
     <string name="ibp_not_done">IBP: not assessed</string>
+    <string name="ibp_history_title">IBP History</string>
+    <string name="ibp_onboarding_title_1">Welcome to IBP</string>
+    <string name="ibp_onboarding_body_1">The Potential Biodiversity Index (IBP) evaluates the biodiversity of a forest stand through 10 criteria grouped in two categories.</string>
+    <string name="ibp_onboarding_title_2">Group A — Stand (7 criteria)</string>
+    <string name="ibp_onboarding_body_2">E1, E2: species richness. GB: large trees. BMS/BMC: standing/lying deadwood. DMH: micro-habitats. VS: shrub layer. Max score: 14 pts.</string>
+    <string name="ibp_onboarding_title_3">Group B — Context (3 criteria)</string>
+    <string name="ibp_onboarding_body_3">CF: adjacent habitats. CO: forest continuity. HC: forest cover %. Max score: 6 pts. Total IBP = A + B (max 20).</string>
+    <string name="ibp_onboarding_next">Next</string>
+    <string name="ibp_onboarding_start">Start evaluation</string>
+    <string name="ibp_evolution_title">Score evolution</string>
 
     <!-- IBP Groups -->
     <string name="ibp_group_a_title">Group A — Stand</string>

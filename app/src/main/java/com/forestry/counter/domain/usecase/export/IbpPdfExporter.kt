@@ -13,7 +13,7 @@ object IbpPdfExporter {
 
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
-    fun export(context: Context, eval: IbpEvaluation, out: OutputStream) {
+    fun export(context: Context, eval: IbpEvaluation, out: OutputStream, placetteName: String = "") {
         val doc = PdfDocument()
         val pageWidth = 595   // A4 width in points (72 dpi)
         val pageHeight = 842  // A4 height in points
@@ -22,10 +22,9 @@ object IbpPdfExporter {
         val page = doc.startPage(pageInfo)
         val canvas = page.canvas
 
-        drawPage(canvas, eval, pageWidth, pageHeight)
+        drawPage(canvas, eval, pageWidth, pageHeight, placetteName)
         doc.finishPage(page)
 
-        // If needed, add a second page for criteria detail
         val pageInfo2 = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, 2).create()
         val page2 = doc.startPage(pageInfo2)
         drawDetailPage(page2.canvas, eval, pageWidth, pageHeight)
@@ -35,7 +34,7 @@ object IbpPdfExporter {
         doc.close()
     }
 
-    private fun drawPage(canvas: Canvas, eval: IbpEvaluation, w: Int, h: Int) {
+    private fun drawPage(canvas: Canvas, eval: IbpEvaluation, w: Int, h: Int, placetteName: String = "") {
         val margin = 40f
         var y = margin
 
@@ -74,7 +73,8 @@ object IbpPdfExporter {
         canvas.drawText("DATE D'OBSERVATION", margin + 200f, y + 18f, labelPaint)
         canvas.drawText(dateFormat.format(Date(eval.observationDate)), margin + 200f, y + 34f, valuePaint)
         canvas.drawText("PLACETTE", margin + 360f, y + 18f, labelPaint)
-        canvas.drawText(eval.placetteId.take(12), margin + 360f, y + 34f, valuePaint)
+        val displayName = placetteName.ifBlank { eval.placetteId.take(12) }
+        canvas.drawText(displayName, margin + 360f, y + 34f, valuePaint)
         canvas.drawText("Page 1/2", margin + 360f, y + 50f, labelPaint)
 
         y += 80f
