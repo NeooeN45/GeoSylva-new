@@ -214,12 +214,14 @@ private fun IbpProjectCard(
     onDelete: () -> Unit
 ) {
     val score = eval.scoreTotal
+    val isComplete = score >= 0
     val level = IbpLevel.fromScore(score)
-    val levelColor = when (level) {
-        IbpLevel.VERY_LOW -> Color(0xFFC62828)
-        IbpLevel.LOW      -> Color(0xFFE65100)
-        IbpLevel.MEDIUM   -> Color(0xFFF57C00)
-        IbpLevel.GOOD     -> Color(0xFF558B2F)
+    val levelColor = if (!isComplete) Color(0xFF78909C)
+    else when (level) {
+        IbpLevel.VERY_LOW  -> Color(0xFFC62828)
+        IbpLevel.LOW       -> Color(0xFFE65100)
+        IbpLevel.MEDIUM    -> Color(0xFFF57C00)
+        IbpLevel.GOOD      -> Color(0xFF558B2F)
         IbpLevel.VERY_GOOD -> Color(0xFF1B5E20)
     }
 
@@ -246,13 +248,13 @@ private fun IbpProjectCard(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        "$score",
+                        if (isComplete) "$score" else "–",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = levelColor
                     )
                     Text(
-                        "/ 20",
+                        if (isComplete) "/ 20" else "NC",
                         style = MaterialTheme.typography.labelSmall,
                         color = levelColor.copy(alpha = 0.7f)
                     )
