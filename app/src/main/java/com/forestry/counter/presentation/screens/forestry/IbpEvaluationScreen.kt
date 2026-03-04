@@ -273,10 +273,8 @@ fun IbpEvaluationScreen(
                 OutlinedTextField(
                     value = globalNote,
                     onValueChange = { globalNote = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(stringResource(R.string.ibp_global_note_hint), style = MaterialTheme.typography.bodySmall) },
-                    minLines = 3,
-                    maxLines = 6
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 88.dp),
+                    placeholder = { Text(stringResource(R.string.ibp_global_note_hint), style = MaterialTheme.typography.bodySmall) }
                 )
             }
 
