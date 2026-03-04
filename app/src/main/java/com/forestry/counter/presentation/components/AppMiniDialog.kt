@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
@@ -34,6 +35,7 @@ fun AppMiniDialog(
     onNeutral: (() -> Unit)? = null,
     confirmEnabled: Boolean = true,
     confirmIsDestructive: Boolean = false,
+    dismissColor: Color? = null,
     content: (@Composable ColumnScope.() -> Unit)? = null
 ) {
     val dismissAction = onDismiss ?: onDismissRequest
@@ -85,7 +87,10 @@ fun AppMiniDialog(
                         }
                     }
                     if (hasDismiss) {
-                        TextButton(onClick = dismissAction) {
+                        val dColors = if (dismissColor != null)
+                            ButtonDefaults.textButtonColors(contentColor = dismissColor)
+                        else ButtonDefaults.textButtonColors()
+                        TextButton(onClick = dismissAction, colors = dColors) {
                             Text(dismissText.orEmpty())
                         }
                     }

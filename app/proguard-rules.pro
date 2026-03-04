@@ -4,10 +4,17 @@
 -keep class com.forestry.counter.data.local.entity.** { *; }
 -keep class com.forestry.counter.domain.model.** { *; }
 
-# Keep Room
--keep class * extends androidx.room.RoomDatabase
--keep @androidx.room.Entity class *
+# Keep Room — DAOs, generated implementations, database
+-keep class * extends androidx.room.RoomDatabase { *; }
+-keep @androidx.room.Entity class * { *; }
+-keep @androidx.room.Dao interface * { *; }
+-keep class com.forestry.counter.data.local.dao.** { *; }
+-keep class com.forestry.counter.data.repository.** { *; }
 -dontwarn androidx.room.paging.**
+
+# Keep all generated Room Kotlin implementations (suffixed _Impl)
+-keep class **_Impl { *; }
+-keep class **_Impl$* { *; }
 
 # Keep Serialization
 -keepattributes *Annotation*, InnerClasses

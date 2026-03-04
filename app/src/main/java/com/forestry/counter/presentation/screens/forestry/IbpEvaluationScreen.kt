@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,8 @@ import com.forestry.counter.domain.repository.IbpRepository
 import com.forestry.counter.domain.repository.PlacetteRepository
 import com.forestry.counter.domain.usecase.export.IbpPdfExporter
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -65,7 +68,15 @@ fun IbpEvaluationScreen(
     }
     val existing by existingFlow.collectAsState(initial = null)
 
-    var answers by rememberSaveable { mutableStateOf(IbpAnswers()) }
+    val ibpAnswersSaver = remember {
+        val key = "ibp_answers_json"
+        val safeJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+        mapSaver<IbpAnswers>(
+            save = { mapOf(key to safeJson.encodeToString(it)) },
+            restore = { map -> runCatching { safeJson.decodeFromString<IbpAnswers>(map[key] as String) }.getOrElse { IbpAnswers() } }
+        )
+    }
+    var answers by rememberSaveable(stateSaver = ibpAnswersSaver) { mutableStateOf(IbpAnswers()) }
     var evaluatorName by rememberSaveable { mutableStateOf("") }
     var globalNote by rememberSaveable { mutableStateOf("") }
     var observationDate by rememberSaveable { mutableStateOf(System.currentTimeMillis()) }

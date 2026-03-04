@@ -620,7 +620,7 @@
     <string name="export_shapefile_desc">ESRI Shapefile ZIP (.shp/.dbf/.prj) for QGIS/ArcGIS</string>
     <string name="export_shapefile_done">Shapefile exported (%1$d stems)</string>
 
-    <string name="biodiversity_title">Biodiversity index</string>
+    <string name="biodiversity_title">Stand ecology</string>
     <string name="biodiversity_shannon">Shannon H\'</string>
     <string name="biodiversity_pielou">Piélou J</string>
     <string name="biodiversity_species">Species</string>
@@ -940,7 +940,7 @@
     <string name="nav_accuracy">GPS ±%1$s m</string>
     <string name="tab_synthesis">Synthesis</string>
     <string name="tab_valuation">Valuation</string>
-    <string name="tab_analysis">Analysis</string>
+    <string name="tab_analysis">Ecology</string>
 
     <!-- Tree height measurement -->
     <string name="height_measure_title">Measure tree height</string>
@@ -949,7 +949,7 @@
     <string name="height_sensor_basic">Basic precision (accelerometer ±2°)</string>
     <string name="height_sensor_none">No sensor — manual angle entry</string>
     <string name="height_measure_waist_title">Position the phone at waist height</string>
-    <string name="height_measure_waist_desc">Before measuring, hold your phone horizontally at waist height (approx. 1 m from the ground). This is the reference height used for all calculations. Adjust the value below if needed.</string>
+    <string name="height_measure_waist_desc">Before measuring, hold your phone horizontally at waist height (approx. 1.5 m from the ground). This is the reference height used for all calculations. Adjust the value below if needed.</string>
     <string name="height_measure_waist_ok">OK, phone positioned</string>
     <string name="height_measure_waist_never_show">Do not show this reminder again</string>
     <string name="height_measure_distance_desc">Stand at a known distance from the tree base. The farther you are, the more accurate the result. 15–25 m is ideal.</string>
@@ -1152,6 +1152,14 @@
     <string name="ibp_hc_o0">No complementary habitat present</string>
     <string name="ibp_hc_o1">1 type of complementary habitat</string>
     <string name="ibp_hc_o2">2 or more types of complementary habitats</string>
+
+    <!-- IBP Projects screen -->
+    <string name="ibp_projects_title">IBP Evaluations</string>
+    <string name="ibp_projects_empty">No IBP evaluation yet</string>
+    <string name="ibp_projects_empty_hint">Open a stand (Placette) and start an IBP evaluation from the stand detail screen.</string>
+
+    <!-- Map GPS quality warning -->
+    <string name="map_gps_poor_warning">%1$d stem(s) with poor GPS accuracy (&gt;20 m) · tap to dismiss</string>
 
     <!-- Onboarding updated strings -->
     <string name="onboarding_height_title">Measure tree heights</string>

@@ -222,14 +222,6 @@ fun PlacetteDetailScreen(
                         Icon(Icons.Default.SwapVert, contentDescription = stringResource(R.string.reorder))
                     }
 
-                    if (onNavigateToIbp != null) {
-                        IconButton(onClick = {
-                            playClickFeedback()
-                            onNavigateToIbp(parcelleId, placetteId)
-                        }) {
-                            Icon(Icons.Default.EmojiNature, contentDescription = stringResource(R.string.ibp_title))
-                        }
-                    }
                     IconButton(onClick = {
                         playClickFeedback()
                         showDeletePlacetteDialog = true

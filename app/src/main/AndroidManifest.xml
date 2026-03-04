@@ -9,6 +9,13 @@
     <!-- Location permissions for GPS marking (single-shot) -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Camera for IBP photo attachments and height measurement -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Media access (API 33+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Legacy storage (API < 33) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
     <!-- Internet required for map tiles and updates -->
     <uses-permission android:name="android.permission.INTERNET" />
 

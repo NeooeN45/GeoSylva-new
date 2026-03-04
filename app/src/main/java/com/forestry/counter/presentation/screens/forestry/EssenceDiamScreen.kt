@@ -788,9 +788,7 @@ fun EssenceDiamScreen(
                             if (v != null && v > 0.0) {
                                 val formatted = String.format(Locale.getDefault(), "%.1f", v)
                                 populatedClasses.forEach { d ->
-                                    if (heightByClassInput[d].isNullOrBlank()) {
-                                        heightByClassInput[d] = formatted
-                                    }
+                                    heightByClassInput[d] = formatted
                                 }
                             }
                         }
@@ -923,6 +921,7 @@ fun EssenceDiamScreen(
             description = descText,
             confirmText = stringResource(R.string.configure_heights),
             dismissText = stringResource(R.string.mandatory_heights_skip),
+            dismissColor = androidx.compose.ui.graphics.Color(0xFF2E7D32),
             neutralText = stringResource(R.string.mandatory_heights_snooze_title),
             onDismiss = {
                 showMissingHeightsDialog = false

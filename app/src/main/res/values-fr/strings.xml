@@ -620,7 +620,7 @@
     <string name="export_shapefile_desc">ZIP ESRI Shapefile (.shp/.dbf/.prj) pour QGIS/ArcGIS</string>
     <string name="export_shapefile_done">Shapefile exporté (%1$d tiges)</string>
 
-    <string name="biodiversity_title">Indice de biodiversité</string>
+    <string name="biodiversity_title">Écologie du peuplement</string>
     <string name="biodiversity_shannon">Shannon H\'</string>
     <string name="biodiversity_pielou">Piélou J</string>
     <string name="biodiversity_species">Essences</string>
@@ -945,7 +945,7 @@
     <string name="height_sensor_basic">Précision de base (accéléromètre ±2°)</string>
     <string name="height_sensor_none">Aucun capteur — saisie manuelle de l\'angle</string>
     <string name="height_measure_waist_title">Positionnez le téléphone à hauteur de taille</string>
-    <string name="height_measure_waist_desc">Avant de mesurer, tenez le téléphone à l\'horizontale à hauteur de taille (environ 1 m du sol). C\'est la hauteur de référence utilisée pour tous les calculs. Ajustez la valeur ci-dessous si besoin.</string>
+    <string name="height_measure_waist_desc">Avant de mesurer, tenez le téléphone à l\'horizontale à hauteur de taille (environ 1,5 m du sol). C\'est la hauteur de référence utilisée pour tous les calculs. Ajustez la valeur ci-dessous si besoin.</string>
     <string name="height_measure_waist_ok">OK, téléphone positionné</string>
     <string name="height_measure_waist_never_show">Ne plus afficher ce rappel</string>
     <string name="height_measure_distance_desc">Placez-vous à une distance connue du pied de l\'arbre. Plus vous êtes loin, plus la mesure est précise. 15–25 m est idéal.</string>
@@ -1149,6 +1149,14 @@
     <string name="ibp_hc_o1">1 type d\'habitat complémentaire</string>
     <string name="ibp_hc_o2">2 types ou plus d\'habitats complémentaires</string>
 
+    <!-- Écran IBP Projets -->
+    <string name="ibp_projects_title">Évaluations IBP</string>
+    <string name="ibp_projects_empty">Aucune évaluation IBP pour l\'instant</string>
+    <string name="ibp_projects_empty_hint">Ouvrez une placette et lancez une évaluation IBP depuis l\'écran de détail de la placette.</string>
+
+    <!-- Avertissement GPS imprécis dans la carte -->
+    <string name="map_gps_poor_warning">%1$d tige(s) avec GPS imprécis (&gt;20 m) · toucher pour masquer</string>
+
     <!-- Onboarding - nouvelles chaînes -->
     <string name="onboarding_height_title">Mesurer les hauteurs d\'arbres</string>
     <string name="onboarding_height_desc">Utilisez les capteurs de votre téléphone pour mesurer la hauteur d\'un arbre avec précision — sans aucun équipement. La méthode clinométrique calcule la hauteur à partir de l\'angle d\'inclinaison et de la distance.</string>
@@ -1157,5 +1165,5 @@
     <string name="onboarding_height_b3">Hauteur de référence réglable, guide de positionnement à hauteur de taille</string>
     <string name="tab_synthesis">Synthèse</string>
     <string name="tab_valuation">Valorisation</string>
-    <string name="tab_analysis">Analyse</string>
+    <string name="tab_analysis">Écologie</string>
 </resources>

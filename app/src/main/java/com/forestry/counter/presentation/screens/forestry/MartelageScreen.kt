@@ -100,6 +100,9 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import android.content.res.Configuration
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -799,7 +802,8 @@ fun MartelageScreen(
             CompositionLocalProvider(LocalContentColor provides pageTextColor) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
+                        .heightIn(min = with(LocalDensity.current) { LocalConfiguration.current.screenHeightDp.dp })
                         .verticalScroll(contentScrollState)
                         .padding(padding)
                         .background(pageBackground)
@@ -912,20 +916,6 @@ fun MartelageScreen(
                             },
                             leadingIcon = {
                                 Icon(Icons.Default.GpsFixed, contentDescription = null, modifier = Modifier.size(16.dp))
-                            }
-                        )
-                    }
-                    if (parcelleId != null && onNavigateToMap != null) {
-                        AssistChip(
-                            onClick = {
-                                playClickFeedback()
-                                onNavigateToMap(parcelleId)
-                            },
-                            label = {
-                                Text(stringResource(R.string.map_view), style = MaterialTheme.typography.labelSmall)
-                            },
-                            leadingIcon = {
-                                Icon(Icons.Default.Map, contentDescription = null, modifier = Modifier.size(16.dp))
                             }
                         )
                     }

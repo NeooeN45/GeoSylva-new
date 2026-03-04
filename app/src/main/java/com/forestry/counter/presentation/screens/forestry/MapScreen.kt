@@ -1838,6 +1838,44 @@ fun MapScreen(
                 }
             }
 
+            // ── Avertissement GPS mauvais (discret) ──
+            val poorGpsTiges = remember(geoTiges) {
+                geoTiges.count { (t, _, _) -> (t.precisionM ?: 0.0) > 20.0 }
+            }
+            AnimatedVisibility(
+                visible = poorGpsTiges > 0 && !dismissedGpsBanner,
+                enter = fadeIn(tween(400)),
+                exit = fadeOut(tween(250)),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 8.dp, top = 6.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFFE65100).copy(alpha = 0.82f),
+                    modifier = Modifier.clickable { dismissedGpsBanner = true }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.GpsFixed,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Text(
+                            stringResource(R.string.map_gps_poor_warning, poorGpsTiges),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+            }
+
             // ── Coordonnées au tap ──
             AnimatedVisibility(
                 visible = showCoords && coordsText.isNotEmpty(),
