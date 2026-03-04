@@ -1157,6 +1157,10 @@
     <string name="ibp_projects_title">IBP Evaluations</string>
     <string name="ibp_projects_empty">No IBP evaluation yet</string>
     <string name="ibp_projects_empty_hint">Open a stand (Placette) and start an IBP evaluation from the stand detail screen.</string>
+    <string name="ibp_create_select_parcelle">Select a parcel</string>
+    <string name="ibp_create_select_placette">Select a stand</string>
+    <string name="ibp_create_no_parcelle">No parcel found. Create a parcel first.</string>
+    <string name="ibp_create_no_placette">No stand in this parcel. Add a stand first.</string>
 
     <!-- Map GPS quality warning -->
     <string name="map_gps_poor_warning">%1$d stem(s) with poor GPS accuracy (&gt;20 m) · tap to dismiss</string>

@@ -7,7 +7,6 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -209,99 +208,85 @@ fun IbpEvaluationScreen(
             )
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(bottom = 32.dp)
+        val scrollState = rememberScrollState()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(scrollState)
+                .padding(bottom = 32.dp)
         ) {
             // ── Score Header ──────────────────────────────────────────
-            item {
-                IbpScoreHeader(
-                    scoreTotal = scoreTotal,
-                    scoreA = scoreA,
-                    scoreB = scoreB,
-                    answeredCount = answers.answeredCount,
-                    levelColor = levelColor,
-                    level = level
-                )
-            }
+            IbpScoreHeader(
+                scoreTotal = scoreTotal,
+                scoreA = scoreA,
+                scoreB = scoreB,
+                answeredCount = answers.answeredCount,
+                levelColor = levelColor,
+                level = level
+            )
 
             // ── Meta (evaluator + date) ────────────────────────────
-            item {
-                IbpMetaSection(
-                    evaluatorName = evaluatorName,
-                    onEvaluatorChange = { evaluatorName = it },
-                    observationDate = observationDate,
-                    onDateClick = { showDatePicker = true }
-                )
-            }
+            IbpMetaSection(
+                evaluatorName = evaluatorName,
+                onEvaluatorChange = { evaluatorName = it },
+                observationDate = observationDate,
+                onDateClick = { showDatePicker = true }
+            )
 
             // ── Group A ─────────────────────────────────────────────
-            item {
-                IbpGroupHeader(
-                    label = stringResource(R.string.ibp_group_a_title),
-                    subtitle = stringResource(R.string.ibp_group_a_subtitle),
-                    score = scoreA,
-                    maxScore = 14,
-                    color = Color(0xFF2E7D32)
-                )
-            }
-
+            IbpGroupHeader(
+                label = stringResource(R.string.ibp_group_a_title),
+                subtitle = stringResource(R.string.ibp_group_a_subtitle),
+                score = scoreA,
+                maxScore = 14,
+                color = Color(0xFF2E7D32)
+            )
             IbpCriterionId.GROUP_A.forEach { cid ->
-                item(key = cid.code) {
-                    IbpCriterionCard(
-                        criterionId = cid,
-                        currentValue = answers.get(cid),
-                        onAnswer = { v -> answers = answers.set(cid, v) }
-                    )
-                }
+                IbpCriterionCard(
+                    criterionId = cid,
+                    currentValue = answers.get(cid),
+                    onAnswer = { v -> answers = answers.set(cid, v) }
+                )
             }
 
             // ── Group B ─────────────────────────────────────────────
-            item {
-                IbpGroupHeader(
-                    label = stringResource(R.string.ibp_group_b_title),
-                    subtitle = stringResource(R.string.ibp_group_b_subtitle),
-                    score = scoreB,
-                    maxScore = 6,
-                    color = Color(0xFF1565C0)
+            IbpGroupHeader(
+                label = stringResource(R.string.ibp_group_b_title),
+                subtitle = stringResource(R.string.ibp_group_b_subtitle),
+                score = scoreB,
+                maxScore = 6,
+                color = Color(0xFF1565C0)
+            )
+            IbpCriterionId.GROUP_B.forEach { cid ->
+                IbpCriterionCard(
+                    criterionId = cid,
+                    currentValue = answers.get(cid),
+                    onAnswer = { v -> answers = answers.set(cid, v) }
                 )
             }
 
-            IbpCriterionId.GROUP_B.forEach { cid ->
-                item(key = cid.code) {
-                    IbpCriterionCard(
-                        criterionId = cid,
-                        currentValue = answers.get(cid),
-                        onAnswer = { v -> answers = answers.set(cid, v) }
-                    )
-                }
-            }
-
             // ── Global note ──────────────────────────────────────────
-            item {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    Text(stringResource(R.string.ibp_global_note), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                    Spacer(Modifier.height(4.dp))
-                    OutlinedTextField(
-                        value = globalNote,
-                        onValueChange = { globalNote = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(stringResource(R.string.ibp_global_note_hint), style = MaterialTheme.typography.bodySmall) },
-                        minLines = 3,
-                        maxLines = 6
-                    )
-                }
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                Text(stringResource(R.string.ibp_global_note), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = globalNote,
+                    onValueChange = { globalNote = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(stringResource(R.string.ibp_global_note_hint), style = MaterialTheme.typography.bodySmall) },
+                    minLines = 3,
+                    maxLines = 6
+                )
             }
 
             // ── Result card if complete ───────────────────────────
             if (answers.isComplete) {
-                item {
-                    IbpResultCard(
-                        level = level,
-                        scoreTotal = scoreTotal,
-                        levelColor = levelColor
-                    )
-                }
+                IbpResultCard(
+                    level = level,
+                    scoreTotal = scoreTotal,
+                    levelColor = levelColor
+                )
             }
         }
     }
@@ -466,7 +451,9 @@ private fun IbpScoreHeader(
             Spacer(Modifier.height(12.dp))
             // Progress bar
             Box(modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)).background(MaterialTheme.colorScheme.surfaceVariant)) {
-                Box(modifier = Modifier.fillMaxWidth(animProgress).fillMaxHeight().clip(RoundedCornerShape(5.dp)).background(Brush.horizontalGradient(listOf(Color(0xFF66BB6A), levelColor))))
+                if (animProgress > 0f) {
+                    Box(modifier = Modifier.fillMaxWidth(animProgress).fillMaxHeight().clip(RoundedCornerShape(5.dp)).background(Brush.horizontalGradient(listOf(Color(0xFF66BB6A), levelColor))))
+                }
             }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {

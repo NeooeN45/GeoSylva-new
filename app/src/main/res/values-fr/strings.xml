@@ -1153,6 +1153,10 @@
     <string name="ibp_projects_title">Évaluations IBP</string>
     <string name="ibp_projects_empty">Aucune évaluation IBP pour l\'instant</string>
     <string name="ibp_projects_empty_hint">Ouvrez une placette et lancez une évaluation IBP depuis l\'écran de détail de la placette.</string>
+    <string name="ibp_create_select_parcelle">Sélectionner une parcelle</string>
+    <string name="ibp_create_select_placette">Sélectionner une placette</string>
+    <string name="ibp_create_no_parcelle">Aucune parcelle trouvée. Créez d\'abord une parcelle.</string>
+    <string name="ibp_create_no_placette">Aucune placette dans cette parcelle. Ajoutez d\'abord une placette.</string>
 
     <!-- Avertissement GPS imprécis dans la carte -->
     <string name="map_gps_poor_warning">%1$d tige(s) avec GPS imprécis (&gt;20 m) · toucher pour masquer</string>

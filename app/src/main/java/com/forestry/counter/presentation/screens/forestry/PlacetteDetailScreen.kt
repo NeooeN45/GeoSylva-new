@@ -205,6 +205,14 @@ fun PlacetteDetailScreen(
                             Icon(Icons.Default.Description, contentDescription = stringResource(R.string.martelage))
                         }
                     }
+                    if (onNavigateToIbp != null) {
+                        IconButton(onClick = {
+                            playClickFeedback()
+                            onNavigateToIbp(parcelleId, placetteId)
+                        }) {
+                            Icon(Icons.Default.EmojiNature, contentDescription = stringResource(R.string.ibp_start), tint = Color(0xFF2E7D32))
+                        }
+                    }
                     IconButton(onClick = {
                         playClickFeedback()
                         searchActive = !searchActive

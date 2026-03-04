@@ -3,10 +3,13 @@ package com.forestry.counter.presentation.screens.forestry
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -23,6 +26,8 @@ import com.forestry.counter.R
 import com.forestry.counter.domain.model.IbpEvaluation
 import com.forestry.counter.domain.model.IbpLevel
 import com.forestry.counter.domain.repository.IbpRepository
+import com.forestry.counter.domain.model.Parcelle
+import com.forestry.counter.domain.model.Placette
 import com.forestry.counter.domain.repository.PlacetteRepository
 import com.forestry.counter.domain.repository.ParcelleRepository
 import kotlinx.coroutines.flow.first
@@ -68,6 +73,7 @@ fun IbpProjectsScreen(
     val placetteNames by placetteNamesState
 
     var showDeleteDialog by remember { mutableStateOf<IbpEvaluation?>(null) }
+    var showCreateDialog by remember { mutableStateOf(false) }
 
     val grouped = remember(evaluations) {
         evaluations
@@ -86,7 +92,14 @@ fun IbpProjectsScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbar) }
+        snackbarHost = { SnackbarHost(snackbar) },
+        floatingActionButton = {
+            if (parcelleRepository != null && placetteRepository != null) {
+                FloatingActionButton(onClick = { showCreateDialog = true }) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.ibp_start))
+                }
+            }
+        }
     ) { padding ->
         if (evaluations.isEmpty()) {
             Box(
@@ -170,6 +183,18 @@ fun IbpProjectsScreen(
                 }
             }
         }
+    }
+
+    if (showCreateDialog && parcelleRepository != null && placetteRepository != null) {
+        IbpCreateDialog(
+            parcelleRepository = parcelleRepository,
+            placetteRepository = placetteRepository,
+            onDismiss = { showCreateDialog = false },
+            onCreate = { parcelleId, placetteId ->
+                showCreateDialog = false
+                onOpenEvaluation(parcelleId, placetteId, null)
+            }
+        )
     }
 
     showDeleteDialog?.let { eval ->
@@ -300,4 +325,129 @@ private fun IbpProjectCard(
             }
         }
     }
+}
+
+@Composable
+private fun IbpCreateDialog(
+    parcelleRepository: ParcelleRepository,
+    placetteRepository: PlacetteRepository,
+    onDismiss: () -> Unit,
+    onCreate: (parcelleId: String, placetteId: String) -> Unit
+) {
+    val parcelles by parcelleRepository.getAllParcelles().collectAsState(initial = emptyList())
+    var selectedParcelle by remember { mutableStateOf<Parcelle?>(null) }
+    var placettes by remember { mutableStateOf(listOf<Placette>()) }
+    var selectedPlacette by remember { mutableStateOf<Placette?>(null) }
+    var loadingPlacettes by remember { mutableStateOf(false) }
+
+    LaunchedEffect(selectedParcelle) {
+        val p = selectedParcelle ?: return@LaunchedEffect
+        loadingPlacettes = true
+        placettes = runCatching {
+            placetteRepository.getPlacettesByParcelle(p.id).first()
+        }.getOrElse { emptyList() }
+        selectedPlacette = null
+        loadingPlacettes = false
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Default.EmojiNature, contentDescription = null, tint = Color(0xFF2E7D32)) },
+        title = {
+            Text(
+                if (selectedParcelle == null) stringResource(R.string.ibp_create_select_parcelle)
+                else stringResource(R.string.ibp_create_select_placette)
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 360.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                if (selectedParcelle == null) {
+                    if (parcelles.isEmpty()) {
+                        Text(
+                            stringResource(R.string.ibp_create_no_parcelle),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        parcelles.forEach { parcelle ->
+                            ListItem(
+                                headlineContent = { Text(parcelle.name, fontWeight = FontWeight.Medium) },
+                                leadingContent = {
+                                    Icon(Icons.Default.EmojiNature, contentDescription = null,
+                                        tint = Color(0xFF2E7D32), modifier = Modifier.size(20.dp))
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectedParcelle = parcelle }
+                            )
+                            HorizontalDivider()
+                        }
+                    }
+                } else {
+                    TextButton(
+                        onClick = { selectedParcelle = null; selectedPlacette = null },
+                        contentPadding = PaddingValues(horizontal = 0.dp)
+                    ) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(selectedParcelle!!.name, style = MaterialTheme.typography.labelMedium)
+                    }
+                    HorizontalDivider()
+                    Spacer(Modifier.height(4.dp))
+                    if (loadingPlacettes) {
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                        }
+                    } else if (placettes.isEmpty()) {
+                        Text(
+                            stringResource(R.string.ibp_create_no_placette),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        placettes.forEach { placette ->
+                            val isSelected = selectedPlacette?.id == placette.id
+                            ListItem(
+                                headlineContent = {
+                                    Text(
+                                        placette.name?.takeIf { it.isNotBlank() } ?: placette.id.take(8),
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                },
+                                trailingContent = if (isSelected) ({
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                }) else null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectedPlacette = placette }
+                            )
+                            HorizontalDivider()
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val pid = selectedParcelle?.id ?: return@TextButton
+                    val plid = selectedPlacette?.id ?: return@TextButton
+                    onCreate(pid, plid)
+                },
+                enabled = selectedParcelle != null && selectedPlacette != null
+            ) {
+                Text(stringResource(R.string.ibp_start))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        }
+    )
 }
