@@ -206,7 +206,8 @@ fun TreeHeightMeasureDialog(
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             }
                         },
-                        onRecapture = { angleTop = null; autoCaptureProgress = 0f }
+                        onRecapture       = { angleTop = null; autoCaptureProgress = 0f },
+                        onCameraCapture   = { deg -> angleTop = deg; haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
                     )
                     MeasureStep.ANGLE_BASE -> AngleCaptureStep(
                         label               = stringResource(R.string.height_measure_aim_base),
@@ -226,7 +227,8 @@ fun TreeHeightMeasureDialog(
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             }
                         },
-                        onRecapture = { angleBase = null; autoCaptureProgress = 0f }
+                        onRecapture       = { angleBase = null; autoCaptureProgress = 0f },
+                        onCameraCapture   = { deg -> angleBase = deg; haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
                     )
                     MeasureStep.RESULT -> ResultStep(
                         result      = result,
@@ -489,9 +491,20 @@ private fun AngleCaptureStep(
     manualInput: String,
     onManualChange: (String) -> Unit,
     onCapture: () -> Unit,
-    onRecapture: () -> Unit
+    onRecapture: () -> Unit,
+    onCameraCapture: (Double) -> Unit = {}
 ) {
     val warningColor = Color(0xFFE65100)
+    var showCameraAim by remember { mutableStateOf(false) }
+
+    if (showCameraAim) {
+        HeightCameraAimOverlay(
+            liveAngle    = liveAngle,
+            isBaseAngle  = isBaseAngle,
+            onCapture    = { deg -> showCameraAim = false; onCameraCapture(deg) },
+            onDismiss    = { showCameraAim = false }
+        )
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -576,13 +589,25 @@ private fun AngleCaptureStep(
             }
 
             if (capturedAngle == null) {
-                FilledTonalButton(
-                    onClick  = onCapture,
-                    enabled  = stability > 0.35f
-                ) {
-                    Icon(Icons.Default.Adjust, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.height_measure_capture))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilledTonalButton(
+                        onClick = onCapture,
+                        enabled = stability > 0.35f
+                    ) {
+                        Icon(Icons.Default.Adjust, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(stringResource(R.string.height_measure_capture))
+                    }
+                    FilledTonalButton(
+                        onClick = { showCameraAim = true },
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                    ) {
+                        Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(stringResource(R.string.height_camera_aim_button))
+                    }
                 }
             } else {
                 // Résultat capturé + bouton recapturer

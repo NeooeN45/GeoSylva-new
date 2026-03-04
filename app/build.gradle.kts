@@ -135,6 +135,12 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
+    // CameraX — viseur caméra AR pour mesure des hauteurs
+    val cameraXVersion = "1.3.3"
+    implementation("androidx.camera:camera-camera2:$cameraXVersion")
+    implementation("androidx.camera:camera-lifecycle:$cameraXVersion")
+    implementation("androidx.camera:camera-view:$cameraXVersion")
+
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.7")
 

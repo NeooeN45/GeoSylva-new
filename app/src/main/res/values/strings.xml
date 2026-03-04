@@ -985,7 +985,11 @@
     <string name="height_measure_angle_warning_low">Very low angle (&lt; 5°) — you may be too far away, or the tree is very short.</string>
     <string name="height_measure_angle_warning_base_pos">Base angle should be negative (phone pointing downward).</string>
     <string name="height_measure_distance_chips">Quick select:</string>
-    <string name="height_measure_tip_steps">Tip: 1 adult step ≈ 0.7 m. Count your steps and multiply.</string>
+    <string name="height_measure_tip_steps">Tip: 1 adult step ≈ 0.7 m. Count your steps and multiply.</string>
+    <string name="height_camera_aim_button">Camera</string>
+    <string name="height_camera_permission_needed">Camera permission is required to use the AR viewfinder. Please grant the permission to aim at the treetop with the live camera feed.</string>
+    <string name="height_camera_grant">Grant permission</string>
+    <string name="height_camera_stabilize">Keep the phone steady, pointing at the treetop…</string>
 
     <!-- Share synthèse -->
     <string name="share">Share</string>

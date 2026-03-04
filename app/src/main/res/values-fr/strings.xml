@@ -981,7 +981,11 @@
     <string name="height_measure_angle_warning_low">Angle très faible (&lt;…5°) — vous êtes peut-être trop loin, ou l’arbre est très court.</string>
     <string name="height_measure_angle_warning_base_pos">L’angle à la base doit être négatif (téléphone incliné vers le bas).</string>
     <string name="height_measure_distance_chips">Sélection rapide :</string>
-    <string name="height_measure_tip_steps">Astuce : 1 pas adulte ≈ 0,7 m. Comptez vos pas et multipliez.</string>
+    <string name="height_measure_tip_steps">Astuce : 1 pas adulte ≈ 0,7 m. Comptez vos pas et multipliez.</string>
+    <string name="height_camera_aim_button">Caméra</string>
+    <string name="height_camera_permission_needed">L\'autorisation caméra est requise pour utiliser le viseur AR. Accordez la permission pour viser la cime avec l\'aperçu caméra en direct.</string>
+    <string name="height_camera_grant">Accorder la permission</string>
+    <string name="height_camera_stabilize">Maintenez le téléphone stable, pointé vers la cime…</string>
 
     <!-- Share synthèse -->
     <string name="share">Partager</string>
