@@ -1063,25 +1063,25 @@
     <string name="ibp_edit">Edit IBP</string>
     <string name="ibp_delete">Delete IBP</string>
     <string name="ibp_delete_confirm">Delete this IBP evaluation?</string>
-    <string name="ibp_in_martelage">IBP: %1$s / 20 (%2$s)</string>
+    <string name="ibp_in_martelage">IBP: %1$s / 50 (%2$s)</string>
     <string name="ibp_not_done">IBP: not assessed</string>
     <string name="ibp_history_title">IBP History</string>
     <string name="ibp_onboarding_title_1">Welcome to IBP</string>
     <string name="ibp_onboarding_body_1">The Potential Biodiversity Index (IBP) evaluates the biodiversity of a forest stand through 10 criteria grouped in two categories.</string>
     <string name="ibp_onboarding_title_2">Group A — Stand (7 criteria)</string>
-    <string name="ibp_onboarding_body_2">E1, E2: species richness. GB: large trees. BMS/BMC: standing/lying deadwood. DMH: micro-habitats. VS: shrub layer. Max score: 14 pts.</string>
+    <string name="ibp_onboarding_body_2">E1, E2: species richness. GB: large trees. BMS/BMC: standing/lying deadwood. DMH: micro-habitats. VS: shrub layer. Each criterion scores 0, 2 or 5 pts. Group A max: 35 pts.</string>
     <string name="ibp_onboarding_title_3">Group B — Context (3 criteria)</string>
-    <string name="ibp_onboarding_body_3">CF: adjacent habitats. CO: forest continuity. HC: forest cover %. Max score: 6 pts. Total IBP = A + B (max 20).</string>
+    <string name="ibp_onboarding_body_3">CF: forest age/continuity. CO: connections to natural habitats. HC: complementary habitats. Group B max: 15 pts. IBP total = A + B (max 50 pts).</string>
     <string name="ibp_onboarding_next">Next</string>
     <string name="ibp_onboarding_start">Start evaluation</string>
     <string name="ibp_evolution_title">Score evolution</string>
 
     <!-- IBP Groups -->
     <string name="ibp_group_a_title">Group A — Stand</string>
-    <string name="ibp_group_a_subtitle">7 criteria evaluated in the stand (max. 14 pts)</string>
+    <string name="ibp_group_a_subtitle">7 criteria evaluated in the stand — 0, 2 or 5 pts each (max. 35 pts)</string>
     <string name="ibp_group_a_short">Group A</string>
     <string name="ibp_group_b_title">Group B — Context</string>
-    <string name="ibp_group_b_subtitle">3 criteria at the landscape scale (max. 6 pts)</string>
+    <string name="ibp_group_b_subtitle">3 criteria at the landscape scale — 0, 2 or 5 pts each (max. 15 pts)</string>
     <string name="ibp_group_b_short">Group B</string>
 
     <!-- IBP Levels -->
@@ -1182,6 +1182,28 @@
     <string name="ibp_hc_o0">No complementary habitat present</string>
     <string name="ibp_hc_o1">1 type of complementary habitat</string>
     <string name="ibp_hc_o2">2 or more types of complementary habitats</string>
+
+    <!-- IBP Growth Conditions (IBP v3) -->
+    <string name="ibp_growth_conditions">Growth conditions</string>
+    <string name="ibp_growth_lowland">Lowland / Hill (&lt;900 m)</string>
+    <string name="ibp_growth_highland">Mountain (&gt;900 m)</string>
+    <string name="ibp_growth_subalpine">Subalpine</string>
+    <string name="ibp_growth_mediterranean">Mediterranean</string>
+
+    <!-- IBP Priority improvements -->
+    <string name="ibp_priority_improvements">Priority improvements</string>
+
+    <!-- IBP Per-criterion actionable tips -->
+    <string name="ibp_tip_e1">Favour oak, beech or native willows in future planting or natural regeneration.</string>
+    <string name="ibp_tip_e2">Maintain or introduce native shrub species to increase species richness.</string>
+    <string name="ibp_tip_gb">Retain large trees (≥67.5 cm DBH) permanently as biological legacies.</string>
+    <string name="ibp_tip_bms">Keep at least 4 snags per ha; ring-bark trees if necessary to create new ones.</string>
+    <string name="ibp_tip_bmc">Leave all fallen logs ≥20 cm diameter; target ≥3 m³/ha on the ground.</string>
+    <string name="ibp_tip_dmh">Mark and protect trees bearing cavities, sap runs, nests or fungal brackets.</string>
+    <string name="ibp_tip_vs">Reduce shade or create gaps to allow shrub and herb layer to develop.</string>
+    <string name="ibp_tip_cf">Protect old trees to extend forest continuity; document stand age.</string>
+    <string name="ibp_tip_co">Plant or preserve hedgerows and buffer strips connecting natural habitats.</string>
+    <string name="ibp_tip_hc">Preserve ponds, rocky outcrops or wetlands within or at the edge of the stand.</string>
 
     <!-- IBP Projects screen -->
     <string name="ibp_projects_title">IBP Evaluations</string>

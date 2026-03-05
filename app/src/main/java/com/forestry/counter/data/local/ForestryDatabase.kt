@@ -36,7 +36,7 @@ import com.forestry.counter.data.local.entity.ParameterEntity
         ParameterEntity::class,
         IbpEvaluationEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = true
 )
 abstract class ForestryDatabase : RoomDatabase() {

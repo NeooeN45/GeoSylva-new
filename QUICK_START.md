@@ -1,234 +1,175 @@
-# 🚀 Quick Start Guide - GéoSylva
+# 🚀 Guide de Démarrage Rapide — GeoSylva 1.7.0
 
-## Installation Rapide
-
-### 1. Ouvrir le Projet
-```bash
-# Dans Android Studio
-File → Open → Sélectionner le dossier "multi counter forestier"
-```
-
-### 2. Synchroniser Gradle
-Android Studio va automatiquement détecter et télécharger les dépendances.
-Si ce n'est pas le cas:
-```bash
-File → Sync Project with Gradle Files
-```
-
-### 3. Configurer un Appareil
-**Option A: Appareil Physique**
-- Activer le mode développeur sur votre téléphone Android
-- Activer le débogage USB
-- Connecter via USB
-
-**Option B: Émulateur**
-- Tools → Device Manager → Create Device
-- Choisir Pixel 6 ou similaire
-- API Level 35 (Android 14) recommandé
-
-### 4. Lancer l'Application
-```bash
-# Click sur le bouton Run (▶) ou
-Run → Run 'app'
-# Ou raccourci: Shift+F10
-```
-
-## Premiers Pas dans l'App
-
-### Créer un Groupe
-1. Écran d'accueil
-2. Cliquer sur le bouton flottant `+`
-3. Entrer "Parcelle A" comme nom
-4. Cliquer sur "Create"
-
-### Ajouter des Compteurs
-1. Ouvrir le groupe "Parcelle A"
-2. Cliquer sur `+`
-3. Remplir:
-   - Nom: "Hêtre 15-20"
-   - Step: 1
-   - Target: 50 (optionnel)
-4. Cliquer sur "Create"
-5. Répéter pour d'autres essences
-
-### Compter
-- **Tap simple** sur une carte → +1
-- **Long press** → Menu d'options
-  - Reset
-  - Dupliquer
-  - Supprimer
-
-### Créer une Formule (Future)
-```javascript
-// Total Hêtres
-sum(name:startsWith("Hêtre"))
-
-// Densité/ha (avec variable PLOT_AREA=2000)
-sum(*) * (10000 / PLOT_AREA)
-```
-
-## Structure du Projet
-
-```
-multi counter forestier/
-├── app/
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/com/forestry/counter/
-│   │   │   │   ├── data/           # Persistence
-│   │   │   │   ├── domain/         # Logique métier
-│   │   │   │   └── presentation/   # UI
-│   │   │   ├── res/                # Resources
-│   │   │   └── AndroidManifest.xml
-│   │   └── test/                   # Tests
-│   └── build.gradle.kts
-├── build.gradle.kts
-├── settings.gradle.kts
-└── README.md
-```
-
-## Commandes Utiles
-
-### Build
-```bash
-# Debug APK
-./gradlew assembleDebug
-
-# Release APK (signé)
-./gradlew assembleRelease
-
-# Android App Bundle (Play Store)
-./gradlew bundleRelease
-```
-
-### Tests
-```bash
-# Tests unitaires
-./gradlew test
-
-# Tests instrumentés
-./gradlew connectedAndroidTest
-
-# Test coverage
-./gradlew testDebugUnitTestCoverage
-```
-
-### Clean
-```bash
-# Nettoyer les builds
-./gradlew clean
-
-# Nettoyer + rebuild
-./gradlew clean build
-```
-
-## Troubleshooting
-
-### Erreur de Sync Gradle
-```bash
-# Solution 1: Invalider le cache
-File → Invalidate Caches → Invalidate and Restart
-
-# Solution 2: Supprimer les caches manuellement
-rm -rf ~/.gradle/caches/
-rm -rf .gradle/
-
-# Re-sync
-./gradlew clean build
-```
-
-### Émulateur Lent
-```bash
-# Augmenter la RAM de l'émulateur
-Tools → Device Manager → Edit → Advanced → RAM: 4096 MB
-
-# Activer l'accélération matérielle
-Settings → Emulated Performance → Graphics: Hardware
-```
-
-### Erreur de Build APK
-```bash
-# Vérifier la version Java
-java -version  # Doit être JDK 17
-
-# Vérifier les variables d'environnement
-echo $JAVA_HOME
-echo $ANDROID_HOME
-```
-
-### Import Gradle Échoue
-```bash
-# Vérifier la connexion internet (télécharge dépendances)
-# Vérifier proxy si nécessaire
-
-# Forcer le téléchargement
-./gradlew build --refresh-dependencies
-```
-
-## Exemples de Code
-
-### Créer un Compteur Programmatiquement
-```kotlin
-val counter = Counter(
-    id = UUID.randomUUID().toString(),
-    groupId = "group-id",
-    name = "Chêne 20-25",
-    value = 0.0,
-    step = 1.0,
-    targetValue = 100.0,
-    tags = listOf("Feuillus", "Chêne")
-)
-counterRepository.insertCounter(counter)
-```
-
-### Évaluer une Formule
-```kotlin
-val result = formulaParser.evaluate(
-    expression = "sum(name:startsWith('Hêtre'))",
-    counters = allCounters,
-    variables = mapOf("PLOT_AREA" to 2000.0)
-)
-```
-
-### Exporter en JSON
-```kotlin
-val uri = // URI du fichier de destination
-exportDataUseCase.exportToJson(uri)
-```
-
-## Configuration Recommandée
-
-### Android Studio
-- Version: Hedgehog (2023.1.1) ou supérieur
-- Plugins:
-  - Kotlin (installé par défaut)
-  - Android Gradle Plugin
-  - Jetpack Compose (installé par défaut)
-
-### SDK
-- Compile SDK: 35
-- Min SDK: 24 (Android 7.0)
-- Target SDK: 35 (Android 14)
-
-### Gradle
-- Version: 8.2
-- JVM: JDK 17
-
-## Ressources
-
-- [Documentation Jetpack Compose](https://developer.android.com/jetpack/compose)
-- [Room Database](https://developer.android.com/training/data-storage/room)
-- [Material 3 Design](https://m3.material.io/)
-- [Kotlin Coroutines](https://kotlinlang.org/docs/coroutines-overview.html)
-
-## Support
-
-**Problèmes?** Ouvrir une issue sur GitHub avec:
-1. Description du problème
-2. Logs d'erreur
-3. Version Android Studio
-4. Version Android du téléphone/émulateur
+> Application Android professionnelle d'inventaire forestier, martelage et biodiversité. 100% hors-ligne.
 
 ---
 
-**Happy Coding! 🌲**
+## 1. Prérequis & Build
+
+| Outil | Version requise |
+|---|---|
+| Android Studio | Ladybug (2024.2)+ |
+| JDK | 17 |
+| Compile / Target SDK | 35 |
+| Min SDK | 26 (Android 8.0) |
+| Gradle | 8.2+ |
+
+```bash
+# Cloner
+git clone https://github.com/NeooeN45/GeoSylva-new.git
+
+# Ouvrir dans Android Studio
+File → Open → Sélectionner le dossier GeoSylva
+```
+
+## 2. Commandes de build
+
+```bash
+# Build debug (développement)
+./gradlew assembleDebug
+
+# Build release (APK signé — nécessite keystore.properties)
+./gradlew assembleRelease
+# → app/build/outputs/apk/release/
+
+# Bundle Play Store (AAB)
+./gradlew bundleRelease
+
+# Tests unitaires
+./gradlew testDebugUnitTest
+
+# Vérification Kotlin rapide
+./gradlew :app:compileDebugKotlin --no-daemon
+
+# Nettoyage
+./gradlew clean
+```
+
+---
+
+## 3. Premier inventaire en 5 minutes
+
+### Étape 1 — Créer une forêt (parcelle)
+1. Écran d'accueil → **+** flottant
+2. Nommer la parcelle (ex. "Forêt du Breuil")
+3. Valider
+
+### Étape 2 — Créer une placette
+1. Ouvrir la parcelle → **+**
+2. Nommer la placette et indiquer la **surface (ha)** — indispensable pour N/ha et G/ha
+3. Optionnel : 📍 pour enregistrer les coordonnées GPS du centre
+
+### Étape 3 — Saisir les tiges
+1. Ouvrir la placette → **Inventaire**
+2. Taper sur une essence pour ouvrir la grille de diamètres
+3. Boutons **+/−** par classe de diamètre (20-25, 25-30 cm…)
+4. Le **G/ha en temps réel** s'affiche pendant la saisie
+5. Pour mesurer une hauteur : icône 📏 → clinomètre numérique intégré
+
+### Étape 4 — Synthèse & Martelage
+- Onglet **Martelage** → N/ha, G/ha, V/ha, Dg, Hdom, valorisation par essence
+- Onglet **Écologie** → évaluation IBP biodiversité
+- Bouton tableau de bord (📊) → graphiques donut/barres
+
+---
+
+## 4. Clinomètre numérique
+
+1. Grille de saisie → icône hauteur sur une essence
+2. Choisir la distance (chips 10/15/20/25 m ou saisie libre)
+3. Pointer vers la **cime** → capture auto après 1,5 s de stabilité
+4. Pointer vers la **base** si terrain en pente
+5. Hauteur appliquée automatiquement à toutes les classes vides
+
+| Capteur | Précision |
+|---|---|
+| Vecteur rotation | ±0,5° |
+| Gyro + accéléromètre | ±1° |
+| Accéléromètre seul | ±2° |
+| Saisie manuelle | — |
+
+---
+
+## 5. IBP — Biodiversité (CNPF officiel)
+
+**Accès** : onglet Écologie → *Évaluer l\'IBP*, ou menu → *Évaluations IBP*
+
+| Score | Signification | Couleur |
+|---|---|---|
+| 0 pt | Absent | Rouge |
+| 2 pts | Insuffisant | Ambre |
+| 5 pts | Bon à excellent | Vert |
+
+| Groupe | Critères | Max |
+|---|---|---|
+| A — Peuplement | E1, E2, GB, BMS, BMC, DMH, VS | 35 pts |
+| B — Contexte | CF, CO, HC | 15 pts |
+| **Total** | 10 critères | **50 pts** |
+
+| Score | Niveau |
+|---|---|
+| 0–9 | Très faible |
+| 10–19 | Faible |
+| 20–29 | Moyen |
+| 30–39 | Bon |
+| 40–50 | Très bon |
+
+Après les 10 critères, le résultat affiche le score /50, les **3 améliorations prioritaires** avec conseil actionnable, et un **radar chart** normalisé.
+
+---
+
+## 6. Cartographie
+
+- **12 couches** : OSM, IGN, Satellite, Cadastre, Forêts, Topographique…
+- **Tuiles hors-ligne** : bouton ☁ → télécharger la zone → 0% réseau requis ensuite
+- **Outil de mesure** : tracé distances (m/km) et surfaces (m²/ares/ha), 8 couleurs
+- **Import Shapefile** : superposer couches parcellaires
+
+---
+
+## 7. Exports
+
+| Format | Usage |
+|---|---|
+| PDF | Rapport A4 complet dendrométrie + valorisation |
+| PDF IBP | Rapport biodiversité avec niveaux et recommandations |
+| Shapefile | .shp/.shx/.dbf/.prj pour QGIS / ArcGIS |
+| GeoJSON | Lambert 93, intégration SIG |
+| CSV / CSV-XY | Tabulaire avec coordonnées |
+| XLSX | Multi-feuilles avec métadonnées |
+
+---
+
+## 8. Base de données (DB v13)
+
+Migrations Room automatiques v1 → v13. Tables principales :
+
+```
+parcelles, placettes, tree_stems, essences
+ibp_evaluations   ← scoreA, scoreB, growthConditions, answersJson (schemaV2)
+```
+
+---
+
+## 9. Troubleshooting courant
+
+| Symptôme | Solution |
+|---|---|
+| Apostrophe AAPT2 FR | Utiliser `\'` dans strings.xml |
+| Crash release (ProGuard) | Vérifier keep rules Room + `IbpAnswers.serializer()` explicite |
+| Gradle sync échoue | File → Invalidate Caches; `./gradlew clean build --refresh-dependencies` |
+| IBP scores incohérents | `migrateToV2()` se déclenche auto au chargement |
+
+---
+
+## 10. Ressources
+
+- [IBP CNPF officiel](https://www.cnpf.fr/nos-actions-nos-outils/outils-et-techniques/ibp-indice-de-biodiversite-potentielle)
+- [Jetpack Compose](https://developer.android.com/jetpack/compose)
+- [Room Database](https://developer.android.com/training/data-storage/room)
+- [MapLibre GL Native Android](https://maplibre.org/maplibre-native/android/api/)
+- [Material 3](https://m3.material.io/)
+
+---
+
+*GeoSylva 1.7.0 — Conçu par des forestiers, pour les forestiers. 🌲*

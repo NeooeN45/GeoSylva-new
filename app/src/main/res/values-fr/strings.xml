@@ -1059,25 +1059,25 @@
     <string name="ibp_edit">Modifier l\'IBP</string>
     <string name="ibp_delete">Supprimer l\'IBP</string>
     <string name="ibp_delete_confirm">Supprimer cette évaluation IBP ?</string>
-    <string name="ibp_in_martelage">IBP : %1$s / 20 (%2$s)</string>
+    <string name="ibp_in_martelage">IBP : %1$s / 50 (%2$s)</string>
     <string name="ibp_not_done">IBP : non évalué</string>
     <string name="ibp_history_title">Historique IBP</string>
     <string name="ibp_onboarding_title_1">Bienvenue dans l\'IBP</string>
     <string name="ibp_onboarding_body_1">L\'Indice de Biodiversité Potentielle (IBP) évalue la biodiversité d\'un peuplement forestier à travers 10 critères répartis en deux groupes.</string>
     <string name="ibp_onboarding_title_2">Groupe A — Peuplement (7 critères)</string>
-    <string name="ibp_onboarding_body_2">E1, E2 : richesse en essences. GB : très gros bois. BMS/BMC : bois mort debout/couché. DMH : micro-habitats. VS : végétation du sous-bois. Score max : 14 pts.</string>
+    <string name="ibp_onboarding_body_2">E1, E2 : richesse en essences. GB : très gros bois. BMS/BMC : bois mort debout/couché. DMH : micro-habitats. VS : végétation du sous-bois. Chaque critère : 0, 2 ou 5 pts. Groupe A max : 35 pts.</string>
     <string name="ibp_onboarding_title_3">Groupe B — Contexte (3 critères)</string>
-    <string name="ibp_onboarding_body_3">CF : habitats adjacents. CO : continuité forestière. HC : taux de couverture. Score max : 6 pts. IBP total = A + B (max 20).</string>
+    <string name="ibp_onboarding_body_3">CF : ancienneté/continuité. CO : connexions aux habitats naturels. HC : habitats complémentaires. Groupe B max : 15 pts. IBP total = A + B (max 50 pts).</string>
     <string name="ibp_onboarding_next">Suivant</string>
     <string name="ibp_onboarding_start">Démarrer l\'évaluation</string>
     <string name="ibp_evolution_title">Évolution du score</string>
 
     <!-- IBP Groupes -->
     <string name="ibp_group_a_title">Groupe A — Peuplement</string>
-    <string name="ibp_group_a_subtitle">7 critères évalués dans le peuplement (max. 14 pts)</string>
+    <string name="ibp_group_a_subtitle">7 critères évalués dans le peuplement — 0, 2 ou 5 pts chacun (max. 35 pts)</string>
     <string name="ibp_group_a_short">Groupe A</string>
     <string name="ibp_group_b_title">Groupe B — Contexte</string>
-    <string name="ibp_group_b_subtitle">3 critères à l\'échelle du paysage (max. 6 pts)</string>
+    <string name="ibp_group_b_subtitle">3 critères à l\'échelle du paysage — 0, 2 ou 5 pts chacun (max. 15 pts)</string>
     <string name="ibp_group_b_short">Groupe B</string>
 
     <!-- IBP Niveaux -->
@@ -1178,6 +1178,28 @@
     <string name="ibp_hc_o0">Aucun habitat complémentaire présent</string>
     <string name="ibp_hc_o1">1 type d\'habitat complémentaire</string>
     <string name="ibp_hc_o2">2 types ou plus d\'habitats complémentaires</string>
+
+    <!-- Conditions de croissance IBP (IBP v3) -->
+    <string name="ibp_growth_conditions">Conditions de croissance</string>
+    <string name="ibp_growth_lowland">Plaine / Colline (&lt;900 m)</string>
+    <string name="ibp_growth_highland">Montagne (&gt;900 m)</string>
+    <string name="ibp_growth_subalpine">Sub-alpin</string>
+    <string name="ibp_growth_mediterranean">Méditerranéen</string>
+
+    <!-- IBP Améliorations prioritaires -->
+    <string name="ibp_priority_improvements">Améliorations prioritaires</string>
+
+    <!-- IBP Conseils par critère -->
+    <string name="ibp_tip_e1">Favoriser chêne, hêtre ou saules indigènes lors des plantations ou de la régénération naturelle.</string>
+    <string name="ibp_tip_e2">Maintenir ou introduire des espèces arbustives indigènes pour enrichir la diversité.</string>
+    <string name="ibp_tip_gb">Conserver définitivement les gros bois (&gt;= 67,5 cm) comme arbres biologiques de référence.</string>
+    <string name="ibp_tip_bms">Maintenir au moins 4 chicots par ha ; anneler des arbres si nécessaire pour en créer.</string>
+    <string name="ibp_tip_bmc">Laisser tous les troncs &gt;= 20 cm de diamètre ; objectif &gt;= 3 m³/ha au sol.</string>
+    <string name="ibp_tip_dmh">Marquer et protéger les arbres porteurs de cavités, coulées de sève, nids ou carpophores.</string>
+    <string name="ibp_tip_vs">Réduire l\'ombre ou créer des trouées pour permettre le développement du sous-bois.</string>
+    <string name="ibp_tip_cf">Protéger les vieux arbres pour prolonger la continuité forestière ; documenter l\'âge du peuplement.</string>
+    <string name="ibp_tip_co">Planter ou préserver haies et bandes tampons reliant les habitats naturels.</string>
+    <string name="ibp_tip_hc">Préserver mares, affleurements rocheux ou zones humides dans ou en bordure du peuplement.</string>
 
     <!-- Écran IBP Projets -->
     <string name="ibp_projects_title">Évaluations IBP</string>

@@ -20,5 +20,6 @@ data class IbpEvaluationEntity(
     val updatedAt: Long,
     val evaluatorName: String = "",
     val answersJson: String = "{}",
-    val globalNote: String = ""
+    val globalNote: String = "",
+    val growthConditions: String = "LOWLAND"
 )

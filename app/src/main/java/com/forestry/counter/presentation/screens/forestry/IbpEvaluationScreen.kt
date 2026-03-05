@@ -76,14 +76,20 @@ fun IbpEvaluationScreen(
         val serializer = IbpAnswers.serializer()
         mapSaver<IbpAnswers>(
             save = { mapOf(key to safeJson.encodeToString(serializer, it)) },
-            restore = { map -> runCatching { safeJson.decodeFromString(serializer, map[key] as String) }.getOrElse { IbpAnswers() } }
+            restore = { map -> runCatching {
+            val raw = safeJson.decodeFromString(serializer, map[key] as String)
+            if (raw.schemaVersion < 2) raw.migrateToV2() else raw
+        }.getOrElse { IbpAnswers.new() } }
         )
     }
-    var answers by rememberSaveable(stateSaver = ibpAnswersSaver) { mutableStateOf(IbpAnswers()) }
+    var answers by rememberSaveable(stateSaver = ibpAnswersSaver) { mutableStateOf(IbpAnswers.new()) }
     var evaluatorName by rememberSaveable { mutableStateOf("") }
     var globalNote by rememberSaveable { mutableStateOf("") }
     var observationDate by rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
+    var growthConditionsStr by rememberSaveable { mutableStateOf(IbpGrowthConditions.LOWLAND.name) }
     var initialized by rememberSaveable { mutableStateOf(false) }
+
+    val growthConditions = runCatching { IbpGrowthConditions.valueOf(growthConditionsStr) }.getOrElse { IbpGrowthConditions.LOWLAND }
 
     val placetteFlow = remember(placetteRepository, placetteId) {
         placetteRepository?.getPlacetteById(placetteId) ?: kotlinx.coroutines.flow.flowOf(null)
@@ -97,6 +103,7 @@ fun IbpEvaluationScreen(
             evaluatorName = existing!!.evaluatorName
             globalNote = existing!!.globalNote
             observationDate = existing!!.observationDate
+            growthConditionsStr = existing!!.growthConditions.name
             initialized = true
         } else if (!initialized && evaluationId == null) {
             initialized = true
@@ -128,7 +135,8 @@ fun IbpEvaluationScreen(
                     updatedAt = System.currentTimeMillis(),
                     evaluatorName = evaluatorName,
                     answers = answers,
-                    globalNote = globalNote
+                    globalNote = globalNote,
+                    growthConditions = growthConditions
                 )
                 runCatching {
                     context.contentResolver.openOutputStream(uri)?.use { out ->
@@ -155,7 +163,8 @@ fun IbpEvaluationScreen(
                 updatedAt = now,
                 evaluatorName = evaluatorName,
                 answers = answers,
-                globalNote = globalNote
+                globalNote = globalNote,
+                growthConditions = growthConditions
             )
             ibpRepository.save(eval)
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -163,10 +172,11 @@ fun IbpEvaluationScreen(
         }
     }
 
-    val savedAnswers = existing?.answers ?: IbpAnswers()
+    val savedAnswers = existing?.answers ?: IbpAnswers.new()
     val savedName = existing?.evaluatorName ?: ""
     val savedNote = existing?.globalNote ?: ""
-    val hasUnsavedChanges = initialized && (answers != savedAnswers || evaluatorName != savedName || globalNote != savedNote)
+    val savedConditions = existing?.growthConditions ?: IbpGrowthConditions.LOWLAND
+    val hasUnsavedChanges = initialized && (answers != savedAnswers || evaluatorName != savedName || globalNote != savedNote || growthConditions != savedConditions)
 
     BackHandler(enabled = hasUnsavedChanges) { showUnsavedDialog = true }
 
@@ -231,12 +241,14 @@ fun IbpEvaluationScreen(
                 level = level
             )
 
-            // ── Meta (evaluator + date) ────────────────────────────
+            // ── Meta (evaluator + date + growth conditions) ────────────────────────────
             IbpMetaSection(
                 evaluatorName = evaluatorName,
                 onEvaluatorChange = { evaluatorName = it },
                 observationDate = observationDate,
-                onDateClick = { showDatePicker = true }
+                onDateClick = { showDatePicker = true },
+                growthConditions = growthConditions,
+                onGrowthConditionsChange = { growthConditionsStr = it.name }
             )
 
             // ── Group A ─────────────────────────────────────────────
@@ -244,7 +256,7 @@ fun IbpEvaluationScreen(
                 label = stringResource(R.string.ibp_group_a_title),
                 subtitle = stringResource(R.string.ibp_group_a_subtitle),
                 score = scoreA,
-                maxScore = 14,
+                maxScore = 35,
                 color = Color(0xFF2E7D32)
             )
             IbpCriterionId.GROUP_A.forEach { cid ->
@@ -260,7 +272,7 @@ fun IbpEvaluationScreen(
                 label = stringResource(R.string.ibp_group_b_title),
                 subtitle = stringResource(R.string.ibp_group_b_subtitle),
                 score = scoreB,
-                maxScore = 6,
+                maxScore = 15,
                 color = Color(0xFF1565C0)
             )
             IbpCriterionId.GROUP_B.forEach { cid ->
@@ -283,12 +295,15 @@ fun IbpEvaluationScreen(
                 )
             }
 
-            // ── Result card if complete ───────────────────────────
+            // ── Result card if complete ───────────────────────────────────
             if (answers.isComplete) {
                 IbpResultCard(
                     level = level,
                     scoreTotal = scoreTotal,
-                    levelColor = levelColor
+                    scoreA = scoreA,
+                    scoreB = scoreB,
+                    levelColor = levelColor,
+                    answers = answers
                 )
             }
         }
@@ -312,13 +327,20 @@ fun IbpEvaluationScreen(
                         1 -> R.string.ibp_onboarding_body_2
                         else -> R.string.ibp_onboarding_body_3
                     }))
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         repeat(3) { i ->
-                            Surface(
-                                modifier = Modifier.size(if (i == onboardingStep) 10.dp else 6.dp),
-                                shape = CircleShape,
-                                color = if (i == onboardingStep) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-                            ) {}
+                            if (i > 0) Spacer(Modifier.width(6.dp))
+                            Box(Modifier.size(10.dp), contentAlignment = Alignment.Center) {
+                                Surface(
+                                    modifier = Modifier.size(if (i == onboardingStep) 10.dp else 6.dp),
+                                    shape = CircleShape,
+                                    color = if (i == onboardingStep) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                                ) {}
+                            }
                         }
                     }
                 }
@@ -419,7 +441,7 @@ private fun IbpScoreHeader(
     levelColor: Color,
     level: IbpLevel
 ) {
-    val progress = if (scoreTotal >= 0) scoreTotal / 20f else 0f
+    val progress = if (scoreTotal >= 0) scoreTotal / 50f else 0f
     val animProgress by animateFloatAsState(progress, animationSpec = tween(600), label = "ibpProg")
 
     Card(
@@ -436,9 +458,10 @@ private fun IbpScoreHeader(
                             text = if (scoreTotal >= 0) "$scoreTotal" else "—",
                             style = MaterialTheme.typography.displaySmall,
                             fontWeight = FontWeight.ExtraBold,
-                            color = levelColor
+                            color = levelColor,
+                            modifier = Modifier.alignByBaseline()
                         )
-                        Text(" / 20", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp))
+                        Text(" / 50", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.alignByBaseline())
                     }
                 }
                 Column(horizontalAlignment = Alignment.End) {
@@ -460,8 +483,8 @@ private fun IbpScoreHeader(
             }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
-                ScorePill(label = "A", score = scoreA, max = 14, color = Color(0xFF2E7D32))
-                ScorePill(label = "B", score = scoreB, max = 6, color = Color(0xFF1565C0))
+                ScorePill(label = "A", score = scoreA, max = 35, color = Color(0xFF2E7D32))
+                ScorePill(label = "B", score = scoreB, max = 15, color = Color(0xFF1565C0))
             }
         }
     }
@@ -509,48 +532,6 @@ fun ibpLevelColor(level: IbpLevel): Color = when (level) {
     IbpLevel.VERY_GOOD -> Color(0xFF1565C0)
 }
 
-/* ─────────────── Meta Section ─────────────────────────────────── */
-@Composable
-private fun IbpMetaSection(
-    evaluatorName: String,
-    onEvaluatorChange: (String) -> Unit,
-    observationDate: Long,
-    onDateClick: () -> Unit = {}
-) {
-    val dateStr = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(observationDate))
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        OutlinedTextField(
-            value = evaluatorName,
-            onValueChange = onEvaluatorChange,
-            modifier = Modifier.weight(1f),
-            label = { Text(stringResource(R.string.ibp_evaluator), style = MaterialTheme.typography.bodySmall) },
-            singleLine = true,
-            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(18.dp)) }
-        )
-        Box(modifier = Modifier.width(140.dp).clickable { onDateClick() }) {
-            OutlinedTextField(
-                value = dateStr,
-                onValueChange = {},
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text(stringResource(R.string.ibp_date), style = MaterialTheme.typography.bodySmall) },
-                readOnly = true,
-                enabled = false,
-                singleLine = true,
-                leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                    disabledBorderColor = MaterialTheme.colorScheme.outline,
-                    disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            )
-        }
-    }
-}
-
 /* ─────────────── Group Header ─────────────────────────────────── */
 @Composable
 private fun IbpGroupHeader(label: String, subtitle: String, score: Int, maxScore: Int, color: Color) {
@@ -566,7 +547,7 @@ private fun IbpGroupHeader(label: String, subtitle: String, score: Int, maxScore
         }
         Surface(color = color.copy(alpha = .15f), shape = RoundedCornerShape(10.dp)) {
             Text(
-                "${if (score >= 0) score else "—"} / $maxScore",
+                "${if (score >= 0) score else "\u2014"} / $maxScore",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 color = color,
@@ -575,6 +556,91 @@ private fun IbpGroupHeader(label: String, subtitle: String, score: Int, maxScore
         }
     }
     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = color.copy(alpha = .2f))
+}
+
+/* ───────────────── Meta Section ───────────────── */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun IbpMetaSection(
+    evaluatorName: String,
+    onEvaluatorChange: (String) -> Unit,
+    observationDate: Long,
+    onDateClick: () -> Unit = {},
+    growthConditions: IbpGrowthConditions = IbpGrowthConditions.LOWLAND,
+    onGrowthConditionsChange: (IbpGrowthConditions) -> Unit = {}
+) {
+    val dateStr = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(observationDate))
+    var conditionsExpanded by remember { mutableStateOf(false) }
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = evaluatorName,
+                onValueChange = onEvaluatorChange,
+                modifier = Modifier.weight(1f),
+                label = { Text(stringResource(R.string.ibp_evaluator), style = MaterialTheme.typography.bodySmall) },
+                singleLine = true,
+                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(18.dp)) }
+            )
+            Box(modifier = Modifier.width(140.dp).clickable { onDateClick() }) {
+                OutlinedTextField(
+                    value = dateStr,
+                    onValueChange = {},
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.ibp_date), style = MaterialTheme.typography.bodySmall) },
+                    readOnly = true,
+                    enabled = false,
+                    singleLine = true,
+                    leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                        disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+            }
+        }
+        ExposedDropdownMenuBox(
+            expanded = conditionsExpanded,
+            onExpandedChange = { conditionsExpanded = it }
+        ) {
+            OutlinedTextField(
+                value = ibpGrowthConditionsLabel(growthConditions),
+                onValueChange = {},
+                readOnly = true,
+                label = { Text(stringResource(R.string.ibp_growth_conditions), style = MaterialTheme.typography.bodySmall) },
+                leadingIcon = { Icon(Icons.Default.Landscape, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = conditionsExpanded) },
+                modifier = Modifier.menuAnchor().fillMaxWidth(),
+                singleLine = true,
+                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+            )
+            ExposedDropdownMenu(expanded = conditionsExpanded, onDismissRequest = { conditionsExpanded = false }) {
+                IbpGrowthConditions.values().forEach { cond ->
+                    DropdownMenuItem(
+                        text = { Text(ibpGrowthConditionsLabel(cond)) },
+                        leadingIcon = { Text(ibpGrowthConditionsIcon(cond), style = MaterialTheme.typography.bodyLarge) },
+                        onClick = { onGrowthConditionsChange(cond); conditionsExpanded = false }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ibpGrowthConditionsLabel(cond: IbpGrowthConditions): String = when (cond) {
+    IbpGrowthConditions.LOWLAND      -> stringResource(R.string.ibp_growth_lowland)
+    IbpGrowthConditions.HIGHLAND     -> stringResource(R.string.ibp_growth_highland)
+    IbpGrowthConditions.SUBALPINE    -> stringResource(R.string.ibp_growth_subalpine)
+    IbpGrowthConditions.MEDITERRANEAN -> stringResource(R.string.ibp_growth_mediterranean)
+}
+
+fun ibpGrowthConditionsIcon(cond: IbpGrowthConditions): String = when (cond) {
+    IbpGrowthConditions.LOWLAND       -> "🌿"
+    IbpGrowthConditions.HIGHLAND      -> "⛰️"
+    IbpGrowthConditions.SUBALPINE     -> "🏔️"
+    IbpGrowthConditions.MEDITERRANEAN -> "☀️"
 }
 
 /* ─────────────── Criterion Card ────────────────────────────────── */
@@ -644,14 +710,14 @@ private fun IbpCriterionCard(
 
                 Spacer(Modifier.width(14.dp))
 
-                // QCM options
+                // QCM options (scores: 0 pt, 2 pts, 5 pts)
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    ibpCriterionOptions(criterionId).forEachIndexed { score, option ->
+                    listOf(0, 2, 5).forEach { pts ->
                         IbpOptionRow(
-                            score = score,
-                            label = option,
-                            selected = currentValue == score,
-                            onSelect = { onAnswer(score) }
+                            score = pts,
+                            label = ibpCriterionOptions(criterionId)[pts / 2],
+                            selected = currentValue == pts,
+                            onSelect = { onAnswer(pts) }
                         )
                     }
                 }
@@ -683,13 +749,14 @@ private fun IbpOptionRow(score: Int, label: String, selected: Boolean, onSelect:
         Surface(
             color = when (score) {
                 0 -> Color(0xFFC62828)
-                1 -> Color(0xFFF9A825)
+                2 -> Color(0xFFF9A825)
                 else -> Color(0xFF2E7D32)
             },
             shape = RoundedCornerShape(4.dp)
         ) {
             Text(
-                "$score pt${if (score > 1) "s" else ""}",
+                when (score) { 0 -> "0 pt"; 2 -> "2 pts"; else -> "5 pts" },
+
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -711,7 +778,11 @@ private fun IbpOptionRow(score: Int, label: String, selected: Boolean, onSelect:
 
 /* ─────────────── Result Card (inline) ─────────────────────────── */
 @Composable
-private fun IbpResultCard(level: IbpLevel, scoreTotal: Int, levelColor: Color) {
+private fun IbpResultCard(level: IbpLevel, scoreTotal: Int, scoreA: Int, scoreB: Int, levelColor: Color, answers: IbpAnswers) {
+    val weakCriteria = IbpCriterionId.ALL
+        .filter { answers.get(it) in listOf(0, 2) }
+        .sortedBy { answers.get(it) }
+        .take(3)
     Card(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         colors = CardDefaults.cardColors(containerColor = levelColor.copy(alpha = .10f)),
@@ -719,15 +790,43 @@ private fun IbpResultCard(level: IbpLevel, scoreTotal: Int, levelColor: Color) {
     ) {
         Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(Icons.Default.EmojiNature, contentDescription = null, tint = levelColor, modifier = Modifier.size(32.dp))
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
             Text(ibpLevelLabel(level), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = levelColor)
-            Spacer(Modifier.height(6.dp))
-            Text(ibpLevelComment(level, scoreTotal), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface)
-            Spacer(Modifier.height(12.dp))
-            HorizontalDivider(color = levelColor.copy(alpha = .3f))
+            Spacer(Modifier.height(4.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("$scoreA / 35", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                    Text(stringResource(R.string.ibp_group_a_short), style = MaterialTheme.typography.labelSmall, color = Color(0xFF2E7D32))
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("$scoreB / 15", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Color(0xFF1565C0))
+                    Text(stringResource(R.string.ibp_group_b_short), style = MaterialTheme.typography.labelSmall, color = Color(0xFF1565C0))
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(ibpLevelComment(level, scoreTotal), style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurface)
+            if (weakCriteria.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                HorizontalDivider(color = levelColor.copy(alpha = .3f))
+                Spacer(Modifier.height(8.dp))
+                Text(stringResource(R.string.ibp_priority_improvements), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(4.dp))
+                weakCriteria.forEach { cid ->
+                    val sc = answers.get(cid)
+                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.Top) {
+                        Surface(color = ibpLevelColor(IbpLevel.fromScore(sc)).copy(alpha = .15f), shape = RoundedCornerShape(4.dp)) {
+                            Text("${cid.code} $sc/5", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = ibpLevelColor(IbpLevel.fromScore(sc)), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                        }
+                        Spacer(Modifier.width(6.dp))
+                        Text(ibpCriterionTip(cid), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                    }
+                }
+            }
             Spacer(Modifier.height(10.dp))
-            Text(stringResource(R.string.ibp_recommendations), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(6.dp))
+            HorizontalDivider(color = levelColor.copy(alpha = .3f))
+            Spacer(Modifier.height(8.dp))
+            Text(stringResource(R.string.ibp_recommendations), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(4.dp))
             ibpLevelRecommendations(level).forEach { rec ->
                 Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
                     Text("• ", color = levelColor, fontWeight = FontWeight.Bold)
@@ -752,13 +851,13 @@ private fun IbpResultDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Default.EmojiNature, contentDescription = null, tint = levelColor, modifier = Modifier.size(36.dp)) },
-        title = { Text(stringResource(R.string.ibp_result_title), textAlign = TextAlign.Center) },
+        title = { Text(stringResource(R.string.ibp_result_title), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Big score
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("$scoreTotal / 20", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.ExtraBold, color = levelColor)
+                        Text("$scoreTotal / 50", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.ExtraBold, color = levelColor)
                         IbpLevelBadge(level = level, color = levelColor)
                     }
                 }
@@ -766,11 +865,11 @@ private fun IbpResultDialog(
                 // Score breakdown
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("$scoreA / 14", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                        Text("$scoreA / 35", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
                         Text(stringResource(R.string.ibp_group_a_short), style = MaterialTheme.typography.labelSmall, color = Color(0xFF2E7D32))
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("$scoreB / 6", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1565C0))
+                        Text("$scoreB / 15", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1565C0))
                         Text(stringResource(R.string.ibp_group_b_short), style = MaterialTheme.typography.labelSmall, color = Color(0xFF1565C0))
                     }
                 }
@@ -874,7 +973,7 @@ fun IbpMartelageCard(
                     val level = ibpEval.levelColor()
                     val color = ibpLevelColor(level)
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("${ibpEval.scoreTotal} / 20", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = color)
+                        Text("${ibpEval.scoreTotal} / 50", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = color)
                         IbpLevelBadge(level = level, color = color)
                     }
                 } else {
@@ -927,6 +1026,20 @@ fun ibpLevelRecommendations(level: IbpLevel): List<String> = when (level) {
     )
 }
 
+@Composable
+fun ibpCriterionTip(id: IbpCriterionId): String = when (id) {
+    IbpCriterionId.E1  -> stringResource(R.string.ibp_tip_e1)
+    IbpCriterionId.E2  -> stringResource(R.string.ibp_tip_e2)
+    IbpCriterionId.GB  -> stringResource(R.string.ibp_tip_gb)
+    IbpCriterionId.BMS -> stringResource(R.string.ibp_tip_bms)
+    IbpCriterionId.BMC -> stringResource(R.string.ibp_tip_bmc)
+    IbpCriterionId.DMH -> stringResource(R.string.ibp_tip_dmh)
+    IbpCriterionId.VS  -> stringResource(R.string.ibp_tip_vs)
+    IbpCriterionId.CF  -> stringResource(R.string.ibp_tip_cf)
+    IbpCriterionId.CO  -> stringResource(R.string.ibp_tip_co)
+    IbpCriterionId.HC  -> stringResource(R.string.ibp_tip_hc)
+}
+
 /* ─────────────── Radar Chart ────────────────────────────────────── */
 @Composable
 fun IbpRadarChart(
@@ -936,7 +1049,7 @@ fun IbpRadarChart(
 ) {
     val criteria = IbpCriterionId.ALL
     val n = criteria.size
-    val values = criteria.map { id -> answers.get(id).coerceAtLeast(0).toFloat() / 2f }
+    val values = criteria.map { id -> answers.get(id).coerceAtLeast(0).toFloat() / 5f }
 
     val gridColor = color.copy(alpha = 0.15f)
     val fillColor = color.copy(alpha = 0.25f)
@@ -954,8 +1067,8 @@ fun IbpRadarChart(
             return Offset(cx + r * kotlin.math.cos(angle), cy + r * kotlin.math.sin(angle))
         }
 
-        // Draw grid rings (0.5 and 1.0)
-        listOf(0.5f, 1.0f).forEach { fraction ->
+        // Draw grid rings (0.4 = 2pts and 1.0 = 5pts)
+        listOf(0.4f, 1.0f).forEach { fraction ->
             val gridPath = Path()
             for (i in 0 until n) {
                 val pt = axisPoint(i, radius * fraction)

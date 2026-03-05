@@ -4,7 +4,7 @@
 
 ### Application Android professionnelle d'inventaire forestier et de martelage
 
-[![Version](https://img.shields.io/badge/version-1.5.0-green?style=for-the-badge)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.7.0-green?style=for-the-badge)](CHANGELOG.md)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)](LICENSE)
@@ -39,6 +39,21 @@ GeoSylva remplace le carnet de terrain et les tableurs Excel par une **applicati
 
 ## ✨ Fonctionnalités
 
+### 🌿 IBP — Indice de Biodiversité Potentielle (CNPF officiel)
+
+- **Scoring officiel CNPF** — 0, 2 ou 5 points par critère, 10 critères, **max 50 points**
+- **Groupe A (×7 critères, max 35 pts)** — E1/E2 essences à forte valeur, GB gros bois, BMS/BMC bois mort, DMH dendromicrohabitats, VS végétation sous-bois
+- **Groupe B (×3 critères, max 15 pts)** — CF continuité forestière, CO connexions habitats, HC habitats complémentaires
+- **Conditions de croissance** — Plaine/Colline, Montagne, Sub-alpin, Méditerranéen (IBP v3)
+- **5 niveaux de potentiel** : Très faible (0–9) / Faible (10–19) / Moyen (20–29) / Bon (30–39) / Très bon (40–50)
+- **Améliorations prioritaires** — top 3 critères faibles mis en avant avec conseil actionnable par critère
+- **Radar chart** intégré — visualisation normalisée des 10 critères
+- **Rétrocompatibilité** — migration automatique des scores v1 (0/1/2) vers v2 (0/2/5)
+- **Historique IBP** — suivi de l'évolution du score dans le temps
+- **Écran IBP Projets** — liste globale de toutes les évaluations, classées par parcelle/date
+- **Onboarding dédié** — 3 pages d'introduction avec explication du scoring
+- **Export PDF** — rapport IBP complet avec niveaux, recommandations et graphiques
+
 ### 📐 Inventaire & Dendrométrie
 
 - **Saisie rapide** — comptage par essence et classe de diamètre avec boutons +/−
@@ -57,7 +72,7 @@ GeoSylva remplace le carnet de terrain et les tableurs Excel par une **applicati
 - **Capture moyennée** — moyenne des 8 dernières lectures pour éliminer les micro-vibrations
 - **Auto-capture** — verrouillage automatique après 1,5 s de stabilité ≥ 82 %, anneau de progression visuel
 - **Retour haptique** à chaque capture ; **écran allumé** pendant toute la mesure
-- **Chips de distances prédéfinies** (10/15/20/25/30 m) + astuce comptage de pas
+- **Chips de distances prédéfinies** (10/15/20/25 m) + astuce comptage de pas
 - **Validation d'angle** — avertissement orange si angle > 80° (trop près) ou < 5° (trop loin)
 - **Bouton Recapturer** pour relancer sans quitter le dialogue ; **indicateur d'étape** (1/5, 2/5…)
 - **Application directe** — pré-remplit automatiquement toutes les classes de diamètre vides
@@ -135,8 +150,8 @@ app/src/main/java/com/forestry/counter/
 │   │   ├── entity/              # Room entities (11 tables)
 │   │   ├── dao/                 # Data Access Objects
 │   │   ├── CanonicalEssences.kt # 95+ espèces pré-configurées
-│   │   ├── DatabaseMigrations.kt# Migrations v1→v11
-│   │   └── ForestryDatabase.kt  # Room database
+│   │   ├── DatabaseMigrations.kt# Migrations v1→v13
+│   │   └── ForestryDatabase.kt  # Room database (v13)
 │   ├── preferences/             # DataStore (GPS, affichage, tarifs…)
 │   ├── repository/              # Implémentations Repository
 │   ├── mapper/                  # Entity ↔ Domain mappers
@@ -178,7 +193,7 @@ app/src/main/java/com/forestry/counter/
 |---|---|
 | **Langage** | Kotlin 1.9 + Coroutines + Flow |
 | **UI** | Jetpack Compose + Material 3 |
-| **Base de données** | Room (SQLite) — 11 tables, migrations automatiques |
+| **Base de données** | Room (SQLite) — 11 tables, 13 migrations, DB v13 |
 | **Préférences** | DataStore Preferences |
 | **Cartographie** | MapLibre GL Native 10.3 |
 | **Géolocalisation** | Google Fused Location Provider |

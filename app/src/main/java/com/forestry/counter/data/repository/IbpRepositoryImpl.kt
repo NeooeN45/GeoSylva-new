@@ -4,6 +4,7 @@ import com.forestry.counter.data.local.dao.IbpEvaluationDao
 import com.forestry.counter.data.local.entity.IbpEvaluationEntity
 import com.forestry.counter.domain.model.IbpAnswers
 import com.forestry.counter.domain.model.IbpEvaluation
+import com.forestry.counter.domain.model.IbpGrowthConditions
 import com.forestry.counter.domain.repository.IbpRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -13,7 +14,9 @@ private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 private val answersSerializer = IbpAnswers.serializer()
 
 private fun IbpEvaluationEntity.toDomain(): IbpEvaluation {
-    val answers = runCatching { json.decodeFromString(answersSerializer, answersJson) }.getOrElse { IbpAnswers() }
+    val rawAnswers = runCatching { json.decodeFromString(answersSerializer, answersJson) }.getOrElse { IbpAnswers.new() }
+    val answers = if (rawAnswers.schemaVersion < 2) rawAnswers.migrateToV2() else rawAnswers
+    val conditions = runCatching { IbpGrowthConditions.valueOf(growthConditions) }.getOrElse { IbpGrowthConditions.LOWLAND }
     return IbpEvaluation(
         id = id,
         placetteId = placetteId,
@@ -23,7 +26,8 @@ private fun IbpEvaluationEntity.toDomain(): IbpEvaluation {
         updatedAt = updatedAt,
         evaluatorName = evaluatorName,
         answers = answers,
-        globalNote = globalNote
+        globalNote = globalNote,
+        growthConditions = conditions
     )
 }
 
@@ -36,7 +40,8 @@ private fun IbpEvaluation.toEntity(): IbpEvaluationEntity = IbpEvaluationEntity(
     updatedAt = updatedAt,
     evaluatorName = evaluatorName,
     answersJson = json.encodeToString(answersSerializer, answers),
-    globalNote = globalNote
+    globalNote = globalNote,
+    growthConditions = growthConditions.name
 )
 
 class IbpRepositoryImpl(private val dao: IbpEvaluationDao) : IbpRepository {

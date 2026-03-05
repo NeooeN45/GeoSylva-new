@@ -3,6 +3,50 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [1.7.0] — 2026-03-05
+
+### Added
+- **IBP scoring officiel CNPF** — système 0/2/5 pts par critère (max 50 pts total) remplaçant l'ancien 0/1/2. Groupe A max 35 pts (7 critères), Groupe B max 15 pts (3 critères).
+- **Conditions de croissance IBP (v3)** — nouveau champ `growthConditions` (Plaine/Colline, Montagne, Sub-alpin, Méditerranéen) avec dropdown dans `IbpMetaSection`. Migration DB 12→13.
+- **Améliorations prioritaires** — section dans `IbpResultCard` listant les top 3 critères faibles (score 0 ou 2) avec conseil actionnable par critère (`ibpCriterionTip`).
+- **Radar chart normalisé** — `IbpRadarChart` normalisé sur /5 (max), grille intérieure à 40 % (= 2 pts) et 100 % (= 5 pts).
+- **Chips de score colorés** — options 0 pt (rouge), 2 pts (ambre), 5 pts (vert) dans `IbpCriterionCard`.
+- **10 conseils IBP** — `ibp_tip_e1` → `ibp_tip_hc` en EN et FR : actions concrètes par critère.
+- **Rétrocompatibilité schema v1** — `IbpAnswers.migrateToV2()` convertit automatiquement les scores 0/1/2 historiques vers 0/2/5.
+
+### Changed
+- `IbpGroupHeader` : max A affiché = 35 pts, max B = 15 pts, total = /50.
+- `IbpScoreHeader` : score total sur /50, alignement baseline texte score/max.
+- `IbpResultDialog` : totaux affichés /50, /35, /15.
+- `IbpMartelageCard` : score /50 (était /20).
+- Strings EN+FR : onboarding mis à jour (max 35/15/50), sous-titres groupes, `ibp_in_martelage`.
+- `IbpLevel` : seuils 0-9/10-19/20-29/30-39/40-50 (calibrés pour le nouveau max 50).
+
+### Fixed
+- `IbpGroupHeader` perdu lors d'une édition précédente — restauré.
+- Apostrophes non échappées dans les strings FR (`ibp_group_b_subtitle`, `ibp_tip_vs`, `ibp_tip_cf`) causant une erreur AAPT2.
+
+---
+
+## [1.6.0] — 2026-03-04
+
+### Added
+- **IBP Projets** — écran global listant toutes les évaluations IBP classées par parcelle et date, avec badge score, suppression individuelle et navigation vers l'édition.
+- **Outil de mesure carte** — tracé de distances et surfaces sur la carte, avec sélection d'unités (m/km, m²/ares/ha) et palette de 8 couleurs. Panneau de résultats avec bascule d'unité.
+- **Bannière GPS** — avertissement discret et masquable si la précision GPS dépasse 20 m pour une tige.
+- **Permissions après onboarding** — demande groupée des permissions CAMERA, READ_MEDIA_IMAGES et ACCESS_FINE_LOCATION au lancement initial.
+- **Mesure de hauteur** — caméra ouverte par défaut quand les capteurs sont disponibles. Chips de distance : 10/15/20/25 m (30 m retiré).
+
+### Changed
+- **EssenceDiamScreen TopAppBar** redessiné — double ligne (nom + actions), ton surface + ombre.
+- **EssenceDiamScreen** remplissage rapide — remplit toutes les classes déjà saisies (pas seulement les vides).
+- **MartelageScreen Tab 2** renommé Analysis → Écologie / Ecology ; `BiodiversityCard` → "Écologie du peuplement" / "Stand ecology".
+- **HeightCameraAimOverlay** — bouton Capturer remonté (padding top=16, bottom=56).
+- **IBP crash release** corrigé — `IbpRepositoryImpl` et `IbpEvaluationScreen` utilisent `IbpAnswers.serializer()` explicite (ProGuard safe). Route `IbpHistory` déplacée avant `IbpEvaluation` dans `ForestryNavigation`.
+- `EssenceDiamScreen` LazyColumn : hauteur max 350 → 520 dp.
+
+---
+
 ## [1.5.0] — 2026-03-03
 
 ### Added

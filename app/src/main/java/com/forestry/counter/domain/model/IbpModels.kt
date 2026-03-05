@@ -2,6 +2,13 @@ package com.forestry.counter.domain.model
 
 import kotlinx.serialization.Serializable
 
+enum class IbpGrowthConditions {
+    LOWLAND,        // Plaine/Colline < ~900 m
+    HIGHLAND,       // Montagne > ~900 m
+    SUBALPINE,      // Sub-alpin
+    MEDITERRANEAN   // Méditerranéen
+}
+
 enum class IbpCriterionId(val code: String, val group: IbpGroup) {
     E1("E1", IbpGroup.A),
     E2("E2", IbpGroup.A),
@@ -23,6 +30,9 @@ enum class IbpCriterionId(val code: String, val group: IbpGroup) {
 
 enum class IbpGroup { A, B }
 
+/** Valid answer values: -1 (unanswered), 0, 2, 5 (IBP v3 scoring).
+ *  schemaVersion=1 = legacy 0/1/2 system; schemaVersion=2 = current 0/2/5 system.
+ */
 @Serializable
 data class IbpAnswers(
     val e1: Int = -1,
@@ -34,7 +44,8 @@ data class IbpAnswers(
     val vs: Int = -1,
     val cf: Int = -1,
     val co: Int = -1,
-    val hc: Int = -1
+    val hc: Int = -1,
+    val schemaVersion: Int = 1
 ) {
     fun get(id: IbpCriterionId): Int = when (id) {
         IbpCriterionId.E1  -> e1
@@ -62,6 +73,20 @@ data class IbpAnswers(
         IbpCriterionId.HC  -> copy(hc = value)
     }
 
+    /** Migrate legacy 0/1/2 scores to 0/2/5 system. */
+    fun migrateToV2(): IbpAnswers = copy(
+        e1 = migrateLegacyScore(e1), e2 = migrateLegacyScore(e2),
+        gb = migrateLegacyScore(gb), bms = migrateLegacyScore(bms),
+        bmc = migrateLegacyScore(bmc), dmh = migrateLegacyScore(dmh),
+        vs = migrateLegacyScore(vs), cf = migrateLegacyScore(cf),
+        co = migrateLegacyScore(co), hc = migrateLegacyScore(hc),
+        schemaVersion = 2
+    )
+
+    private fun migrateLegacyScore(v: Int): Int = when (v) {
+        -1 -> -1; 0 -> 0; 1 -> 2; 2 -> 5; else -> -1
+    }
+
     val scoreA: Int get() {
         val vals = listOf(e1, e2, gb, bms, bmc, dmh, vs)
         if (vals.any { it < 0 }) return -1
@@ -83,6 +108,12 @@ data class IbpAnswers(
 
     val answeredCount: Int get() = listOf(e1, e2, gb, bms, bmc, dmh, vs, cf, co, hc).count { it >= 0 }
     val isComplete: Boolean get() = answeredCount == 10
+
+    companion object {
+        /** Create a new IbpAnswers with current schema (v2 = 0/2/5 system). */
+        fun new() = IbpAnswers(schemaVersion = 2)
+        val VALID_SCORES = setOf(0, 2, 5)
+    }
 }
 
 data class IbpEvaluation(
@@ -93,8 +124,9 @@ data class IbpEvaluation(
     val createdAt: Long,
     val updatedAt: Long,
     val evaluatorName: String = "",
-    val answers: IbpAnswers = IbpAnswers(),
-    val globalNote: String = ""
+    val answers: IbpAnswers = IbpAnswers.new(),
+    val globalNote: String = "",
+    val growthConditions: IbpGrowthConditions = IbpGrowthConditions.LOWLAND
 ) {
     val scoreA: Int get() = answers.scoreA
     val scoreB: Int get() = answers.scoreB
@@ -105,11 +137,11 @@ data class IbpEvaluation(
 }
 
 enum class IbpLevel(val minScore: Int, val maxScore: Int) {
-    VERY_LOW(0, 4),
-    LOW(5, 9),
-    MEDIUM(10, 14),
-    GOOD(15, 17),
-    VERY_GOOD(18, 20);
+    VERY_LOW(0, 9),
+    LOW(10, 19),
+    MEDIUM(20, 29),
+    GOOD(30, 39),
+    VERY_GOOD(40, 50);
 
     companion object {
         fun fromScore(score: Int): IbpLevel {
