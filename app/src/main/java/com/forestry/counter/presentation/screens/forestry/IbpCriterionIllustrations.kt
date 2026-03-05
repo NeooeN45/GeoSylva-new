@@ -246,7 +246,7 @@ private fun IllustrationCF(modifier: Modifier) {
         val ringCount = 7
         val ringColors = listOf(Color(0xFF5D4037), Color(0xFF6D4C41), Color(0xFF795548), Color(0xFF8D6E63), Color(0xFF4E342E), Color(0xFF3E2723), Color(0xFF5D4037))
         for (i in ringCount downTo 1) {
-            drawCircle(ringColors[i - 1].copy(alpha = .18f * i), radius = w * .46f * i / ringCount, center = Offset(cx, cy))
+            drawCircle(ringColors[i - 1].copy(alpha = (.18f * i).coerceAtMost(1f)), radius = w * .46f * i / ringCount, center = Offset(cx, cy))
             drawCircle(Color.Transparent, radius = w * .46f * i / ringCount, center = Offset(cx, cy), style = Stroke(width = 1.5f))
         }
         drawCircle(Color(0xFF3E2723).copy(alpha = .8f), radius = w * .06f, center = Offset(cx, cy))
