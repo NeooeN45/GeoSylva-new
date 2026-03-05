@@ -1,5 +1,8 @@
 package com.forestry.counter.presentation.screens.forestry
 
+import android.graphics.BitmapFactory
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -10,13 +13,17 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Palette
@@ -33,10 +40,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EmojiNature
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -52,12 +62,28 @@ import com.forestry.counter.domain.model.Essence
 import com.forestry.counter.domain.repository.EssenceRepository
 import com.forestry.counter.domain.repository.PlacetteRepository
 import com.forestry.counter.domain.repository.TigeRepository
+import androidx.core.content.FileProvider
 import com.forestry.counter.data.preferences.UserPreferencesManager
 import com.forestry.counter.presentation.components.AppMiniDialog
 import com.forestry.counter.presentation.utils.rememberHapticFeedback
 import com.forestry.counter.presentation.utils.rememberSoundFeedback
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.Normalizer
+import java.util.UUID
+
+private fun getPlacettePhotoDir(context: android.content.Context, placetteId: String): File {
+    val dir = File(context.getExternalFilesDir(null), "photos/$placetteId")
+    dir.mkdirs()
+    return dir
+}
+
+private fun getPlacettePhotos(context: android.content.Context, placetteId: String): List<File> =
+    getPlacettePhotoDir(context, placetteId)
+        .listFiles()
+        ?.filter { it.extension.lowercase() == "jpg" }
+        ?.sortedByDescending { it.lastModified() }
+        ?: emptyList()
 
 private fun essenceColor(essence: Essence?): Color? {
     if (essence == null) return null
@@ -117,6 +143,7 @@ fun PlacetteDetailScreen(
     var showEssenceActionsDialog by remember { mutableStateOf(false) }
     var deleteTargetEssenceCode by remember { mutableStateOf<String?>(null) }
     var showDeletePlacetteDialog by remember { mutableStateOf(false) }
+    var showMoreMenu by remember { mutableStateOf(false) }
     var searchActive by remember { mutableStateOf(false) }
     var searchQuery  by remember { mutableStateOf("") }
 
@@ -181,6 +208,19 @@ fun PlacetteDetailScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
 
+    // ── Photos (F6) ──────────────────────────────────────────────────────────
+    var photoFiles        by remember { mutableStateOf(getPlacettePhotos(context, placetteId)) }
+    var pendingPhotoFile  by remember { mutableStateOf<File?>(null) }
+    var deleteTargetPhoto by remember { mutableStateOf<File?>(null) }
+
+    val photoLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success) {
+            photoFiles = getPlacettePhotos(context, placetteId)
+            scope.launch { snackbar.showSnackbar(context.getString(R.string.photo_taken)) }
+        }
+        pendingPhotoFile = null
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
@@ -199,11 +239,7 @@ fun PlacetteDetailScreen(
                         playClickFeedback()
                         onNavigateToMartelage(parcelleId, placetteId)
                     }) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Straighten, contentDescription = null)
-                            Spacer(modifier = Modifier.width(2.dp))
-                            Icon(Icons.Default.Description, contentDescription = stringResource(R.string.martelage))
-                        }
+                        Icon(Icons.Default.Straighten, contentDescription = stringResource(R.string.martelage))
                     }
                     if (onNavigateToIbp != null) {
                         IconButton(onClick = {
@@ -223,18 +259,50 @@ fun PlacetteDetailScreen(
                             contentDescription = stringResource(R.string.search_essences)
                         )
                     }
-                    IconButton(onClick = {
-                        playClickFeedback()
-                        reorderMode = !reorderMode; if (reorderMode && orderOverride.isEmpty()) orderOverride = displayEssenceOrder()
-                    }) {
-                        Icon(Icons.Default.SwapVert, contentDescription = stringResource(R.string.reorder))
-                    }
-
-                    IconButton(onClick = {
-                        playClickFeedback()
-                        showDeletePlacetteDialog = true
-                    }) {
-                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete_placette))
+                    Box {
+                        IconButton(onClick = { showMoreMenu = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = null)
+                        }
+                        DropdownMenu(
+                            expanded = showMoreMenu,
+                            onDismissRequest = { showMoreMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.reorder)) },
+                                leadingIcon = { Icon(Icons.Default.SwapVert, null) },
+                                onClick = {
+                                    showMoreMenu = false
+                                    playClickFeedback()
+                                    reorderMode = !reorderMode
+                                    if (reorderMode && orderOverride.isEmpty()) orderOverride = displayEssenceOrder()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.photo_take)) },
+                                leadingIcon = { Icon(Icons.Default.CameraAlt, null) },
+                                onClick = {
+                                    showMoreMenu = false
+                                    playClickFeedback()
+                                    val photoDir = getPlacettePhotoDir(context, placetteId)
+                                    val newFile = File(photoDir, "${UUID.randomUUID()}.jpg")
+                                    val uri = FileProvider.getUriForFile(
+                                        context, "${context.packageName}.fileprovider", newFile
+                                    )
+                                    pendingPhotoFile = newFile
+                                    photoLauncher.launch(uri)
+                                }
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.delete_placette), color = MaterialTheme.colorScheme.error) },
+                                leadingIcon = { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) },
+                                onClick = {
+                                    showMoreMenu = false
+                                    playClickFeedback()
+                                    showDeletePlacetteDialog = true
+                                }
+                            )
+                        }
                     }
                 }
             )
@@ -271,6 +339,56 @@ fun PlacetteDetailScreen(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
                 )
+            }
+
+            // ── Galerie photos ────────────────────────────────────────────────────────
+            if (photoFiles.isNotEmpty()) {
+                Text(
+                    stringResource(R.string.placette_photos_title),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(bottom = 10.dp)
+                ) {
+                    items(photoFiles, key = { it.absolutePath }) { file ->
+                        val bmp = remember(file.absolutePath) {
+                            runCatching {
+                                BitmapFactory.decodeFile(file.absolutePath)
+                                    ?.let { android.graphics.Bitmap.createScaledBitmap(it, 120, 120, true) }
+                                    ?.asImageBitmap()
+                            }.getOrNull()
+                        }
+                        Surface(
+                            shape = MaterialTheme.shapes.small,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .combinedClickable(
+                                    onClick = {},
+                                    onLongClick = { deleteTargetPhoto = file }
+                                )
+                        ) {
+                            if (bmp != null) {
+                                Image(
+                                    painter = BitmapPainter(bmp),
+                                    contentDescription = null,
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    Icon(Icons.Default.CameraAlt, null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             val rawOrder = displayEssenceOrder()
@@ -587,6 +705,24 @@ fun PlacetteDetailScreen(
                         snackbar.showSnackbar(e.message ?: context.getString(R.string.error))
                     }
                 }
+            }
+        )
+    }
+
+    deleteTargetPhoto?.let { photoToDelete ->
+        AppMiniDialog(
+            onDismissRequest = { deleteTargetPhoto = null },
+            animationsEnabled = animationsEnabled,
+            icon = Icons.Default.Delete,
+            title = stringResource(R.string.photo_delete_title),
+            description = stringResource(R.string.photo_delete_confirm),
+            confirmText = stringResource(R.string.delete),
+            dismissText = stringResource(R.string.cancel),
+            confirmIsDestructive = true,
+            onConfirm = {
+                photoToDelete.delete()
+                photoFiles = getPlacettePhotos(context, placetteId)
+                deleteTargetPhoto = null
             }
         )
     }

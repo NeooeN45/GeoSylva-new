@@ -27,7 +27,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -57,6 +59,7 @@ fun IbpEvaluationScreen(
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val haptic  = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
 
@@ -70,9 +73,10 @@ fun IbpEvaluationScreen(
     val ibpAnswersSaver = remember {
         val key = "ibp_answers_json"
         val safeJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+        val serializer = IbpAnswers.serializer()
         mapSaver<IbpAnswers>(
-            save = { mapOf(key to safeJson.encodeToString(it)) },
-            restore = { map -> runCatching { safeJson.decodeFromString<IbpAnswers>(map[key] as String) }.getOrElse { IbpAnswers() } }
+            save = { mapOf(key to safeJson.encodeToString(serializer, it)) },
+            restore = { map -> runCatching { safeJson.decodeFromString(serializer, map[key] as String) }.getOrElse { IbpAnswers() } }
         )
     }
     var answers by rememberSaveable(stateSaver = ibpAnswersSaver) { mutableStateOf(IbpAnswers()) }
@@ -154,6 +158,7 @@ fun IbpEvaluationScreen(
                 globalNote = globalNote
             )
             ibpRepository.save(eval)
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             snackbar.showSnackbar(context.getString(R.string.ibp_saved))
         }
     }

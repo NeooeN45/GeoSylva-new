@@ -60,6 +60,24 @@
 -keep class org.maplibre.** { *; }
 -dontwarn org.maplibre.**
 
+# Keep enum values()/valueOf() — prevents R8 from stripping enum companion usage
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# Keep kotlinx-serialization @Serializable classes and generated serializer companions
+-if @kotlinx.serialization.Serializable class **
+-keepclassmembers class <1> {
+    *** Companion;
+    static ** serializer();
+    *** INSTANCE;
+}
+-if @kotlinx.serialization.Serializable class **
+-keepclassmembers class <1>$Companion {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
 # Strip debug logging in release
 -assumenosideeffects class android.util.Log {
     public static int v(...);

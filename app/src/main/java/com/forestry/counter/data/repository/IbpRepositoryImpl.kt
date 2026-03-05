@@ -8,12 +8,12 @@ import com.forestry.counter.domain.repository.IbpRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
 
 private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+private val answersSerializer = IbpAnswers.serializer()
 
 private fun IbpEvaluationEntity.toDomain(): IbpEvaluation {
-    val answers = runCatching { json.decodeFromString<IbpAnswers>(answersJson) }.getOrElse { IbpAnswers() }
+    val answers = runCatching { json.decodeFromString(answersSerializer, answersJson) }.getOrElse { IbpAnswers() }
     return IbpEvaluation(
         id = id,
         placetteId = placetteId,
@@ -35,7 +35,7 @@ private fun IbpEvaluation.toEntity(): IbpEvaluationEntity = IbpEvaluationEntity(
     createdAt = createdAt,
     updatedAt = updatedAt,
     evaluatorName = evaluatorName,
-    answersJson = json.encodeToString(answers),
+    answersJson = json.encodeToString(answersSerializer, answers),
     globalNote = globalNote
 )
 

@@ -311,7 +311,7 @@ fun PlacettesScreen(
                     label = { Text(stringResource(R.string.placette_surface_m2)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    suffix = { Text("m\u00B2") }
+                    suffix = { Text(stringResource(R.string.unit_m2)) }
                 )
                 OutlinedTextField(
                     value = editRayonM,
@@ -319,7 +319,7 @@ fun PlacettesScreen(
                     label = { Text(stringResource(R.string.placette_rayon_m)) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    suffix = { Text("m") }
+                    suffix = { Text(stringResource(R.string.unit_m)) }
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("CIRC" to stringResource(R.string.sampling_mode_circular), "FIXED_AREA" to stringResource(R.string.sampling_mode_fixed_area)).forEach { (key, label) ->

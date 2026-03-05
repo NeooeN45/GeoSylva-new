@@ -17,6 +17,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,6 +28,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -51,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -334,7 +338,7 @@ fun EssenceDiamScreen(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.essence_diameters_title_format, essenceCode)) },
+                title = { Text(essenceName, maxLines = 1) },
                 navigationIcon = {
                     IconButton(onClick = safeNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
@@ -347,10 +351,10 @@ fun EssenceDiamScreen(
                     }) {
                         Icon(
                             imageVector = Icons.Default.Eco,
-                            contentDescription = stringResource(if (showSpecialList) R.string.hide_special_trees else R.string.show_special_trees)
+                            contentDescription = stringResource(if (showSpecialList) R.string.hide_special_trees else R.string.show_special_trees),
+                            tint = if (showSpecialList) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    // Bouton qualité bois (optionnel) — évalue la dernière tige pointée
                     IconButton(onClick = {
                         playClickFeedback()
                         val lastTige = tigesEssence.maxByOrNull { it.timestamp }
@@ -733,7 +737,10 @@ fun EssenceDiamScreen(
                 }
             }
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 // Bannière info tarif
                 val tarifLabel = activeTarifMethod?.label ?: ""
                 Surface(
@@ -774,8 +781,8 @@ fun EssenceDiamScreen(
                         onValueChange = { quickFillInput = it },
                         modifier = Modifier.weight(1f),
                         label = { Text(stringResource(R.string.height_quick_fill_title)) },
-                        placeholder = { Text("ex : 22") },
-                        suffix = { Text("m") },
+                        placeholder = { Text(stringResource(R.string.placeholder_height)) },
+                        suffix = { Text(stringResource(R.string.unit_m)) },
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Decimal,
                             imeAction = ImeAction.Done
@@ -800,13 +807,11 @@ fun EssenceDiamScreen(
                 HorizontalDivider()
 
                 // Liste des classes avec des tiges uniquement
-                LazyColumn(
+                Column(
                     verticalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 350.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    columnItems(populatedClasses, key = { it }) { d ->
+                    populatedClasses.forEach { d -> key(d) {
                         val count = counts[d] ?: 0
                         val tiges = tigesByDiamClass[d].orEmpty()
                         val measuredCount = tiges.count { it.hauteurM != null }
@@ -884,8 +889,8 @@ fun EssenceDiamScreen(
                                         keyboardType = KeyboardType.Decimal,
                                         imeAction = ImeAction.Done
                                     ),
-                                    placeholder = { Text("ex : 18,5") },
-                                    suffix = { Text("m") },
+                                    placeholder = { Text(stringResource(R.string.placeholder_height_short)) },
+                                    suffix = { Text(stringResource(R.string.unit_m)) },
                                     supportingText = {
                                         val parts = mutableListOf<String>()
                                         if (missingCount > 0) parts += stringResource(R.string.height_n_missing_format, missingCount)
@@ -899,7 +904,7 @@ fun EssenceDiamScreen(
                                 )
                             }
                         }
-                    }
+                    } }
                 }
             }
         }

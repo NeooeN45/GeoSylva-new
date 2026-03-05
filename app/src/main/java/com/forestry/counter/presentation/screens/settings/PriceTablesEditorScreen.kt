@@ -29,12 +29,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -85,13 +87,34 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 private val QUALITY_CODES = listOf("*", "A", "B", "C", "D")
-private val QUALITY_LABELS = mapOf(
-    "*" to "Toutes qualités",
-    "A" to "A — Excellente",
-    "B" to "B — Bonne",
-    "C" to "C — Moyenne",
-    "D" to "D — Médiocre"
-)
+
+@Composable
+private fun qualityLabel(code: String): String = when (code) {
+    "*" -> stringResource(R.string.price_quality_all)
+    "A" -> stringResource(R.string.price_quality_a)
+    "B" -> stringResource(R.string.price_quality_b)
+    "C" -> stringResource(R.string.price_quality_c)
+    "D" -> stringResource(R.string.price_quality_d)
+    else -> code
+}
+
+@Composable
+private fun productLabel(code: String): String = when (code) {
+    "*" -> stringResource(R.string.price_product_all)
+    "BO" -> stringResource(R.string.price_product_bo)
+    "BI" -> stringResource(R.string.price_product_bi)
+    "BCh" -> stringResource(R.string.price_product_bch)
+    "BE" -> stringResource(R.string.price_product_be)
+    "MERAIN" -> stringResource(R.string.price_product_merain)
+    "TRANCHAGE" -> stringResource(R.string.price_product_tranchage)
+    "SCIAGE_Q" -> stringResource(R.string.price_product_sciage_q)
+    "GRUME_L" -> stringResource(R.string.price_product_grume_l)
+    "POTEAU" -> stringResource(R.string.price_product_poteau)
+    "SCIAGE_S" -> stringResource(R.string.price_product_sciage_s)
+    "PALETTE" -> stringResource(R.string.price_product_palette)
+    "PATE" -> stringResource(R.string.price_product_pate)
+    else -> code
+}
 
 private data class EditablePriceRow(
     val essence: String,
@@ -104,21 +127,6 @@ private data class EditablePriceRow(
 )
 
 private val PRODUCT_CODES = listOf("*", "BO", "BI", "BCh", "BE", "MERAIN", "TRANCHAGE", "SCIAGE_Q", "GRUME_L", "POTEAU", "SCIAGE_S", "PALETTE", "PATE")
-private val PRODUCT_LABELS = mapOf(
-    "*" to "Tous produits",
-    "BO" to "Bois d\u2019\u0153uvre",
-    "BI" to "Bois industrie",
-    "BCh" to "Chauffage",
-    "BE" to "Bois \u00e9nergie",
-    "MERAIN" to "M\u00e9rain",
-    "TRANCHAGE" to "Tranchage",
-    "SCIAGE_Q" to "Sciage qualit\u00e9",
-    "GRUME_L" to "Grume longue",
-    "POTEAU" to "Poteau",
-    "SCIAGE_S" to "Sciage standard",
-    "PALETTE" to "Palette",
-    "PATE" to "P\u00e2te / trituration"
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -293,7 +301,7 @@ fun PriceTablesEditorScreen(
                             scope.launch {
                                 val (entries, err) = rowsToEntriesOrError()
                                 if (entries == null) {
-                                    snackbarHostState.showSnackbar(err ?: "Erreur")
+                                    snackbarHostState.showSnackbar(err ?: context.getString(R.string.price_error_generic))
                                     return@launch
                                 }
                                 val outJson = json.encodeToString(entries)
@@ -327,7 +335,24 @@ fun PriceTablesEditorScreen(
             listOf("*") + CanonicalEssences.ALL.map { it.code }
         }
         val essenceLabels = remember {
-            mapOf("*" to "Toutes essences") + CanonicalEssences.ALL.associate { it.code to it.name }
+            mapOf("*" to context.getString(R.string.price_essence_all)) + CanonicalEssences.ALL.associate { it.code to it.name }
+        }
+
+        var searchQuery by remember { mutableStateOf("") }
+
+        // Build filtered index list so we keep original indices for editing
+        val filteredIndices = remember(searchQuery, rows.size, rows.toList()) {
+            if (searchQuery.isBlank()) {
+                rows.indices.toList()
+            } else {
+                val q = searchQuery.lowercase()
+                rows.indices.filter { idx ->
+                    val r = rows[idx]
+                    val essName = essenceLabels[r.essence]?.lowercase() ?: r.essence.lowercase()
+                    essName.contains(q) || r.essence.lowercase().contains(q) ||
+                            r.product.lowercase().contains(q)
+                }
+            }
         }
 
         LazyColumn(
@@ -345,7 +370,7 @@ fun PriceTablesEditorScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "${rows.size} ${stringResource(R.string.price_tables_editor_title).lowercase()}",
+                        text = "${filteredIndices.size}/${rows.size} ${stringResource(R.string.price_tables_editor_title).lowercase()}",
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -369,7 +394,29 @@ fun PriceTablesEditorScreen(
                 }
             }
 
-            itemsIndexed(rows, key = { idx, _ -> idx }) { index, row ->
+            // Search bar
+            item {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text(stringResource(R.string.price_search_hint)) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = null, modifier = Modifier.size(20.dp))
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+
+            items(filteredIndices.size, key = { filteredIndices[it] }) { i ->
+                val index = filteredIndices[i]
+                val row = rows[index]
                 PriceRowCard(
                     row = row,
                     index = index,
@@ -396,7 +443,7 @@ private fun PriceRowCard(
     onDelete: () -> Unit
 ) {
     val essenceLabel = essenceLabels[row.essence] ?: row.essence
-    val productLabel = PRODUCT_LABELS[row.product] ?: row.product
+    val prodLabel = productLabel(row.product)
     val priceDisplay = row.eurPerM3.replace(',', '.').toDoubleOrNull()?.let { "%.0f €/m³".format(it) } ?: row.eurPerM3
 
     ElevatedCard(
@@ -434,7 +481,7 @@ private fun PriceRowCard(
                     )
                     val qualityTag = if (row.quality != "*") " \u00b7 Q.${row.quality}" else ""
                     Text(
-                        text = "$productLabel \u00b7 D ${row.min}\u2013${row.max} cm$qualityTag \u00b7 $priceDisplay",
+                        text = "$prodLabel \u00b7 D ${row.min}\u2013${row.max} cm$qualityTag \u00b7 $priceDisplay",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -500,7 +547,7 @@ private fun PriceRowCard(
                         onExpandedChange = { productExpanded = it }
                     ) {
                         OutlinedTextField(
-                            value = productLabel,
+                            value = prodLabel,
                             onValueChange = {},
                             readOnly = true,
                             label = { Text(stringResource(R.string.product)) },
@@ -513,7 +560,7 @@ private fun PriceRowCard(
                         ) {
                             PRODUCT_CODES.forEach { code ->
                                 DropdownMenuItem(
-                                    text = { Text(PRODUCT_LABELS[code] ?: code) },
+                                    text = { Text(productLabel(code)) },
                                     onClick = {
                                         onUpdate(row.copy(product = code))
                                         productExpanded = false
@@ -530,10 +577,10 @@ private fun PriceRowCard(
                         onExpandedChange = { qualityExpanded = it }
                     ) {
                         OutlinedTextField(
-                            value = QUALITY_LABELS[row.quality] ?: row.quality,
+                            value = qualityLabel(row.quality),
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Qualit\u00e9") },
+                            label = { Text(stringResource(R.string.price_quality_label)) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = qualityExpanded) },
                             modifier = Modifier.fillMaxWidth().menuAnchor()
                         )
@@ -543,7 +590,7 @@ private fun PriceRowCard(
                         ) {
                             QUALITY_CODES.forEach { code ->
                                 DropdownMenuItem(
-                                    text = { Text(QUALITY_LABELS[code] ?: code) },
+                                    text = { Text(qualityLabel(code)) },
                                     onClick = {
                                         onUpdate(row.copy(quality = code))
                                         qualityExpanded = false
@@ -561,7 +608,7 @@ private fun PriceRowCard(
                         OutlinedTextField(
                             value = row.min,
                             onValueChange = { v -> onUpdate(row.copy(min = v)) },
-                            label = { Text("D min (cm)") },
+                            label = { Text(stringResource(R.string.price_dmin_label)) },
                             modifier = Modifier.weight(1f),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true
@@ -569,7 +616,7 @@ private fun PriceRowCard(
                         OutlinedTextField(
                             value = row.max,
                             onValueChange = { v -> onUpdate(row.copy(max = v)) },
-                            label = { Text("D max (cm)") },
+                            label = { Text(stringResource(R.string.price_dmax_label)) },
                             modifier = Modifier.weight(1f),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true

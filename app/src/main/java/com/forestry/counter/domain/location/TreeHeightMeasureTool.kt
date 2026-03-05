@@ -69,14 +69,16 @@ object TreeHeightMeasureTool {
                     val sensor = sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
                         ?: run { close(); return@callbackFlow }
                     val rotMatrix = FloatArray(9)
-                    val orientation = FloatArray(3)
                     val listener = object : SensorEventListener {
                         override fun onAccuracyChanged(s: Sensor?, accuracy: Int) {}
                         override fun onSensorChanged(event: SensorEvent) {
                             SensorManager.getRotationMatrixFromVector(rotMatrix, event.values)
-                            SensorManager.getOrientation(rotMatrix, orientation)
-                            // orientation[1] = pitch (inclinaison avant/arrière)
-                            val pitchDeg = Math.toDegrees(orientation[1].toDouble()).toFloat()
+                            // Clinometer elevation angle: how much the camera looks
+                            // above (+) or below (−) horizontal.
+                            // Camera direction in device frame = (0,0,−1); in world frame
+                            // its Z-component = −R[8].  World-Z points up (opposite gravity).
+                            val elevRad = asin((-rotMatrix[8]).toDouble().coerceIn(-1.0, 1.0))
+                            val pitchDeg = Math.toDegrees(elevRad).toFloat()
                             buffer.addLast(pitchDeg)
                             if (buffer.size > 8) buffer.removeFirst()
                             trySend(AngleMeasurement(pitchDeg, computeAvg(), computeStability()))
@@ -92,10 +94,12 @@ object TreeHeightMeasureTool {
                     val listener = object : SensorEventListener {
                         override fun onAccuracyChanged(s: Sensor?, accuracy: Int) {}
                         override fun onSensorChanged(event: SensorEvent) {
-                            val ax = event.values[0].toDouble()
                             val ay = event.values[1].toDouble()
                             val az = event.values[2].toDouble()
-                            val pitchRad = atan2(-ay, sqrt(ax * ax + az * az))
+                            // Clinometer angle in portrait mode:
+                            // atan2(-az, ay) = 0° when upright (horizontal aim),
+                            // positive when looking up, negative when looking down.
+                            val pitchRad = atan2(-az, ay)
                             val pitchDeg = Math.toDegrees(pitchRad).toFloat()
                             buffer.addLast(pitchDeg)
                             if (buffer.size > 8) buffer.removeFirst()
@@ -109,6 +113,31 @@ object TreeHeightMeasureTool {
                 SensorCapability.NONE -> close()
             }
         }
+
+    /**
+     * Flow d'altitude barométrique en temps réel (m).
+     * Utilise TYPE_PRESSURE + SensorManager.getAltitude().
+     * Retourne null si le capteur n'est pas disponible.
+     */
+    fun barometerAltitudeFlow(context: Context): Flow<Float>? {
+        val sm = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val sensor = sm.getDefaultSensor(Sensor.TYPE_PRESSURE) ?: return null
+        val buffer = ArrayDeque<Float>(5)
+        return callbackFlow {
+            val listener = object : SensorEventListener {
+                override fun onAccuracyChanged(s: Sensor?, accuracy: Int) {}
+                override fun onSensorChanged(event: SensorEvent) {
+                    val hPa = event.values[0]
+                    val alt = SensorManager.getAltitude(SensorManager.PRESSURE_STANDARD_ATMOSPHERE, hPa)
+                    buffer.addLast(alt)
+                    if (buffer.size > 5) buffer.removeFirst()
+                    trySend(buffer.average().toFloat())
+                }
+            }
+            sm.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_UI)
+            awaitClose { sm.unregisterListener(listener) }
+        }
+    }
 
     /**
      * Calcule la hauteur d'un arbre par la méthode des tangentes.

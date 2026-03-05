@@ -501,6 +501,31 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
         }
 
         composable(
+            route = Screen.IbpHistory.route,
+            arguments = listOf(
+                navArgument("parcelleId") { type = NavType.StringType },
+                navArgument("placetteId") { type = NavType.StringType; nullable = true; defaultValue = null }
+            ),
+            enterTransition = navEnterTransition,
+            exitTransition = navExitTransition,
+            popEnterTransition = navPopEnterTransition,
+            popExitTransition = navPopExitTransition
+        ) { backStackEntry ->
+            val parcelleId = backStackEntry.arguments?.getString("parcelleId") ?: return@composable
+            val placetteId = backStackEntry.arguments?.getString("placetteId")
+            IbpHistoryScreen(
+                parcelleId = parcelleId,
+                placetteId = placetteId,
+                ibpRepository = app.ibpRepository,
+                placetteRepository = app.placetteRepository,
+                onNavigateBack = { navController.popBackStack() },
+                onOpenEvaluation = { pid: String, plid: String, evalId: String? ->
+                    navController.navigate(Screen.IbpEvaluation.createRoute(pid, plid, evalId))
+                }
+            )
+        }
+
+        composable(
             route = Screen.IbpEvaluation.route,
             arguments = listOf(
                 navArgument("parcelleId") { type = NavType.StringType },
@@ -523,31 +548,6 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                 userPreferences = app.userPreferences,
                 evaluationId = evalId,
                 onNavigateBack = { navController.popBackStack() }
-            )
-        }
-
-        composable(
-            route = Screen.IbpHistory.route,
-            arguments = listOf(
-                navArgument("parcelleId") { type = NavType.StringType },
-                navArgument("placetteId") { type = NavType.StringType; nullable = true; defaultValue = null }
-            ),
-            enterTransition = navEnterTransition,
-            exitTransition = navExitTransition,
-            popEnterTransition = navPopEnterTransition,
-            popExitTransition = navPopExitTransition
-        ) { backStackEntry ->
-            val parcelleId = backStackEntry.arguments?.getString("parcelleId") ?: return@composable
-            val placetteId = backStackEntry.arguments?.getString("placetteId")
-            IbpHistoryScreen(
-                parcelleId = parcelleId,
-                placetteId = placetteId,
-                ibpRepository = app.ibpRepository,
-                placetteRepository = app.placetteRepository,
-                onNavigateBack = { navController.popBackStack() },
-                onOpenEvaluation = { pid: String, plid: String, evalId: String? ->
-                    navController.navigate(Screen.IbpEvaluation.createRoute(pid, plid, evalId))
-                }
             )
         }
 

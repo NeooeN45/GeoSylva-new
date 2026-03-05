@@ -279,6 +279,11 @@
     <string name="dashboard_basal_area_by_species">Basal area by species (m²)</string>
     <string name="dashboard_others">others</string>
     <string name="dashboard_button">Dashboard</string>
+    <string name="dashboard_height_distribution">Height distribution (m)</string>
+    <string name="dashboard_quality_distribution">Quality grade distribution</string>
+    <string name="dashboard_species_count">Species</string>
+    <string name="dashboard_no_data">No stems recorded yet.</string>
+    <string name="dashboard_quality_unassessed">%1$d not assessed</string>
 
     <!-- Sanity / Guardrail warnings -->
     <string name="sanity_card_title">Data consistency check</string>
@@ -990,6 +995,27 @@
     <string name="height_camera_permission_needed">Camera permission is required to use the AR viewfinder. Please grant the permission to aim at the treetop with the live camera feed.</string>
     <string name="height_camera_grant">Grant permission</string>
     <string name="height_camera_stabilize">Keep the phone steady, pointing at the treetop…</string>
+    <string name="height_measure_altitude_baro">Altitude (baro.): %1$d m</string>
+    <string name="height_measure_compass_badge">Bearing: %1$s %2$d°</string>
+    <string name="height_measure_gps_distance">GPS distance</string>
+    <!-- GPS distance dialog -->
+    <string name="gps_distance_title">GPS distance measurement</string>
+    <string name="gps_distance_no_permission">Location permission required. Please grant it in app settings.</string>
+    <string name="gps_distance_step1">Walk to the base of the tree, then tap "Record position 1".</string>
+    <string name="gps_distance_step2">Walk back to your measuring point, then tap "Record position 2".</string>
+    <string name="gps_distance_result_label">Measured distance</string>
+    <string name="gps_distance_accuracy">GPS accuracy: ±%1$d m</string>
+    <string name="gps_distance_waiting">Waiting for GPS signal…</string>
+    <string name="gps_distance_record1">Record position 1 (tree base)</string>
+    <string name="gps_distance_record2">Record position 2 (my position)</string>
+    <string name="gps_distance_pos1_recorded">Tree base: %1$s, %2$s</string>
+    <string name="gps_distance_use">Use this distance</string>
+    <!-- Placette photos (F6) -->
+    <string name="photo_take">Take photo</string>
+    <string name="photo_taken">Photo saved</string>
+    <string name="placette_photos_title">Photos</string>
+    <string name="photo_delete_title">Delete photo</string>
+    <string name="photo_delete_confirm">Delete this photo permanently?</string>
 
     <!-- Share synthèse -->
     <string name="share">Share</string>
@@ -1168,6 +1194,61 @@
 
     <!-- Map GPS quality warning -->
     <string name="map_gps_poor_warning">%1$d stem(s) with poor GPS accuracy (&gt;20 m) · tap to dismiss</string>
+
+    <!-- Map measure tool -->
+    <string name="measure_tool_title">Measure</string>
+    <string name="measure_mode_distance">Distance</string>
+    <string name="measure_mode_area">Area</string>
+    <string name="measure_tap_hint">Tap the map to add points</string>
+    <string name="measure_panel_distance">Distance: %1$s</string>
+    <string name="measure_panel_area">Area: %1$s</string>
+    <string name="measure_points_count">%1$d point(s)</string>
+    <string name="measure_undo">Undo last</string>
+    <string name="measure_clear">Clear</string>
+    <string name="measure_save">Save</string>
+    <string name="measure_save_title">Save measurement</string>
+    <string name="measure_name_label">Name (optional)</string>
+    <string name="measure_saved">Measurement saved</string>
+
+    <!-- Hardcoded text extraction -->
+    <string name="unit_m2">m²</string>
+    <string name="unit_m">m</string>
+    <string name="placeholder_surface">e.g. 314</string>
+    <string name="placeholder_height">e.g. 22.5</string>
+    <string name="placeholder_height_short">e.g. 18.5</string>
+    <string name="placeholder_nha">e.g. 450</string>
+    <string name="placeholder_gha">e.g. 28.5</string>
+    <string name="gps_count_label">GPS: %1$d</string>
+    <string name="product_col_product">Product</string>
+    <string name="product_col_vol">Vol. m³</string>
+    <string name="product_col_total">Total</string>
+    <string name="price_quality_label">Quality</string>
+    <string name="price_dmin_label">D min (cm)</string>
+    <string name="price_dmax_label">D max (cm)</string>
+    <string name="map_height_label">H %1$d m</string>
+
+    <!-- Price editor labels -->
+    <string name="price_quality_all">All qualities</string>
+    <string name="price_quality_a">A — Excellent</string>
+    <string name="price_quality_b">B — Good</string>
+    <string name="price_quality_c">C — Average</string>
+    <string name="price_quality_d">D — Poor</string>
+    <string name="price_product_all">All products</string>
+    <string name="price_product_bo">Timber</string>
+    <string name="price_product_bi">Industrial wood</string>
+    <string name="price_product_bch">Firewood</string>
+    <string name="price_product_be">Energy wood</string>
+    <string name="price_product_merain">Stave wood</string>
+    <string name="price_product_tranchage">Slicing</string>
+    <string name="price_product_sciage_q">Quality sawn timber</string>
+    <string name="price_product_grume_l">Long log</string>
+    <string name="price_product_poteau">Pole</string>
+    <string name="price_product_sciage_s">Standard sawn timber</string>
+    <string name="price_product_palette">Pallet</string>
+    <string name="price_product_pate">Pulp</string>
+    <string name="price_essence_all">All species</string>
+    <string name="price_search_hint">Search species or product…</string>
+    <string name="price_error_generic">Error</string>
 
     <!-- Onboarding updated strings -->
     <string name="onboarding_height_title">Measure tree heights</string>

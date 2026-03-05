@@ -279,6 +279,11 @@
     <string name="dashboard_basal_area_by_species">Surface terrière par essence (m²)</string>
     <string name="dashboard_others">autres</string>
     <string name="dashboard_button">Tableau de bord</string>
+    <string name="dashboard_height_distribution">Distribution des hauteurs (m)</string>
+    <string name="dashboard_quality_distribution">Répartition par qualité</string>
+    <string name="dashboard_species_count">Essences</string>
+    <string name="dashboard_no_data">Aucune tige enregistrée.</string>
+    <string name="dashboard_quality_unassessed">%1$d non évalué(s)</string>
 
     <!-- Garde-fou : alertes de cohérence -->
     <string name="sanity_card_title">Vérification de cohérence</string>
@@ -986,6 +991,27 @@
     <string name="height_camera_permission_needed">L\'autorisation caméra est requise pour utiliser le viseur AR. Accordez la permission pour viser la cime avec l\'aperçu caméra en direct.</string>
     <string name="height_camera_grant">Accorder la permission</string>
     <string name="height_camera_stabilize">Maintenez le téléphone stable, pointé vers la cime…</string>
+    <string name="height_measure_altitude_baro">Altitude (baro.) : %1$d m</string>
+    <string name="height_measure_compass_badge">Cap : %1$s %2$d°</string>
+    <string name="height_measure_gps_distance">Distance GPS</string>
+    <!-- GPS distance dialog -->
+    <string name="gps_distance_title">Mesure de distance GPS</string>
+    <string name="gps_distance_no_permission">Permission de localisation requise. Accordez-la dans les paramètres de l’application.</string>
+    <string name="gps_distance_step1">Marchez jusqu’au pied de l’arbre, puis appuyez sur « Enregistrer position 1 ».</string>
+    <string name="gps_distance_step2">Revenez à votre point de mesure, puis appuyez sur « Enregistrer position 2 ».</string>
+    <string name="gps_distance_result_label">Distance mesurée</string>
+    <string name="gps_distance_accuracy">Précision GPS : ±%1$d m</string>
+    <string name="gps_distance_waiting">En attente du signal GPS…</string>
+    <string name="gps_distance_record1">Enregistrer position 1 (pied de l’arbre)</string>
+    <string name="gps_distance_record2">Enregistrer position 2 (mon point de mesure)</string>
+    <string name="gps_distance_pos1_recorded">Pied de l’arbre : %1$s, %2$s</string>
+    <string name="gps_distance_use">Utiliser cette distance</string>
+    <!-- Placette photos (F6) -->
+    <string name="photo_take">Prendre une photo</string>
+    <string name="photo_taken">Photo enregistrée</string>
+    <string name="placette_photos_title">Photos</string>
+    <string name="photo_delete_title">Supprimer la photo</string>
+    <string name="photo_delete_confirm">Supprimer définitivement cette photo ?</string>
 
     <!-- Share synthèse -->
     <string name="share">Partager</string>
@@ -1164,6 +1190,61 @@
 
     <!-- Avertissement GPS imprécis dans la carte -->
     <string name="map_gps_poor_warning">%1$d tige(s) avec GPS imprécis (&gt;20 m) · toucher pour masquer</string>
+
+    <!-- Outil de mesure carte -->
+    <string name="measure_tool_title">Mesure</string>
+    <string name="measure_mode_distance">Distance</string>
+    <string name="measure_mode_area">Surface</string>
+    <string name="measure_tap_hint">Appuyez sur la carte pour ajouter des points</string>
+    <string name="measure_panel_distance">Distance : %1$s</string>
+    <string name="measure_panel_area">Surface : %1$s</string>
+    <string name="measure_points_count">%1$d point(s)</string>
+    <string name="measure_undo">Annuler dernier</string>
+    <string name="measure_clear">Effacer</string>
+    <string name="measure_save">Enregistrer</string>
+    <string name="measure_save_title">Enregistrer la mesure</string>
+    <string name="measure_name_label">Nom (optionnel)</string>
+    <string name="measure_saved">Mesure enregistrée</string>
+
+    <!-- Extraction textes en dur -->
+    <string name="unit_m2">m²</string>
+    <string name="unit_m">m</string>
+    <string name="placeholder_surface">ex : 314</string>
+    <string name="placeholder_height">ex : 22,5</string>
+    <string name="placeholder_height_short">ex : 18,5</string>
+    <string name="placeholder_nha">ex : 450</string>
+    <string name="placeholder_gha">ex : 28,5</string>
+    <string name="gps_count_label">GPS : %1$d</string>
+    <string name="product_col_product">Produit</string>
+    <string name="product_col_vol">Vol. m³</string>
+    <string name="product_col_total">Total</string>
+    <string name="price_quality_label">Qualité</string>
+    <string name="price_dmin_label">D min (cm)</string>
+    <string name="price_dmax_label">D max (cm)</string>
+    <string name="map_height_label">H %1$d m</string>
+
+    <!-- Libellés éditeur de prix -->
+    <string name="price_quality_all">Toutes qualités</string>
+    <string name="price_quality_a">A — Excellente</string>
+    <string name="price_quality_b">B — Bonne</string>
+    <string name="price_quality_c">C — Moyenne</string>
+    <string name="price_quality_d">D — Médiocre</string>
+    <string name="price_product_all">Tous produits</string>
+    <string name="price_product_bo">Bois d\'œuvre</string>
+    <string name="price_product_bi">Bois industrie</string>
+    <string name="price_product_bch">Chauffage</string>
+    <string name="price_product_be">Bois énergie</string>
+    <string name="price_product_merain">Mérain</string>
+    <string name="price_product_tranchage">Tranchage</string>
+    <string name="price_product_sciage_q">Sciage qualité</string>
+    <string name="price_product_grume_l">Grume longue</string>
+    <string name="price_product_poteau">Poteau</string>
+    <string name="price_product_sciage_s">Sciage standard</string>
+    <string name="price_product_palette">Palette</string>
+    <string name="price_product_pate">Pâte / trituration</string>
+    <string name="price_essence_all">Toutes essences</string>
+    <string name="price_search_hint">Rechercher essence ou produit…</string>
+    <string name="price_error_generic">Erreur</string>
 
     <!-- Onboarding - nouvelles chaînes -->
     <string name="onboarding_height_title">Mesurer les hauteurs d\'arbres</string>

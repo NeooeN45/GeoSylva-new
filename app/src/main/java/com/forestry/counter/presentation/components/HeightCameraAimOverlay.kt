@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.Camera as CxCamera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -71,6 +72,12 @@ fun HeightCameraAimOverlay(
 
     var captured          by remember { mutableStateOf(false) }
     var autoProgress      by remember { mutableStateOf(0f) }
+    var cameraRef         by remember { mutableStateOf<CxCamera?>(null) }
+    var zoomLevel         by remember { mutableStateOf(0f) }
+
+    LaunchedEffect(zoomLevel) {
+        cameraRef?.cameraControl?.setLinearZoom(zoomLevel)
+    }
 
     LaunchedEffect(captured, liveAngle) {
         if (captured) return@LaunchedEffect
@@ -105,7 +112,10 @@ fun HeightCameraAimOverlay(
 
             // ── Arrière-plan : caméra ou fond noir avec message permission ────
             if (permissionGranted) {
-                CameraPreviewView(modifier = Modifier.fillMaxSize())
+                CameraPreviewView(
+                    modifier = Modifier.fillMaxSize(),
+                    onCameraReady = { cam -> cameraRef = cam }
+                )
             } else {
                 Box(
                     modifier = Modifier.fillMaxSize().background(Color.Black),
@@ -192,6 +202,38 @@ fun HeightCameraAimOverlay(
                 )
             }
 
+            // ── Contrôles zoom (côté droit, centré verticalement) ────────────
+            Column(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 10.dp)
+                    .background(Color.Black.copy(alpha = 0.45f), shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
+                    .padding(horizontal = 6.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                IconButton(
+                    onClick = { zoomLevel = (zoomLevel + 0.18f).coerceAtMost(1f) },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(Icons.Default.ZoomIn, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                }
+                val zoomLabel = when {
+                    zoomLevel < 0.12f -> "1×"
+                    zoomLevel < 0.35f -> "2×"
+                    zoomLevel < 0.60f -> "3×"
+                    zoomLevel < 0.82f -> "5×"
+                    else              -> "8×"
+                }
+                Text(zoomLabel, color = Color.White, style = MaterialTheme.typography.labelSmall)
+                IconButton(
+                    onClick = { zoomLevel = (zoomLevel - 0.18f).coerceAtLeast(0f) },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(Icons.Default.ZoomOut, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                }
+            }
+
             // ── HUD haut : titre + bouton fermer ─────────────────────────────
             Row(
                 modifier = Modifier
@@ -223,7 +265,7 @@ fun HeightCameraAimOverlay(
                     .fillMaxWidth()
                     .background(Color.Black.copy(alpha = 0.60f))
                     .navigationBarsPadding()
-                    .padding(horizontal = 20.dp, vertical = 20.dp),
+                    .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 56.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -284,7 +326,10 @@ fun HeightCameraAimOverlay(
 }
 
 @Composable
-private fun CameraPreviewView(modifier: Modifier = Modifier) {
+private fun CameraPreviewView(
+    modifier: Modifier = Modifier,
+    onCameraReady: (CxCamera) -> Unit = {}
+) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val context        = LocalContext.current
 
@@ -302,11 +347,12 @@ private fun CameraPreviewView(modifier: Modifier = Modifier) {
                         it.setSurfaceProvider(previewView.surfaceProvider)
                     }
                     provider.unbindAll()
-                    provider.bindToLifecycle(
+                    val cam = provider.bindToLifecycle(
                         lifecycleOwner,
                         CameraSelector.DEFAULT_BACK_CAMERA,
                         preview
                     )
+                    onCameraReady(cam)
                 }
             }, ContextCompat.getMainExecutor(ctx))
             previewView

@@ -676,7 +676,8 @@ fun MartelageScreen(
                         uri = uri,
                         stats = s,
                         scopeLabel = scopeKey,
-                        surfaceM2 = surfaceM2
+                        surfaceM2 = surfaceM2,
+                        productBreakdown = breakdownByEssence
                     )
                 }.onSuccess {
                     snackbar.showSnackbar(context.getString(R.string.pdf_exported))
@@ -912,7 +913,7 @@ fun MartelageScreen(
                         AssistChip(
                             onClick = { showExportDialog = true },
                             label = {
-                                Text("GPS: $gpsCount", style = MaterialTheme.typography.labelSmall)
+                                Text(stringResource(R.string.gps_count_label, gpsCount), style = MaterialTheme.typography.labelSmall)
                             },
                             leadingIcon = {
                                 Icon(Icons.Default.GpsFixed, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -1047,8 +1048,8 @@ fun MartelageScreen(
                                         keyboardType = KeyboardType.Decimal,
                                         imeAction = ImeAction.Next
                                     ),
-                                    placeholder = { Text("ex : 314") },
-                                    suffix = { Text("m²") },
+                                    placeholder = { Text(stringResource(R.string.placeholder_surface)) },
+                                    suffix = { Text(stringResource(R.string.unit_m2)) },
                                     singleLine = true
                                 )
                                 // Hint de conversion en hectares
@@ -1072,8 +1073,8 @@ fun MartelageScreen(
                                         keyboardType = KeyboardType.Decimal,
                                         imeAction = ImeAction.Done
                                     ),
-                                    placeholder = { Text("ex : 22,5") },
-                                    suffix = { Text("m") },
+                                    placeholder = { Text(stringResource(R.string.placeholder_height)) },
+                                    suffix = { Text(stringResource(R.string.unit_m)) },
                                     singleLine = true
                                 )
 
@@ -1108,7 +1109,7 @@ fun MartelageScreen(
                                             keyboardType = KeyboardType.Decimal,
                                             imeAction = ImeAction.Next
                                         ),
-                                        placeholder = { Text("ex : 450") },
+                                        placeholder = { Text(stringResource(R.string.placeholder_nha)) },
                                         singleLine = true
                                     )
                                     OutlinedTextField(
@@ -1120,8 +1121,8 @@ fun MartelageScreen(
                                             keyboardType = KeyboardType.Decimal,
                                             imeAction = ImeAction.Done
                                         ),
-                                        placeholder = { Text("ex : 28.5") },
-                                        suffix = { Text("m²") },
+                                        placeholder = { Text(stringResource(R.string.placeholder_gha)) },
+                                        suffix = { Text(stringResource(R.string.unit_m2)) },
                                         singleLine = true
                                     )
                                 }
@@ -1612,8 +1613,8 @@ fun MartelageScreen(
                     keyboardType = KeyboardType.Decimal,
                     imeAction = ImeAction.Next
                 ),
-                placeholder = { Text("ex : 314") },
-                suffix = { Text("m²") },
+                placeholder = { Text(stringResource(R.string.placeholder_surface)) },
+                suffix = { Text(stringResource(R.string.unit_m2)) },
                 singleLine = true
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -1626,8 +1627,8 @@ fun MartelageScreen(
                     keyboardType = KeyboardType.Decimal,
                     imeAction = ImeAction.Done
                 ),
-                placeholder = { Text("ex : 22,5") },
-                suffix = { Text("m") },
+                placeholder = { Text(stringResource(R.string.placeholder_height)) },
+                suffix = { Text(stringResource(R.string.unit_m)) },
                 singleLine = true
             )
             Text(
@@ -1862,8 +1863,8 @@ fun MartelageScreen(
                                         keyboardType = KeyboardType.Decimal,
                                         imeAction = ImeAction.Next
                                     ),
-                                    placeholder = { Text("ex : 18,5") },
-                                    suffix = { Text("m") },
+                                    placeholder = { Text(stringResource(R.string.placeholder_height_short)) },
+                                    suffix = { Text(stringResource(R.string.unit_m)) },
                                     supportingText = {
                                         if (count > 0) {
                                             val label = if (missingCount > 0) {

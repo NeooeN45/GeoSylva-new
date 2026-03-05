@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material3.Card
@@ -110,9 +111,26 @@ fun DashboardScreen(
 
     val totalG = remember(gByEssence) { gByEssence.sumOf { it.value } }
     val totalTiges = tiges.size
+    val speciesCount = tigesByEssence.size
     val avgDiam = remember(tiges) { if (tiges.isEmpty()) 0.0 else tiges.sumOf { it.diamCm } / tiges.size }
     val tigesWithHeight = remember(tiges) { tiges.filter { (it.hauteurM ?: 0.0) > 0.0 } }
     val avgHeight = remember(tigesWithHeight) { if (tigesWithHeight.isEmpty()) 0.0 else tigesWithHeight.sumOf { it.hauteurM ?: 0.0 } / tigesWithHeight.size }
+
+    // Distribution des hauteurs par classes de 2m
+    val heightClasses = remember(tigesWithHeight) {
+        tigesWithHeight
+            .groupBy { ((it.hauteurM!! / 2).toInt() * 2) }
+            .toSortedMap()
+            .mapValues { it.value.size }
+    }
+
+    // Distribution qualité
+    val qualityDist = remember(tiges) {
+        tiges.mapNotNull { it.qualite }
+            .groupBy { it }
+            .mapValues { it.value.size }
+            .toSortedMap()
+    }
 
     Scaffold(
         topBar = {
@@ -143,8 +161,21 @@ fun DashboardScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // ── Résumé chiffres clés (2×2 grid) ──
-            Row(
+            if (tiges.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        stringResource(R.string.dashboard_no_data),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // ── Résumé chiffres clés (2×3 grid) ──
+            if (tiges.isNotEmpty()) Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -160,8 +191,14 @@ fun DashboardScreen(
                     icon = { Icon(Icons.Default.Straighten, null, modifier = Modifier.size(18.dp)) },
                     modifier = Modifier.weight(1f)
                 )
+                SummaryMiniCard(
+                    label = stringResource(R.string.dashboard_species_count),
+                    value = "$speciesCount",
+                    icon = { Icon(Icons.Default.Eco, null, modifier = Modifier.size(18.dp)) },
+                    modifier = Modifier.weight(1f)
+                )
             }
-            Row(
+            if (tiges.isNotEmpty()) Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -219,6 +256,20 @@ fun DashboardScreen(
                         },
                         maxG = gByEssence.maxOfOrNull { it.value } ?: 1.0
                     )
+                }
+            }
+
+            // ── Distribution des hauteurs ──
+            if (heightClasses.isNotEmpty()) {
+                DashboardCard(title = stringResource(R.string.dashboard_height_distribution)) {
+                    HeightBarChart(heightClasses)
+                }
+            }
+
+            // ── Répartition par qualité ──
+            if (qualityDist.isNotEmpty()) {
+                DashboardCard(title = stringResource(R.string.dashboard_quality_distribution)) {
+                    QualityDistributionBars(qualityDist, totalTiges)
                 }
             }
 
@@ -429,6 +480,114 @@ private fun BasalAreaBars(
                     textAlign = TextAlign.End
                 )
             }
+        }
+    }
+}
+
+// ── Bar chart : distribution des hauteurs ──
+@Composable
+private fun HeightBarChart(classes: Map<Int, Int>) {
+    val maxCount = classes.values.maxOrNull() ?: 1
+    val barColor = Color(0xFF66BB6A)
+    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val textColor = MaterialTheme.colorScheme.onSurface
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp)
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        classes.forEach { (cls, count) ->
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Bottom,
+                modifier = Modifier.width(38.dp)
+            ) {
+                Text(
+                    "$count",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = textColor,
+                    fontSize = 10.sp
+                )
+                Box(
+                    modifier = Modifier
+                        .width(26.dp)
+                        .height((140.dp * count / maxCount).coerceAtLeast(4.dp))
+                        .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                ) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        drawRect(color = barColor)
+                    }
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    "$cls",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = labelColor,
+                    fontSize = 9.sp
+                )
+            }
+        }
+    }
+}
+
+// ── Barres qualité bois ──
+private val QUALITY_COLORS = listOf(
+    Color(0xFF4CAF50), // A — vert
+    Color(0xFF2196F3), // B — bleu
+    Color(0xFFFF9800), // C — orange
+    Color(0xFFF44336)  // D — rouge
+)
+private val QUALITY_LABELS = listOf("A", "B", "C", "D")
+
+@Composable
+private fun QualityDistributionBars(dist: Map<Int, Int>, totalTiges: Int) {
+    val assessed = dist.values.sum()
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        dist.entries.forEach { (gradeIdx, count) ->
+            val label = QUALITY_LABELS.getOrElse(gradeIdx) { "?" }
+            val color = QUALITY_COLORS.getOrElse(gradeIdx) { Color.Gray }
+            val pct = if (assessed > 0) count * 100f / assessed else 0f
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.width(24.dp),
+                    color = color
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(modifier = Modifier.weight(1f).height(20.dp)) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val barWidth = (size.width * pct / 100f).coerceAtLeast(4f)
+                        drawRoundRect(
+                            color = color,
+                            size = Size(barWidth, size.height),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "$count (${String.format("%.0f", pct)}%)",
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.width(64.dp),
+                    textAlign = TextAlign.End
+                )
+            }
+        }
+        if (assessed < totalTiges) {
+            Text(
+                stringResource(R.string.dashboard_quality_unassessed, totalTiges - assessed),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

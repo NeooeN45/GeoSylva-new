@@ -132,10 +132,10 @@ fun ProductBreakdownCard(
                         .padding(horizontal = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Produit", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1.2f))
-                    Text("Vol. m³", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.8f))
+                    Text(stringResource(R.string.product_col_product), style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1.2f))
+                    Text(stringResource(R.string.product_col_vol), style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.8f))
                     Text("€/m³", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.7f))
-                    Text("Total", style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.9f), fontWeight = FontWeight.Medium)
+                    Text(stringResource(R.string.product_col_total), style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(0.9f), fontWeight = FontWeight.Medium)
                 }
 
                 Divider(modifier = Modifier.padding(vertical = 4.dp))

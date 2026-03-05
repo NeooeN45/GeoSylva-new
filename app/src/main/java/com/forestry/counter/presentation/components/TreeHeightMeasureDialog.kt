@@ -76,6 +76,9 @@ fun TreeHeightMeasureDialog(
     var manualAngleTopInput  by remember { mutableStateOf("") }
     var manualAngleBaseInput by remember { mutableStateOf("") }
     var autoCaptureProgress  by remember { mutableStateOf(0f) }
+    var compassReading  by remember { mutableStateOf<CompassReading?>(null) }
+    var baroAltitude    by remember { mutableStateOf<Float?>(null) }
+    var showGpsDistance by remember { mutableStateOf(false) }
 
     val distanceM = distanceInput.replace(',', '.').toDoubleOrNull()
 
@@ -92,6 +95,17 @@ fun TreeHeightMeasureDialog(
                 liveAngle = meas
             }
         }
+    }
+
+    // Boussole (F3)
+    LaunchedEffect(Unit) {
+        if (CompassManager.isAvailable(context)) {
+            CompassManager.bearingFlow(context).collectLatest { compassReading = it }
+        }
+    }
+    // Baromètre (F4)
+    LaunchedEffect(Unit) {
+        TreeHeightMeasureTool.barometerAltitudeFlow(context)?.collectLatest { baroAltitude = it }
     }
 
     // Auto-capture : déclenche après ~1,5 s de stabilité ≥ 82 %
@@ -147,6 +161,13 @@ fun TreeHeightMeasureDialog(
         } else null
     }
 
+    if (showGpsDistance) {
+        GpsDistanceMeasureDialog(
+            onResult  = { d -> distanceInput = String.format("%.1f", d); showGpsDistance = false },
+            onDismiss = { showGpsDistance = false }
+        )
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         modifier = Modifier.fillMaxWidth(),
@@ -186,7 +207,9 @@ fun TreeHeightMeasureDialog(
                         onPhoneHeightChange  = { phoneHeight = it },
                         useBaseAngle         = useBaseAngle,
                         onUseBaseAngleChange = { useBaseAngle = it },
-                        capability           = capability
+                        capability           = capability,
+                        compassReading       = compassReading,
+                        onGpsDistanceMeasure = { showGpsDistance = true }
                     )
                     MeasureStep.ANGLE_TOP -> AngleCaptureStep(
                         label               = stringResource(R.string.height_measure_aim_top),
@@ -231,11 +254,12 @@ fun TreeHeightMeasureDialog(
                         onCameraCapture   = { deg -> angleBase = deg; haptic.performHapticFeedback(HapticFeedbackType.LongPress) }
                     )
                     MeasureStep.RESULT -> ResultStep(
-                        result      = result,
-                        angleTop    = effectiveAngleTop,
-                        angleBase   = if (useBaseAngle) effectiveAngleBase else null,
-                        distanceM   = distanceM,
-                        phoneHeight = phoneHeight
+                        result       = result,
+                        angleTop     = effectiveAngleTop,
+                        angleBase    = if (useBaseAngle) effectiveAngleBase else null,
+                        distanceM    = distanceM,
+                        phoneHeight  = phoneHeight,
+                        baroAltitude = baroAltitude
                     )
                 }
             }
@@ -382,7 +406,9 @@ private fun DistanceStep(
     onPhoneHeightChange: (Double) -> Unit,
     useBaseAngle: Boolean,
     onUseBaseAngleChange: (Boolean) -> Unit,
-    capability: SensorCapability
+    capability: SensorCapability,
+    compassReading: CompassReading? = null,
+    onGpsDistanceMeasure: () -> Unit = {}
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
@@ -391,6 +417,44 @@ private fun DistanceStep(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
+        // Boussole (F3) + bouton GPS distance (F5)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            compassReading?.let { cr ->
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f),
+                    shape = RoundedCornerShape(20.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(Icons.Default.Explore, null, modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                        Text(
+                            stringResource(R.string.height_measure_compass_badge,
+                                cr.cardinalPoint, cr.bearingDeg.toInt()),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+            } ?: Spacer(Modifier.weight(1f))
+            FilledTonalButton(
+                onClick = onGpsDistanceMeasure,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Icon(Icons.Default.GpsFixed, null, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(stringResource(R.string.height_measure_gps_distance),
+                    style = MaterialTheme.typography.labelSmall)
+            }
+        }
+
         // Chips de distances prédéfinies
         Text(
             stringResource(R.string.height_measure_distance_chips),
@@ -398,7 +462,7 @@ private fun DistanceStep(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf(10, 15, 20, 25, 30).forEach { d ->
+            listOf(10, 15, 20, 25).forEach { d ->
                 val selected = distanceInput == d.toString()
                 FilterChip(
                     selected = selected,
@@ -495,7 +559,7 @@ private fun AngleCaptureStep(
     onCameraCapture: (Double) -> Unit = {}
 ) {
     val warningColor = Color(0xFFE65100)
-    var showCameraAim by remember { mutableStateOf(false) }
+    var showCameraAim by remember { mutableStateOf(capability != SensorCapability.NONE) }
 
     if (showCameraAim) {
         HeightCameraAimOverlay(
@@ -779,7 +843,8 @@ private fun ResultStep(
     angleTop: Double?,
     angleBase: Double?,
     distanceM: Double?,
-    phoneHeight: Double
+    phoneHeight: Double,
+    baroAltitude: Float? = null
 ) {
     if (result == null) {
         Text(
@@ -845,6 +910,12 @@ private fun ResultStep(
                     stringResource(R.string.height_measure_detail_phone_h),
                     "${String.format("%.2f", phoneHeight)} m"
                 )
+                baroAltitude?.let { alt ->
+                    DetailRow(
+                        stringResource(R.string.height_measure_altitude_baro, alt.toInt()),
+                        ""
+                    )
+                }
             }
         }
     }

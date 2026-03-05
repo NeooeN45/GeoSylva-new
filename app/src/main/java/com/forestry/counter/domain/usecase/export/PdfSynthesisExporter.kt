@@ -8,6 +8,7 @@ import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import com.forestry.counter.R
+import com.forestry.counter.domain.calculation.ProductBreakdownRow
 import com.forestry.counter.domain.model.Parcelle
 import com.forestry.counter.presentation.screens.forestry.BiodiversityIndex
 import com.forestry.counter.presentation.screens.forestry.MartelageStats
@@ -33,7 +34,8 @@ object PdfSynthesisExporter {
         stats: MartelageStats,
         scopeLabel: String,
         surfaceM2: Double?,
-        parcelle: Parcelle? = null
+        parcelle: Parcelle? = null,
+        productBreakdown: Map<String, List<ProductBreakdownRow>> = emptyMap()
     ) {
         val doc = PdfDocument()
         try {
@@ -41,7 +43,7 @@ object PdfSynthesisExporter {
             val page = doc.startPage(pageInfo)
             val canvas = page.canvas
 
-            val y = drawContent(canvas, context, stats, scopeLabel, surfaceM2, parcelle)
+            val y = drawContent(canvas, context, stats, scopeLabel, surfaceM2, parcelle, productBreakdown)
 
             // Footer
             val footerPaint = paint(9f, Color.GRAY)
@@ -67,7 +69,8 @@ object PdfSynthesisExporter {
         s: MartelageStats,
         scopeLabel: String,
         surfaceM2: Double?,
-        parcelle: Parcelle? = null
+        parcelle: Parcelle? = null,
+        productBreakdown: Map<String, List<ProductBreakdownRow>> = emptyMap()
     ): Float {
         var y = MARGIN + 10f
 
@@ -159,6 +162,17 @@ object PdfSynthesisExporter {
             canvas.drawText(ctx.getString(R.string.pdf_per_essence_title), MARGIN, y, sectionPaint)
             y += 18f
             y = drawEssenceTable(canvas, ctx, s, y)
+        }
+
+        // ── Ventilation par produit ──
+        val allBreakdownRows = productBreakdown.values.flatten()
+        if (allBreakdownRows.isNotEmpty()) {
+            y += 10f
+            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, thinLine())
+            y += 16f
+            canvas.drawText(ctx.getString(R.string.product_breakdown_title), MARGIN, y, sectionPaint)
+            y += 18f
+            y = drawProductTable(canvas, ctx, productBreakdown, s, y)
         }
 
         // ── Arbres spéciaux (avec détails) ──
@@ -332,6 +346,102 @@ object PdfSynthesisExporter {
 
         // Bordure extérieure
         val border = Paint().apply { color = Color.parseColor("#388E3C"); style = Paint.Style.STROKE; strokeWidth = 1f }
+        canvas.drawRect(MARGIN, startY, PAGE_W - MARGIN, y, border)
+
+        return y
+    }
+
+    // ── Tableau ventilation produits ─────────────────────
+
+    private fun drawProductTable(
+        canvas: Canvas,
+        ctx: Context,
+        breakdown: Map<String, List<ProductBreakdownRow>>,
+        s: MartelageStats,
+        startY: Float
+    ): Float {
+        val headers = listOf(
+            ctx.getString(R.string.pdf_col_essence),
+            ctx.getString(R.string.product_col_product),
+            ctx.getString(R.string.product_col_vol),
+            "€/m³",
+            ctx.getString(R.string.product_col_total)
+        )
+        val colW = floatArrayOf(
+            CONTENT_W * 0.25f,
+            CONTENT_W * 0.25f,
+            CONTENT_W * 0.16f,
+            CONTENT_W * 0.16f,
+            CONTENT_W * 0.18f
+        )
+        val rowH = 15f
+        val headerPaint = paint(8f, Color.WHITE, bold = true)
+        val cellPaint = paint(8f, Color.DKGRAY)
+        val cellBoldPaint = paint(8f, Color.BLACK, bold = true)
+        val headerBg = Paint().apply { color = Color.parseColor("#1565C0"); style = Paint.Style.FILL }
+        val stripeBg = Paint().apply { color = Color.parseColor("#E3F2FD"); style = Paint.Style.FILL }
+
+        var y = startY
+
+        // Header
+        canvas.drawRect(MARGIN, y, PAGE_W - MARGIN, y + rowH, headerBg)
+        var x = MARGIN + 4f
+        for (i in headers.indices) {
+            val align = if (i == 0) Paint.Align.LEFT else Paint.Align.RIGHT
+            val xText = if (i == 0) x else x + colW[i] - 4f
+            headerPaint.textAlign = align
+            canvas.drawText(headers[i], xText, y + 11f, headerPaint)
+            x += colW[i]
+        }
+        y += rowH
+
+        // Rows grouped by essence
+        var rowIdx = 0
+        val essenceNameMap = s.perEssence.associate { it.essenceCode to it.essenceName }
+        breakdown.entries.sortedBy { essenceNameMap[it.key] ?: it.key }.forEach { (essCode, rows) ->
+            val essName = essenceNameMap[essCode] ?: essCode
+            rows.filter { it.volumeM3 > 0.0 }.forEach { row ->
+                if (rowIdx % 2 == 0) {
+                    canvas.drawRect(MARGIN, y, PAGE_W - MARGIN, y + rowH, stripeBg)
+                }
+                x = MARGIN + 4f
+                val cells = listOf(
+                    essName,
+                    row.product,
+                    fmt2(row.volumeM3),
+                    fmt0(row.pricePerM3),
+                    fmt0(row.totalEur) + " €"
+                )
+                for (i in cells.indices) {
+                    val p = if (i == 0) cellBoldPaint else cellPaint
+                    val align = if (i == 0) Paint.Align.LEFT else Paint.Align.RIGHT
+                    val xText = if (i == 0) x else x + colW[i] - 4f
+                    p.textAlign = align
+                    canvas.drawText(cells[i], xText, y + 11f, p)
+                    x += colW[i]
+                }
+                y += rowH
+                rowIdx++
+            }
+        }
+
+        // Total row
+        val totalEur = breakdown.values.flatten().sumOf { it.totalEur }
+        val totalVol = breakdown.values.flatten().sumOf { it.volumeM3 }
+        val totalBg = Paint().apply { color = Color.parseColor("#BBDEFB"); style = Paint.Style.FILL }
+        canvas.drawRect(MARGIN, y, PAGE_W - MARGIN, y + rowH, totalBg)
+        x = MARGIN + 4f
+        val totals = listOf("TOTAL", "", fmt2(totalVol), "", fmt0(totalEur) + " €")
+        for (i in totals.indices) {
+            val xText = if (i == 0) x else x + colW[i] - 4f
+            cellBoldPaint.textAlign = if (i == 0) Paint.Align.LEFT else Paint.Align.RIGHT
+            canvas.drawText(totals[i], xText, y + 11f, cellBoldPaint)
+            x += colW[i]
+        }
+        y += rowH + 2f
+
+        // Border
+        val border = Paint().apply { color = Color.parseColor("#1565C0"); style = Paint.Style.STROKE; strokeWidth = 1f }
         canvas.drawRect(MARGIN, startY, PAGE_W - MARGIN, y, border)
 
         return y
