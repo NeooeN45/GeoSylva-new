@@ -43,6 +43,7 @@ object IbpCriterionData {
             }
             else -> when {
                 n <= 1 -> 0
+                n == 2 -> 1
                 n <= 4 -> 2
                 else -> 5
             }
@@ -61,7 +62,8 @@ object IbpCriterionData {
     /** Auto-compute score B from number of strata present. */
     fun scoreB(selectedStrata: List<String>): Int = when (selectedStrata.size) {
         0, 1 -> 0
-        2, 3, 4 -> 2
+        2 -> 1
+        3, 4 -> 2
         else -> 5
     }
 
@@ -173,7 +175,7 @@ object IbpCriterionData {
     fun scoreCFromCounts(bmgPied: Float, bmmPied: Float): Int = when {
         bmgPied >= 3f -> 5
         bmgPied >= 1f -> 2
-        bmmPied >= 1f -> 2
+        bmmPied >= 1f -> 1
         else          -> 0
     }
 
@@ -181,7 +183,7 @@ object IbpCriterionData {
     fun scoreDFromCounts(bmgSol: Float, bmmSol: Float): Int = when {
         bmgSol >= 3f -> 5
         bmgSol >= 1f -> 2
-        bmmSol >= 1f -> 2
+        bmmSol >= 1f -> 1
         else         -> 0
     }
 
@@ -193,7 +195,7 @@ object IbpCriterionData {
         return when {
             tgb >= tgbHigh -> 5
             tgb >= tgbMin  -> 2
-            gb  >= 1f      -> 2
+            gb  >= 1f      -> 1
             else           -> 0
         }
     }
@@ -201,7 +203,8 @@ object IbpCriterionData {
     /** F – DMH: score from count of trees bearing at least one dmh per ha. */
     fun scoreFFromCounts(dmhCount: Float): Int = when {
         dmhCount >= 5f -> 5
-        dmhCount >= 2f -> 2
+        dmhCount >= 3f -> 2
+        dmhCount >= 2f -> 1
         else           -> 0
     }
 
@@ -313,12 +316,12 @@ object IbpCriterionData {
 
     /** Return the scoring thresholds summary for a given criterion (short, for UI chips). */
     fun thresholds(id: IbpCriterionId): List<Pair<String, Int>> = when (id) {
-        IbpCriterionId.E1  -> listOf("0–1 genre" to 0, "2–4 genres" to 2, "≥5 genres" to 5)
-        IbpCriterionId.E2  -> listOf("1 strate" to 0, "2–4 strates" to 2, "5 strates" to 5)
-        IbpCriterionId.BMS -> listOf("Aucun BMg/BMm" to 0, "BMg≥1/ha ou BMm≥1/ha" to 2, "BMg≥3/ha" to 5)
-        IbpCriterionId.BMC -> listOf("Aucun BMg/BMm" to 0, "BMg≥1/ha ou BMm≥1/ha" to 2, "BMg≥3/ha" to 5)
-        IbpCriterionId.GB  -> listOf("TGB<1 et GB<1/ha" to 0, "TGB≥1/ha ou GB≥1/ha" to 2, "TGB≥5/ha" to 5)
-        IbpCriterionId.DMH -> listOf("<2 arbres dmh/ha" to 0, "2–4 arbres dmh/ha" to 2, "≥5 arbres dmh/ha" to 5)
+        IbpCriterionId.E1  -> listOf("0–1 genre" to 0, "2 genres" to 1, "3–4 genres" to 2, "≥5 genres" to 5)
+        IbpCriterionId.E2  -> listOf("0–1 strate" to 0, "2 strates" to 1, "3–4 strates" to 2, "5 strates" to 5)
+        IbpCriterionId.BMS -> listOf("Aucun" to 0, "BMm≥1/ha (BMg<1)" to 1, "BMg≥1/ha" to 2, "BMg≥3/ha" to 5)
+        IbpCriterionId.BMC -> listOf("Aucun" to 0, "BMm≥1/ha (BMg<1)" to 1, "BMg≥1/ha" to 2, "BMg≥3/ha" to 5)
+        IbpCriterionId.GB  -> listOf("TGB<1 & GB<1/ha" to 0, "GB≥1/ha (TGB<1)" to 1, "TGB≥1/ha" to 2, "TGB≥5/ha" to 5)
+        IbpCriterionId.DMH -> listOf("<2 arbres/ha" to 0, "2 arbres/ha" to 1, "3–4 arbres/ha" to 2, "≥5 arbres/ha" to 5)
         IbpCriterionId.VS  -> listOf("0% surface MO" to 0, "<1% ou >5%" to 2, "1–5% surface MO" to 5)
         IbpCriterionId.CF  -> listOf("Forêt récente" to 0, "Boisé partiel" to 2, "Forêt ancienne" to 5)
         IbpCriterionId.CO  -> listOf("0 type" to 0, "1 type" to 2, "≥2 types" to 5)

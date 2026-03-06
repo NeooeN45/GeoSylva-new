@@ -142,7 +142,7 @@ data class IbpAnswers(
     companion object {
         /** Create a new IbpAnswers with current schema (v2 = 0/2/5 system). */
         fun new() = IbpAnswers(schemaVersion = 2)
-        val VALID_SCORES = setOf(0, 2, 5)
+        val VALID_SCORES = setOf(0, 1, 2, 5)
     }
 }
 

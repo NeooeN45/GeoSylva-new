@@ -114,6 +114,7 @@ import com.forestry.counter.domain.repository.EssenceRepository
 import com.forestry.counter.domain.repository.ParcelleRepository
 import com.forestry.counter.domain.repository.TigeRepository
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -1428,7 +1429,10 @@ fun MapScreen(
             LaunchedEffect(mapReady, measurePoints, measureMode, measureColor) {
                 val map = mapLibreMap ?: return@LaunchedEffect
                 if (!mapReady) return@LaunchedEffect
-                map.getStyle { style -> renderMeasureOnMap(style, measurePoints, measureMode, measureColor.toArgb()) }
+                map.getStyle { style ->
+                    try { renderMeasureOnMap(style, measurePoints, measureMode, measureColor.toArgb()) }
+                    catch (_: Throwable) {}
+                }
             }
 
             // ── Appliquer/mettre à jour overlay shapefile quand les données changent ──
@@ -2999,10 +3003,9 @@ fun MapScreen(
                         val surfHa = traceState.surfaceHa
                         if (wkt != null && parcelleRepository != null) {
                             scope.launch {
-                                // Update existing parcelle shape, or create note
                                 if (parcelleId != "none" && parcelleId != "all" && !parcelleId.startsWith("forest_")) {
-                                    val flow = parcelleRepository.getParcelleById(parcelleId)
-                                    flow.collect { parcelle ->
+                                    try {
+                                        val parcelle = parcelleRepository.getParcelleById(parcelleId).first()
                                         if (parcelle != null) {
                                             parcelleRepository.updateParcelle(
                                                 parcelle.copy(
@@ -3012,8 +3015,7 @@ fun MapScreen(
                                                 )
                                             )
                                         }
-                                        return@collect
-                                    }
+                                    } catch (_: Throwable) {}
                                 }
                                 gpsTracer.clearTrace()
                                 showTraceSaveDialog = false

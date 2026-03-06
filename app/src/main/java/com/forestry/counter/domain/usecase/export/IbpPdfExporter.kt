@@ -52,10 +52,10 @@ object IbpPdfExporter {
         val subTitlePaint = Paint().apply { color = Color.WHITE; textSize = 11f; isAntiAlias = true; alpha = 200 }
         canvas.drawText("Peuplement forestier — Évaluation terrain", margin, 58f, subTitlePaint)
 
-        // GeoSylva brand
-        val brandPaint = Paint().apply { color = Color.WHITE; textSize = 10f; isAntiAlias = true; alpha = 180 }
-        canvas.drawText("GeoSylva", (w - margin - 70).coerceAtLeast(0f), 38f, brandPaint)
-        canvas.drawText("Rapport généré le ${dateFormat.format(Date())}", (w - margin - 130).coerceAtLeast(0f), 58f, brandPaint)
+        // GeoSylva brand (right-aligned, below title to avoid overlap)
+        val brandPaint = Paint().apply { color = Color.WHITE; textSize = 9f; isAntiAlias = true; alpha = 200; textAlign = Paint.Align.RIGHT }
+        canvas.drawText("GeoSylva", w - margin, 38f, brandPaint)
+        canvas.drawText("Généré le ${dateFormat.format(Date())}", w - margin, 56f, brandPaint)
 
         y = 110f
 
@@ -197,16 +197,16 @@ object IbpPdfExporter {
 
         val smallPaint = Paint().apply { color = Color.parseColor("#616161"); textSize = 9f; isAntiAlias = true }
         val criteria = listOf(
-            "A – Essences autochtones" to "0: 0-1 genre | 2: 2 genres | 5: ≥3 genres (subalpin) / ≥5 genres",
-            "B – Structure verticale" to "0: 1 strate | 2: 2 strates | 5: 5 strates (0=1, 2=2, 2=3-4, 5=5)",
-            "C – Bois morts sur pied" to "0: aucun | 2: BMg≥1/ha ou BMm≥1/ha | 5: BMg≥3/ha",
-            "D – Bois morts au sol" to "0: aucun | 2: BMg≥1/ha ou BMm≥1/ha | 5: BMg≥3/ha",
-            "E – Très gros bois vivants" to "0: TGB<1/ha et GB<1/ha | 2: TGB≥1/ha | 5: TGB≥5/ha",
-            "F – Dendromicrohabitats" to "0: <2 arbres/ha | 2: 2-3 arbres/ha | 5: ≥5 arbres/ha (8+ types)",
-            "G – Milieux ouverts florifers" to "0: 0% | 2: <1% ou lisières | 5: ≥1% surface",
-            "H – Continuité temporelle" to "0: forêt récente (<30 ans) | 2: partielle | 5: forêt ancienne",
-            "I – Milieux aquatiques" to "0: aucun type | 2: 1 type | 5: 2 types et plus",
-            "J – Milieux rocheux" to "0: aucun type | 2: 1 type | 5: 2 types et plus"
+            "A – Essences autochtones" to "0: 0–1 genre | 1: 2 genres | 2: 3–4 genres | 5: ≥5 genres (plaine/mont.)",
+            "B – Structure verticale" to "0: 0–1 strate | 1: 2 strates | 2: 3–4 strates | 5: 5 strates",
+            "C – Bois morts sur pied" to "0: aucun | 1: BMm≥1/ha (BMg<1) | 2: BMg≥1/ha | 5: BMg≥3/ha",
+            "D – Bois morts au sol" to "0: aucun | 1: BMm≥1/ha (BMg<1) | 2: BMg≥1/ha | 5: BMg≥3/ha",
+            "E – Très gros bois vivants" to "0: TGB<1 & GB<1/ha | 1: GB≥1/ha (TGB<1) | 2: TGB≥1/ha | 5: TGB≥5/ha",
+            "F – Dendromicrohabitats" to "0: <2 arbres/ha | 1: 2 arbres/ha | 2: 3–4 arbres/ha | 5: ≥5 arbres/ha",
+            "G – Milieux ouverts florifères" to "0: 0% | 2: <1% ou >5% | 5: 1–5% surface ouverte",
+            "H – Continuité temporelle" to "0: forêt récente | 2: boisé partiel | 5: forêt ancienne (XIXe)",
+            "I – Milieux aquatiques" to "0: aucun type | 2: 1 type | 5: ≥2 types",
+            "J – Milieux rocheux" to "0: aucun type | 2: 1 type | 5: ≥2 types"
         )
         criteria.forEach { (name, desc) ->
             val labelPaint = Paint().apply { color = Color.parseColor("#424242"); textSize = 9f; isFakeBoldText = true; isAntiAlias = true }
@@ -252,6 +252,7 @@ object IbpPdfExporter {
             if (isAnswered) {
                 val scoreCellColor = when (score) {
                     0 -> Color.parseColor("#FFCDD2")
+                    1 -> Color.parseColor("#FFE0B2")
                     2 -> Color.parseColor("#FFF9C4")
                     else -> Color.parseColor("#C8E6C9")
                 }
@@ -415,19 +416,16 @@ object IbpPdfExporter {
         IbpCriterionId.HC  -> "J – Milieux rocheux"
     }
 
-    private fun ibpOptionShort(id: IbpCriterionId, score: Int): String {
-        val idx = when (score) { 0 -> 0; 2 -> 1; 5 -> 2; else -> 0 }
-        return when (id) {
-            IbpCriterionId.E1  -> listOf("0-1 genre", "2 genres", "≥3 genres (subalp.) / ≥5 genres")[idx]
-            IbpCriterionId.E2  -> listOf("1 strate", "2 strates", "5 strates")[idx]
-            IbpCriterionId.GB  -> listOf("TGB<1/ha, GB<1/ha", "TGB≥1/ha", "TGB≥5/ha")[idx]
-            IbpCriterionId.BMS -> listOf("Aucun", "BMg≥1/ha ou BMm≥1/ha", "BMg≥3/ha")[idx]
-            IbpCriterionId.BMC -> listOf("Aucun", "BMg≥1/ha ou BMm≥1/ha", "BMg≥3/ha")[idx]
-            IbpCriterionId.DMH -> listOf("<2 arbres/ha", "2–3 arbres/ha", "≥5 arbres/ha")[idx]
-            IbpCriterionId.VS  -> listOf("0% surface", "<1% ou lisières", "≥1% surface")[idx]
-            IbpCriterionId.CF  -> listOf("Forêt récente", "État boisé partiel", "Forêt ancienne")[idx]
-            IbpCriterionId.CO  -> listOf("Aucun type", "1 type", "2 types et plus")[idx]
-            IbpCriterionId.HC  -> listOf("Aucun type", "1 type", "2 types et plus")[idx]
-        }
+    private fun ibpOptionShort(id: IbpCriterionId, score: Int): String = when (id) {
+        IbpCriterionId.E1  -> when (score) { 0 -> "0–1 genre"; 1 -> "2 genres"; 2 -> "3–4 genres"; else -> "≥5 genres" }
+        IbpCriterionId.E2  -> when (score) { 0 -> "0–1 strate"; 1 -> "2 strates"; 2 -> "3–4 strates"; else -> "5 strates" }
+        IbpCriterionId.BMS -> when (score) { 0 -> "Aucun"; 1 -> "BMm≥1/ha (BMg<1)"; 2 -> "BMg≥1/ha"; else -> "BMg≥3/ha" }
+        IbpCriterionId.BMC -> when (score) { 0 -> "Aucun"; 1 -> "BMm≥1/ha (BMg<1)"; 2 -> "BMg≥1/ha"; else -> "BMg≥3/ha" }
+        IbpCriterionId.GB  -> when (score) { 0 -> "TGB<1/ha, GB<1/ha"; 1 -> "GB≥1/ha (TGB<1)"; 2 -> "TGB≥1/ha"; else -> "TGB≥5/ha" }
+        IbpCriterionId.DMH -> when (score) { 0 -> "<2 arbres/ha"; 1 -> "2 arbres/ha"; 2 -> "3–4 arbres/ha"; else -> "≥5 arbres/ha" }
+        IbpCriterionId.VS  -> when (score) { 0 -> "0% surface"; 2 -> "<1% ou >5%"; else -> "1–5% surface" }
+        IbpCriterionId.CF  -> when (score) { 0 -> "Forêt récente"; 2 -> "État boisé partiel"; else -> "Forêt ancienne" }
+        IbpCriterionId.CO  -> when (score) { 0 -> "Aucun type"; 2 -> "1 type"; else -> "2 types et plus" }
+        IbpCriterionId.HC  -> when (score) { 0 -> "Aucun type"; 2 -> "1 type"; else -> "2 types et plus" }
     }
 }
