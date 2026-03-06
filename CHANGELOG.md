@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [2.0.0] — 2026-03-06
+
+### Added
+- **GPS auto-capture IBP** — latitude/longitude capturés automatiquement à l'ouverture de l'évaluation IBP via `LocationManager` (GPS + réseau). Stockés en DB. Migration Room 14→15.
+- **IbpQgisExporter** — export ZIP contenant `ibp_points.geojson` (points GPS), `ibp_all.csv` (toutes évaluations), `ibp_style.qml` (style QGIS 5 niveaux) et `ibp_metadata.json`. Bouton Map dans `IbpProjectsScreen`.
+- **IbpDiagnosticScreen** — tableau de bord biodiversité : en-tête score /50, radar animé A–J, tableau de détail par critère avec barres, liste top-5 actions prioritaires avec gain en pts + effort, carte potentiel (gain max groupe A), résumé tendance si ≥ 2 évaluations. Route `ibp/diagnostic/{parcelleId}`.
+- **IbpCompareScreen** — comparaison temporelle : sparklines animées score total, groupe A vs B, et chaque critère A–J ; tableau récapitulatif couleur-codé ; bouton Timeline dans `IbpProjectsScreen` (si ≥ 2 évaluations). Route `ibp/compare/{parcelleId}`.
+- **Didacticiel enrichi** — nouvelle page IBP (EmojiNature, vert foncé) entre Synthèse et Export ; 9 pages au total. Export page mise à jour (IBP QGIS, Excel).
+- **Strings EN+FR** — modes IBP (COMPLET/RAPIDE/BOIS_MORT/CONTEXTE/PEUPLEMENT), labels saisie numérique (BMg/BMm/TGB/GB/DMH/VS), sections référence IBP.
+
+### Changed
+- versionCode 7 → 8, versionName 1.7.0 → **2.0.0**.
+- `IbpProjectsScreen` TopAppBar : icônes Analytics (diagnostic), Timeline (comparaison) et Map (export QGIS) conditionnels.
+- Settings : suppression de l'item "Mode GPS : Standard" non interactif (trompeur).
+
+### Fixed
+- Conflit `ibpLevelLabel` entre `IbpEvaluationScreen` (@Composable) et `IbpDiagnosticScreen` (privé) — renommé `diagLevelStr` dans le screen diagnostic.
+
+---
+
 ## [1.7.0] — 2026-03-05
 
 ### Added

@@ -1,5 +1,7 @@
 package com.forestry.counter.presentation.screens.forestry
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -30,8 +32,11 @@ import com.forestry.counter.domain.model.Parcelle
 import com.forestry.counter.domain.model.Placette
 import com.forestry.counter.domain.repository.PlacetteRepository
 import com.forestry.counter.domain.repository.ParcelleRepository
+import com.forestry.counter.domain.usecase.export.IbpQgisExporter
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -42,13 +47,31 @@ fun IbpProjectsScreen(
     parcelleRepository: ParcelleRepository? = null,
     placetteRepository: PlacetteRepository? = null,
     onNavigateBack: () -> Unit,
-    onOpenEvaluation: (parcelleId: String, placetteId: String, evalId: String?) -> Unit
+    onOpenEvaluation: (parcelleId: String, placetteId: String, evalId: String?) -> Unit,
+    onNavigateToDiagnostic: ((parcelleId: String) -> Unit)? = null,
+    onNavigateToCompare: ((parcelleId: String) -> Unit)? = null
 ) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
+    val context = androidx.compose.ui.platform.LocalContext.current
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
 
     val evaluations by ibpRepository.getAll().collectAsState(initial = emptyList())
+
+    val qgisExportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri ->
+        if (uri != null) scope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use { out ->
+                        IbpQgisExporter.export(evaluations, "GeoSylva IBP", out)
+                    }
+                }
+                snackbar.showSnackbar("Export QGIS généré")
+            }.onFailure { snackbar.showSnackbar("Erreur export QGIS") }
+        }
+    }
 
     val parcelles by remember(parcelleRepository) {
         parcelleRepository?.getAllParcelles() ?: kotlinx.coroutines.flow.flowOf(emptyList())
@@ -83,11 +106,31 @@ fun IbpProjectsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            MediumTopAppBar(
                 title = { Text(stringResource(R.string.ibp_projects_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                    }
+                },
+                actions = {
+                    if (onNavigateToDiagnostic != null && grouped.size == 1) {
+                        IconButton(onClick = { onNavigateToDiagnostic(grouped.keys.first()) }) {
+                            Icon(Icons.Default.Analytics, contentDescription = "Diagnostic")
+                        }
+                    }
+                    if (onNavigateToCompare != null && grouped.size == 1 && (grouped.values.firstOrNull()?.size ?: 0) >= 2) {
+                        IconButton(onClick = { onNavigateToCompare(grouped.keys.first()) }) {
+                            Icon(Icons.Default.Timeline, contentDescription = "Comparaison temporelle")
+                        }
+                    }
+                    if (evaluations.isNotEmpty()) {
+                        IconButton(onClick = {
+                            val dateStr = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US).format(java.util.Date())
+                            qgisExportLauncher.launch("ibp_export_$dateStr.zip")
+                        }) {
+                            Icon(Icons.Default.Map, contentDescription = "Export QGIS")
+                        }
                     }
                 }
             )

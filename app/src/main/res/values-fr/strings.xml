@@ -875,8 +875,13 @@
     <string name="onboarding_export_title">Exports professionnels</string>
     <string name="onboarding_export_desc">Exportez vos données dans plusieurs formats pour le reporting, l\'analyse SIG ou l\'archivage.</string>
     <string name="onboarding_export_b1">Rapport PDF de synthèse avec tableaux dendrométriques</string>
-    <string name="onboarding_export_b2">GeoJSON et Shapefile pour QGIS / ArcGIS</string>
-    <string name="onboarding_export_b3">Export CSV pour analyse tableur</string>
+    <string name="onboarding_export_b2">GeoJSON, Shapefile et export IBP QGIS (ZIP + style)</string>
+    <string name="onboarding_export_b3">Exports CSV et Excel pour analyse tableur</string>
+    <string name="onboarding_ibp_title">Évaluation biodiversité (IBP)</string>
+    <string name="onboarding_ibp_desc">Évaluez la biodiversité forestière avec le protocole officiel CNPF de l\'Indice de Biodiversité Potentielle. Les coordonnées GPS sont capturées automatiquement à chaque évaluation.</string>
+    <string name="onboarding_ibp_b1">10 critères A–J : bois mort, micro-habitats, très gros bois, ancienneté…</string>
+    <string name="onboarding_ibp_b2">Tableau de bord biodiversité : radar, actions prioritaires, gain potentiel</string>
+    <string name="onboarding_ibp_b3">Export QGIS (GeoJSON + CSV + style QML) et comparaison temporelle</string>
     <string name="onboarding_start">Commencer</string>
     <string name="onboarding_next">Suivant</string>
     <string name="onboarding_skip">Passer</string>
@@ -1109,75 +1114,75 @@
     <string name="ibp_rec_vg_1">Gestion très douce recommandée — préserver tous les éléments habitats.</string>
     <string name="ibp_rec_vg_2">Documenter et valoriser ce peuplement comme référence de biodiversité territoriale.</string>
 
-    <!-- IBP Critère E1 -->
-    <string name="ibp_e1_title">Essences à très forte valeur biologique</string>
-    <string name="ibp_e1_subtitle">Chênes, hêtre, saules indigènes, aulne, frêne commun, if, vieux pommier/poirier sauvages, vieux châtaignier…</string>
-    <string name="ibp_e1_o0">Absent — aucune essence à très forte valeur biologique</string>
-    <string name="ibp_e1_o1">1 essence à très forte valeur biologique présente</string>
-    <string name="ibp_e1_o2">2 essences ou plus à très forte valeur biologique</string>
+    <!-- IBP Critère A (E1) – Essences autochtones -->
+    <string name="ibp_e1_title">A – Essences autochtones (genres)</string>
+    <string name="ibp_e1_subtitle">Nombre de genres d\'essences autochtones présents (chêne, hêtre, aulne, frêne, érable…)</string>
+    <string name="ibp_e1_o0">0–1 genre autochtone — Score 0 pt</string>
+    <string name="ibp_e1_o1">2–4 genres autochtones — Score 2 pts</string>
+    <string name="ibp_e1_o2">≥5 genres (≥3 au subalpin) — Score 5 pts</string>
 
-    <!-- IBP Critère E2 -->
-    <string name="ibp_e2_title">Nombre d\'essences indigènes</string>
-    <string name="ibp_e2_subtitle">Toutes strates confondues : arbres, arbustes et sous-bois (toutes couches comptées)</string>
-    <string name="ibp_e2_o0">1 à 2 essences indigènes</string>
-    <string name="ibp_e2_o1">3 à 5 essences indigènes</string>
-    <string name="ibp_e2_o2">6 essences indigènes ou plus</string>
+    <!-- IBP Critère B (E2) – Structure verticale -->
+    <string name="ibp_e2_title">B – Structure verticale de la végétation</string>
+    <string name="ibp_e2_subtitle">Strates présentes : herbacée, ligneux très bas, ligneux bas, intermédiaire, haut</string>
+    <string name="ibp_e2_o0">1 seule strate — Score 0 pt</string>
+    <string name="ibp_e2_o1">2–4 strates présentes — Score 2 pts</string>
+    <string name="ibp_e2_o2">5 strates présentes — Score 5 pts</string>
 
-    <!-- IBP Critère GB -->
-    <string name="ibp_gb_title">Gros et très gros bois vivants</string>
-    <string name="ibp_gb_subtitle">Arbres avec un diamètre ≥ 67,5 cm et houppier bien développé</string>
-    <string name="ibp_gb_o0">Absent — aucun arbre ≥ 67,5 cm de diamètre</string>
-    <string name="ibp_gb_o1">1 à 3 gros bois par hectare</string>
-    <string name="ibp_gb_o2">4 gros bois ou plus par hectare</string>
+    <!-- IBP Critère E (GB) – Très gros bois vivants -->
+    <string name="ibp_gb_title">E – Très gros bois vivants (TGB/GB)</string>
+    <string name="ibp_gb_subtitle">TGB : D &gt; 67,5 cm | GB : 47,5–67,5 cm (seuils réduits sur stations peu fertiles)</string>
+    <string name="ibp_gb_o0">TGB &lt; 1/ha et GB &lt; 1/ha — Score 0 pt</string>
+    <string name="ibp_gb_o1">TGB ≥ 1/ha (ou GB ≥ 1/ha si TGB &lt; 1) — Score 2 pts</string>
+    <string name="ibp_gb_o2">TGB ≥ 5/ha — Score 5 pts</string>
 
-    <!-- IBP Critère BMS -->
-    <string name="ibp_bms_title">Bois mort sur pied</string>
-    <string name="ibp_bms_subtitle">Arbres morts debout (chicots), base creuse ou tronc en décomposition, diamètre ≥ 7,5 cm</string>
-    <string name="ibp_bms_o0">Absent — aucun bois mort sur pied</string>
-    <string name="ibp_bms_o1">1 à 3 chicots par hectare</string>
-    <string name="ibp_bms_o2">4 chicots ou plus par hectare</string>
+    <!-- IBP Critère C (BMS) – Bois morts sur pied -->
+    <string name="ibp_bms_title">C – Bois morts sur pied (≥ 1 m)</string>
+    <string name="ibp_bms_subtitle">BMg (D &gt; 37,5 cm) et BMm (17,5–37,5 cm) debout ou inclinés à &lt; 45°</string>
+    <string name="ibp_bms_o0">Aucun (BMg/ha &lt; 1 et BMm/ha &lt; 1) — Score 0 pt</string>
+    <string name="ibp_bms_o1">BMg ≥ 1/ha ou BMm ≥ 1/ha (si BMg &lt; 1) — Score 2 pts</string>
+    <string name="ibp_bms_o2">BMg ≥ 3/ha — Score 5 pts</string>
 
-    <!-- IBP Critère BMC -->
-    <string name="ibp_bmc_title">Bois mort au sol</string>
-    <string name="ibp_bmc_subtitle">Troncs couchés sur le sol, diamètre ≥ 20 cm, longueur ≥ 1 m</string>
-    <string name="ibp_bmc_o0">Absent — aucun bois mort au sol</string>
-    <string name="ibp_bmc_o1">Présent mais moins de 3 m³/ha</string>
-    <string name="ibp_bmc_o2">3 m³/ha ou plus</string>
+    <!-- IBP Critère D (BMC) – Bois morts au sol -->
+    <string name="ibp_bmc_title">D – Bois morts au sol (≥ 1 m)</string>
+    <string name="ibp_bmc_subtitle">BMg (D &gt; 37,5 cm) et BMm (17,5–37,5 cm) couchés ou souches &lt; 1 m</string>
+    <string name="ibp_bmc_o0">Aucun (BMg/ha &lt; 1 et BMm/ha &lt; 1) — Score 0 pt</string>
+    <string name="ibp_bmc_o1">BMg ≥ 1/ha ou BMm ≥ 1/ha (si BMg &lt; 1) — Score 2 pts</string>
+    <string name="ibp_bmc_o2">BMg ≥ 3/ha — Score 5 pts</string>
 
-    <!-- IBP Critère DMH -->
-    <string name="ibp_dmh_title">Dendromicrohabitats</string>
-    <string name="ibp_dmh_subtitle">Cavités, fissures, coulées de sève, nids, lierre épais, écorce décollée, carpophores…</string>
-    <string name="ibp_dmh_o0">Absent — aucun arbre porteur de dendromicrohabitats</string>
-    <string name="ibp_dmh_o1">1 à 3 arbres avec dendromicrohabitats par hectare</string>
-    <string name="ibp_dmh_o2">4 arbres ou plus avec dendromicrohabitats par hectare</string>
+    <!-- IBP Critère F (DMH) – Dendromicrohabitats -->
+    <string name="ibp_dmh_title">F – Arbres porteurs de dendromicrohabitats (dmh)</string>
+    <string name="ibp_dmh_subtitle">Loges de pic, cavités, galeries, coulées de sève, nids, carpophores, épiphytes (15 types)</string>
+    <string name="ibp_dmh_o0">&lt; 2 arbres porteurs de dmh/ha — Score 0 pt</string>
+    <string name="ibp_dmh_o1">2–4 arbres porteurs de dmh/ha — Score 2 pts</string>
+    <string name="ibp_dmh_o2">≥ 5 arbres porteurs de dmh/ha — Score 5 pts</string>
 
-    <!-- IBP Critère VS -->
-    <string name="ibp_vs_title">Végétation du sous-bois</string>
-    <string name="ibp_vs_subtitle">Strates arbustive et herbacée — évaluées à l\'intérieur du peuplement</string>
-    <string name="ibp_vs_o0">Absente ou très clairsemée (couverture &lt; 10 %)</string>
-    <string name="ibp_vs_o1">Présente par taches ou couverture incomplète (10–50 %)</string>
-    <string name="ibp_vs_o2">Bien développée, couverture &gt; 50 %</string>
+    <!-- IBP Critère G (VS) – Milieux ouverts florifères -->
+    <string name="ibp_vs_title">G – Milieux ouverts florifères</string>
+    <string name="ibp_vs_subtitle">Trouées, clairières, larges lisières — % de la surface parcourue (1–5 % = optimal)</string>
+    <string name="ibp_vs_o0">0 % de surface ouverte — Score 0 pt</string>
+    <string name="ibp_vs_o1">&lt; 1 % ou &gt; 5 % de surface ouverte — Score 2 pts</string>
+    <string name="ibp_vs_o2">1–5 % de milieux ouverts florifères — Score 5 pts</string>
 
-    <!-- IBP Critère CF -->
-    <string name="ibp_cf_title">Continuité forestière</string>
-    <string name="ibp_cf_subtitle">Âge estimé du peuplement — la présence de vieux arbres indique une longue continuité</string>
-    <string name="ibp_cf_o0">Forêt récente — moins de 30 ans, sans vieil arbre</string>
-    <string name="ibp_cf_o1">De 30 à 100 ans</string>
-    <string name="ibp_cf_o2">Forêt ancienne — plus de 100 ans, vieux arbres présents</string>
+    <!-- IBP Critère H (CF) – Continuité temporelle -->
+    <string name="ibp_cf_title">H – Continuité temporelle de l\'état boisé</string>
+    <string name="ibp_cf_subtitle">Vérification via carte d\'état-major et inspection du site</string>
+    <string name="ibp_cf_o0">Forêt récente — entièrement défrichée puis reboisée (&lt;50 ans) — Score 0 pt</string>
+    <string name="ibp_cf_o1">État boisé partiellement continu — défrichement localisé — Score 2 pts</string>
+    <string name="ibp_cf_o2">Forêt ancienne — non défrichée depuis le XIXe s. — Score 5 pts</string>
 
-    <!-- IBP Critère CO -->
-    <string name="ibp_co_title">Connexion aux habitats naturels</string>
-    <string name="ibp_co_subtitle">Haies, prairies, cours d\'eau, forêts adjacentes autour de la placette</string>
-    <string name="ibp_co_o0">Isolée — entourée de cultures ou d\'artificiel sur 3 côtés ou plus</string>
-    <string name="ibp_co_o1">Connexion limitée — habitat naturel sur 1 ou 2 côtés</string>
-    <string name="ibp_co_o2">Bien connectée — reliée à des habitats naturels sur 3 ou 4 côtés</string>
+    <!-- IBP Critère I (CO) – Milieux aquatiques -->
+    <string name="ibp_co_title">I – Milieux aquatiques</string>
+    <string name="ibp_co_subtitle">Cours d\'eau, mares, marécages, sources, tourbières dans ou en bordure du peuplement</string>
+    <string name="ibp_co_o0">Aucun type de milieu aquatique — Score 0 pt</string>
+    <string name="ibp_co_o1">1 type de milieu aquatique — Score 2 pts</string>
+    <string name="ibp_co_o2">2 types ou plus de milieux aquatiques — Score 5 pts</string>
 
-    <!-- IBP Critère HC -->
-    <string name="ibp_hc_title">Habitats complémentaires</string>
-    <string name="ibp_hc_subtitle">Mares, affleurements rocheux, zones humides, larges lisières, tas de pierres, vieux murs…</string>
-    <string name="ibp_hc_o0">Aucun habitat complémentaire présent</string>
-    <string name="ibp_hc_o1">1 type d\'habitat complémentaire</string>
-    <string name="ibp_hc_o2">2 types ou plus d\'habitats complémentaires</string>
+    <!-- IBP Critère J (HC) – Milieux rocheux -->
+    <string name="ibp_hc_title">J – Milieux rocheux</string>
+    <string name="ibp_hc_subtitle">Falaises, éboulis, dalles, grottes, blocs, bancs de galets dans ou en bordure du peuplement</string>
+    <string name="ibp_hc_o0">Aucun type de milieu rocheux — Score 0 pt</string>
+    <string name="ibp_hc_o1">1 type de milieu rocheux — Score 2 pts</string>
+    <string name="ibp_hc_o2">2 types ou plus de milieux rocheux — Score 5 pts</string>
 
     <!-- Conditions de croissance IBP (IBP v3) -->
     <string name="ibp_growth_conditions">Conditions de croissance</string>
@@ -1189,17 +1194,49 @@
     <!-- IBP Améliorations prioritaires -->
     <string name="ibp_priority_improvements">Améliorations prioritaires</string>
 
-    <!-- IBP Conseils par critère -->
-    <string name="ibp_tip_e1">Favoriser chêne, hêtre ou saules indigènes lors des plantations ou de la régénération naturelle.</string>
-    <string name="ibp_tip_e2">Maintenir ou introduire des espèces arbustives indigènes pour enrichir la diversité.</string>
-    <string name="ibp_tip_gb">Conserver définitivement les gros bois (&gt;= 67,5 cm) comme arbres biologiques de référence.</string>
-    <string name="ibp_tip_bms">Maintenir au moins 4 chicots par ha ; anneler des arbres si nécessaire pour en créer.</string>
-    <string name="ibp_tip_bmc">Laisser tous les troncs &gt;= 20 cm de diamètre ; objectif &gt;= 3 m³/ha au sol.</string>
-    <string name="ibp_tip_dmh">Marquer et protéger les arbres porteurs de cavités, coulées de sève, nids ou carpophores.</string>
-    <string name="ibp_tip_vs">Réduire l\'ombre ou créer des trouées pour permettre le développement du sous-bois.</string>
-    <string name="ibp_tip_cf">Protéger les vieux arbres pour prolonger la continuité forestière ; documenter l\'âge du peuplement.</string>
-    <string name="ibp_tip_co">Planter ou préserver haies et bandes tampons reliant les habitats naturels.</string>
-    <string name="ibp_tip_hc">Préserver mares, affleurements rocheux ou zones humides dans ou en bordure du peuplement.</string>
+    <!-- IBP Conseils par critère (A-J) -->
+    <string name="ibp_tip_e1">A : diversifier avec des genres autochtones (chêne, aulne, frêne, érable) ; favoriser la régénération naturelle.</string>
+    <string name="ibp_tip_e2">B : créer des trouées ou réduire la densité pour permettre l\'installation des strates arbustive et herbacée.</string>
+    <string name="ibp_tip_gb">E : marquer définitivement les TGB (D &gt; 67,5 cm) et les exclure de l\'exploitation.</string>
+    <string name="ibp_tip_bms">C : maintenir ≥ 3 BMg/ha debout ; anneler des tiges vivantes &gt; 37,5 cm pour créer de futurs bois morts.</string>
+    <string name="ibp_tip_bmc">D : laisser au sol tous les troncs ≥ 37,5 cm ; objectif ≥ 3 BMg/ha couchés.</string>
+    <string name="ibp_tip_dmh">F : identifier et marquer les arbres à dmh (cavités, coulées, nids, carpophores) — maintenir ≥ 5/ha.</string>
+    <string name="ibp_tip_vs">G : maintenir ou créer 1–5 % de trouées et larges lisières avec végétation fleurie.</string>
+    <string name="ibp_tip_cf">H : vérifier l\'ancienneté via la carte d\'état-major ; protéger les îlots de vieillissement.</string>
+    <string name="ibp_tip_co">I : protéger mares, sources et berges ; éviter le drainage des dépressions humides.</string>
+    <string name="ibp_tip_hc">J : préserver falaises, éboulis, affleurements et accumulations de blocs de toute perturbation.</string>
+
+    <!-- Modes IBP -->
+    <string name="ibp_mode_label">Mode d\'évaluation</string>
+    <string name="ibp_mode_complet">Complet (A–J)</string>
+    <string name="ibp_mode_rapide">Rapide (5 critères)</string>
+    <string name="ibp_mode_bois_mort">Bois mort (C–E)</string>
+    <string name="ibp_mode_contexte">Contexte (H–J)</string>
+    <string name="ibp_mode_peuplement">Peuplement (A–G)</string>
+
+    <!-- Panels de saisie numérique IBP -->
+    <string name="ibp_count_per_ha">arbres/ha</string>
+    <string name="ibp_count_bmg_standing">BMg debout (∅>37,5 cm) /ha</string>
+    <string name="ibp_count_bmm_standing">BMm debout (17,5–37,5 cm) /ha</string>
+    <string name="ibp_count_bmg_ground">BMg au sol (∅>37,5 cm) /ha</string>
+    <string name="ibp_count_bmm_ground">BMm au sol (17,5–37,5 cm) /ha</string>
+    <string name="ibp_count_tgb">TGB (∅>67,5 cm) /ha</string>
+    <string name="ibp_count_gb">GB (∅ 47,5–67,5 cm) /ha</string>
+    <string name="ibp_count_dmh_trees">Arbres porteurs de ≥1 dmh /ha</string>
+    <string name="ibp_count_open_pct">Milieux ouverts florifères (%)</string>
+    <string name="ibp_count_terrain_title">Comptage terrain (arbres/ha)</string>
+    <string name="ibp_count_living_title">Comptage terrain – arbres vivants (arbres/ha)</string>
+    <string name="ibp_auto_score">Score calculé automatiquement : %1$d pts</string>
+    <string name="ibp_dmh_checklist_title">Types de dmh observés (cochez les présents)</string>
+
+    <!-- Écran de référence IBP -->
+    <string name="ibp_reference_title">Guide IBP Terrain</string>
+    <string name="ibp_reference_source">Source : CNPF / IDF – IBP v3.2 (2020)</string>
+    <string name="ibp_reference_levels_title">Niveaux IBP</string>
+    <string name="ibp_reference_modes_title">Modes d\'évaluation</string>
+    <string name="ibp_reference_criteria_title">Fiches critères A–J</string>
+    <string name="ibp_reference_thresholds">Seuils de notation</string>
+    <string name="ibp_reference_protocol">Protocole terrain</string>
 
     <!-- Écran IBP Projets -->
     <string name="ibp_projects_title">Évaluations IBP</string>

@@ -9,29 +9,52 @@ enum class IbpGrowthConditions {
     MEDITERRANEAN   // Méditerranéen
 }
 
-enum class IbpCriterionId(val code: String, val group: IbpGroup) {
-    E1("E1", IbpGroup.A),
-    E2("E2", IbpGroup.A),
-    GB("GB", IbpGroup.A),
-    BMS("BMS", IbpGroup.A),
-    BMC("BMC", IbpGroup.A),
-    DMH("DMH", IbpGroup.A),
-    VS("VS", IbpGroup.A),
-    CF("CF", IbpGroup.B),
-    CO("CO", IbpGroup.B),
-    HC("HC", IbpGroup.B);
+enum class IbpCriterionId(val code: String, val displayCode: String, val group: IbpGroup) {
+    E1("E1",  "A", IbpGroup.A),  // A – Essences autochtones
+    E2("E2",  "B", IbpGroup.A),  // B – Structure verticale
+    BMS("BMS","C", IbpGroup.A),  // C – Bois morts sur pied
+    BMC("BMC","D", IbpGroup.A),  // D – Bois morts au sol
+    GB("GB",  "E", IbpGroup.A),  // E – Très gros bois vivants
+    DMH("DMH","F", IbpGroup.A),  // F – Dendromicrohabitats
+    VS("VS",  "G", IbpGroup.A),  // G – Milieux ouverts florifers
+    CF("CF",  "H", IbpGroup.B),  // H – Continuité temporelle
+    CO("CO",  "I", IbpGroup.B),  // I – Milieux aquatiques
+    HC("HC",  "J", IbpGroup.B);  // J – Milieux rocheux
 
     companion object {
-        val ALL = values().toList()
-        val GROUP_A = values().filter { it.group == IbpGroup.A }
-        val GROUP_B = values().filter { it.group == IbpGroup.B }
+        val ALL    = listOf(E1, E2, BMS, BMC, GB, DMH, VS, CF, CO, HC) // A→J order
+        val GROUP_A = listOf(E1, E2, BMS, BMC, GB, DMH, VS)
+        val GROUP_B = listOf(CF, CO, HC)
     }
 }
 
 enum class IbpGroup { A, B }
 
+/**
+ * IBP evaluation mode — determines which criteria are shown in the UI.
+ * Scores are always stored for all 10 criteria; mode only affects display.
+ */
+enum class IbpMode {
+    COMPLET,     // All 10 criteria A→J (default)
+    RAPIDE,      // Quick field: A, C, E, F, H (5 essential criteria)
+    BOIS_MORT,   // Dead-wood specialist: C, D, E
+    CONTEXTE,    // Habitat context: H, I, J
+    PEUPLEMENT;  // Stand only: A, B, C, D, E, F, G
+
+    fun criteria(): List<IbpCriterionId> = when (this) {
+        COMPLET    -> IbpCriterionId.ALL
+        RAPIDE     -> listOf(IbpCriterionId.E1, IbpCriterionId.BMS, IbpCriterionId.GB, IbpCriterionId.DMH, IbpCriterionId.CF)
+        BOIS_MORT  -> listOf(IbpCriterionId.BMS, IbpCriterionId.BMC, IbpCriterionId.GB)
+        CONTEXTE   -> listOf(IbpCriterionId.CF, IbpCriterionId.CO, IbpCriterionId.HC)
+        PEUPLEMENT -> IbpCriterionId.GROUP_A
+    }
+
+    fun maxScore(): Int = criteria().size * 5
+}
+
 /** Valid answer values: -1 (unanswered), 0, 2, 5 (IBP v3 scoring).
  *  schemaVersion=1 = legacy 0/1/2 system; schemaVersion=2 = current 0/2/5 system.
+ *  counts: raw field measurements (BMg/ha, TGB/ha, dmh trees/ha, open %, …)
  */
 @Serializable
 data class IbpAnswers(
@@ -45,8 +68,15 @@ data class IbpAnswers(
     val cf: Int = -1,
     val co: Int = -1,
     val hc: Int = -1,
-    val schemaVersion: Int = 1
+    val schemaVersion: Int = 2,
+    val details: Map<String, List<String>> = emptyMap(),
+    val counts: Map<String, Float> = emptyMap()
 ) {
+    fun getDetails(id: IbpCriterionId): List<String> = details[id.code] ?: emptyList()
+    fun setDetails(id: IbpCriterionId, items: List<String>): IbpAnswers =
+        copy(details = details + (id.code to items))
+    fun getCount(key: String): Float = counts[key] ?: 0f
+    fun withCount(key: String, value: Float): IbpAnswers = copy(counts = counts + (key to value))
     fun get(id: IbpCriterionId): Int = when (id) {
         IbpCriterionId.E1  -> e1
         IbpCriterionId.E2  -> e2
@@ -126,7 +156,10 @@ data class IbpEvaluation(
     val evaluatorName: String = "",
     val answers: IbpAnswers = IbpAnswers.new(),
     val globalNote: String = "",
-    val growthConditions: IbpGrowthConditions = IbpGrowthConditions.LOWLAND
+    val growthConditions: IbpGrowthConditions = IbpGrowthConditions.LOWLAND,
+    val ibpMode: IbpMode = IbpMode.COMPLET,
+    val latitude: Double? = null,
+    val longitude: Double? = null
 ) {
     val scoreA: Int get() = answers.scoreA
     val scoreB: Int get() = answers.scoreB

@@ -610,12 +610,6 @@ fun SettingsScreen(
                 )
 
                 ListItem(
-                    headlineContent = { Text(stringResource(R.string.settings_gps_capture_mode_title)) },
-                    supportingContent = { Text(stringResource(R.string.settings_gps_capture_mode_standard)) },
-                    leadingContent = { Icon(Icons.Default.GpsFixed, contentDescription = null) }
-                )
-
-                ListItem(
                     headlineContent = { Text(stringResource(R.string.settings_map_only_reliable_gps)) },
                     supportingContent = { Text(stringResource(R.string.settings_map_only_reliable_gps_desc)) },
                     leadingContent = { Icon(Icons.Default.Map, contentDescription = null) },

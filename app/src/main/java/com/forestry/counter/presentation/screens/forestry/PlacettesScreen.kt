@@ -13,8 +13,10 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -93,6 +95,14 @@ fun PlacettesScreen(
     var editSurfaceM2 by remember { mutableStateOf("") }
     var editRayonM by remember { mutableStateOf("") }
     var editType by remember { mutableStateOf("CIRC") }
+    var sortMode by remember { mutableStateOf(PlacetteSort.NAME) }
+
+    val displayedPlacettes = remember(placettes, sortMode) {
+        when (sortMode) {
+            PlacetteSort.NAME -> placettes.sortedBy { (it.name ?: it.id).lowercase() }
+            PlacetteSort.UPDATED_AT -> placettes.sortedByDescending { it.updatedAt }
+        }
+    }
 
     fun addPlacette() {
         playClickFeedback()
@@ -235,7 +245,40 @@ fun PlacettesScreen(
                             contentPadding = PaddingValues(12.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            items(placettes, key = { it.id }) { pl ->
+                            item {
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                    shape = RoundedCornerShape(12.dp),
+                                    tonalElevation = 1.dp
+                                ) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.AutoMirrored.Filled.Sort,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                        )
+                                        PlacetteSort.entries.forEach { mode ->
+                                            val label = when (mode) {
+                                                PlacetteSort.NAME -> stringResource(R.string.sort_by_name)
+                                                PlacetteSort.UPDATED_AT -> stringResource(R.string.sort_by_last_update)
+                                            }
+                                            FilterChip(
+                                                selected = sortMode == mode,
+                                                onClick = { sortMode = mode },
+                                                label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                                                modifier = Modifier.height(28.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            items(displayedPlacettes, key = { it.id }) { pl ->
                                 PlacetteCard(
                                     placette = pl,
                                     animationsEnabled = animationsEnabled,
@@ -360,6 +403,11 @@ fun PlacettesScreen(
             }
         )
     }
+}
+
+private enum class PlacetteSort {
+    NAME,
+    UPDATED_AT
 }
 
 @Composable

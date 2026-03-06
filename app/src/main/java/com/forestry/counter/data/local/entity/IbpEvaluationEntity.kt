@@ -21,5 +21,8 @@ data class IbpEvaluationEntity(
     val evaluatorName: String = "",
     val answersJson: String = "{}",
     val globalNote: String = "",
-    val growthConditions: String = "LOWLAND"
+    val growthConditions: String = "LOWLAND",
+    val ibpMode: String = "COMPLET",
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )

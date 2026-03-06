@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.EmojiNature
 import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.Height
@@ -101,6 +102,13 @@ private val pages = listOf(
         R.string.onboarding_synthesis_desc,
         listOf(R.string.onboarding_synthesis_b1, R.string.onboarding_synthesis_b2, R.string.onboarding_synthesis_b3),
         Color(0xFFE65100)
+    ),
+    OnboardingPage(
+        Icons.Default.EmojiNature,
+        R.string.onboarding_ibp_title,
+        R.string.onboarding_ibp_desc,
+        listOf(R.string.onboarding_ibp_b1, R.string.onboarding_ibp_b2, R.string.onboarding_ibp_b3),
+        Color(0xFF1B5E20)
     ),
     OnboardingPage(
         Icons.Default.PictureAsPdf,

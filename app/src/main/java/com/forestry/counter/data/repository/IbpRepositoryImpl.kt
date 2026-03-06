@@ -5,6 +5,7 @@ import com.forestry.counter.data.local.entity.IbpEvaluationEntity
 import com.forestry.counter.domain.model.IbpAnswers
 import com.forestry.counter.domain.model.IbpEvaluation
 import com.forestry.counter.domain.model.IbpGrowthConditions
+import com.forestry.counter.domain.model.IbpMode
 import com.forestry.counter.domain.repository.IbpRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -17,6 +18,7 @@ private fun IbpEvaluationEntity.toDomain(): IbpEvaluation {
     val rawAnswers = runCatching { json.decodeFromString(answersSerializer, answersJson) }.getOrElse { IbpAnswers.new() }
     val answers = if (rawAnswers.schemaVersion < 2) rawAnswers.migrateToV2() else rawAnswers
     val conditions = runCatching { IbpGrowthConditions.valueOf(growthConditions) }.getOrElse { IbpGrowthConditions.LOWLAND }
+    val mode = runCatching { IbpMode.valueOf(ibpMode) }.getOrElse { IbpMode.COMPLET }
     return IbpEvaluation(
         id = id,
         placetteId = placetteId,
@@ -27,7 +29,10 @@ private fun IbpEvaluationEntity.toDomain(): IbpEvaluation {
         evaluatorName = evaluatorName,
         answers = answers,
         globalNote = globalNote,
-        growthConditions = conditions
+        growthConditions = conditions,
+        ibpMode = mode,
+        latitude = latitude,
+        longitude = longitude
     )
 }
 
@@ -41,7 +46,10 @@ private fun IbpEvaluation.toEntity(): IbpEvaluationEntity = IbpEvaluationEntity(
     evaluatorName = evaluatorName,
     answersJson = json.encodeToString(answersSerializer, answers),
     globalNote = globalNote,
-    growthConditions = growthConditions.name
+    growthConditions = growthConditions.name,
+    ibpMode = ibpMode.name,
+    latitude = latitude,
+    longitude = longitude
 )
 
 class IbpRepositoryImpl(private val dao: IbpEvaluationDao) : IbpRepository {

@@ -97,7 +97,7 @@ object IbpPdfExporter {
         canvas.drawText(scoreText, margin + 24f, y + 62f, bigScorePaint)
 
         val outOf20 = Paint().apply { color = Color.parseColor("#616161"); textSize = 18f; isAntiAlias = true }
-        canvas.drawText("/ 20", margin + 80f, y + 62f, outOf20)
+        canvas.drawText("/ 50", margin + 80f, y + 62f, outOf20)
 
         // Level badge
         val levelBgPaint = Paint().apply { color = levelColor; isAntiAlias = true }
@@ -110,9 +110,9 @@ object IbpPdfExporter {
         val subValPaint = Paint().apply { color = Color.parseColor("#212121"); textSize = 14f; isFakeBoldText = true; isAntiAlias = true }
         val aScore = eval.scoreA; val bScore = eval.scoreB
         canvas.drawText("Groupe A (peuplement)", margin + 320f, y + 28f, subLabelPaint)
-        canvas.drawText("${if (aScore >= 0) aScore else "—"} / 14", margin + 320f, y + 46f, subValPaint)
-        canvas.drawText("Groupe B (contexte)", margin + 400f, y + 28f, subLabelPaint)
-        canvas.drawText("${if (bScore >= 0) bScore else "—"} / 6", margin + 400f, y + 46f, subValPaint)
+        canvas.drawText("${if (aScore >= 0) aScore else "—"} / 35", margin + 320f, y + 46f, subValPaint)
+        canvas.drawText("Groupe B (contexte)", margin + 440f, y + 28f, subLabelPaint)
+        canvas.drawText("${if (bScore >= 0) bScore else "—"} / 15", margin + 440f, y + 46f, subValPaint)
 
         // Interpretation
         val commentPaint = Paint().apply { color = Color.parseColor("#424242"); textSize = 10f; isAntiAlias = true }
@@ -124,7 +124,7 @@ object IbpPdfExporter {
         val barBg = Paint().apply { color = Color.parseColor("#E0E0E0") }
         canvas.drawRoundRect(margin, y, w - margin, y + 10f, 5f, 5f, barBg)
         if (scoreTotal >= 0) {
-            val barLen = (w - 2 * margin) * (scoreTotal / 20f)
+            val barLen = (w - 2 * margin) * (scoreTotal / 50f)
             val barFill = Paint().apply { color = levelColor; isAntiAlias = true }
             canvas.drawRoundRect(margin, y, margin + barLen, y + 10f, 5f, 5f, barFill)
         }
@@ -197,16 +197,16 @@ object IbpPdfExporter {
 
         val smallPaint = Paint().apply { color = Color.parseColor("#616161"); textSize = 9f; isAntiAlias = true }
         val criteria = listOf(
-            "E1 – ETFVB" to "0: absent | 1: 1 espèce | 2: ≥ 2 espèces",
-            "E2 – Ess. indigènes" to "0: 1-2 ess. | 1: 3-5 ess. | 2: ≥ 6 ess.",
-            "GB – Gros bois (≥67.5cm)" to "0: absent | 1: 1-3/ha | 2: ≥ 4/ha",
-            "BMS – Bois mort debout" to "0: absent | 1: 1-3/ha | 2: ≥ 4/ha",
-            "BMC – Bois mort couché" to "0: absent | 1: <3 m³/ha | 2: ≥3 m³/ha",
-            "DMH – Dendromicrohabitats" to "0: absent | 1: 1-3 arbres/ha | 2: ≥4 arbres/ha",
-            "VS – Végétation sous-bois" to "0: absente | 1: partielle | 2: couvrant >50%",
-            "CF – Continuité forestière" to "0: <30 ans | 1: 30-100 ans | 2: >100 ans",
-            "CO – Connexion habitats" to "0: isolée ≥3 côtés | 1: 1-2 côtés | 2: ≥3 côtés",
-            "HC – Habitats complémentaires" to "0: aucun | 1: 1 type | 2: ≥2 types"
+            "A – Essences autochtones" to "0: 0-1 genre | 2: 2 genres | 5: ≥3 genres (subalpin) / ≥5 genres",
+            "B – Structure verticale" to "0: 1 strate | 2: 2 strates | 5: 5 strates (0=1, 2=2, 2=3-4, 5=5)",
+            "C – Bois morts sur pied" to "0: aucun | 2: BMg≥1/ha ou BMm≥1/ha | 5: BMg≥3/ha",
+            "D – Bois morts au sol" to "0: aucun | 2: BMg≥1/ha ou BMm≥1/ha | 5: BMg≥3/ha",
+            "E – Très gros bois vivants" to "0: TGB<1/ha et GB<1/ha | 2: TGB≥1/ha | 5: TGB≥5/ha",
+            "F – Dendromicrohabitats" to "0: <2 arbres/ha | 2: 2-3 arbres/ha | 5: ≥5 arbres/ha (8+ types)",
+            "G – Milieux ouverts florifers" to "0: 0% | 2: <1% ou lisières | 5: ≥1% surface",
+            "H – Continuité temporelle" to "0: forêt récente (<30 ans) | 2: partielle | 5: forêt ancienne",
+            "I – Milieux aquatiques" to "0: aucun type | 2: 1 type | 5: 2 types et plus",
+            "J – Milieux rocheux" to "0: aucun type | 2: 1 type | 5: 2 types et plus"
         )
         criteria.forEach { (name, desc) ->
             val labelPaint = Paint().apply { color = Color.parseColor("#424242"); textSize = 9f; isFakeBoldText = true; isAntiAlias = true }
@@ -252,7 +252,7 @@ object IbpPdfExporter {
             if (isAnswered) {
                 val scoreCellColor = when (score) {
                     0 -> Color.parseColor("#FFCDD2")
-                    1 -> Color.parseColor("#FFF9C4")
+                    2 -> Color.parseColor("#FFF9C4")
                     else -> Color.parseColor("#C8E6C9")
                 }
                 canvas.drawRect(x + colWidths[0] + colWidths[1], y + 2f, x + colWidths[0] + colWidths[1] + colWidths[2] - 2f, y + rowH - 2f, Paint().apply { color = scoreCellColor })
@@ -260,9 +260,9 @@ object IbpPdfExporter {
 
             val cellPaint = Paint().apply { color = Color.parseColor("#424242"); textSize = 9f; isAntiAlias = true }
             val codePaint = Paint().apply { color = accentColor; textSize = 9f; isFakeBoldText = true; isAntiAlias = true }
-            canvas.drawText(cid.code, x + 6f, y + 18f, codePaint)
+            canvas.drawText(cid.displayCode, x + 6f, y + 18f, codePaint)
             canvas.drawText(ibpCriterionTitleStatic(cid), x + colWidths[0] + 4f, y + 18f, cellPaint)
-            canvas.drawText(if (isAnswered) "$score / 2" else "—", x + colWidths[0] + colWidths[1] + 8f, y + 18f, cellPaint)
+            canvas.drawText(if (isAnswered) "$score / 5" else "—", x + colWidths[0] + colWidths[1] + 8f, y + 18f, cellPaint)
             if (isAnswered) {
                 val optionShort = ibpOptionShort(cid, score)
                 canvas.drawText(optionShort.take(42), x + colWidths[0] + colWidths[1] + colWidths[2] + 4f, y + 18f, cellPaint)
@@ -310,7 +310,7 @@ object IbpPdfExporter {
         }
         criteria.forEachIndexed { i, cid ->
             val score = eval.answers.get(cid).coerceAtLeast(0)
-            val r = outerR * score / 2f
+            val r = outerR * score / 5f
             val angle = angleStep * i - Math.PI.toFloat() / 2f
             val px = cx + r * kotlin.math.cos(angle)
             val py = cy + r * kotlin.math.sin(angle)
@@ -327,7 +327,7 @@ object IbpPdfExporter {
             val r = outerR + 14f
             val lx = cx + r * kotlin.math.cos(angle)
             val ly = cy + r * kotlin.math.sin(angle)
-            canvas.drawText(cid.code, lx, ly + 3f, labelPaint)
+            canvas.drawText(cid.displayCode, lx, ly + 3f, labelPaint)
         }
     }
 
@@ -403,28 +403,31 @@ object IbpPdfExporter {
     }
 
     private fun ibpCriterionTitleStatic(id: IbpCriterionId): String = when (id) {
-        IbpCriterionId.E1  -> "Essences à très forte valeur biologique"
-        IbpCriterionId.E2  -> "Nombre d'essences indigènes"
-        IbpCriterionId.GB  -> "Gros et très gros bois vivants"
-        IbpCriterionId.BMS -> "Bois mort sur pied"
-        IbpCriterionId.BMC -> "Bois mort au sol"
-        IbpCriterionId.DMH -> "Dendromicrohabitats"
-        IbpCriterionId.VS  -> "Végétation du sous-bois"
-        IbpCriterionId.CF  -> "Continuité forestière"
-        IbpCriterionId.CO  -> "Connexion aux habitats naturels"
-        IbpCriterionId.HC  -> "Habitats complémentaires"
+        IbpCriterionId.E1  -> "A – Essences autochtones"
+        IbpCriterionId.E2  -> "B – Structure verticale"
+        IbpCriterionId.GB  -> "E – Très gros bois vivants"
+        IbpCriterionId.BMS -> "C – Bois morts sur pied"
+        IbpCriterionId.BMC -> "D – Bois morts au sol"
+        IbpCriterionId.DMH -> "F – Dendromicrohabitats (dmh)"
+        IbpCriterionId.VS  -> "G – Milieux ouverts florifers"
+        IbpCriterionId.CF  -> "H – Continuité temporelle"
+        IbpCriterionId.CO  -> "I – Milieux aquatiques"
+        IbpCriterionId.HC  -> "J – Milieux rocheux"
     }
 
-    private fun ibpOptionShort(id: IbpCriterionId, score: Int): String = when (id) {
-        IbpCriterionId.E1  -> listOf("Absent", "1 espèce", "≥ 2 espèces")[score]
-        IbpCriterionId.E2  -> listOf("1-2 essences", "3-5 essences", "≥ 6 essences")[score]
-        IbpCriterionId.GB  -> listOf("Absent", "1-3/ha", "≥ 4/ha")[score]
-        IbpCriterionId.BMS -> listOf("Absent", "1-3/ha", "≥ 4/ha")[score]
-        IbpCriterionId.BMC -> listOf("Absent", "< 3 m³/ha", "≥ 3 m³/ha")[score]
-        IbpCriterionId.DMH -> listOf("Absent", "1-3 arbres/ha", "≥ 4 arbres/ha")[score]
-        IbpCriterionId.VS  -> listOf("Absente", "Présente par taches", "Bien développée (>50%)")[score]
-        IbpCriterionId.CF  -> listOf("< 30 ans", "30-100 ans", "> 100 ans")[score]
-        IbpCriterionId.CO  -> listOf("Isolée ≥3 côtés", "Connectée 1-2 côtés", "Connectée ≥3 côtés")[score]
-        IbpCriterionId.HC  -> listOf("Aucun", "1 type", "≥ 2 types")[score]
+    private fun ibpOptionShort(id: IbpCriterionId, score: Int): String {
+        val idx = when (score) { 0 -> 0; 2 -> 1; 5 -> 2; else -> 0 }
+        return when (id) {
+            IbpCriterionId.E1  -> listOf("0-1 genre", "2 genres", "≥3 genres (subalp.) / ≥5 genres")[idx]
+            IbpCriterionId.E2  -> listOf("1 strate", "2 strates", "5 strates")[idx]
+            IbpCriterionId.GB  -> listOf("TGB<1/ha, GB<1/ha", "TGB≥1/ha", "TGB≥5/ha")[idx]
+            IbpCriterionId.BMS -> listOf("Aucun", "BMg≥1/ha ou BMm≥1/ha", "BMg≥3/ha")[idx]
+            IbpCriterionId.BMC -> listOf("Aucun", "BMg≥1/ha ou BMm≥1/ha", "BMg≥3/ha")[idx]
+            IbpCriterionId.DMH -> listOf("<2 arbres/ha", "2–3 arbres/ha", "≥5 arbres/ha")[idx]
+            IbpCriterionId.VS  -> listOf("0% surface", "<1% ou lisières", "≥1% surface")[idx]
+            IbpCriterionId.CF  -> listOf("Forêt récente", "État boisé partiel", "Forêt ancienne")[idx]
+            IbpCriterionId.CO  -> listOf("Aucun type", "1 type", "2 types et plus")[idx]
+            IbpCriterionId.HC  -> listOf("Aucun type", "1 type", "2 types et plus")[idx]
+        }
     }
 }
