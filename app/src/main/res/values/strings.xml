@@ -1049,7 +1049,7 @@
     <string name="ibp_unsaved_message">You have unsaved changes. Save before leaving?</string>
 
     <!-- IBP — Indice de Biodiversité Potentielle -->
-    <string name="ibp_title">IBP — Biodiversity Index</string>
+    <string name="ibp_title">IBP</string>
     <string name="ibp_result">Result</string>
     <string name="ibp_export_pdf">Export PDF</string>
     <string name="ibp_saved">IBP evaluation saved</string>

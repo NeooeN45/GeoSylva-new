@@ -1045,7 +1045,7 @@
     <string name="ibp_unsaved_message">Vous avez des modifications non sauvegardées. Sauvegarder avant de quitter ?</string>
 
     <!-- IBP — Indice de Biodiversité Potentielle -->
-    <string name="ibp_title">IBP — Indice de Biodiversité Potentielle</string>
+    <string name="ibp_title">IBP</string>
     <string name="ibp_result">Résultat</string>
     <string name="ibp_export_pdf">Exporter PDF</string>
     <string name="ibp_saved">Évaluation IBP sauvegardée</string>
