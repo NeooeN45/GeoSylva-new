@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -1097,6 +1098,7 @@ fun MapScreen(
     var measureDistUnit by remember { mutableStateOf(MeasureDistUnit.M) }
     var measureAreaUnit by remember { mutableStateOf(MeasureAreaUnit.HA) }
     var measureColor by remember { mutableStateOf(MEASURE_COLORS[0]) }
+    var showSavedMeasuresPanel by remember { mutableStateOf(false) }
 
     // ── Tree navigation state ──
     val treeNavigator = remember(context) { TreeNavigator(context) }
@@ -2602,8 +2604,8 @@ fun MapScreen(
                         }
 
                         // Boutons action
-                        if (measurePoints.isNotEmpty()) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            if (measurePoints.isNotEmpty()) {
                                 SmallFloatingActionButton(
                                     onClick = { if (measurePoints.isNotEmpty()) measurePoints = measurePoints.dropLast(1) },
                                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -2631,6 +2633,82 @@ fun MapScreen(
                                         modifier = Modifier.size(34.dp)
                                     ) {
                                         Icon(Icons.Default.LocationOn, contentDescription = stringResource(R.string.measure_save), modifier = Modifier.size(16.dp))
+                                    }
+                                }
+                            }
+                            // Bouton mesures sauvegardées
+                            SmallFloatingActionButton(
+                                onClick = { showSavedMeasuresPanel = !showSavedMeasuresPanel },
+                                containerColor = if (showSavedMeasuresPanel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = if (showSavedMeasuresPanel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.size(34.dp)
+                            ) {
+                                Icon(Icons.Default.Layers, contentDescription = "Mesures sauvegardées", modifier = Modifier.size(16.dp))
+                            }
+                        }
+
+                        // Panneau mesures sauvegardées
+                        if (showSavedMeasuresPanel) {
+                            val measureDir = remember { File(context.getExternalFilesDir(null), "measurements") }
+                            val savedFiles = remember(showSavedMeasuresPanel) {
+                                if (measureDir.exists()) measureDir.listFiles { f -> f.extension == "json" }?.sortedByDescending { it.lastModified() } ?: emptyList()
+                                else emptyList()
+                            }
+                            if (savedFiles.isEmpty()) {
+                                Text("Aucune mesure sauvegardée", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            } else {
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.heightIn(max = 200.dp).verticalScroll(rememberScrollState())) {
+                                    savedFiles.forEach { file ->
+                                        val raw = remember(file) { try { file.readText() } catch (_: Throwable) { "" } }
+                                        val name  = remember(raw) { Regex("\"name\":\"([^\"]*)\"").find(raw)?.groupValues?.get(1) ?: file.nameWithoutExtension }
+                                        val mode  = remember(raw) { if (raw.contains("\"mode\":\"AREA\"")) MeasureMode.AREA else MeasureMode.DISTANCE }
+                                        val value = remember(raw) {
+                                            if (mode == MeasureMode.AREA) {
+                                                val ha = Regex("\"areaHa\":([\\d.E-]+)").find(raw)?.groupValues?.get(1)?.toDoubleOrNull() ?: 0.0
+                                                String.format(Locale.getDefault(), "%.4f ha", ha)
+                                            } else {
+                                                val m = Regex("\"distanceM\":([\\d.E-]+)").find(raw)?.groupValues?.get(1)?.toDoubleOrNull() ?: 0.0
+                                                if (m >= 1000.0) String.format(Locale.getDefault(), "%.3f km", m / 1000.0)
+                                                else String.format(Locale.getDefault(), "%.1f m", m)
+                                            }
+                                        }
+                                        Surface(
+                                            onClick = {
+                                                try {
+                                                    val ptsStr = Regex("\"points\":\\[([^\\]]+(?:\\][^\\]]*)*?)\\],\"distanceM\"").find(raw)?.groupValues?.get(1) ?: ""
+                                                    val coordPattern = Regex("\\[([\\d.E+-]+),([\\d.E+-]+)\\]")
+                                                    val parsed = coordPattern.findAll(ptsStr).map { m ->
+                                                        LatLng(m.groupValues[1].toDouble(), m.groupValues[2].toDouble())
+                                                    }.toList()
+                                                    if (parsed.isNotEmpty()) {
+                                                        measureMode = mode
+                                                        measurePoints = parsed
+                                                        showSavedMeasuresPanel = false
+                                                    }
+                                                } catch (_: Throwable) {}
+                                            },
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = MaterialTheme.colorScheme.surfaceVariant,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Icon(
+                                                    if (mode == MeasureMode.AREA) Icons.Default.Map else Icons.Default.Straighten,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(14.dp),
+                                                    tint = Color(0xFFFF6F00)
+                                                )
+                                                Column(Modifier.weight(1f)) {
+                                                    Text(name, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                                    Text(value, style = MaterialTheme.typography.labelSmall, color = Color(0xFFFF6F00))
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }

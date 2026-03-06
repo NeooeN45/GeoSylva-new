@@ -839,12 +839,18 @@ private fun IbpCriterionCard(
 
             Spacer(Modifier.height(8.dp))
 
-            // ── Score selector 0 / 2 / 5 pts ────────────────────────
+            // ── Score selector ────────────────────────────────
+            val criteriaWith1pt = setOf(
+                IbpCriterionId.E1, IbpCriterionId.E2,
+                IbpCriterionId.BMS, IbpCriterionId.BMC,
+                IbpCriterionId.GB, IbpCriterionId.DMH
+            )
+            val scoreList = if (criterionId in criteriaWith1pt) listOf(0, 1, 2, 5) else listOf(0, 2, 5)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                listOf(0, 2, 5).forEach { pts ->
+                scoreList.forEach { pts ->
                     IbpOptionRow(
                         score = pts,
-                        label = ibpCriterionOptions(criterionId)[pts / 2],
+                        label = ibpCriterionOptionLabel(criterionId, pts),
                         selected = currentValue == pts,
                         onSelect = { onAnswer(pts) }
                     )
@@ -867,8 +873,8 @@ private fun IbpSpeciesPanel(
         Text("Genres d'essences autochtones présents", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
         Text(
             if (conditions == IbpGrowthConditions.SUBALPINE)
-                "Subalpin : ≥3 genres → 5 pts · 1-2 genres → 2 pts · 0 → 0 pt"
-            else "≥5 genres → 5 pts · 2-4 genres → 2 pts · ≤1 genre → 0 pt",
+                "Subalpin : ≥3 genres → 5 pts · 1–2 genres → 2 pts · 0 genre → 0 pt"
+            else "≥5 genres → 5 pts · 3–4 genres → 2 pts · 2 genres → 1 pt · ≤1 genre → 0 pt",
             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(Modifier.height(6.dp))
@@ -997,14 +1003,14 @@ private fun IbpOptionRow(score: Int, label: String, selected: Boolean, onSelect:
         Surface(
             color = when (score) {
                 0 -> Color(0xFFC62828)
+                1 -> Color(0xFFE65100)
                 2 -> Color(0xFFF9A825)
                 else -> Color(0xFF2E7D32)
             },
             shape = RoundedCornerShape(4.dp)
         ) {
             Text(
-                when (score) { 0 -> "0 pt"; 2 -> "2 pts"; else -> "5 pts" },
-
+                when (score) { 0 -> "0 pt"; 1 -> "1 pt"; 2 -> "2 pts"; else -> "5 pts" },
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -1188,6 +1194,17 @@ fun ibpCriterionOptions(id: IbpCriterionId): List<String> = when (id) {
     IbpCriterionId.CF  -> listOf(stringResource(R.string.ibp_cf_o0), stringResource(R.string.ibp_cf_o1), stringResource(R.string.ibp_cf_o2))
     IbpCriterionId.CO  -> listOf(stringResource(R.string.ibp_co_o0), stringResource(R.string.ibp_co_o1), stringResource(R.string.ibp_co_o2))
     IbpCriterionId.HC  -> listOf(stringResource(R.string.ibp_hc_o0), stringResource(R.string.ibp_hc_o1), stringResource(R.string.ibp_hc_o2))
+}
+
+@Composable
+fun ibpCriterionOptionLabel(id: IbpCriterionId, score: Int): String = when (id) {
+    IbpCriterionId.E1  -> when (score) { 0 -> stringResource(R.string.ibp_e1_o0); 1 -> stringResource(R.string.ibp_e1_o1pt); 2 -> stringResource(R.string.ibp_e1_o1); else -> stringResource(R.string.ibp_e1_o2) }
+    IbpCriterionId.E2  -> when (score) { 0 -> stringResource(R.string.ibp_e2_o0); 1 -> stringResource(R.string.ibp_e2_o1pt); 2 -> stringResource(R.string.ibp_e2_o1); else -> stringResource(R.string.ibp_e2_o2) }
+    IbpCriterionId.BMS -> when (score) { 0 -> stringResource(R.string.ibp_bms_o0); 1 -> stringResource(R.string.ibp_bms_o1pt); 2 -> stringResource(R.string.ibp_bms_o1); else -> stringResource(R.string.ibp_bms_o2) }
+    IbpCriterionId.BMC -> when (score) { 0 -> stringResource(R.string.ibp_bmc_o0); 1 -> stringResource(R.string.ibp_bmc_o1pt); 2 -> stringResource(R.string.ibp_bmc_o1); else -> stringResource(R.string.ibp_bmc_o2) }
+    IbpCriterionId.GB  -> when (score) { 0 -> stringResource(R.string.ibp_gb_o0); 1 -> stringResource(R.string.ibp_gb_o1pt); 2 -> stringResource(R.string.ibp_gb_o1); else -> stringResource(R.string.ibp_gb_o2) }
+    IbpCriterionId.DMH -> when (score) { 0 -> stringResource(R.string.ibp_dmh_o0); 1 -> stringResource(R.string.ibp_dmh_o1pt); 2 -> stringResource(R.string.ibp_dmh_o1); else -> stringResource(R.string.ibp_dmh_o2) }
+    else               -> ibpCriterionOptions(id).getOrElse(score / 2) { ibpCriterionOptions(id).last() }
 }
 
 @Composable

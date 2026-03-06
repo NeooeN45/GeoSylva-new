@@ -1118,42 +1118,48 @@
     <string name="ibp_e1_title">A – Essences autochtones (genres)</string>
     <string name="ibp_e1_subtitle">Nombre de genres d\'essences autochtones présents (chêne, hêtre, aulne, frêne, érable…)</string>
     <string name="ibp_e1_o0">0–1 genre autochtone — Score 0 pt</string>
-    <string name="ibp_e1_o1">2–4 genres autochtones — Score 2 pts</string>
+    <string name="ibp_e1_o1pt">2 genres autochtones — Score 1 pt</string>
+    <string name="ibp_e1_o1">3–4 genres autochtones — Score 2 pts</string>
     <string name="ibp_e1_o2">≥5 genres (≥3 au subalpin) — Score 5 pts</string>
 
     <!-- IBP Critère B (E2) – Structure verticale -->
     <string name="ibp_e2_title">B – Structure verticale de la végétation</string>
     <string name="ibp_e2_subtitle">Strates présentes : herbacée, ligneux très bas, ligneux bas, intermédiaire, haut</string>
+    <string name="ibp_e2_o1pt">2 strates présentes — Score 1 pt</string>
     <string name="ibp_e2_o0">1 seule strate — Score 0 pt</string>
-    <string name="ibp_e2_o1">2–4 strates présentes — Score 2 pts</string>
+    <string name="ibp_e2_o1">3–4 strates présentes — Score 2 pts</string>
     <string name="ibp_e2_o2">5 strates présentes — Score 5 pts</string>
 
     <!-- IBP Critère E (GB) – Très gros bois vivants -->
     <string name="ibp_gb_title">E – Très gros bois vivants (TGB/GB)</string>
     <string name="ibp_gb_subtitle">TGB : D &gt; 67,5 cm | GB : 47,5–67,5 cm (seuils réduits sur stations peu fertiles)</string>
     <string name="ibp_gb_o0">TGB &lt; 1/ha et GB &lt; 1/ha — Score 0 pt</string>
-    <string name="ibp_gb_o1">TGB ≥ 1/ha (ou GB ≥ 1/ha si TGB &lt; 1) — Score 2 pts</string>
+    <string name="ibp_gb_o1pt">GB ≥ 1/ha (TGB &lt; 1/ha) — Score 1 pt</string>
+    <string name="ibp_gb_o1">TGB ≥ 1/ha — Score 2 pts</string>
     <string name="ibp_gb_o2">TGB ≥ 5/ha — Score 5 pts</string>
 
     <!-- IBP Critère C (BMS) – Bois morts sur pied -->
     <string name="ibp_bms_title">C – Bois morts sur pied (≥ 1 m)</string>
     <string name="ibp_bms_subtitle">BMg (D &gt; 37,5 cm) et BMm (17,5–37,5 cm) debout ou inclinés à &lt; 45°</string>
     <string name="ibp_bms_o0">Aucun (BMg/ha &lt; 1 et BMm/ha &lt; 1) — Score 0 pt</string>
-    <string name="ibp_bms_o1">BMg ≥ 1/ha ou BMm ≥ 1/ha (si BMg &lt; 1) — Score 2 pts</string>
+    <string name="ibp_bms_o1pt">BMm ≥ 1/ha (BMg &lt; 1/ha) — Score 1 pt</string>
+    <string name="ibp_bms_o1">BMg ≥ 1/ha — Score 2 pts</string>
     <string name="ibp_bms_o2">BMg ≥ 3/ha — Score 5 pts</string>
 
     <!-- IBP Critère D (BMC) – Bois morts au sol -->
     <string name="ibp_bmc_title">D – Bois morts au sol (≥ 1 m)</string>
     <string name="ibp_bmc_subtitle">BMg (D &gt; 37,5 cm) et BMm (17,5–37,5 cm) couchés ou souches &lt; 1 m</string>
+    <string name="ibp_bmc_o1pt">BMm ≥ 1/ha (BMg &lt; 1/ha) — Score 1 pt</string>
     <string name="ibp_bmc_o0">Aucun (BMg/ha &lt; 1 et BMm/ha &lt; 1) — Score 0 pt</string>
-    <string name="ibp_bmc_o1">BMg ≥ 1/ha ou BMm ≥ 1/ha (si BMg &lt; 1) — Score 2 pts</string>
+    <string name="ibp_bmc_o1">BMg ≥ 1/ha — Score 2 pts</string>
     <string name="ibp_bmc_o2">BMg ≥ 3/ha — Score 5 pts</string>
 
     <!-- IBP Critère F (DMH) – Dendromicrohabitats -->
     <string name="ibp_dmh_title">F – Arbres porteurs de dendromicrohabitats (dmh)</string>
     <string name="ibp_dmh_subtitle">Loges de pic, cavités, galeries, coulées de sève, nids, carpophores, épiphytes (15 types)</string>
     <string name="ibp_dmh_o0">&lt; 2 arbres porteurs de dmh/ha — Score 0 pt</string>
-    <string name="ibp_dmh_o1">2–4 arbres porteurs de dmh/ha — Score 2 pts</string>
+    <string name="ibp_dmh_o1pt">2 arbres porteurs de dmh/ha — Score 1 pt</string>
+    <string name="ibp_dmh_o1">3–4 arbres porteurs de dmh/ha — Score 2 pts</string>
     <string name="ibp_dmh_o2">≥ 5 arbres porteurs de dmh/ha — Score 5 pts</string>
 
     <!-- IBP Critère G (VS) – Milieux ouverts florifères -->

@@ -1122,42 +1122,48 @@
     <string name="ibp_e1_title">A – Native tree genera</string>
     <string name="ibp_e1_subtitle">Count of distinct native genera (oak, beech, alder, ash, yew, maple…)</string>
     <string name="ibp_e1_o0">0–1 native genus — Score 0 pt</string>
-    <string name="ibp_e1_o1">2–4 native genera — Score 2 pts</string>
+    <string name="ibp_e1_o1pt">2 native genera — Score 1 pt</string>
+    <string name="ibp_e1_o1">3–4 native genera — Score 2 pts</string>
     <string name="ibp_e1_o2">≥5 genera (≥3 at subalpine) — Score 5 pts</string>
 
     <!-- IBP Criterion B (E2) – Structure verticale -->
     <string name="ibp_e2_title">B – Vertical vegetation structure</string>
     <string name="ibp_e2_subtitle">Count of strata present: herbaceous, low shrubs, medium shrubs, intermediate trees, tall trees</string>
+    <string name="ibp_e2_o1pt">2 strata present — Score 1 pt</string>
     <string name="ibp_e2_o0">1 stratum only — Score 0 pt</string>
-    <string name="ibp_e2_o1">2–4 strata present — Score 2 pts</string>
+    <string name="ibp_e2_o1">3–4 strata present — Score 2 pts</string>
     <string name="ibp_e2_o2">All 5 strata present — Score 5 pts</string>
 
     <!-- IBP Criterion C (BMS) – Bois morts sur pied -->
     <string name="ibp_bms_title">C – Standing dead wood</string>
     <string name="ibp_bms_subtitle">BMg (D &gt; 37.5 cm) and BMm (17.5–37.5 cm) standing dead trees ≥ 1 m tall</string>
     <string name="ibp_bms_o0">None (BMg/ha &lt; 1 and BMm/ha &lt; 1) — Score 0 pt</string>
-    <string name="ibp_bms_o1">BMg ≥ 1/ha or BMm ≥ 1/ha (if BMg &lt; 1) — Score 2 pts</string>
+    <string name="ibp_bms_o1pt">BMm ≥ 1/ha (BMg &lt; 1/ha) — Score 1 pt</string>
+    <string name="ibp_bms_o1">BMg ≥ 1/ha — Score 2 pts</string>
     <string name="ibp_bms_o2">BMg ≥ 3/ha — Score 5 pts</string>
 
     <!-- IBP Criterion D (BMC) – Bois morts au sol -->
     <string name="ibp_bmc_title">D – Fallen dead wood</string>
     <string name="ibp_bmc_subtitle">BMg (D &gt; 37.5 cm) and BMm (17.5–37.5 cm) fallen logs or stumps &lt; 1 m tall</string>
+    <string name="ibp_bmc_o1pt">BMm ≥ 1/ha (BMg &lt; 1/ha) — Score 1 pt</string>
     <string name="ibp_bmc_o0">None (BMg/ha &lt; 1 and BMm/ha &lt; 1) — Score 0 pt</string>
-    <string name="ibp_bmc_o1">BMg ≥ 1/ha or BMm ≥ 1/ha (if BMg &lt; 1) — Score 2 pts</string>
+    <string name="ibp_bmc_o1">BMg ≥ 1/ha — Score 2 pts</string>
     <string name="ibp_bmc_o2">BMg ≥ 3/ha — Score 5 pts</string>
 
     <!-- IBP Criterion E (GB) – Très gros bois vivants -->
     <string name="ibp_gb_title">E – Very large living trees (TGB/GB)</string>
     <string name="ibp_gb_subtitle">TGB: D &gt; 67.5 cm | GB: 47.5–67.5 cm (lower thresholds on low-fertility sites)</string>
     <string name="ibp_gb_o0">TGB &lt; 1/ha and GB &lt; 1/ha — Score 0 pt</string>
-    <string name="ibp_gb_o1">TGB ≥ 1/ha (or GB ≥ 1/ha if TGB &lt; 1) — Score 2 pts</string>
+    <string name="ibp_gb_o1pt">GB ≥ 1/ha (TGB &lt; 1/ha) — Score 1 pt</string>
+    <string name="ibp_gb_o1">TGB ≥ 1/ha — Score 2 pts</string>
     <string name="ibp_gb_o2">TGB ≥ 5/ha — Score 5 pts</string>
 
     <!-- IBP Criterion F (DMH) – Dendromicrohabitats -->
     <string name="ibp_dmh_title">F – Trees bearing dendromicrohabitats (dmh)</string>
     <string name="ibp_dmh_subtitle">Cavities, woodpecker holes, sap runs, nests, bark loss, fungi, epiphytes (15 types)</string>
     <string name="ibp_dmh_o0">&lt; 2 dmh-bearing trees/ha — Score 0 pt</string>
-    <string name="ibp_dmh_o1">2–4 dmh-bearing trees/ha — Score 2 pts</string>
+    <string name="ibp_dmh_o1pt">2 dmh-bearing trees/ha — Score 1 pt</string>
+    <string name="ibp_dmh_o1">3–4 dmh-bearing trees/ha — Score 2 pts</string>
     <string name="ibp_dmh_o2">≥ 5 dmh-bearing trees/ha — Score 5 pts</string>
 
     <!-- IBP Criterion G (VS) – Milieux ouverts florifères -->

@@ -224,7 +224,7 @@ private fun IbpCriterieFiche(cid: IbpCriterionId) {
                 // Threshold chips inline
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     thresholds.forEach { (_, pts) ->
-                        val c = when (pts) { 5 -> Color(0xFF2E7D32); 2 -> Color(0xFFF9A825); else -> Color(0xFFC62828) }
+                        val c = when (pts) { 5 -> Color(0xFF2E7D32); 2 -> Color(0xFFF9A825); 1 -> Color(0xFFE65100); else -> Color(0xFFC62828) }
                         Surface(color = c, shape = CircleShape) {
                             Text("$pts", style = MaterialTheme.typography.labelSmall, color = Color.White,
                                 fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp))
@@ -246,7 +246,7 @@ private fun IbpCriterieFiche(cid: IbpCriterionId) {
                     Text("Seuils de notation", style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold, color = groupColor)
                     thresholds.forEach { (label, pts) ->
-                        val rowColor = when (pts) { 5 -> Color(0xFF2E7D32); 2 -> Color(0xFFF9A825); else -> Color(0xFFC62828) }
+                        val rowColor = when (pts) { 5 -> Color(0xFF2E7D32); 2 -> Color(0xFFF9A825); 1 -> Color(0xFFE65100); else -> Color(0xFFC62828) }
                         Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)) {
