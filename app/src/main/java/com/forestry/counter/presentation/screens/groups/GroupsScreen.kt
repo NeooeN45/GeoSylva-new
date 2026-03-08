@@ -17,9 +17,11 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import com.forestry.counter.presentation.utils.StaggerEntrance
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -614,6 +616,8 @@ fun GroupsList(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(groups, key = { it.id }) { group ->
+            val idx = groups.indexOf(group)
+            StaggerEntrance(index = idx, staggerMs = 55) {
             GroupCard(
                 group = group,
                 onClick = { onGroupClick(group.id) },
@@ -636,6 +640,7 @@ fun GroupsList(
                 onToggleSelected = { onToggleSelection(group.id) },
                 modifier = if (animationsEnabled) Modifier.animateItemPlacement() else Modifier
             )
+            }
         }
     }
 }
@@ -672,8 +677,24 @@ fun GroupCard(
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (isPressed) pressScale else 1f,
-        animationSpec = if (animationsEnabled) tween(durationMillis = animDurationShort) else tween(durationMillis = 0),
+        animationSpec = if (animationsEnabled) spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ) else snap(),
         label = "groupCardScale"
+    )
+    val cardElevationDp by animateDpAsState(
+        targetValue = if (isPressed) 1.dp else 6.dp,
+        animationSpec = if (animationsEnabled) spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ) else snap(),
+        label = "cardElevationDp"
+    )
+    val haloAnimAlpha by animateFloatAsState(
+        targetValue = if (isPressed && animationsEnabled) haloAlpha else 0f,
+        animationSpec = tween(80),
+        label = "haloAlpha"
     )
 
     val baseBg = group.color?.let { c ->
@@ -703,7 +724,7 @@ fun GroupCard(
                 rotationY = if (animationsEnabled) (if (isPressed) -tiltDeg else 0f) else 0f
             }
             .scale(scale),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = cardElevationDp),
         colors = CardDefaults.cardColors(containerColor = cardBg),
         border = border
     ) {
@@ -836,11 +857,11 @@ fun GroupCard(
                         )
                 )
             }
-            if (isPressed && animationsEnabled) {
+            if (haloAnimAlpha > 0.01f) {
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .border(BorderStroke(haloWidthDp.dp, MaterialTheme.colorScheme.primary.copy(alpha = haloAlpha)), shape = MaterialTheme.shapes.medium)
+                        .border(BorderStroke(haloWidthDp.dp, MaterialTheme.colorScheme.primary.copy(alpha = haloAnimAlpha)), shape = MaterialTheme.shapes.medium)
                 )
             }
         }

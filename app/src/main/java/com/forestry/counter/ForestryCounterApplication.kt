@@ -179,7 +179,7 @@ class ForestryCounterApplication : Application() {
         // Seed default forestry parameters and essences if missing
         CoroutineScope(Dispatchers.IO).launch {
             val classes = parameterRepository.getParameter(ParameterKeys.CLASSES_DIAM).first()
-            if (classes == null) {
+            if (classes == null || !classes.valueJson.contains("500")) {
                 parameterRepository.setParameter(
                     ParameterItem(
                         key = ParameterKeys.CLASSES_DIAM,
@@ -188,7 +188,7 @@ class ForestryCounterApplication : Application() {
                 )
             }
             val coefs = parameterRepository.getParameter(ParameterKeys.COEFS_VOLUME).first()
-            if (coefs == null) {
+            if (coefs == null || !coefs.valueJson.contains("500")) {
                 parameterRepository.setParameter(
                     ParameterItem(
                         key = ParameterKeys.COEFS_VOLUME,
@@ -197,7 +197,7 @@ class ForestryCounterApplication : Application() {
                 )
             }
             val heights = parameterRepository.getParameter(ParameterKeys.HAUTEURS_DEFAUT).first()
-            if (heights == null) {
+            if (heights == null || !heights.valueJson.contains("\"max\":500")) {
                 parameterRepository.setParameter(
                     ParameterItem(
                         key = ParameterKeys.HAUTEURS_DEFAUT,

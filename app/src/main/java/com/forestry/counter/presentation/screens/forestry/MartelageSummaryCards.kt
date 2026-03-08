@@ -1,15 +1,21 @@
 package com.forestry.counter.presentation.screens.forestry
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -39,14 +45,31 @@ internal fun VolumeCard(
     volumeAvailable: Boolean,
     volumeCompletenessPct: Double
 ) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(500)) + slideInVertically(tween(500, easing = FastOutSlowInEasing)) { it / 5 }
+    ) {
     val volumeCardBg = MaterialTheme.colorScheme.primaryContainer
     val volumeCardContent = ColorUtils.getContrastingTextColor(volumeCardBg)
+    val volumeGradient = Brush.linearGradient(
+        colors = listOf(
+            volumeCardBg,
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
+                .let { p -> Color(red = (volumeCardBg.red * 0.88f + p.red * 0.12f).coerceIn(0f,1f), green = (volumeCardBg.green * 0.92f + p.green * 0.08f).coerceIn(0f,1f), blue = (volumeCardBg.blue * 0.85f + p.blue * 0.15f).coerceIn(0f,1f), alpha = 1f) }
+        ),
+        start = Offset.Zero,
+        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+    )
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp)),
+            .shadow(6.dp, RoundedCornerShape(18.dp), spotColor = volumeCardBg.copy(alpha = 0.4f))
+            .clip(RoundedCornerShape(18.dp))
+            .drawBehind { drawRect(volumeGradient) },
         colors = CardDefaults.cardColors(
-            containerColor = volumeCardBg,
+            containerColor = Color.Transparent,
             contentColor = volumeCardContent
         )
     ) {
@@ -55,6 +78,11 @@ internal fun VolumeCard(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(stringResource(R.string.martelage_volume_price_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                stringResource(R.string.martelage_volume_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = volumeCardContent.copy(alpha = 0.7f)
+            )
             if (!volumeAvailable) {
                 Text(
                     stringResource(R.string.martelage_volume_partial_format, volumeCompletenessPct),
@@ -73,6 +101,7 @@ internal fun VolumeCard(
             }
         }
     }
+    } // AnimatedVisibility
 }
 
 /**
@@ -85,14 +114,31 @@ internal fun BasalAreaCard(
     surfaceHa: Double? = null,
     ratioVG: Double? = null
 ) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(500, delayMillis = 100)) + slideInVertically(tween(500, delayMillis = 100, easing = FastOutSlowInEasing)) { it / 5 }
+    ) {
     val surfaceCardBg = MaterialTheme.colorScheme.secondaryContainer
     val surfaceCardContent = ColorUtils.getContrastingTextColor(surfaceCardBg)
+    val basalGradient = Brush.linearGradient(
+        colors = listOf(
+            surfaceCardBg,
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.18f)
+                .let { s -> Color(red = (surfaceCardBg.red * 0.88f + s.red * 0.12f).coerceIn(0f,1f), green = (surfaceCardBg.green * 0.90f + s.green * 0.10f).coerceIn(0f,1f), blue = (surfaceCardBg.blue * 0.87f + s.blue * 0.13f).coerceIn(0f,1f), alpha = 1f) }
+        ),
+        start = Offset(Float.POSITIVE_INFINITY, 0f),
+        end = Offset(0f, Float.POSITIVE_INFINITY)
+    )
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp)),
+            .shadow(5.dp, RoundedCornerShape(18.dp), spotColor = surfaceCardBg.copy(alpha = 0.35f))
+            .clip(RoundedCornerShape(18.dp))
+            .drawBehind { drawRect(basalGradient) },
         colors = CardDefaults.cardColors(
-            containerColor = surfaceCardBg,
+            containerColor = Color.Transparent,
             contentColor = surfaceCardContent
         )
     ) {
@@ -101,6 +147,11 @@ internal fun BasalAreaCard(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(stringResource(R.string.martelage_basal_area_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                stringResource(R.string.martelage_basal_area_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = surfaceCardContent.copy(alpha = 0.7f)
+            )
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 StatItem(label = stringResource(R.string.martelage_label_g_total), value = "${formatG(gTotal)} m²")
                 StatItem(label = stringResource(R.string.martelage_label_g_per_ha), value = "${formatG(gPerHa)} m²/ha")
@@ -124,6 +175,7 @@ internal fun BasalAreaCard(
             }
         }
     }
+    } // AnimatedVisibility
 }
 
 /**
@@ -142,14 +194,31 @@ internal fun DensityCard(
     cvDiam: Double?,
     placeholderDash: String
 ) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(500, delayMillis = 200)) + slideInVertically(tween(500, delayMillis = 200, easing = FastOutSlowInEasing)) { it / 5 }
+    ) {
     val densityCardBg = MaterialTheme.colorScheme.tertiaryContainer
     val densityCardContent = ColorUtils.getContrastingTextColor(densityCardBg)
+    val densityGradient = Brush.linearGradient(
+        colors = listOf(
+            densityCardBg,
+            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.20f)
+                .let { t -> Color(red = (densityCardBg.red * 0.87f + t.red * 0.13f).coerceIn(0f,1f), green = (densityCardBg.green * 0.90f + t.green * 0.10f).coerceIn(0f,1f), blue = (densityCardBg.blue * 0.86f + t.blue * 0.14f).coerceIn(0f,1f), alpha = 1f) }
+        ),
+        start = Offset.Zero,
+        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+    )
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp)),
+            .shadow(5.dp, RoundedCornerShape(18.dp), spotColor = densityCardBg.copy(alpha = 0.35f))
+            .clip(RoundedCornerShape(18.dp))
+            .drawBehind { drawRect(densityGradient) },
         colors = CardDefaults.cardColors(
-            containerColor = densityCardBg,
+            containerColor = Color.Transparent,
             contentColor = densityCardContent
         )
     ) {
@@ -158,6 +227,11 @@ internal fun DensityCard(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(stringResource(R.string.martelage_density_structure_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(
+                stringResource(R.string.martelage_density_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = densityCardContent.copy(alpha = 0.7f)
+            )
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 StatItem(label = stringResource(R.string.martelage_label_n_total), value = "$nTotal")
                 StatItem(label = stringResource(R.string.martelage_label_n_per_ha), value = "${formatIntPerHa(nPerHa)}/ha")
@@ -190,6 +264,7 @@ internal fun DensityCard(
             }
         }
     }
+    } // AnimatedVisibility
 }
 
 /**
@@ -274,6 +349,12 @@ internal fun ClassDistributionCard(
     classDistribution: List<ClassDistEntry>
 ) {
     if (classDistribution.isEmpty()) return
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(500, delayMillis = 150)) + slideInVertically(tween(500, delayMillis = 150, easing = FastOutSlowInEasing)) { it / 5 }
+    ) {
     val cardBg = MaterialTheme.colorScheme.surfaceVariant
     val cardContent = ColorUtils.getContrastingTextColor(cardBg)
     Card(
@@ -298,9 +379,21 @@ internal fun ClassDistributionCard(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.Bottom
             ) {
-                classDistribution.filter { it.n > 0 }.forEach { entry ->
-                    val fraction = entry.n.toFloat() / maxN.coerceAtLeast(1).toFloat()
-                    val barH = (fraction * 80).coerceAtLeast(6f)
+                classDistribution.filter { it.n > 0 }.forEachIndexed { index, entry ->
+                    val targetFraction = entry.n.toFloat() / maxN.coerceAtLeast(1).toFloat()
+                    val animatedFraction by animateFloatAsState(
+                        targetValue = targetFraction,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow
+                        ),
+                        label = "bar_${entry.diamClass}"
+                    )
+                    val barH = (animatedFraction * 96).coerceAtLeast(6f)
+                    val primary = MaterialTheme.colorScheme.primary
+                    val barGradient = Brush.verticalGradient(
+                        colors = listOf(primary, primary.copy(alpha = 0.45f))
+                    )
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.width(36.dp)
@@ -312,10 +405,10 @@ internal fun ClassDistributionCard(
                         )
                         Box(
                             modifier = Modifier
-                                .width(20.dp)
+                                .width(22.dp)
                                 .height(barH.dp)
-                                .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
+                                .clip(RoundedCornerShape(topStart = 5.dp, topEnd = 5.dp))
+                                .background(barGradient)
                         )
                         Text(
                             "${entry.diamClass}",
@@ -343,6 +436,7 @@ internal fun ClassDistributionCard(
             }
         }
     }
+    } // AnimatedVisibility
 }
 
 /**
@@ -355,6 +449,12 @@ internal fun QualityDistributionCard(
     totalCount: Int
 ) {
     if (assessedCount == 0) return
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(500, delayMillis = 250)) + slideInVertically(tween(500, delayMillis = 250, easing = FastOutSlowInEasing)) { it / 5 }
+    ) {
     val cardBg = MaterialTheme.colorScheme.surfaceVariant
     val cardContent = ColorUtils.getContrastingTextColor(cardBg)
     Card(
@@ -387,7 +487,7 @@ internal fun QualityDistributionCard(
                 )
             }
 
-            qualityDistribution.forEach { entry ->
+            qualityDistribution.forEachIndexed { index, entry ->
                 val gradeColor = when (entry.grade) {
                     WoodQualityGrade.A -> Color(0xFF4CAF50)
                     WoodQualityGrade.B -> Color(0xFF2196F3)
@@ -415,14 +515,23 @@ internal fun QualityDistributionCard(
                         )
                     }
                     // Barre proportionnelle
-                    val fraction = (entry.pct / 100.0).coerceIn(0.0, 1.0).toFloat()
+                    val targetFraction = (entry.pct / 100.0).coerceIn(0.0, 1.0).toFloat()
+                    val animatedFraction by animateFloatAsState(
+                        targetValue = targetFraction,
+                        animationSpec = tween(700, delayMillis = 80 * index),
+                        label = "quality_${entry.grade}"
+                    )
                     Box(modifier = Modifier.weight(1f).height(14.dp)) {
                         Box(
                             modifier = Modifier
                                 .fillMaxHeight()
-                                .fillMaxWidth(fraction)
+                                .fillMaxWidth(animatedFraction)
                                 .clip(RoundedCornerShape(4.dp))
-                                .background(gradeColor.copy(alpha = 0.6f))
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(gradeColor.copy(alpha = 0.85f), gradeColor.copy(alpha = 0.4f))
+                                    )
+                                )
                         )
                     }
                     // Count + pct
@@ -447,6 +556,7 @@ internal fun QualityDistributionCard(
             }
         }
     }
+    } // AnimatedVisibility
 }
 
 /**
@@ -806,33 +916,102 @@ internal fun SpecialTreesCard(
 }
 
 /**
- * Carte indice de biodiversité (Shannon, Piélou, IBP simplifié).
+ * Carte indice de biodiversité (Shannon, Piélou, IBP simplifié) avec interprétations.
  */
 @Composable
 internal fun BiodiversityCard(
     bio: BiodiversityIndex
 ) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(500, delayMillis = 300)) + slideInVertically(tween(500, delayMillis = 300, easing = FastOutSlowInEasing)) { it / 5 }
+    ) {
     val cardBg = MaterialTheme.colorScheme.surfaceVariant
     val cardContent = ColorUtils.getContrastingTextColor(cardBg)
-    // Score color: green if ≥7, orange if ≥4, red otherwise
+    val ibpPct = if (bio.ibpMax > 0) bio.ibpScore.toFloat() / bio.ibpMax.toFloat() else 0f
     val scoreColor = when {
-        bio.ibpScore >= 7 -> Color(0xFF2E7D32)
-        bio.ibpScore >= 4 -> Color(0xFFEF6C00)
+        ibpPct >= 0.7f -> Color(0xFF2E7D32)
+        ibpPct >= 0.5f -> Color(0xFF558B2F)
+        ibpPct >= 0.3f -> Color(0xFFEF6C00)
         else -> Color(0xFFC62828)
     }
+    val ibpLevelRes = when {
+        ibpPct >= 0.7f -> R.string.biodiversity_level_very_good
+        ibpPct >= 0.5f -> R.string.biodiversity_level_good
+        ibpPct >= 0.3f -> R.string.biodiversity_level_medium
+        ibpPct >= 0.15f -> R.string.biodiversity_level_low
+        else -> R.string.biodiversity_level_very_low
+    }
+    // Shannon interpretation
+    val shannonLevelRes = when {
+        bio.shannonH >= 2.5 -> R.string.biodiversity_shannon_diverse
+        bio.shannonH >= 1.5 -> R.string.biodiversity_shannon_mixed
+        bio.shannonH >= 0.5 -> R.string.biodiversity_shannon_low
+        else -> R.string.biodiversity_shannon_mono
+    }
+    val shannonColor = when {
+        bio.shannonH >= 2.5 -> Color(0xFF2E7D32)
+        bio.shannonH >= 1.5 -> Color(0xFF558B2F)
+        bio.shannonH >= 0.5 -> Color(0xFFEF6C00)
+        else -> Color(0xFFC62828)
+    }
+    // Pielou interpretation
+    val pielou = bio.pielou
+    val pieloulLevelRes = when {
+        pielou == null -> null
+        pielou >= 0.7 -> R.string.biodiversity_pielou_even
+        pielou >= 0.4 -> R.string.biodiversity_pielou_moderate
+        else -> R.string.biodiversity_pielou_uneven
+    }
+    val pieloulColor = when {
+        pielou == null -> cardContent
+        pielou >= 0.7 -> Color(0xFF2E7D32)
+        pielou >= 0.4 -> Color(0xFFEF6C00)
+        else -> Color(0xFFC62828)
+    }
+
+    val bioGradient = Brush.linearGradient(
+        colors = listOf(
+            cardBg,
+            scoreColor.copy(alpha = 0.08f)
+                .let { s -> Color(red = (cardBg.red * 0.94f + s.red * 0.06f).coerceIn(0f,1f), green = (cardBg.green * 0.94f + s.green * 0.06f).coerceIn(0f,1f), blue = (cardBg.blue * 0.94f + s.blue * 0.06f).coerceIn(0f,1f), alpha = 1f) }
+        ),
+        start = Offset.Zero,
+        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+    )
+    val animatedIbpPct by animateFloatAsState(
+        targetValue = ibpPct,
+        animationSpec = tween(1400, easing = FastOutSlowInEasing),
+        label = "ibp_progress"
+    )
+    val infiniteTransition = rememberInfiniteTransition(label = "ibp_pulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.12f,
+        targetValue = 0.28f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "ibp_badge_alpha"
+    )
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp)),
+            .shadow(5.dp, RoundedCornerShape(18.dp), spotColor = scoreColor.copy(alpha = 0.25f))
+            .clip(RoundedCornerShape(18.dp))
+            .drawBehind { drawRect(bioGradient) },
         colors = CardDefaults.cardColors(
-            containerColor = cardBg,
+            containerColor = Color.Transparent,
             contentColor = cardContent
         )
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            // Header row: title + IBP score badge
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -844,73 +1023,141 @@ internal fun BiodiversityCard(
                     modifier = Modifier.weight(1f)
                 )
                 Surface(
-                    color = scoreColor.copy(alpha = 0.15f),
+                    color = scoreColor.copy(alpha = pulseAlpha),
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(
                         stringResource(R.string.biodiversity_ibp_score, bio.ibpScore, bio.ibpMax),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         color = scoreColor,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+                Surface(
+                    color = scoreColor.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text(
+                        stringResource(ibpLevelRes),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = scoreColor,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
                 }
             }
 
-            // Shannon + Piélou
+            // IBP progress bar — animated fill
+            LinearProgressIndicator(
+                progress = { animatedIbpPct },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = scoreColor,
+                trackColor = cardContent.copy(alpha = 0.08f)
+            )
+
+            HorizontalDivider(color = cardContent.copy(alpha = 0.12f))
+
+            // Shannon row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.biodiversity_shannon),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = cardContent.copy(alpha = 0.6f)
-                    )
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            stringResource(R.string.biodiversity_shannon),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = cardContent.copy(alpha = 0.7f)
+                        )
+                        Surface(
+                            color = shannonColor.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                stringResource(shannonLevelRes),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = shannonColor,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
                     Text(
                         String.format(Locale.getDefault(), "%.2f", bio.shannonH),
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        stringResource(R.string.biodiversity_shannon_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = cardContent.copy(alpha = 0.55f)
                     )
                 }
-                Column(modifier = Modifier.weight(1f)) {
+                // Pielou column
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            stringResource(R.string.biodiversity_pielou),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = cardContent.copy(alpha = 0.7f)
+                        )
+                        if (pieloulLevelRes != null) {
+                            Surface(
+                                color = pieloulColor.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    stringResource(pieloulLevelRes),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = pieloulColor,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
                     Text(
-                        stringResource(R.string.biodiversity_pielou),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = cardContent.copy(alpha = 0.6f)
-                    )
-                    Text(
-                        bio.pielou?.let { String.format(Locale.getDefault(), "%.2f", it) } ?: "–",
+                        pielou?.let { String.format(Locale.getDefault(), "%.2f", it) } ?: "–",
                         style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.biodiversity_species),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = cardContent.copy(alpha = 0.6f)
+                        fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "${bio.speciesCount}",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold
+                        stringResource(R.string.biodiversity_pielou_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = cardContent.copy(alpha = 0.55f)
                     )
                 }
             }
 
-            // IBP detail badges
+            // Species count + IBP detail badges
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Surface(
+                    color = cardContent.copy(alpha = 0.08f),
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text(
+                        stringResource(R.string.biodiversity_species) + ": ${bio.speciesCount}",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
                 if (bio.tgbCount > 0) {
                     Surface(color = Color(0xFF795548).copy(alpha = 0.15f), shape = RoundedCornerShape(6.dp)) {
                         Text(
                             stringResource(R.string.biodiversity_tgb, bio.tgbCount),
                             style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            color = Color(0xFF795548),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
                         )
                     }
                 }
@@ -919,16 +1166,18 @@ internal fun BiodiversityCard(
                         Text(
                             stringResource(R.string.biodiversity_bio_trees, bio.bioTreeCount),
                             style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            color = Color(0xFF2E7D32),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
                         )
                     }
                 }
                 if (bio.deadTreeCount > 0) {
-                    Surface(color = Color(0xFF424242).copy(alpha = 0.15f), shape = RoundedCornerShape(6.dp)) {
+                    Surface(color = Color(0xFF424242).copy(alpha = 0.12f), shape = RoundedCornerShape(6.dp)) {
                         Text(
                             stringResource(R.string.biodiversity_dead_trees, bio.deadTreeCount),
                             style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            color = cardContent.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
                         )
                     }
                 }
@@ -937,24 +1186,22 @@ internal fun BiodiversityCard(
                         Text(
                             stringResource(R.string.biodiversity_dying_trees, bio.dyingTreeCount),
                             style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            color = Color(0xFFEF6C00),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
                         )
                     }
                 }
             }
 
-            // IBP progress bar
-            LinearProgressIndicator(
-                progress = { bio.ibpScore.toFloat() / bio.ibpMax.toFloat() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = scoreColor,
-                trackColor = cardContent.copy(alpha = 0.08f)
+            // Context note
+            Text(
+                stringResource(R.string.biodiversity_ibp_context),
+                style = MaterialTheme.typography.bodySmall,
+                color = cardContent.copy(alpha = 0.45f)
             )
         }
     }
+    } // AnimatedVisibility
 }
 
 @Composable

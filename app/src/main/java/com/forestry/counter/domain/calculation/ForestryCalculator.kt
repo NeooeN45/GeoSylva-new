@@ -534,7 +534,7 @@ class ForestryCalculator(
                     when (mode?.mode?.uppercase()) {
                         "FIXED" -> mode.fixed
                         "SAMPLES" -> list.asSequence().mapNotNull { it.hauteurM }.toList().average().takeIf { !it.isNaN() }
-                        else -> null
+                        else -> lookupHIn(heightDefaults, essenceCode, d.toDouble())
                     }
                 } else {
                     resolveHeightForClassIn(essenceCode, d, tigesByClass, heightModes, heightDefaults)

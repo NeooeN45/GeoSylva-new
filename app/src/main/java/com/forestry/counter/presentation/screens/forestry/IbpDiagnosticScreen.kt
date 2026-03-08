@@ -1,7 +1,8 @@
 package com.forestry.counter.presentation.screens.forestry
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import com.forestry.counter.presentation.utils.StaggerEntrance
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -75,13 +76,13 @@ fun IbpDiagnosticScreen(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(bottom = 32.dp)
             ) {
-                item { DiagnosticScoreHeader(latest) }
-                item { DiagnosticRadarCard(latest) }
-                item { DiagnosticCriteriaTable(latest) }
-                item { DiagnosticPriorityActions(latest) }
-                item { DiagnosticPotentialCard(latest) }
+                item { StaggerEntrance(0, staggerMs = 70) { DiagnosticScoreHeader(latest) } }
+                item { StaggerEntrance(1, staggerMs = 70) { DiagnosticRadarCard(latest) } }
+                item { StaggerEntrance(2, staggerMs = 70) { DiagnosticCriteriaTable(latest) } }
+                item { StaggerEntrance(3, staggerMs = 70) { DiagnosticPriorityActions(latest) } }
+                item { StaggerEntrance(4, staggerMs = 70) { DiagnosticPotentialCard(latest) } }
                 if (evals.size > 1) {
-                    item { DiagnosticTrendSummary(evals.sortedBy { it.observationDate }) }
+                    item { StaggerEntrance(5, staggerMs = 70) { DiagnosticTrendSummary(evals.sortedBy { it.observationDate }) } }
                 }
             }
         }
@@ -105,7 +106,12 @@ private fun DiagnosticScoreHeader(eval: IbpEvaluation) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text("Score IBP Global", style = MaterialTheme.typography.labelLarge, color = Color.White.copy(alpha = .85f))
-            Text("$score / 50", style = MaterialTheme.typography.displayMedium,
+            val animatedScore by animateIntAsState(
+                targetValue = score.coerceAtLeast(0),
+                animationSpec = tween(1200, easing = FastOutSlowInEasing),
+                label = "diagScore"
+            )
+            Text("$animatedScore / 50", style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.ExtraBold, color = Color.White)
             Surface(color = Color.White.copy(alpha = .2f), shape = RoundedCornerShape(10.dp)) {
                 Text(diagLevelStr(level), style = MaterialTheme.typography.titleSmall,
@@ -156,8 +162,16 @@ private fun DiagnosticRadarCard(eval: IbpEvaluation) {
 
 @Composable
 private fun IbpDiagnosticRadar(scores: List<Float>, labels: List<String>) {
-    val animated = scores.map { target ->
-        animateFloatAsState(targetValue = target, animationSpec = tween(800), label = "radar").value
+    val animated = scores.mapIndexed { i, target ->
+        animateFloatAsState(
+            targetValue = target,
+            animationSpec = tween(
+                durationMillis = 900,
+                delayMillis = i * 55,
+                easing = FastOutSlowInEasing
+            ),
+            label = "radar_$i"
+        ).value
     }
     Canvas(modifier = Modifier.fillMaxWidth().height(260.dp)) {
         val cx = size.width / 2f; val cy = size.height / 2f
@@ -212,10 +226,16 @@ private fun DiagnosticCriteriaTable(eval: IbpEvaluation) {
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("Détail des critères", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-            IbpCriterionId.ALL.forEach { cid ->
+            IbpCriterionId.ALL.forEachIndexed { cidIdx, cid ->
                 val score = eval.answers.get(cid)
                 val color = when (score) { 5 -> Color(0xFF2E7D32); 2 -> Color(0xFFF9A825); 0 -> Color(0xFFC62828); else -> Color(0xFFBDBDBD) }
                 val groupColor = if (cid.group == IbpGroup.A) Color(0xFF2E7D32) else Color(0xFF1565C0)
+                val targetFraction = if (score >= 0) score / 5f else 0f
+                val animFraction by animateFloatAsState(
+                    targetValue = targetFraction,
+                    animationSpec = tween(700, delayMillis = cidIdx * 40, easing = FastOutSlowInEasing),
+                    label = "crit_$cidIdx"
+                )
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -228,10 +248,9 @@ private fun DiagnosticCriteriaTable(eval: IbpEvaluation) {
                     }
                     Text(ibpCriterionShortName(cid), style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.weight(1f))
-                    // Progress bar
+                    // Animated progress bar
                     Box(Modifier.width(80.dp).height(8.dp).clip(RoundedCornerShape(4.dp)).background(Color(0xFFE0E0E0))) {
-                        val fraction = if (score >= 0) score / 5f else 0f
-                        Box(Modifier.fillMaxHeight().fillMaxWidth(fraction).clip(RoundedCornerShape(4.dp)).background(color))
+                        Box(Modifier.fillMaxHeight().fillMaxWidth(animFraction).clip(RoundedCornerShape(4.dp)).background(color))
                     }
                     Surface(color = color, shape = CircleShape) {
                         Text(if (score >= 0) "$score" else "?", style = MaterialTheme.typography.labelSmall,

@@ -9,6 +9,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.forestry.counter.presentation.utils.StaggerEntrance
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -184,10 +186,11 @@ fun IbpProjectsScreen(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                grouped.forEach { (parcelleId, evals) ->
+                grouped.entries.forEachIndexed { groupIdx, (parcelleId, evals) ->
                     item(key = "header_$parcelleId") {
                         val parcelleName = parcelleNames[parcelleId]?.takeIf { it.isNotBlank() }
                             ?: parcelleId.take(8)
+                        StaggerEntrance(index = groupIdx * 20, staggerMs = 40) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -212,8 +215,10 @@ fun IbpProjectsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        }
                     }
-                    items(evals, key = { it.id }) { eval ->
+                    itemsIndexed(evals, key = { _, e -> e.id }) { evalIdx, eval ->
+                        StaggerEntrance(index = groupIdx * 20 + evalIdx + 1, staggerMs = 40) {
                         IbpProjectCard(
                             eval = eval,
                             placetteName = placetteNames[eval.placetteId]?.takeIf { it.isNotBlank() }
@@ -222,6 +227,7 @@ fun IbpProjectsScreen(
                             onClick = { onOpenEvaluation(eval.parcelleId, eval.placetteId, eval.id) },
                             onDelete = { showDeleteDialog = eval }
                         )
+                        }
                     }
                 }
             }

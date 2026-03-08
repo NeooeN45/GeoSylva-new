@@ -11,6 +11,8 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import android.Manifest
 import android.os.Build
@@ -124,73 +126,82 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
     val onboardingCompleted by app.userPreferences.onboardingCompleted.collectAsState(initial = true)
     val coroutineScope = rememberCoroutineScope()
 
-    // Courbes Material 3 Emphasized (M3 spec)
+    // Courbes Material 3 Emphasized — spec 2024 (M3 expressive motion)
     val emphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
     val emphasizedAccelerate = CubicBezierEasing(0.3f, 0.0f, 0.8f, 0.15f)
+    // Extra-smooth decelerate for pop-back (feels native)
+    val spatialDecelerate = CubicBezierEasing(0.0f, 0.0f, 0.0f, 1.0f)
 
-    // Durées M3 : entrée 400ms, sortie 200ms pour un enchaînement fluide
-    val enterMs = 400
-    val exitMs = 250
-    val navScale = 0.94f
+    // Durées : entrée 380ms, sortie 180ms, scale légèrement plus grand 0.96f
+    val enterMs  = 380
+    val exitMs   = 180
+    val enterScaleInitial = 0.96f
+    val exitScaleTarget   = 0.97f   // quasi-invisible mais donne de la profondeur
 
     val navEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
         if (!animationsEnabled) {
             EnterTransition.None
         } else {
-            fadeIn(animationSpec = tween(durationMillis = enterMs, delayMillis = 60, easing = emphasizedDecelerate)) +
-                slideInHorizontally(
-                    animationSpec = tween(durationMillis = enterMs, easing = emphasizedDecelerate),
-                    initialOffsetX = { it / 4 }
-                ) +
-                scaleIn(
-                    animationSpec = tween(durationMillis = enterMs, easing = emphasizedDecelerate),
-                    initialScale = navScale
-                )
+            fadeIn(
+                animationSpec = tween(durationMillis = enterMs, delayMillis = 40, easing = emphasizedDecelerate)
+            ) + slideInHorizontally(
+                animationSpec = tween(durationMillis = enterMs, easing = emphasizedDecelerate),
+                initialOffsetX = { (it * 0.18f).toInt() }
+            ) + scaleIn(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                ),
+                initialScale = enterScaleInitial
+            )
         }
     }
     val navExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
         if (!animationsEnabled) {
             ExitTransition.None
         } else {
-            fadeOut(animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate)) +
-                slideOutHorizontally(
-                    animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate),
-                    targetOffsetX = { -it / 5 }
-                ) +
-                scaleOut(
-                    animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate),
-                    targetScale = navScale
-                )
+            fadeOut(
+                animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate)
+            ) + slideOutHorizontally(
+                animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate),
+                targetOffsetX = { -(it * 0.08f).toInt() }
+            ) + scaleOut(
+                animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate),
+                targetScale = exitScaleTarget
+            )
         }
     }
     val navPopEnterTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition = {
         if (!animationsEnabled) {
             EnterTransition.None
         } else {
-            fadeIn(animationSpec = tween(durationMillis = enterMs, delayMillis = 60, easing = emphasizedDecelerate)) +
-                slideInHorizontally(
-                    animationSpec = tween(durationMillis = enterMs, easing = emphasizedDecelerate),
-                    initialOffsetX = { -it / 4 }
-                ) +
-                scaleIn(
-                    animationSpec = tween(durationMillis = enterMs, easing = emphasizedDecelerate),
-                    initialScale = navScale
-                )
+            fadeIn(
+                animationSpec = tween(durationMillis = enterMs, delayMillis = 40, easing = spatialDecelerate)
+            ) + slideInHorizontally(
+                animationSpec = tween(durationMillis = enterMs, easing = spatialDecelerate),
+                initialOffsetX = { -(it * 0.18f).toInt() }
+            ) + scaleIn(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                ),
+                initialScale = enterScaleInitial
+            )
         }
     }
     val navPopExitTransition: AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition = {
         if (!animationsEnabled) {
             ExitTransition.None
         } else {
-            fadeOut(animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate)) +
-                slideOutHorizontally(
-                    animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate),
-                    targetOffsetX = { it / 5 }
-                ) +
-                scaleOut(
-                    animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate),
-                    targetScale = navScale
-                )
+            fadeOut(
+                animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate)
+            ) + slideOutHorizontally(
+                animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate),
+                targetOffsetX = { (it * 0.08f).toInt() }
+            ) + scaleOut(
+                animationSpec = tween(durationMillis = exitMs, easing = emphasizedAccelerate),
+                targetScale = exitScaleTarget
+            )
         }
     }
 
@@ -496,6 +507,7 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                 parcelleId = parcelleId,
                 tigeRepository = app.tigeRepository,
                 essenceRepository = app.essenceRepository,
+                parcelleRepository = app.parcelleRepository,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

@@ -634,6 +634,24 @@
     <string name="biodiversity_bio_trees">Bio : %1$d</string>
     <string name="biodiversity_dead_trees">Morts : %1$d</string>
     <string name="biodiversity_dying_trees">Dépér. : %1$d</string>
+    <string name="biodiversity_shannon_desc">Diversité spécifique (0=monoculture · &gt;1,5=mélangé · &gt;2,5=diversifié)</string>
+    <string name="biodiversity_pielou_desc">Équirépartition des espèces (0=dominé · &gt;0,7=équilibré)</string>
+    <string name="biodiversity_ibp_context">IBP simplifié de terrain — réaliser une éval. complète pour un score certifié</string>
+    <string name="biodiversity_level_very_low">Très faible</string>
+    <string name="biodiversity_level_low">Faible</string>
+    <string name="biodiversity_level_medium">Modéré</string>
+    <string name="biodiversity_level_good">Bon</string>
+    <string name="biodiversity_level_very_good">Excellent</string>
+    <string name="biodiversity_shannon_mono">Monoculture</string>
+    <string name="biodiversity_shannon_low">Faible diversité</string>
+    <string name="biodiversity_shannon_mixed">Peuplement mélangé</string>
+    <string name="biodiversity_shannon_diverse">Peuplement diversifié</string>
+    <string name="biodiversity_pielou_uneven">Déséquilibré</string>
+    <string name="biodiversity_pielou_moderate">Modéré</string>
+    <string name="biodiversity_pielou_even">Équilibré</string>
+    <string name="martelage_volume_desc">Volume et recette estimés sur les tiges martelées (partiel si hauteurs incomplètes)</string>
+    <string name="martelage_basal_area_desc">G = somme des sections à 1,30 m — indicateur de densité du peuplement</string>
+    <string name="martelage_density_desc">Structure du peuplement : effectifs, diamètres, hauteurs</string>
 
     <string name="martelage_harvest_simulation_title">Simulation de coupe</string>
     <string name="martelage_harvest_n_pct">Prélèvement N/ha</string>

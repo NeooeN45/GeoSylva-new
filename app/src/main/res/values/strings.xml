@@ -634,6 +634,24 @@
     <string name="biodiversity_bio_trees">Bio: %1$d</string>
     <string name="biodiversity_dead_trees">Dead: %1$d</string>
     <string name="biodiversity_dying_trees">Dying: %1$d</string>
+    <string name="biodiversity_shannon_desc">Species diversity (0=monoculture · &gt;1.5=mixed · &gt;2.5=diverse)</string>
+    <string name="biodiversity_pielou_desc">Balance of distribution (0=dominated · &gt;0.7=even)</string>
+    <string name="biodiversity_ibp_context">Simplified field IBP — do a full evaluation for a certified score</string>
+    <string name="biodiversity_level_very_low">Very low</string>
+    <string name="biodiversity_level_low">Low</string>
+    <string name="biodiversity_level_medium">Moderate</string>
+    <string name="biodiversity_level_good">Good</string>
+    <string name="biodiversity_level_very_good">Excellent</string>
+    <string name="biodiversity_shannon_mono">Monoculture</string>
+    <string name="biodiversity_shannon_low">Low diversity</string>
+    <string name="biodiversity_shannon_mixed">Mixed stand</string>
+    <string name="biodiversity_shannon_diverse">Diverse stand</string>
+    <string name="biodiversity_pielou_uneven">Uneven</string>
+    <string name="biodiversity_pielou_moderate">Moderate</string>
+    <string name="biodiversity_pielou_even">Balanced</string>
+    <string name="martelage_volume_desc">Estimated volume and revenue for marked trees (partial if heights incomplete)</string>
+    <string name="martelage_basal_area_desc">G = sum of cross-sections at 1.30 m — stand density indicator</string>
+    <string name="martelage_density_desc">Stand structure: counts, diameters, heights</string>
 
     <string name="martelage_harvest_simulation_title">Harvest simulation</string>
     <string name="martelage_harvest_n_pct">Removal N/ha</string>

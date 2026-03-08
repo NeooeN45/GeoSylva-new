@@ -13,6 +13,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -47,6 +48,7 @@ import com.forestry.counter.data.preferences.UserPreferencesManager
 import com.forestry.counter.presentation.components.AppMiniDialog
 import com.forestry.counter.presentation.utils.rememberHapticFeedback
 import com.forestry.counter.presentation.utils.rememberSoundFeedback
+import com.forestry.counter.presentation.utils.StaggerEntrance
 import kotlinx.coroutines.launch
 import java.util.UUID
 import kotlin.math.PI
@@ -278,7 +280,8 @@ fun PlacettesScreen(
                                     }
                                 }
                             }
-                            items(displayedPlacettes, key = { it.id }) { pl ->
+                            itemsIndexed(displayedPlacettes, key = { _, pl -> pl.id }) { idx, pl ->
+                                StaggerEntrance(index = idx, staggerMs = 50) {
                                 PlacetteCard(
                                     placette = pl,
                                     animationsEnabled = animationsEnabled,
@@ -302,6 +305,7 @@ fun PlacettesScreen(
                                     },
                                     modifier = if (animationsEnabled) Modifier.animateItemPlacement() else Modifier
                                 )
+                                }
                             }
                         }
                     }

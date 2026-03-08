@@ -313,6 +313,8 @@ fun MartelageScreen(
     var showTarifMethodDialog by remember { mutableStateOf(false) }
     var currentTarifMethod by remember { mutableStateOf(TarifMethod.ALGAN) }
     var currentTarifNumero by remember { mutableStateOf<Int?>(null) }
+    // Incrémenté après chaque changement de méthode pour forcer le rechargement de synthesisParams
+    var synthesisParamsVersion by remember { mutableStateOf(0) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     var breakdownByEssence by remember { mutableStateOf<Map<String, List<ProductBreakdownRow>>>(emptyMap()) }
     var essenceSortKey by remember { mutableStateOf("name") }
@@ -495,7 +497,8 @@ fun MartelageScreen(
 
     val synthesisParams by produceState<ForestrySynthesisParams?>(
         initialValue = null,
-        forestryCalculator
+        forestryCalculator,
+        synthesisParamsVersion
     ) {
         value = try {
             forestryCalculator.loadSynthesisParams()
@@ -506,7 +509,8 @@ fun MartelageScreen(
 
     val diameterClasses by produceState<List<Int>>(
         initialValue = emptyList(),
-        forestryCalculator
+        forestryCalculator,
+        synthesisParamsVersion
     ) {
         value = try {
             forestryCalculator.diameterClasses()
@@ -1478,16 +1482,26 @@ fun MartelageScreen(
                                     val q = ess.dominantQuality?.code
                                     val v = ess.vTotal
                                     val products: Map<String, Double> = when {
+                                        diam >= 60 -> mapOf("BO" to v * 0.85, "BI" to v * 0.10, "BCh" to v * 0.05)
                                         diam >= 45 -> mapOf("BO" to v * 0.75, "BI" to v * 0.15, "BCh" to v * 0.10)
                                         diam >= 35 -> mapOf("BO" to v * 0.55, "BI" to v * 0.30, "BCh" to v * 0.15)
                                         diam >= 25 -> mapOf("BO" to v * 0.30, "BI" to v * 0.45, "BCh" to v * 0.25)
                                         diam >= 15 -> mapOf("BI" to v * 0.40, "BCh" to v * 0.35, "PATE" to v * 0.25)
                                         else       -> mapOf("BCh" to v * 0.50, "PATE" to v * 0.50)
                                     }
-                                    result[ess.essenceCode] = PriceCalculator.buildBreakdown(
+                                    val baseBreakdown = PriceCalculator.buildBreakdown(
                                         prices = prices, essenceCode = ess.essenceCode,
                                         volumeByProduct = products, diamCm = diam, quality = q
                                     )
+                                    // Align product breakdown total with authoritative synthesis revenue
+                                    val synRevenue = ess.revenueTotal
+                                    val breakdownTotal = baseBreakdown.sumOf { it.totalEur }
+                                    result[ess.essenceCode] = if (synRevenue != null && synRevenue > 0.0 && breakdownTotal > 0.0) {
+                                        val scale = synRevenue / breakdownTotal
+                                        baseBreakdown.map { row -> row.copy(totalEur = row.totalEur * scale) }
+                                    } else {
+                                        baseBreakdown
+                                    }
                                 }
                                 breakdownByEssence = result
                             }
@@ -1906,6 +1920,7 @@ fun MartelageScreen(
                             ifnNumero = if (method == TarifMethod.IFN_RAPIDE || method == TarifMethod.IFN_LENT) numero else null
                         )
                     )
+                    synthesisParamsVersion++
                     snackbar.showSnackbar(context.getString(R.string.martelage_cubage_method_saved))
                 }
                 showTarifMethodDialog = false

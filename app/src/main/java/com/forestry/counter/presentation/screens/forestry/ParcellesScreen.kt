@@ -14,6 +14,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -49,6 +50,7 @@ import com.forestry.counter.presentation.components.AppMiniDialog
 import com.forestry.counter.presentation.components.TipCard
 import com.forestry.counter.presentation.utils.rememberHapticFeedback
 import com.forestry.counter.presentation.utils.rememberSoundFeedback
+import com.forestry.counter.presentation.utils.StaggerEntrance
 import com.forestry.counter.domain.repository.GroupRepository
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -325,7 +327,8 @@ fun ParcellesScreen(
                                         message = stringResource(R.string.tip_parcelles_msg)
                                     )
                                 }
-                                items(displayedParcelles, key = { it.id }) { p ->
+                                itemsIndexed(displayedParcelles, key = { _, p -> p.id }) { idx, p ->
+                                    StaggerEntrance(index = idx, staggerMs = 50) {
                                     ParcelleCard(
                                         parcelle = p,
                                         animationsEnabled = animationsEnabled,
@@ -356,6 +359,7 @@ fun ParcellesScreen(
                                         },
                                         modifier = if (animationsEnabled) Modifier.animateItemPlacement() else Modifier
                                     )
+                                    }
                                 }
                             }
                         }

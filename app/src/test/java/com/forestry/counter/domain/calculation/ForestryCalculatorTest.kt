@@ -136,7 +136,7 @@ class ForestryCalculatorTest {
     }
 
     @Test
-    fun `synthesisForEssence requireHeights blocks volume if heights missing`() = runTest {
+    fun `synthesisForEssence requireHeights uses default height as fallback when no measured height`() = runTest {
         val json = Json { ignoreUnknownKeys = true }
 
         val heightDefaults = listOf(
@@ -183,8 +183,62 @@ class ForestryCalculatorTest {
             requireHeights = true
         )
 
+        // Default heights are now used as last-resort fallback even in requireHeights=true mode.
+        // This prevents null volumes for TGB and other large trees with no measured height.
+        assertEquals(1, totals.nTotal)
+        assertNotNull(totals.vTotal)
+        assertEquals(1, totals.volumeComputedCount)
+    }
+
+    @Test
+    fun `synthesisForEssence requireHeights blocks volume when NO defaults and NO measured height`() = runTest {
+        val json = Json { ignoreUnknownKeys = true }
+
+        // No height defaults at all
+        val repo = FakeParameterRepository(
+            mapOf(
+                ParameterKeys.HAUTEURS_DEFAUT to "[]",
+                ParameterKeys.HEIGHT_MODES to "[]",
+                ParameterKeys.RULES_PRODUITS to "[]",
+                ParameterKeys.PRIX_MARCHE to "[]",
+                ParameterKeys.COEFS_VOLUME to "[]"
+            )
+        )
+        val calculator = ForestryCalculator(repo)
+        val params = calculator.loadSynthesisParams()
+
+        val tiges = listOf(
+            Tige(
+                id = "1",
+                parcelleId = "P",
+                placetteId = null,
+                essenceCode = "HETRE",
+                diamCm = 30.0,
+                hauteurM = null,
+                gpsWkt = null,
+                precisionM = null,
+                altitudeM = null,
+                note = null,
+                produit = null,
+                fCoef = null,
+                valueEur = null
+            )
+        )
+
+        val (_, totals) = calculator.synthesisForEssence(
+            essenceCode = "HETRE",
+            classes = listOf(30),
+            tiges = tiges,
+            manualHeights = null,
+            method = null,
+            params = params,
+            requireHeights = true
+        )
+
+        // No defaults, no measured height → volume must be null
         assertEquals(1, totals.nTotal)
         assertEquals(null, totals.vTotal)
+        assertEquals(0, totals.volumeComputedCount)
     }
 
     @Test
@@ -720,10 +774,11 @@ class ForestryCalculatorTest {
     }
 
     @Test
-    fun `synthesisForEssence requireHeights keeps partial volume and reports completeness when some classes are missing heights`() = runTest {
+    fun `synthesisForEssence requireHeights uses defaults for class with no measured height giving full completeness`() = runTest {
         val json = Json { ignoreUnknownKeys = true }
 
         val coefs = listOf(CoefVolumeRange(essence = "HETRE", min = 0, max = 200, f = 0.5, method = null))
+        // Height defaults cover both classes 30 and 35
         val heightDefaults = listOf(HeightDefaultRange(essence = "HETRE", min = 0, max = 200, h = 20.0))
         val heightModes = emptyList<HeightModeEntry>()
         val rules = listOf(ProductRule(essence = "*", min = 0, max = null, product = "BO"))
@@ -742,7 +797,7 @@ class ForestryCalculatorTest {
         val params = calculator.loadSynthesisParams()
 
         val tiges = listOf(
-            // Class 30: height present => OK
+            // Class 30: measured height
             Tige(
                 id = "1",
                 parcelleId = "P",
@@ -758,7 +813,85 @@ class ForestryCalculatorTest {
                 fCoef = null,
                 valueEur = null
             ),
-            // Class 35: missing height and no manual height => volume stays partial
+            // Class 35: no measured height but defaults cover it → volume computed
+            Tige(
+                id = "2",
+                parcelleId = "P",
+                placetteId = null,
+                essenceCode = "HETRE",
+                diamCm = 35.0,
+                hauteurM = null,
+                gpsWkt = null,
+                precisionM = null,
+                altitudeM = null,
+                note = null,
+                produit = null,
+                fCoef = null,
+                valueEur = null
+            )
+        )
+
+        val (rows, totals) = calculator.synthesisForEssence(
+            essenceCode = "HETRE",
+            classes = listOf(30, 35),
+            tiges = tiges,
+            manualHeights = null,
+            method = null,
+            params = params,
+            requireHeights = true
+        )
+
+        // Both classes have height (class 30 measured, class 35 via default) → both volumes computed
+        assertEquals(2, totals.nTotal)
+        assertNotNull(totals.vTotal)
+        assertNotNull(rows.first { it.diamClass == 30 }.vSum)
+        assertNotNull(rows.first { it.diamClass == 35 }.vSum)
+        assertEquals(2, totals.volumeComputedCount)
+        assertEquals(2, totals.volumeExpectedCount)
+        assertNullableDoubleEquals(100.0, totals.volumeCompletenessPct, delta = 1e-9)
+    }
+
+    @Test
+    fun `synthesisForEssence requireHeights keeps partial volume when some classes have no defaults`() = runTest {
+        val json = Json { ignoreUnknownKeys = true }
+
+        val coefs = listOf(CoefVolumeRange(essence = "HETRE", min = 0, max = 200, f = 0.5, method = null))
+        // Empty height defaults: class 30 will use its measured hauteurM, class 35 has nothing → partial
+        val heightDefaults = emptyList<HeightDefaultRange>()
+        val heightModes = emptyList<HeightModeEntry>()
+        val rules = listOf(ProductRule(essence = "*", min = 0, max = null, product = "BO"))
+        val prices = listOf(PriceEntry(essence = "HETRE", product = "BO", min = 0, max = 200, eurPerM3 = 100.0))
+
+        val repo = FakeParameterRepository(
+            mapOf(
+                ParameterKeys.COEFS_VOLUME to json.encodeToString(coefs),
+                ParameterKeys.HAUTEURS_DEFAUT to json.encodeToString(heightDefaults),
+                ParameterKeys.HEIGHT_MODES to json.encodeToString(heightModes),
+                ParameterKeys.RULES_PRODUITS to json.encodeToString(rules),
+                ParameterKeys.PRIX_MARCHE to json.encodeToString(prices)
+            )
+        )
+        val calculator = ForestryCalculator(repo)
+        val params = calculator.loadSynthesisParams()
+
+        val tiges = listOf(
+            // Class 30: HAS a measured height → volume computed despite empty defaults
+            Tige(
+                id = "1",
+                parcelleId = "P",
+                placetteId = null,
+                essenceCode = "HETRE",
+                diamCm = 30.0,
+                hauteurM = 20.0,
+                gpsWkt = null,
+                precisionM = null,
+                altitudeM = null,
+                note = null,
+                produit = null,
+                fCoef = null,
+                valueEur = null
+            ),
+            // Class 35: no measured height, no defaults → null volume
             Tige(
                 id = "2",
                 parcelleId = "P",
@@ -787,9 +920,10 @@ class ForestryCalculatorTest {
         )
 
         assertEquals(2, totals.nTotal)
-        assertNotNull(totals.vTotal)
+        assertNotNull(totals.vTotal)   // class 30 volume computed from measured height
+        assertNotNull(rows.first { it.diamClass == 30 }.vSum)
         assertNullableDoubleEquals(rows.first { it.diamClass == 30 }.vSum, totals.vTotal, delta = 1e-9)
-        assertEquals(null, rows.first { it.diamClass == 35 }.vSum)
+        assertEquals(null, rows.first { it.diamClass == 35 }.vSum)  // no height at all → null
         assertEquals(1, totals.volumeComputedCount)
         assertEquals(2, totals.volumeExpectedCount)
         assertNullableDoubleEquals(50.0, totals.volumeCompletenessPct, delta = 1e-9)
