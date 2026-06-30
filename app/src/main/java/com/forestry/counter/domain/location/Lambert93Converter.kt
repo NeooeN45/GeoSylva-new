@@ -12,9 +12,14 @@ import kotlin.math.*
  * lui-même confondu avec l'ETRS89 (European Terrestrial Reference System 1989).
  * Le RGF93/ETRS89 diffère du WGS84 d'environ 60 cm en 2026 (croissance ~2,5 cm/an
  * depuis 1989, due à la dérive de la plaque eurasienne). Pour les applications
- * forestières (précision cible 1-2 m), cette différence est négligeable et la
- * correction WGS84→ETRS89 est désactivée par défaut. Elle peut être activée via
- * [applyEtrs89Correction] pour les usages nécessitant une précision sub-métrique.
+ * forestières (précision cible 1-2 m avec GPS mono-fréquence), cette différence
+ * est négligeable : WGS84 et ETRS89/RGF93 sont traités comme confondus.
+ *
+ * Une transformation Helmert WGS84↔ETRS89 précise serait time-dependent
+ * (paramètres ITRF à époque variable) et n'apporterait aucune amélioration
+ * mesurable face à l'incertitude GPS (±2-5 m en conditions forestières).
+ * Les anciens paramètres Helmert approximatifs ont été supprimés pour éviter
+ * de donner une illusion de précision sub-métrique non justifiée.
  *
  * **Note NTF** : L'ancien système NTF (Nouvelle Triangulation de la France) et
  * les projections Lambert I-IV associées ne sont PAS gérés ici. Lambert 93 est
@@ -40,7 +45,6 @@ object Lambert93Converter {
     private const val A = 6378137.0           // demi-grand axe (m)
     private const val F_INV = 298.257222101   // aplatissement inverse
     private val F = 1.0 / F_INV              // aplatissement
-    private val B = A * (1.0 - F)            // demi-petit axe
     private val E2 = 2 * F - F * F           // première excentricité²
     private val E = sqrt(E2)                  // première excentricité
 
@@ -51,18 +55,6 @@ object Lambert93Converter {
     private val LAMBDA_0 = Math.toRadians(3.0)   // méridien central
     private const val X_0 = 700000.0             // fausse abscisse (E)
     private const val Y_0 = 6600000.0            // fausse ordonnée (N)
-
-    // ── Paramètres de transformation WGS84 → ETRS89/RGF93 (Helmert 7 paramètres) ──
-    // Valeurs approximatives à l'époque 2026.0 (croissance ~2,5 cm/an depuis 1989).
-    // Source : EUREF Boucher & Altamimi, ETRF2000→ITRF.
-    // Ces paramètres corrigent la dérive de la plaque eurasienne (~60 cm en 2026).
-    private const val WGS84_TO_ETRS89_TX = 0.057  // translation X (m)
-    private const val WGS84_TO_ETRS89_TY = 0.005  // translation Y (m)
-    private const val WGS84_TO_ETRS89_TZ = 0.029  // translation Z (m)
-    private const val WGS84_TO_ETRS89_RX = 0.0    // rotation X (arcsec) — négligeable
-    private const val WGS84_TO_ETRS89_RY = 0.0    // rotation Y (arcsec) — négligeable
-    private const val WGS84_TO_ETRS89_RZ = 0.0    // rotation Z (arcsec) — négligeable
-    private const val WGS84_TO_ETRS89_SCALE = 0.0 // facteur d'échelle (ppm) — négligeable
 
     // ── Constantes pré-calculées ──
     private val N: Double
@@ -87,20 +79,16 @@ object Lambert93Converter {
     /**
      * Convertit des coordonnées WGS84 (lon/lat en degrés) en Lambert 93 (E, N en mètres).
      *
+     * WGS84 et RGF93/ETRS89 sont traités comme confondus (écart ~60 cm en 2026,
+     * négligeable face à l'incertitude GPS forestière ±2-5 m).
+     *
      * @param lonDeg Longitude WGS84 en degrés décimaux
      * @param latDeg Latitude WGS84 en degrés décimaux
-     * @param applyEtrs89Correction Si true, applique la correction WGS84→ETRS89 (~60 cm en 2026).
-     *        Désactivé par défaut (négligeable pour la précision forestière 1-2 m).
      * @return Pair(easting, northing) en mètres Lambert 93
      */
-    fun toL93(lonDeg: Double, latDeg: Double, applyEtrs89Correction: Boolean = false): Pair<Double, Double> {
-        val (etrs89Lon, etrs89Lat) = if (applyEtrs89Correction) {
-            wgs84ToEtrs89(lonDeg, latDeg)
-        } else {
-            lonDeg to latDeg
-        }
-        val phi = Math.toRadians(etrs89Lat)
-        val lambda = Math.toRadians(etrs89Lon)
+    fun toL93(lonDeg: Double, latDeg: Double): Pair<Double, Double> {
+        val phi = Math.toRadians(latDeg)
+        val lambda = Math.toRadians(lonDeg)
 
         val l = latIso(phi)
         val r = C * exp(-N * l)
@@ -116,10 +104,9 @@ object Lambert93Converter {
      *
      * @param easting  Abscisse Lambert 93 en mètres
      * @param northing Ordonnée Lambert 93 en mètres
-     * @param applyEtrs89Correction Si true, applique la correction ETRS89→WGS84 inverse.
      * @return Pair(longitude, latitude) en degrés WGS84
      */
-    fun toWGS84(easting: Double, northing: Double, applyEtrs89Correction: Boolean = false): Pair<Double, Double> {
+    fun toWGS84(easting: Double, northing: Double): Pair<Double, Double> {
         val dx = easting - XS
         val dy = YS - northing
         val r = sqrt(dx * dx + dy * dy)
@@ -139,14 +126,7 @@ object Lambert93Converter {
             phi = phiNew
         }
 
-        val etrs89Lon = Math.toDegrees(lambda)
-        val etrs89Lat = Math.toDegrees(phi)
-
-        return if (applyEtrs89Correction) {
-            etrs89ToWgs84(etrs89Lon, etrs89Lat)
-        } else {
-            Pair(etrs89Lon, etrs89Lat)
-        }
+        return Pair(Math.toDegrees(lambda), Math.toDegrees(phi))
     }
 
     /**
@@ -177,84 +157,5 @@ object Lambert93Converter {
     private fun latIso(phi: Double): Double {
         val eSinPhi = E * sin(phi)
         return ln(tan(PI / 4.0 + phi / 2.0) * ((1.0 - eSinPhi) / (1.0 + eSinPhi)).pow(E / 2.0))
-    }
-
-    // ── Transformation WGS84 ↔ ETRS89/RGF93 (Helmert simplifiée) ──
-
-    /**
-     * Applique la transformation WGS84 → ETRS89/RGF93 via Helmert à 3 translations.
-     * Les rotations et facteur d'échelle sont négligeables (< 1 mm) pour la France.
-     *
-     * Précision : ~1 cm (suffisant pour sub-métrique).
-     * Source : EUREF, paramètres ETRF2000 à l'époque 2026.0.
-     *
-     * @param lonDeg Longitude WGS84 en degrés
-     * @param latDeg Latitude WGS84 en degrés
-     * @return Pair(longitude, latitude) ETRS89 en degrés
-     */
-    private fun wgs84ToEtrs89(lonDeg: Double, latDeg: Double): Pair<Double, Double> {
-        // Conversion géographique → ECEF (Earth-Centered, Earth-Fixed)
-        val lon = Math.toRadians(lonDeg)
-        val lat = Math.toRadians(latDeg)
-        val sinLat = sin(lat)
-        val cosLat = cos(lat)
-        val sinLon = sin(lon)
-        val cosLon = cos(lon)
-        val w = 1.0 - E2 * sinLat * sinLat
-        val n = A / sqrt(w)
-        // Hauteur approximée à 0 (GPS forestier sans altitude précise)
-        val h = 0.0
-        val x = (n + h) * cosLat * cosLon
-        val y = (n + h) * cosLat * sinLon
-        val z = (n * (1.0 - E2) + h) * sinLat
-
-        // Translation WGS84 → ETRS89 (inverser le signe pour ETRS89→WGS84)
-        val x2 = x - WGS84_TO_ETRS89_TX
-        val y2 = y - WGS84_TO_ETRS89_TY
-        val z2 = z - WGS84_TO_ETRS89_TZ
-
-        // Conversion ECEF → géographique (itération de Bowring)
-        val p = sqrt(x2 * x2 + y2 * y2)
-        val lon2 = atan2(y2, x2)
-        val kappa = E2 * A / B
-        val bigZ = z2 * (1.0 + kappa)
-        val bigR = sqrt(p * p + bigZ * bigZ)
-        val beta = atan(bigZ / p)
-        val phi2 = atan(z2 / (p * (1.0 - E2 * A / (B * bigR) * (1.0 / cos(beta)))))
-
-        return Pair(Math.toDegrees(lon2), Math.toDegrees(phi2))
-    }
-
-    /**
-     * Applique la transformation ETRS89/RGF93 → WGS84 (inverse de [wgs84ToEtrs89]).
-     */
-    private fun etrs89ToWgs84(lonDeg: Double, latDeg: Double): Pair<Double, Double> {
-        val lon = Math.toRadians(lonDeg)
-        val lat = Math.toRadians(latDeg)
-        val sinLat = sin(lat)
-        val cosLat = cos(lat)
-        val sinLon = sin(lon)
-        val cosLon = cos(lon)
-        val w = 1.0 - E2 * sinLat * sinLat
-        val n = A / sqrt(w)
-        val h = 0.0
-        val x = (n + h) * cosLat * cosLon
-        val y = (n + h) * cosLat * sinLon
-        val z = (n * (1.0 - E2) + h) * sinLat
-
-        // Translation ETRS89 → WGS84 (signe opposé)
-        val x2 = x + WGS84_TO_ETRS89_TX
-        val y2 = y + WGS84_TO_ETRS89_TY
-        val z2 = z + WGS84_TO_ETRS89_TZ
-
-        val p = sqrt(x2 * x2 + y2 * y2)
-        val lon2 = atan2(y2, x2)
-        val kappa = E2 * A / B
-        val bigZ = z2 * (1.0 + kappa)
-        val bigR = sqrt(p * p + bigZ * bigZ)
-        val beta = atan(bigZ / p)
-        val phi2 = atan(z2 / (p * (1.0 - E2 * A / (B * bigR) * (1.0 / cos(beta)))))
-
-        return Pair(Math.toDegrees(lon2), Math.toDegrees(phi2))
     }
 }
