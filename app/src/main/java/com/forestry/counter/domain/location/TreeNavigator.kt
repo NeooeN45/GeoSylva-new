@@ -48,7 +48,11 @@ class TreeNavigator(private val context: Context) : SensorEventListener {
         /** Angle relatif : direction de la cible par rapport à l'orientation de l'appareil. */
         val relativeBearingDeg: Float? = null,
         val userAccuracyM: Float? = null,
-        val arrived: Boolean = false
+        val arrived: Boolean = false,
+        /** Qualité du compas (SensorManager.SENSOR_STATUS_*). null si pas encore reçu. */
+        val compassAccuracy: Int? = null,
+        /** True si le compas est peu fiable (interférence magnétique, calibration requise). */
+        val compassUnreliable: Boolean = false
     )
 
     private val _state = MutableStateFlow(NavigationState())
@@ -63,9 +67,16 @@ class TreeNavigator(private val context: Context) : SensorEventListener {
     private var hasGravity = false
     private var hasMagnetic = false
 
+    /** True si le capteur TYPE_ROTATION_VECTOR est utilisé (plus précis, fusion OS). */
+    private var useRotationVector = false
+    /** Lissage de l'azimut par filtre passe-bas exponentiel. */
+    private var smoothedAzimuthDeg: Float? = null
+
     companion object {
         /** Distance en mètres en-dessous de laquelle on considère être "arrivé". */
         const val ARRIVAL_THRESHOLD_M = 5f
+        /** Coefficient de lissage du compas (0=figé, 1=brut). 0.25 = lissage doux. */
+        private const val AZIMUTH_SMOOTHING_ALPHA = 0.25f
     }
 
     /**
@@ -104,14 +115,22 @@ class TreeNavigator(private val context: Context) : SensorEventListener {
             return false
         }
 
-        // Compass sensors
+        // Compass sensors — préférer TYPE_ROTATION_VECTOR (fusion OS, plus précis)
+        // Fallback sur accéléromètre + magnétomètre si indisponible.
         sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
         sensorManager?.let { sm ->
-            sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let {
-                sm.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
-            }
-            sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)?.let {
-                sm.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
+            val rotationVector = sm.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+            if (rotationVector != null) {
+                sm.registerListener(this, rotationVector, SensorManager.SENSOR_DELAY_GAME)
+                useRotationVector = true
+            } else {
+                useRotationVector = false
+                sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let {
+                    sm.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
+                }
+                sm.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)?.let {
+                    sm.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME)
+                }
             }
         }
 
@@ -127,6 +146,8 @@ class TreeNavigator(private val context: Context) : SensorEventListener {
         sensorManager = null
         hasGravity = false
         hasMagnetic = false
+        useRotationVector = false
+        smoothedAzimuthDeg = null
         _state.value = NavigationState()
     }
 
@@ -160,38 +181,87 @@ class TreeNavigator(private val context: Context) : SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent) {
         when (event.sensor.type) {
+            Sensor.TYPE_ROTATION_VECTOR -> {
+                // Capteur de rotation vectorielle (fusion OS accéléro + gyro + magnéto)
+                val r = FloatArray(9)
+                try {
+                    SensorManager.getRotationMatrixFromVector(r, event.values)
+                } catch (_: Exception) {
+                    return
+                }
+                updateAzimuthFromRotationMatrix(r)
+            }
             Sensor.TYPE_ACCELEROMETER -> {
                 System.arraycopy(event.values, 0, gravity, 0, 3)
                 hasGravity = true
+                computeAzimuthFromAccelMag()
             }
             Sensor.TYPE_MAGNETIC_FIELD -> {
                 System.arraycopy(event.values, 0, geomagnetic, 0, 3)
                 hasMagnetic = true
-            }
-        }
-
-        if (hasGravity && hasMagnetic) {
-            val r = FloatArray(9)
-            val i = FloatArray(9)
-            if (SensorManager.getRotationMatrix(r, i, gravity, geomagnetic)) {
-                val orientation = FloatArray(3)
-                SensorManager.getOrientation(r, orientation)
-                val azimuthRad = orientation[0]
-                val azimuthDeg = ((Math.toDegrees(azimuthRad.toDouble()).toFloat() % 360f) + 360f) % 360f
-
-                val current = _state.value
-                val bearingToTarget = current.bearingToTargetDeg
-                val relativeBearing = if (bearingToTarget != null) {
-                    ((bearingToTarget - azimuthDeg + 360f) % 360f)
-                } else null
-
-                _state.value = current.copy(
-                    deviceAzimuthDeg = azimuthDeg,
-                    relativeBearingDeg = relativeBearing
-                )
+                computeAzimuthFromAccelMag()
             }
         }
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+    /** Calcule l'azimut depuis la matrice de rotation (TYPE_ROTATION_VECTOR). */
+    private fun updateAzimuthFromRotationMatrix(r: FloatArray) {
+        val orientation = FloatArray(3)
+        SensorManager.getOrientation(r, orientation)
+        val azimuthRad = orientation[0]
+        val rawAzimuthDeg = ((Math.toDegrees(azimuthRad.toDouble()).toFloat() % 360f) + 360f) % 360f
+        updateAzimuth(rawAzimuthDeg)
+    }
+
+    /** Calcule l'azimut depuis accéléromètre + magnétomètre (fallback). */
+    private fun computeAzimuthFromAccelMag() {
+        if (!hasGravity || !hasMagnetic) return
+        val r = FloatArray(9)
+        val i = FloatArray(9)
+        if (SensorManager.getRotationMatrix(r, i, gravity, geomagnetic)) {
+            val orientation = FloatArray(3)
+            SensorManager.getOrientation(r, orientation)
+            val azimuthRad = orientation[0]
+            val rawAzimuthDeg = ((Math.toDegrees(azimuthRad.toDouble()).toFloat() % 360f) + 360f) % 360f
+            updateAzimuth(rawAzimuthDeg)
+        }
+    }
+
+    /**
+     * Met à jour l'azimut avec lissage passe-bas exponentiel.
+     * Gère le wraparound 0°/360° pour éviter les sauts brusques.
+     */
+    private fun updateAzimuth(rawAzimuthDeg: Float) {
+        val current = smoothedAzimuthDeg
+        val smoothed = if (current == null) {
+            rawAzimuthDeg
+        } else {
+            // Différence avec gestion du wraparound (chemin le plus court)
+            val diff = ((rawAzimuthDeg - current + 540f) % 360f) - 180f
+            ((current + AZIMUTH_SMOOTHING_ALPHA * diff) % 360f + 360f) % 360f
+        }
+        smoothedAzimuthDeg = smoothed
+
+        val navState = _state.value
+        val bearingToTarget = navState.bearingToTargetDeg
+        val relativeBearing = if (bearingToTarget != null) {
+            ((bearingToTarget - smoothed + 360f) % 360f)
+        } else null
+
+        _state.value = navState.copy(
+            deviceAzimuthDeg = smoothed,
+            relativeBearingDeg = relativeBearing
+        )
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        // Détecter une fiabilité faible du compas (interférence magnétique, calibration requise)
+        if (sensor?.type == Sensor.TYPE_MAGNETIC_FIELD || sensor?.type == Sensor.TYPE_ROTATION_VECTOR) {
+            val unreliable = accuracy <= SensorManager.SENSOR_STATUS_UNRELIABLE
+            _state.value = _state.value.copy(
+                compassAccuracy = accuracy,
+                compassUnreliable = unreliable
+            )
+        }
+    }
 }
