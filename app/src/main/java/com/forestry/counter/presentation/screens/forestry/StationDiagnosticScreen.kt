@@ -1305,7 +1305,7 @@ private fun AutoContextBlock(
     }
 }
 
-// TODO i18n: extraire vers strings.xml — chaînes d'inférence contextuelle (buildAutoContext,
+// TODO(#3) i18n: extraire vers strings.xml — chaînes d'inférence contextuelle (buildAutoContext,
 // buildChecklistItems, buildFloraBlock, buildClimateBlock). Fonctions non-Composables :
 // passer par un StringProvider ou déplacer la génération dans des composables.
 private fun buildAutoContext(

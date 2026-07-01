@@ -31,6 +31,7 @@ import com.forestry.counter.presentation.theme.AccentOrange
 import com.forestry.counter.presentation.theme.AccentPurple
 import com.forestry.counter.presentation.theme.AccentRed
 import com.forestry.counter.presentation.components.AppMiniDialog
+import com.forestry.counter.presentation.components.LoadingState
 import com.forestry.counter.data.logging.CrashLogger
 import com.forestry.counter.domain.usecase.export.ExportDataUseCase
 import com.forestry.counter.domain.repository.ParameterRepository
@@ -141,6 +142,12 @@ fun SettingsScreen(
     val mapOnlyReliableGps by preferencesManager.mapOnlyReliableGps.collectAsStateWithLifecycle(initialValue = false)
     val mapReliableGpsThresholdM by preferencesManager.mapReliableGpsThresholdM.collectAsStateWithLifecycle(initialValue = 8f)
     var showCsvDialog by remember { mutableStateOf(false) }
+
+    var settingsLoading by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        preferencesManager.themeMode.first()
+        settingsLoading = false
+    }
 
     // Tarif de cubage
     var showTarifDialog by remember { mutableStateOf(false) }
@@ -328,6 +335,11 @@ fun SettingsScreen(
                 preferencesManager.setBackgroundImageUri(uri.toString())
             }
         }
+    }
+
+    if (settingsLoading) {
+        LoadingState("Chargement des paramètres…")
+        return
     }
 
     Scaffold(

@@ -48,8 +48,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.forestry.counter.R
-import com.forestry.counter.data.local.entity.DiagnosticSylvicoleEntity
 import com.forestry.counter.domain.diagnostic.EssenceSuitabilityScorer
+import com.forestry.counter.domain.model.DiagnosticSylvicole
 import com.forestry.counter.domain.repository.DiagnosticSylvicoleRepository
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -63,7 +63,7 @@ fun DiagnosticScreen(
     diagnosticRepository: DiagnosticSylvicoleRepository,
     onNavigateBack: () -> Unit
 ) {
-    var diagnostic by remember { mutableStateOf<DiagnosticSylvicoleEntity?>(null) }
+    var diagnostic by remember { mutableStateOf<DiagnosticSylvicole?>(null) }
     var isLoading  by remember { mutableStateOf(true) }
 
     LaunchedEffect(diagnosticId) {
@@ -100,7 +100,7 @@ fun DiagnosticScreen(
 
 @Composable
 private fun DiagnosticContent(
-    diag: DiagnosticSylvicoleEntity,
+    diag: DiagnosticSylvicole,
     paddingValues: androidx.compose.foundation.layout.PaddingValues
 ) {
     val json   = remember { Json { ignoreUnknownKeys = true } }
@@ -195,7 +195,7 @@ private fun ScoreGlobalCard(scoreGlobal: Int?, dateStr: String) {
 // Indicateurs peuplement
 // ──────────────────────────────────────────────────────────────────────────────
 @Composable
-private fun PeuplementIndicateursCard(diag: DiagnosticSylvicoleEntity) {
+private fun PeuplementIndicateursCard(diag: DiagnosticSylvicole) {
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -298,7 +298,7 @@ private fun RecommandationsCard(recommandations: List<String>) {
 // Scores station détaillés
 // ──────────────────────────────────────────────────────────────────────────────
 @Composable
-private fun StationScoresCard(diag: DiagnosticSylvicoleEntity) {
+private fun StationScoresCard(diag: DiagnosticSylvicole) {
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.diag_component_scores), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)

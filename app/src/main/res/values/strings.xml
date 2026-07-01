@@ -429,6 +429,10 @@
 
     <string name="placette_essences_title">Plot - Species</string>
     <string name="placette_essences_empty_desc">No species. Press + to add.</string>
+    <string name="parcelles_count_format">%1$d plot(s)</string>
+    <string name="placettes_count_format">%1$d subplot(s)</string>
+    <string name="dashboard_subtitle_format">%1$d stems · %2$d species</string>
+    <string name="placette_essences_subtitle_format">%1$d stems · %2$d species</string>
     <string name="placette_tab_essences">Species</string>
     <string name="placette_tab_evolution">Evolution</string>
     <string name="placette_evolution_empty">No stem recorded.</string>

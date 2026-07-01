@@ -26,6 +26,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.forestry.counter.presentation.theme.IbpFaible
+import com.forestry.counter.presentation.theme.IbpTresBon
+import com.forestry.counter.presentation.theme.IbpTresFaible
+import com.forestry.counter.presentation.theme.SemanticSuccess
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -203,13 +207,13 @@ fun IbpProjectsScreen(
                                 Icons.Default.Forest,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
-                                tint = Color(0xFF2E7D32)
+                                tint = SemanticSuccess
                             )
                             Text(
                                 parcelleName,
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2E7D32)
+                                color = SemanticSuccess
                             )
                             HorizontalDivider(modifier = Modifier.weight(1f))
                             Text(
@@ -295,11 +299,11 @@ private fun IbpProjectCard(
     val level = IbpLevel.fromScore(score)
     val levelColor = if (!isComplete) Color(0xFF78909C)
     else when (level) {
-        IbpLevel.VERY_LOW  -> Color(0xFFC62828)
-        IbpLevel.LOW       -> Color(0xFFE65100)
+        IbpLevel.VERY_LOW  -> IbpTresFaible
+        IbpLevel.LOW       -> IbpFaible
         IbpLevel.MEDIUM    -> Color(0xFFF57C00)
         IbpLevel.GOOD      -> Color(0xFF558B2F)
-        IbpLevel.VERY_GOOD -> Color(0xFF1B5E20)
+        IbpLevel.VERY_GOOD -> IbpTresBon
     }
 
     Card(
@@ -407,7 +411,7 @@ private fun IbpCreateDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        icon = { Icon(Icons.Default.EmojiNature, contentDescription = null, tint = Color(0xFF2E7D32)) },
+        icon = { Icon(Icons.Default.EmojiNature, contentDescription = null, tint = SemanticSuccess) },
         title = {
             Text(
                 if (selectedParcelle == null) stringResource(R.string.ibp_create_select_parcelle)
@@ -435,7 +439,7 @@ private fun IbpCreateDialog(
                                 headlineContent = { Text(localizeDefaultName(parcelle.name), fontWeight = FontWeight.Medium) },
                                 leadingContent = {
                                     Icon(Icons.Default.EmojiNature, contentDescription = null,
-                                        tint = Color(0xFF2E7D32), modifier = Modifier.size(20.dp))
+                                        tint = SemanticSuccess, modifier = Modifier.size(20.dp))
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()

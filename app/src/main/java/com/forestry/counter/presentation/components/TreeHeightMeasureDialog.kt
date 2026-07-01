@@ -18,6 +18,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import com.forestry.counter.presentation.theme.MartelageEnlever
+import com.forestry.counter.presentation.theme.SemanticInfo
+import com.forestry.counter.presentation.theme.SemanticSuccess
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -366,9 +369,9 @@ private fun WaistWarningStep(neverShow: Boolean, onNeverShowChange: (Boolean) ->
 @Composable
 private fun SensorCapabilityBadge(capability: SensorCapability) {
     val (labelRes, color) = when (capability) {
-        SensorCapability.HIGH   -> R.string.height_sensor_high   to Color(0xFF2E7D32)
-        SensorCapability.MEDIUM -> R.string.height_sensor_medium to Color(0xFF1565C0)
-        SensorCapability.BASIC  -> R.string.height_sensor_basic  to Color(0xFFE65100)
+        SensorCapability.HIGH   -> R.string.height_sensor_high   to SemanticSuccess
+        SensorCapability.MEDIUM -> R.string.height_sensor_medium to SemanticInfo
+        SensorCapability.BASIC  -> R.string.height_sensor_basic  to MartelageEnlever
         SensorCapability.NONE   -> R.string.height_sensor_none   to MaterialTheme.colorScheme.error
     }
     val icon = when (capability) {
@@ -558,7 +561,7 @@ private fun AngleCaptureStep(
     onRecapture: () -> Unit,
     onCameraCapture: (Double) -> Unit = {}
 ) {
-    val warningColor = Color(0xFFE65100)
+    val warningColor = MartelageEnlever
     var showCameraAim by remember { mutableStateOf(capability != SensorCapability.NONE) }
 
     if (showCameraAim) {
@@ -750,7 +753,7 @@ private fun AngleGauge(angleDeg: Float, captured: Boolean, autoCaptureProgress: 
     val primary       = MaterialTheme.colorScheme.primary
     val onSurface     = MaterialTheme.colorScheme.onSurface
     val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
-    val autoColor     = Color(0xFF2E7D32)  // vert auto-capture
+    val autoColor     = SemanticSuccess  // vert auto-capture
 
     val animAngle by animateFloatAsState(
         targetValue = angleDeg.coerceIn(-90f, 90f),
@@ -818,7 +821,7 @@ private fun StabilityBar(stability: Float) {
     val animStability by animateFloatAsState(targetValue = stability, label = "stability")
     val color = when {
         animStability > 0.7f -> MaterialTheme.colorScheme.primary
-        animStability > 0.4f -> Color(0xFFE65100)
+        animStability > 0.4f -> MartelageEnlever
         else -> MaterialTheme.colorScheme.error
     }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {

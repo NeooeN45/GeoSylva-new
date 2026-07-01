@@ -96,6 +96,7 @@ import com.forestry.counter.domain.usecase.fertility.FertilityClass
 import com.forestry.counter.domain.usecase.fertility.FertilityClassifier
 import com.forestry.counter.domain.usecase.fertility.FertilityResult
 import com.forestry.counter.presentation.utils.AnimatedCounter
+import com.forestry.counter.presentation.components.LoadingState
 import com.forestry.counter.presentation.utils.StaggerEntrance
 import kotlinx.coroutines.launch
 import kotlin.math.PI
@@ -129,8 +130,10 @@ fun DashboardScreen(
     parcelleRepository: ParcelleRepository? = null,
     onNavigateBack: () -> Unit
 ) {
-    val tiges by tigeRepository.getTigesByParcelle(parcelleId).collectAsStateWithLifecycle(initialValue = emptyList())
-    val essences by essenceRepository.getAllEssences().collectAsStateWithLifecycle(initialValue = emptyList())
+    val tigesState by tigeRepository.getTigesByParcelle(parcelleId).collectAsStateWithLifecycle(initialValue = null)
+    val tiges = tigesState ?: emptyList<Tige>()
+    val essencesState by essenceRepository.getAllEssences().collectAsStateWithLifecycle(initialValue = null)
+    val essences = essencesState ?: emptyList<Essence>()
     val essenceMap = remember(essences) { essences.associateBy { it.code.uppercase() } }
 
     val parcelle by (parcelleRepository?.getParcelleById(parcelleId)
@@ -195,18 +198,47 @@ fun DashboardScreen(
         }
     }
 
+    if (tigesState == null || essencesState == null) {
+        LoadingState("Chargement du tableau de bord…")
+        return
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.dashboard_title), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = {
+                    Column {
+                        Text(
+                            stringResource(R.string.dashboard_title),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = Color.White
+                        )
+                        val subtitle = if (tiges.isNotEmpty()) {
+                            stringResource(R.string.dashboard_subtitle_format, totalTiges, speciesCount)
+                        } else {
+                            parcelle?.name ?: ""
+                        }
+                        if (subtitle.isNotBlank()) {
+                            Text(
+                                subtitle,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.85f)
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                    scrolledContainerColor = Color.Transparent
                 ),
                 modifier = Modifier.drawBehind {
                     drawRect(

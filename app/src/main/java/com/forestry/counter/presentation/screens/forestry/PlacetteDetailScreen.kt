@@ -61,6 +61,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import com.forestry.counter.presentation.theme.AccentBlue
+import com.forestry.counter.presentation.theme.AccentGreen
+import com.forestry.counter.presentation.theme.EssenceMixte
+import com.forestry.counter.presentation.theme.SemanticError
+import com.forestry.counter.presentation.theme.SemanticInfo
+import com.forestry.counter.presentation.theme.SemanticSuccess
+import com.forestry.counter.presentation.theme.SemanticWarning
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -85,6 +92,7 @@ import androidx.core.content.FileProvider
 import androidx.core.content.ContextCompat
 import com.forestry.counter.data.preferences.UserPreferencesManager
 import com.forestry.counter.presentation.components.AppMiniDialog
+import com.forestry.counter.presentation.components.LoadingState
 import com.forestry.counter.presentation.utils.rememberHapticFeedback
 import com.forestry.counter.presentation.utils.rememberSoundFeedback
 import kotlinx.coroutines.launch
@@ -115,10 +123,10 @@ private fun essenceColor(essence: Essence?): Color? {
     // Sinon, couleurs par catégorie, puis fallback hash
     val cat = essence.categorie?.uppercase()?.trim()
     return when (cat) {
-        "AVENIR" -> Color(0xFF4CAF50)
-        "RESERVE" -> Color(0xFF2196F3)
-        "ENLEVER" -> Color(0xFFF44336)
-        "DEPERIR" -> Color(0xFFFF9800)
+        "AVENIR" -> AccentGreen
+        "RESERVE" -> AccentBlue
+        "ENLEVER" -> SemanticError
+        "DEPERIR" -> SemanticWarning
         "BIODIV" -> Color(0xFF26A69A)
         else -> hashColorFromCode(essence.code)
     }
@@ -126,14 +134,14 @@ private fun essenceColor(essence: Essence?): Color? {
 
 private fun hashColorFromCode(code: String): Color {
     val palette = listOf(
-        Color(0xFF4CAF50), // green
-        Color(0xFF2196F3), // blue
-        Color(0xFFF44336), // red
-        Color(0xFFFF9800), // orange
+        AccentGreen, // green
+        AccentBlue, // blue
+        SemanticError, // red
+        SemanticWarning, // orange
         Color(0xFF26A69A), // teal
         Color(0xFF9C27B0), // purple
         Color(0xFF009688), // deep teal
-        Color(0xFF795548), // brown
+        EssenceMixte, // brown
         Color(0xFF607D8B)  // blue gray
     )
     val idx = (code.hashCode() and 0x7FFFFFFF) % palette.size
@@ -170,8 +178,12 @@ fun PlacetteDetailScreen(
     var searchActive by remember { mutableStateOf(false) }
     var searchQuery  by remember { mutableStateOf("") }
 
-    val allEssences by essenceRepository.getAllEssences().collectAsStateWithLifecycle(initialValue = emptyList())
-    val tiges by tigeRepository.getTigesByPlacette(placetteId).collectAsStateWithLifecycle(initialValue = emptyList())
+    val allEssencesState by essenceRepository.getAllEssences().collectAsStateWithLifecycle(initialValue = null)
+    val allEssences = allEssencesState ?: emptyList<Essence>()
+    val tigesState by tigeRepository.getTigesByPlacette(placetteId).collectAsStateWithLifecycle(initialValue = null)
+    val tiges = tigesState ?: emptyList<Tige>()
+    val placetteState by placetteRepository.getPlacetteById(placetteId).collectAsStateWithLifecycle(initialValue = null)
+    val placetteName = placetteState?.name
     val persistedOrder by userPreferences.essenceOrderFlow(placetteId).collectAsStateWithLifecycle(initialValue = emptyList())
 
     val hapticEnabled by userPreferences.hapticEnabled.collectAsStateWithLifecycle(initialValue = true)
@@ -294,16 +306,36 @@ fun PlacetteDetailScreen(
         pendingCameraLaunch = false
     }
 
+    if (allEssencesState == null || tigesState == null) {
+        LoadingState("Chargement de la placette…")
+        return
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        stringResource(R.string.placette_essences_title),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Column {
+                        Text(
+                            placetteName?.takeIf { it.isNotBlank() }
+                                ?: stringResource(R.string.placette_essences_title),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        val essencesCount = presentEssences.size
+                        val subtitle = stringResource(
+                            R.string.placette_essences_subtitle_format, tiges.size, essencesCount
+                        )
+                        Text(
+                            subtitle,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = {
@@ -414,7 +446,7 @@ fun PlacetteDetailScreen(
                         playClickFeedback()
                         onNavigateToStationDiag(parcelleId)
                     }) {
-                        Icon(Icons.Default.Science, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color(0xFF1565C0))
+                        Icon(Icons.Default.Science, contentDescription = null, modifier = Modifier.size(18.dp), tint = SemanticInfo)
                         Spacer(Modifier.width(6.dp))
                         Text(stringResource(R.string.diag_station_btn))
                     }
@@ -434,7 +466,7 @@ fun PlacetteDetailScreen(
                         playClickFeedback()
                         onNavigateToIbp(parcelleId, placetteId)
                     }) {
-                        Icon(Icons.Default.EmojiNature, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color(0xFF2E7D32))
+                        Icon(Icons.Default.EmojiNature, contentDescription = null, modifier = Modifier.size(18.dp), tint = SemanticSuccess)
                         Spacer(Modifier.width(6.dp))
                         Text(stringResource(R.string.ibp_start))
                     }
@@ -1398,10 +1430,10 @@ private fun YearEvolutionCard(
 }
 
 private fun martelageCategoryColor(category: String): Color = when (category) {
-    "AVENIR" -> Color(0xFF4CAF50)
-    "RESERVE" -> Color(0xFF2196F3)
-    "ENLEVER" -> Color(0xFFF44336)
-    "DEPERIR" -> Color(0xFFFF9800)
+    "AVENIR" -> AccentGreen
+    "RESERVE" -> AccentBlue
+    "ENLEVER" -> SemanticError
+    "DEPERIR" -> SemanticWarning
     "BIODIV" -> Color(0xFF26A69A)
     "AUTRE" -> Color(0xFF607D8B)
     else -> Color(0xFF607D8B)

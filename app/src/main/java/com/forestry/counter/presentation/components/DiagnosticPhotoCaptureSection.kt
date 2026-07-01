@@ -44,7 +44,7 @@ fun DiagnosticPhotoCaptureSection(
     onAddPhoto: (uri: String, legend: String, type: String) -> Unit,
     onRemovePhoto: (index: Int) -> Unit,
     minPhotos: Int = 2,
-    // TODO i18n: extraire vers strings.xml — photoTypeOptions servent de clés de type persistées.
+    // TODO(#3) i18n: extraire vers strings.xml — photoTypeOptions servent de clés de type persistées.
     photoTypeOptions: List<String> = listOf("Général", "Paysage", "Sol", "Végétation")
 ) {
     val context = LocalContext.current

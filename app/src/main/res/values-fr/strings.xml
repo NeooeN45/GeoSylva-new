@@ -429,6 +429,10 @@
 
     <string name="placette_essences_title">Placette - Essences</string>
     <string name="placette_essences_empty_desc">Aucune essence. Appuyez sur + pour ajouter.</string>
+    <string name="parcelles_count_format">%1$d parcelle(s)</string>
+    <string name="placettes_count_format">%1$d placette(s)</string>
+    <string name="dashboard_subtitle_format">%1$d tiges · %2$d essences</string>
+    <string name="placette_essences_subtitle_format">%1$d tiges · %2$d essences</string>
     <string name="placette_tab_essences">Essences</string>
     <string name="placette_tab_evolution">Évolution</string>
     <string name="placette_evolution_empty">Aucune tige enregistrée.</string>

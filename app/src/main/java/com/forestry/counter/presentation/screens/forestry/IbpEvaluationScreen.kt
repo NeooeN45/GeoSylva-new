@@ -49,7 +49,9 @@ import com.forestry.counter.R
 import com.forestry.counter.domain.model.*
 import com.forestry.counter.domain.repository.IbpRepository
 import com.forestry.counter.domain.repository.PlacetteRepository
+import com.forestry.counter.presentation.components.LoadingState
 import com.forestry.counter.domain.usecase.export.IbpPdfExporter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -108,6 +110,7 @@ fun IbpEvaluationScreen(
     var gpsLat by rememberSaveable { mutableStateOf<Double?>(null) }
     var gpsLon by rememberSaveable { mutableStateOf<Double?>(null) }
     var initialized by rememberSaveable { mutableStateOf(false) }
+    var ibpLoading by remember { mutableStateOf(evaluationId != null) }
 
     val growthConditions = runCatching { IbpGrowthConditions.valueOf(growthConditionsStr) }.getOrElse { IbpGrowthConditions.LOWLAND }
     val ibpMode = runCatching { IbpMode.valueOf(ibpModeStr) }.getOrElse { IbpMode.COMPLET }
@@ -145,6 +148,13 @@ fun IbpEvaluationScreen(
     }
 
     LaunchedEffect(Unit) { captureGps() }
+
+    LaunchedEffect(evaluationId) {
+        if (evaluationId != null) {
+            ibpRepository.getById(evaluationId).first()
+            ibpLoading = false
+        }
+    }
 
     var showResultDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -228,6 +238,11 @@ fun IbpEvaluationScreen(
     val scoreB = answers.scoreB
     val level = IbpLevel.fromScore(scoreTotal)
     val levelColor = ibpLevelColor(level)
+
+    if (ibpLoading) {
+        LoadingState("Chargement de l'évaluation…")
+        return
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
