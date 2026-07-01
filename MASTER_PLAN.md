@@ -2,7 +2,7 @@
 
 **Document de référence stratégique et opérationnel**
 **Date de création** : 2026-06-29
-**Dernière révision factuelle** : 2026-07-01 (re-audit du statut réel des items vs code)
+**Dernière révision factuelle** : 2026-07-01 (re-audit du statut réel des items vs code + intégration rapports agents pricing/carte/investisseurs)
 **Statut** : Actif — remplace tous les documents de planification précédents
 **Fondateur** : Camil (auto-entrepreneur, Poitiers, Nouvelle-Aquitaine)
 
@@ -116,16 +116,16 @@ pas encore la preuve du contraire) :
 | Domaine | Score 06-29 | Score 07-01 | Statut | Preuve du changement |
 |---------|-------|-------|--------|--------|
 | Calculs dendrométriques de base | 8.5/10 | non re-vérifié | Conforme | — |
-| Système de tarification/prix | 4.5/10 | non re-vérifié | Risque financier | Voir travaux récents "feat(pricing)" — à ré-auditer |
+| Système de tarification/prix | 4.5/10 | **~7.5/10** | Nettement amélioré | Moteur pro 8 coefficients `ProPricingEngine.kt` implémenté (qualité NF EN 1316/1927, défauts NF EN 1310, région GRECO, accessibilité, saison, certification, lot, position), auto-détection GRECO via GPS, breakdown transparent, 100+ essences, 5 bugs critiques corrigés, 16 tests ajoutés (commits 0a14332, 270cd20, eec8ea0) — **coefficients régionaux GRECO (0.85-1.15) restent des estimations à calibrer avec données FBF réelles 2025** |
 | Intégrité base de données | 5/10 | non re-vérifié | Risque données | DB passée de v29→v32, migrations ajoutées — à ré-auditer |
 | Logique forestière domainale | 6.5/10 | non re-vérifié | Approximatif | — |
 | Traitement des données (mappers) | 5.5/10 | **amélioré** | En progrès | Refactor repositories→modèles domaine commité le 2026-07-01 (voir `.devin/AGENT_COORDINATION.md` §6) |
 | Sécurité / chiffrement / réseau | 5/10 | **~7/10** | Nettement amélioré | SQLCipher actif (`ForestryDatabase.kt:151`), certificate pinning actif (`SecureHttpClient.kt:46-56`), FLAG_SECURE actif (`MainActivity.kt`), injection SQL GeoPackage corrigée (whitelist regex) |
-| GIS / géomatique | 7.5/10 | non re-vérifié | Approximatif | `Lambert93.kt` dupliqué toujours présent (1.17 non fait) |
+| GIS / géomatique | 7.5/10 | **~8/10** | Amélioré | 6 sous-phases carte/GPS terminées : attribution légale sources carto, perf `setGeoJson()`, tuiles offline parallèles 6 concurrent + retry backoff, cache HTTP MapLibre 50MB, suppression Helmert faux + 8 points contrôle Lambert93, compas TYPE_ROTATION_VECTOR + lissage passe-bas. `Lambert93.kt` dupliqué toujours présent (1.17 non fait). Scoreboard carte/GPS : Phase 1 80%, Phase 2-4 0%. |
 | Présentation / UI / Compose | 6.5/10 | **~7/10** | Amélioré | `collectAsState()` entièrement migré vers `collectAsStateWithLifecycle()` (166 occurrences, 0 restante) |
 | Internationalisation (FR/EN) | 4/10 | **~5/10** | Toujours insuffisant | `plurals.xml` créé FR/EN ; mais 71 `SimpleDateFormat` et 53 `€` codés en dur toujours présents |
 | Build / CI / Gradle | 6/10 | non re-vérifié | Obsolète | Toujours pas de `.github/workflows/` (CI/CD absent) |
-| RGPD / privacy | 3/10 | **~6/10** | Nettement amélioré | `RECORD_OF_PROCESSING_ACTIVITIES.md` créé (7 traitements documentés), page consentement onboarding ajoutée, transferts hors UE documentés — **`PRIVACY_POLICY.md` reste à vérifier en détail (contenu non ré-audité)** |
+| RGPD / privacy | 3/10 | **~7/10** | Nettement amélioré | `RECORD_OF_PROCESSING_ACTIVITIES.md` créé (7 traitements documentés), page consentement onboarding ajoutée, transferts hors UE documentés, **`PRIVACY_POLICY.md` réécrit le 2026-07-01 après audit factuel vs code (8 erreurs corrigées, 6 services réseau manquants ajoutés, lacunes effacement/purge marquées à venir)** |
 | Performance / mémoire / batterie | 6.5/10 | non re-vérifié | Risques OOM | Coil toujours absent des dépendances (0.11 non fait) |
 | Misc (FormulaParser, WorkManager, DataStore, a11y) | 5.5/10 | non re-vérifié | À corriger | FormulaParser sans limites, DataStore non chiffré, `Flow.first()` migré à 2/103 seulement |
 | Couverture de tests | 35% | non re-vérifié | Insuffisant | 467 tests passent (0 échec) mais % de couverture non recalculé |
@@ -176,7 +176,7 @@ Voir :
 | 0.3 | Activer certificate pinning + corriger SecureTileService | Sécurité | S-C2, R-M4 | 1j | ✅ FAIT | `SecureHttpClient.kt:46-56` (4 domaines pinnés) |
 | 0.4 | Valider tableName dans GeoImportParser (whitelist regex) | Sécurité | S-C3 | 0.5j | ✅ FAIT | `GeoImportParser.kt:447-453` |
 | 0.5 | Ajouter FLAG_SECURE sur MainActivity | Sécurité | S-H4 | 0.5j | ✅ FAIT | `MainActivity.kt:35-39` |
-| 0.6 | Réécrire PRIVACY_POLICY.md (26 PII, base légale, transferts) | RGPD | R-C1 | 1j | ⚠️ INCERTAIN | Le fichier existe mais son contenu n'a pas été relu ligne à ligne — **à vérifier avant de considérer conforme** |
+| 0.6 | Réécrire PRIVACY_POLICY.md (26 PII, base légale, transferts) | RGPD | R-C1 | 1j | ✅ FAIT | `PRIVACY_POLICY.md` réécrit le 2026-07-01 après audit factuel vs code : 8 erreurs corrigées (6 services réseau manquants, `operateurNom`/`psgNumero`/champs libres ajoutés, « Effacer toutes mes données » marqué à venir, purge auto cache GPS marquée à venir, §2.3 BackupWorker ZIP non chiffré ajouté, §3.2 PriceSyncWorker pas de cert pinning ajouté, contact RGPD renseigné) |
 | 0.7 | Ajouter page consentement RGPD dans onboarding | RGPD | R-C3 | 2j | ✅ FAIT | `OnboardingScreen.kt:67,174-177,371-387` (page + bouton Decline + dialog) |
 | 0.8 | Créer RECORD_OF_PROCESSING_ACTIVITIES.md | RGPD | R-C4 | 1j | ✅ FAIT | Fichier créé, 7 traitements (T-01 à T-07) |
 | 0.9 | Documenter ou supprimer transferts Esri/USA (SCC) | RGPD | R-C5 | 1j | ✅ FAIT | `RECORD_OF_PROCESSING_ACTIVITIES.md:46` |
@@ -184,8 +184,14 @@ Voir :
 | 0.11 | Downsampling images + intégrer Coil | Perf/UI | P-C2, U-H5 | 2j | ❌ PAS FAIT | Coil absent de `libs.versions.toml`/dépendances |
 | 0.12 | Corriger test SecureHttpClientTest (méthode inexistante) | Sécurité | S-H1 | 0.5j | ✅ FAIT | `SecureHttpClientTest.kt` réécrit, toutes méthodes testées existent |
 
-**Reste à faire pour clore la Phase 0** : 0.6 (vérifier réellement `PRIVACY_POLICY.md`) et
-0.11 (Coil + downsampling images).
+**Reste à faire pour clore la Phase 0** : 0.11 (Coil + downsampling images) — **0.6 est
+désormais FAIT** (PRIVACY_POLICY.md réécrit le 2026-07-01 après audit factuel vs code).
+
+**Note RGPD complémentaire** : l'audit 0.6 a révélé 2 lacunes à traiter en Phase 2 :
+- Bouton « Effacer toutes mes données » centralisé (Phase 2.2 — les méthodes `deleteAll*()`
+  existent par entité mais ne sont pas câblées dans l'UI Settings)
+- Purge automatique du cache GPS (`purgeOlderThan()` existe dans `FloraFtsDao.kt:37` mais
+  n'est jamais appelée — la politique §5 indique désormais honnêtement « à venir »)
 
 ### 3.3 Phase 1 — Corrections rapides high-impact
 
@@ -648,6 +654,11 @@ Voir `CONTRIBUTING.md` et `global_rules.md` :
 | 2026-07-01 | Re-audit factuel de la Phase 0/1 du plan vs code réel | 9/12 items Phase 0 étaient déjà FAITS (SQLCipher, cert pinning, FLAG_SECURE, RGPD onboarding/registre, collectAsStateWithLifecycle...) contrairement à ce que le plan indiquait. Phase 1 très largement non faite (2/23). Voir §2.4, §3.2, §3.3. |
 | 2026-07-01 | Création de `.devin/AGENT_COORDINATION.md` | Protocole d'admission des rapports d'agents externes (checklist build/tests/architecture/sécurité/i18n avant tout merge), pour éviter que ce plan (ou le code) ne se re-périme silencieusement. |
 | 2026-07-01 | Création de `docs/REFERENTIELS_FORESTIERS_EXTERNES.md` + scaffold `docs/recherche/` | 18 sources officielles/scientifiques (ONF, IGN, CNPF, France Bois Forêt, SAFER, AFNOR NF EN 1316...) pour fiabiliser cubage/prix/IBP/GRECO, avec méthodologie de sourcing pour les recherches futures. |
+| 2026-07-01 | Vitrine GitHub investisseurs (main, commit dba459e) | `INVESTORS.md` (dossier de pitch : marché, business model, roadmap), section « Opportunité & vision » dans le README, `SECURITY.md`, 3 templates d'issues, repo renommé GeoSylva-new→GeoSylva, 12 topics, Discussions activées. |
+| 2026-07-01 | Moteur de prix pro 8 coefficients (feature/pro-pricing-engine) | `ProPricingEngine.kt` + 5 fichiers domain/calculation/pricing/ (~4586 lignes) : formule 8 coefficients (qualité NF EN 1316/1927, défauts NF EN 1310, région GRECO, accessibilité, saison, certification, lot, position), auto-détection GRECO via GPS, breakdown transparent dans `ProductBreakdownCard`, 100+ essences valorisables. 5 bugs critiques corrigés (divergence chemins de calcul, casse essence×GRECO, comparaison Double ==, cumul défauts multiplicatif, fallback incohérent). 16 tests unitaires ajoutés. Commits : 0a14332, 270cd20, eec8ea0. |
+| 2026-07-01 | Carte/GPS — 6 sous-phases sur 50 (feature/pro-pricing-engine) | Attribution légale sources carto + User-Agent OSM conforme (e9c0c83), perf `setGeoJson()` au lieu de recréer source+layers (b35f007), tuiles offline parallèles 6 concurrent + retry backoff (7049a7a), cache HTTP MapLibre 50MB + retry (25f6394), suppression Helmert faux + 8 points contrôle Lambert93 (b583505), compas TYPE_ROTATION_VECTOR + lissage passe-bas + accuracy sensor (8de298f). 7 fichiers, +508/−244. Scoreboard : Phase 1 80%, Phase 2-4 0%. |
+| 2026-07-01 | Audit + correction `PRIVACY_POLICY.md` (Phase 0.6 FAIT) | 8 erreurs factuelles corrigées vs code : 6 services réseau manquants ajoutés (API Géo, IGN géocodage reverse, Open-Meteo, OpenTopoData, INRAE BD GSFr, Cerema DVF), `operateurNom`/`psgNumero`/champs libres ajoutés aux PII, « Effacer toutes mes données » marqué à venir (non implémenté), purge auto cache GPS marquée à venir (`purgeOlderThan()` jamais appelée), §2.3 BackupWorker ZIP non chiffré ajouté, §3.2 PriceSyncWorker pas de cert pinning ajouté, contact RGPD renseigné (contact@geosylva.fr). |
+| 2026-07-01 | Recherche sourcée vagues 1+2 (commit 81031ef) | 10 fiches de recherche dans `docs/recherche/` : 5 cubage/volume (tarifs Schaeffer/Algan, IFN/EMERGE, coefficients forme/biomasse, tables production, normes qualité) + 5 marché/prix (FBF national, prix régionaux, ONF/coopératives, valeur foncière, marché carbone). Chaque fiche source primaire (URL + date), distingue faits vérifiés vs [À VÉRIFIER MANUELLEMENT]. |
 
 ---
 
@@ -669,9 +680,11 @@ Voir `CONTRIBUTING.md` et `global_rules.md` :
 | `CHANGELOG.md` | Historique des versions | Actif |
 | `CONTRIBUTING.md` | Standards de contribution | Actif |
 | `COMMERCIAL_LICENSE.md` | Licence dual AGPL/commerciale | Actif |
-| `PRIVACY_POLICY.md` | Politique de confidentialité | **À vérifier en détail** (Phase 0.6 — fichier existe mais contenu non ré-audité) |
+| `PRIVACY_POLICY.md` | Politique de confidentialité | **Actif** (réécrit 2026-07-01, audit factuel vs code — 8 erreurs corrigées) |
+| `INVESTORS.md` | Dossier de pitch investisseurs | **Actif** (créé sur main, commit dba459e) |
+| `SECURITY.md` | Politique de sécurité (responsible disclosure) | **Actif** (créé sur main, commit dba459e) |
 
 ---
 
 *Document maintenu par Camil, fondateur de GeoSylva, avec revue factuelle par IA (build/tests/grep avant toute mise à jour de statut).*
-*Dernière mise à jour : 2026-07-01*
+*Dernière mise à jour : 2026-07-01 (audit PRIVACY_POLICY + intégration rapports agents pricing/carte/investisseurs)*
