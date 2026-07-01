@@ -20,8 +20,8 @@ Ce fichier est la **source de vérité technique** pour comprendre le code de Ge
 GeoSylva est une application Android (Kotlin / Jetpack Compose) de **gestion forestière de terrain** : inventaire, martelage, diagnostic sylvicole, IBP CNPF, cartographie, exports SIG.
 
 **Version actuelle** : 2.3.0 (versionCode 9)
-**DB version** : 29
-**Statut** : En développement — **non déployable en production** (voir audits)
+**DB version** : 32 (mis à jour 2026-07-01, était 29 au 2026-06-29 — voir `MASTER_PLAN.md` §2.4 pour le détail des items déjà résolus depuis l'audit initial)
+**Statut** : En développement — voir `MASTER_PLAN.md` §2.4/§3.2 pour le statut vérifié (Phase 0 sécurité/RGPD très avancée, Phase 1 i18n/perf encore largement à faire)
 
 ---
 

@@ -2,8 +2,15 @@
 
 **Document de référence stratégique et opérationnel**
 **Date de création** : 2026-06-29
+**Dernière révision factuelle** : 2026-07-01 (re-audit du statut réel des items vs code)
 **Statut** : Actif — remplace tous les documents de planification précédents
 **Fondateur** : Camil (auto-entrepreneur, Poitiers, Nouvelle-Aquitaine)
+
+> ⚠️ **Note méthodologique (2026-07-01)** : les audits du 2026-06-29 (§2.4, §3) ont été
+> comparés au code réel après ~20 commits supplémentaires. **9 des 12 actions "Phase 0"
+> étaient déjà résolues** au moment de cette révision (voir §3.2). Ce document reflète
+> maintenant l'état vérifié, pas seulement l'état déclaré. Voir `.devin/AGENT_COORDINATION.md`
+> pour le protocole qui doit éviter que ce plan se re-périme silencieusement.
 
 ---
 
@@ -19,11 +26,18 @@ Ce fichier est la **source de vérité unique** pour :
 **Ordre de lecture pour une nouvelle session IA** :
 1. Ce fichier (`MASTER_PLAN.md`)
 2. `AI_CONTEXT.md` (contexte technique du code)
-3. `RESEARCH_OPPORTUNITIES.md` (opportunités techniques, IA, financement, hardware — 150+ entrées)
-4. `AUDIT_FORESTIER_COMPLET.md` (audit vague 1 — DB, calculs, tarifs, foresterie)
-5. `AUDIT_GLOBAL_GEOSYLVA.md` (audit vague 2 — sécurité, GIS, UI, i18n, RGPD, perf)
-6. `docs/RGPD_AUDIT_REPORT.md` (audit RGPD initial)
-7. Le code
+3. `.devin/AGENT_COORDINATION.md` (protocole multi-agents — **obligatoire si tu coordonnes ou reçois le rapport d'un autre agent**)
+4. `RESEARCH_OPPORTUNITIES.md` (opportunités techniques, IA, financement, hardware — 150+ entrées)
+5. `docs/REFERENTIELS_FORESTIERS_EXTERNES.md` (référentiels professionnels/scientifiques externes : ONF, IGN, CNPF, France Bois Forêt, SAFER, AFNOR — 18 sources, 15 actions priorisées)
+6. `AUDIT_FORESTIER_COMPLET.md` (audit vague 1 — DB, calculs, tarifs, foresterie — **daté du 2026-06-29, vérifier le statut réel avant d'agir, voir §3**)
+7. `AUDIT_GLOBAL_GEOSYLVA.md` (audit vague 2 — sécurité, GIS, UI, i18n, RGPD, perf — **idem**)
+8. `docs/RGPD_AUDIT_REPORT.md` (audit RGPD initial)
+9. Le code
+
+**Règle impérative pour toute IA qui met à jour ce document** : ne jamais marquer un item
+"FAIT" sur la seule foi d'un rapport texte. Vérifier dans le code (grep/read) avant de
+changer un statut. C'est exactement l'erreur qui a rendu ce plan obsolète 2 jours après
+sa création.
 
 ---
 
@@ -48,17 +62,18 @@ Devenir le standard de facto pour la gestion forestière de terrain en France, a
 
 ---
 
-## 2. ÉTAT ACTUEL (2026-06-29)
+## 2. ÉTAT ACTUEL (vérifié 2026-07-01)
 
 ### 2.1 Version
 
 - **versionName** : 2.3.0
 - **versionCode** : 9
-- **DB version** : 29
-- **Kotlin** : 1.9.23
+- **DB version** : 32 (était 29 au 2026-06-29 — 3 migrations ajoutées depuis)
+- **Kotlin** : 1.9.23 (toujours obsolète, cible 2.1.0 — Phase 1.14 non faite)
 - **Compose BOM** : 2024.09.00
 - **minSdk** : 26 (Android 8.0)
 - **targetSdk / compileSdk** : 35
+- **Build/tests vérifiés le 2026-07-01** : `compileDebugKotlin` OK, `testDebugUnitTest` OK — **467 tests, 0 échec, 0 erreur**
 
 ### 2.2 Architecture
 
@@ -91,30 +106,40 @@ Devenir le standard de facto pour la gestion forestière de terrain en France, a
 - Sauvegarde automatique WorkManager
 - Onboarding 9 pages
 
-### 2.4 Santé du code (audit 2026-06-29)
+### 2.4 Santé du code
 
-| Domaine | Score | Statut |
-|---------|-------|--------|
-| Calculs dendrométriques de base | 8.5/10 | Conforme |
-| Système de tarification/prix | 4.5/10 | Risque financier |
-| Intégrité base de données | 5/10 | Risque données |
-| Logique forestière domainale | 6.5/10 | Approximatif |
-| Traitement des données (mappers) | 5.5/10 | Pertes données |
-| Sécurité / chiffrement / réseau | 5/10 | Critique |
-| GIS / géomatique | 7.5/10 | Approximatif |
-| Présentation / UI / Compose | 6.5/10 | Moyen |
-| Internationalisation (FR/EN) | 4/10 | Insuffisant |
-| Build / CI / Gradle | 6/10 | Obsolète |
-| RGPD / privacy | 3/10 | Non conforme |
-| Performance / mémoire / batterie | 6.5/10 | Risques OOM |
-| Misc (FormulaParser, WorkManager, DataStore, a11y) | 5.5/10 | À corriger |
-| Couverture de tests | 35% | Insuffisant |
+**Scores initiaux (audit 2026-06-29)** vs **re-vérification factuelle (2026-07-01)** —
+seuls les domaines avec preuve concrète dans le code ont été remontés, les autres restent
+non re-vérifiés en détail (ne pas supposer qu'ils sont restés identiques, juste qu'on n'a
+pas encore la preuve du contraire) :
 
-**Total issues identifiées** : 224 (40 CRITICAL, 58 HIGH, 80 MEDIUM, 46 LOW)
+| Domaine | Score 06-29 | Score 07-01 | Statut | Preuve du changement |
+|---------|-------|-------|--------|--------|
+| Calculs dendrométriques de base | 8.5/10 | non re-vérifié | Conforme | — |
+| Système de tarification/prix | 4.5/10 | non re-vérifié | Risque financier | Voir travaux récents "feat(pricing)" — à ré-auditer |
+| Intégrité base de données | 5/10 | non re-vérifié | Risque données | DB passée de v29→v32, migrations ajoutées — à ré-auditer |
+| Logique forestière domainale | 6.5/10 | non re-vérifié | Approximatif | — |
+| Traitement des données (mappers) | 5.5/10 | **amélioré** | En progrès | Refactor repositories→modèles domaine commité le 2026-07-01 (voir `.devin/AGENT_COORDINATION.md` §6) |
+| Sécurité / chiffrement / réseau | 5/10 | **~7/10** | Nettement amélioré | SQLCipher actif (`ForestryDatabase.kt:151`), certificate pinning actif (`SecureHttpClient.kt:46-56`), FLAG_SECURE actif (`MainActivity.kt`), injection SQL GeoPackage corrigée (whitelist regex) |
+| GIS / géomatique | 7.5/10 | non re-vérifié | Approximatif | `Lambert93.kt` dupliqué toujours présent (1.17 non fait) |
+| Présentation / UI / Compose | 6.5/10 | **~7/10** | Amélioré | `collectAsState()` entièrement migré vers `collectAsStateWithLifecycle()` (166 occurrences, 0 restante) |
+| Internationalisation (FR/EN) | 4/10 | **~5/10** | Toujours insuffisant | `plurals.xml` créé FR/EN ; mais 71 `SimpleDateFormat` et 53 `€` codés en dur toujours présents |
+| Build / CI / Gradle | 6/10 | non re-vérifié | Obsolète | Toujours pas de `.github/workflows/` (CI/CD absent) |
+| RGPD / privacy | 3/10 | **~6/10** | Nettement amélioré | `RECORD_OF_PROCESSING_ACTIVITIES.md` créé (7 traitements documentés), page consentement onboarding ajoutée, transferts hors UE documentés — **`PRIVACY_POLICY.md` reste à vérifier en détail (contenu non ré-audité)** |
+| Performance / mémoire / batterie | 6.5/10 | non re-vérifié | Risques OOM | Coil toujours absent des dépendances (0.11 non fait) |
+| Misc (FormulaParser, WorkManager, DataStore, a11y) | 5.5/10 | non re-vérifié | À corriger | FormulaParser sans limites, DataStore non chiffré, `Flow.first()` migré à 2/103 seulement |
+| Couverture de tests | 35% | non re-vérifié | Insuffisant | 467 tests passent (0 échec) mais % de couverture non recalculé |
+
+**Total issues identifiées (2026-06-29)** : 224 (40 CRITICAL, 58 HIGH, 80 MEDIUM, 46 LOW)
+**Échantillon CRITICAL re-vérifié (2026-07-01)** : au moins 4/18 CRITICAL de la vague 2
+confirmées résolues (S-C1 SQLCipher, S-C2 cert pinning, S-C3 injection SQL, S-H4 FLAG_SECURE).
+Les 36 CRITICAL restantes (vague 1 + reste vague 2) n'ont pas été ré-auditées une par une —
+ne pas supposer qu'elles sont résolues sans vérification.
 
 Voir :
-- `AUDIT_FORESTIER_COMPLET.md` — vague 1 (101 issues)
-- `AUDIT_GLOBAL_GEOSYLVA.md` — vague 2 (123 issues)
+- `AUDIT_FORESTIER_COMPLET.md` — vague 1 (101 issues, statut 2026-06-29 non rafraîchi)
+- `AUDIT_GLOBAL_GEOSYLVA.md` — vague 2 (123 issues, statut 2026-06-29 non rafraîchi)
+- `docs/REFERENTIELS_FORESTIERS_EXTERNES.md` — pour la fiabilité scientifique des calculs (cubage, IBP, GRECO)
 
 ---
 
@@ -141,55 +166,64 @@ Voir :
 ### 3.2 Phase 0 — Blocages production (priorité absolue)
 
 > **Objectif** : Rendre l'app déployable en production sans risque juridique ou sécurité.
-> **Durée estimée** : 14 jours-homme
+> **Statut au 2026-07-01** : **9/12 FAIT**, 1 incertain, 2 non faits — voir colonne Statut.
 > **Critère de sortie** : 0 CRITICAL restant, build release signé fonctionnel
 
-| # | Action | Domaine | Issue | Effort |
-|---|--------|---------|-------|--------|
-| 0.1 | Activer `kotlin.incremental=true` dans gradle.properties | Build | B-C1 | 0.1j |
-| 0.2 | Réactiver SQLCipher + clé Android Keystore + migration DB | Sécurité/RGPD | S-C1, R-C2 | 3j |
-| 0.3 | Activer certificate pinning + corriger SecureTileService | Sécurité | S-C2, R-M4 | 1j |
-| 0.4 | Valider tableName dans GeoImportParser (whitelist regex) | Sécurité | S-C3 | 0.5j |
-| 0.5 | Ajouter FLAG_SECURE sur MainActivity | Sécurité | S-H4 | 0.5j |
-| 0.6 | Réécrire PRIVACY_POLICY.md (26 PII, base légale, transferts) | RGPD | R-C1 | 1j |
-| 0.7 | Ajouter page consentement RGPD dans onboarding | RGPD | R-C3 | 2j |
-| 0.8 | Créer RECORD_OF_PROCESSING_ACTIVITIES.md | RGPD | R-C4 | 1j |
-| 0.9 | Documenter ou supprimer transferts Esri/USA (SCC) | RGPD | R-C5 | 1j |
-| 0.10 | Remplacer collectAsState() par collectAsStateWithLifecycle() (50+) | Perf/UI | P-C1, U-H1 | 2j |
-| 0.11 | Downsampling images + intégrer Coil | Perf/UI | P-C2, U-H5 | 2j |
-| 0.12 | Corriger test SecureHttpClientTest (méthode inexistante) | Sécurité | S-H1 | 0.5j |
+| # | Action | Domaine | Issue | Effort | Statut 07-01 | Preuve |
+|---|--------|---------|-------|--------|--------|--------|
+| 0.1 | Activer `kotlin.incremental=true` dans gradle.properties | Build | B-C1 | 0.1j | ✅ FAIT | `gradle.properties:9` |
+| 0.2 | Réactiver SQLCipher + clé Android Keystore + migration DB | Sécurité/RGPD | S-C1, R-C2 | 3j | ✅ FAIT | `ForestryDatabase.kt:151` (SupportFactory + DatabaseEncryptionService/Keystore) |
+| 0.3 | Activer certificate pinning + corriger SecureTileService | Sécurité | S-C2, R-M4 | 1j | ✅ FAIT | `SecureHttpClient.kt:46-56` (4 domaines pinnés) |
+| 0.4 | Valider tableName dans GeoImportParser (whitelist regex) | Sécurité | S-C3 | 0.5j | ✅ FAIT | `GeoImportParser.kt:447-453` |
+| 0.5 | Ajouter FLAG_SECURE sur MainActivity | Sécurité | S-H4 | 0.5j | ✅ FAIT | `MainActivity.kt:35-39` |
+| 0.6 | Réécrire PRIVACY_POLICY.md (26 PII, base légale, transferts) | RGPD | R-C1 | 1j | ⚠️ INCERTAIN | Le fichier existe mais son contenu n'a pas été relu ligne à ligne — **à vérifier avant de considérer conforme** |
+| 0.7 | Ajouter page consentement RGPD dans onboarding | RGPD | R-C3 | 2j | ✅ FAIT | `OnboardingScreen.kt:67,174-177,371-387` (page + bouton Decline + dialog) |
+| 0.8 | Créer RECORD_OF_PROCESSING_ACTIVITIES.md | RGPD | R-C4 | 1j | ✅ FAIT | Fichier créé, 7 traitements (T-01 à T-07) |
+| 0.9 | Documenter ou supprimer transferts Esri/USA (SCC) | RGPD | R-C5 | 1j | ✅ FAIT | `RECORD_OF_PROCESSING_ACTIVITIES.md:46` |
+| 0.10 | Remplacer collectAsState() par collectAsStateWithLifecycle() (50+) | Perf/UI | P-C1, U-H1 | 2j | ✅ FAIT | 0 occurrence `collectAsState()` restante, 166 `collectAsStateWithLifecycle` |
+| 0.11 | Downsampling images + intégrer Coil | Perf/UI | P-C2, U-H5 | 2j | ❌ PAS FAIT | Coil absent de `libs.versions.toml`/dépendances |
+| 0.12 | Corriger test SecureHttpClientTest (méthode inexistante) | Sécurité | S-H1 | 0.5j | ✅ FAIT | `SecureHttpClientTest.kt` réécrit, toutes méthodes testées existent |
+
+**Reste à faire pour clore la Phase 0** : 0.6 (vérifier réellement `PRIVACY_POLICY.md`) et
+0.11 (Coil + downsampling images).
 
 ### 3.3 Phase 1 — Corrections rapides high-impact
 
 > **Objectif** : Qualité professionnelle (i18n propre, performance, UX).
 > **Durée estimée** : 25 jours-homme
+> **Statut au 2026-07-01** : **2/23 FAIT** (9%), 4 partiels, 4 incertains, 13 non faits — la
+> Phase 0 a été priorisée à raison (sécurité/RGPD), mais la Phase 1 reste très largement à faire.
 > **Critère de sortie** : 0 HIGH restant, i18n fonctionnel, pas de OOM
 
-| # | Action | Domaine | Issue | Effort |
-|---|--------|---------|-------|--------|
-| 1.1 | Extraire 100+ chaînes FR codées en dur → strings.xml | i18n | I-C1 | 5j |
-| 1.2 | Remplacer SimpleDateFormat(Locale.FRANCE) → DateFormat | i18n | I-C2 | 1j |
-| 1.3 | Remplacer € codé → NumberFormat.getCurrencyInstance() | i18n | I-C3 | 1j |
-| 1.4 | Créer plurals.xml FR/EN | i18n | I-C4 | 1j |
-| 1.5 | Compléter 22 chaînes manquantes en français | i18n | I-H1 | 0.5j |
-| 1.6 | Ajouter key() aux LazyColumn (6 écrans) | UI/Perf | U-H4 | 1j |
-| 1.7 | rememberSaveable pour formulaires (3 écrans) | UI | U-H2 | 1j |
-| 1.8 | contentDescription sur éléments interactifs | A11y | U-H3 | 2j |
-| 1.9 | Streaming exports (JsonWriter + CSV ligne par ligne) | Perf | P-C3 | 3j |
-| 1.10 | Ajouter LIMIT/projection aux requêtes DAO | Perf | P-H3 | 2j |
-| 1.11 | Flow.first() → withTimeoutOrNull (30+ occurrences) | Perf | P-H2, U-H8 | 1j |
-| 1.12 | BackupWorker : injecter DB + contraintes + idempotence | Misc | M-C2, M-H3, M-H4 | 1j |
-| 1.13 | PriceSyncWorker : SecureHttpClient + timeout + backoff | Misc/Sécu | M-H5, M-H6, R-M3 | 1j |
-| 1.14 | Mettre à jour build tools (AGP, Kotlin, KSP, Compose BOM) | Build | B-H1, B-H2 | 3j |
-| 1.15 | BlurView 2.0.5 → 3.2.0 | Build | B-H3 | 0.5j |
-| 1.16 | Créer workflow CI/CD release.yml | Build | B-H4 | 1j |
-| 1.17 | Supprimer Lambert93.kt (unifier sur Lambert93Converter.kt) | GIS | G-M1 | 0.5j |
-| 1.18 | Restaurer GeoPackageExporter (427 lignes, export OGC QGIS) | GIS/Export | APK-v2.1 | 3j |
-| 1.19 | Restaurer AutecologyExpansion dans AutecologyStubs.kt | Domain | APK-v2.1 | 1j |
-| 1.20 | Restaurer TappedDiagnosticInfo dans MapScreen | UI | APK-v2.1 | 1j |
-| 1.21 | Restaurer ReferenceMode dans IbpDiagnosticScreen | IBP | APK-v2.1 | 0.5j |
-| 1.22 | Évaluer EcologyFertilityTab vs DiagnosticMenu (restaurer ou confirmer remplacement) | UI | APK-v2.1 | 0.5j |
-| 1.23 | Évaluer CampaignData (historique campagnes martelage — restaurer si utile) | Domain | APK-v2.1 | 0.5j |
+| # | Action | Domaine | Issue | Effort | Statut 07-01 |
+|---|--------|---------|-------|--------|--------|
+| 1.1 | Extraire 100+ chaînes FR codées en dur → strings.xml | i18n | I-C1 | 5j | ❌ PAS FAIT (53 `€` codés en dur restants) |
+| 1.2 | Remplacer SimpleDateFormat(Locale.FRANCE) → DateFormat | i18n | I-C2 | 1j | ❌ PAS FAIT (71 occurrences `SimpleDateFormat`) |
+| 1.3 | Remplacer € codé → NumberFormat.getCurrencyInstance() | i18n | I-C3 | 1j | ❌ PAS FAIT |
+| 1.4 | Créer plurals.xml FR/EN | i18n | I-C4 | 1j | ✅ FAIT (`values/plurals.xml` + `values-fr/plurals.xml`, 4 plurals) |
+| 1.5 | Compléter 22 chaînes manquantes en français | i18n | I-H1 | 0.5j | ⚠️ INCERTAIN — à revérifier avec `.devin/scratch/check_missing.py` |
+| 1.6 | Ajouter key() aux LazyColumn (6 écrans) | UI/Perf | U-H4 | 1j | 🟡 PARTIEL (présent sur Parcelles/Placettes/IbpProjects/Martelage, absent ailleurs) |
+| 1.7 | rememberSaveable pour formulaires (3 écrans) | UI | U-H2 | 1j | 🟡 PARTIEL (55 occurrences globales, pas vérifié sur les 3 écrans ciblés précisément) |
+| 1.8 | contentDescription sur éléments interactifs | A11y | U-H3 | 2j | 🟡 PARTIEL (349 occurrences, ~100 encore à `null`) |
+| 1.9 | Streaming exports (JsonWriter + CSV ligne par ligne) | Perf | P-C3 | 3j | 🟡 PARTIEL (CSV en ligne par ligne fait, export JSON pas encore en streaming `JsonWriter`) |
+| 1.10 | Ajouter LIMIT/projection aux requêtes DAO | Perf | P-H3 | 2j | ⚠️ INCERTAIN — audit DAO non fait |
+| 1.11 | Flow.first() → withTimeoutOrNull (30+ occurrences) | Perf | P-H2, U-H8 | 1j | ❌ PAS FAIT (2/103 migrés seulement) |
+| 1.12 | BackupWorker : injecter DB + contraintes + idempotence | Misc | M-C2, M-H3, M-H4 | 1j | ❌ PAS FAIT (DB toujours créée en dur dans `doWork()`) |
+| 1.13 | PriceSyncWorker : SecureHttpClient + timeout + backoff | Misc/Sécu | M-H5, M-H6, R-M3 | 1j | ❌ PAS FAIT (`OkHttpClient` standard, pas `SecureHttpClient`) |
+| 1.14 | Mettre à jour build tools (AGP, Kotlin, KSP, Compose BOM) | Build | B-H1, B-H2 | 3j | 🟡 PARTIEL (Compose BOM à jour, AGP 8.2.2 et Kotlin 1.9.23 toujours obsolètes) |
+| 1.15 | BlurView 2.0.5 → 3.2.0 | Build | B-H3 | 0.5j | ❌ PAS FAIT (version custom 2.0.6) |
+| 1.16 | Créer workflow CI/CD release.yml | Build | B-H4 | 1j | ❌ PAS FAIT (aucun `.github/workflows/` — **CI/CD totalement absent, y compris tests/lint automatiques**) |
+| 1.17 | Supprimer Lambert93.kt (unifier sur Lambert93Converter.kt) | GIS | G-M1 | 0.5j | ❌ PAS FAIT (duplication toujours présente) |
+| 1.18 | Restaurer GeoPackageExporter (427 lignes, export OGC QGIS) | GIS/Export | APK-v2.1 | 3j | ❌ PAS FAIT |
+| 1.19 | Restaurer AutecologyExpansion dans AutecologyStubs.kt | Domain | APK-v2.1 | 1j | ❌ PAS FAIT |
+| 1.20 | Restaurer TappedDiagnosticInfo dans MapScreen | UI | APK-v2.1 | 1j | ❌ PAS FAIT |
+| 1.21 | Restaurer ReferenceMode dans IbpDiagnosticScreen | IBP | APK-v2.1 | 0.5j | ❌ PAS FAIT |
+| 1.22 | Évaluer EcologyFertilityTab vs DiagnosticMenu (restaurer ou confirmer remplacement) | UI | APK-v2.1 | 0.5j | ⚠️ INCERTAIN — fichiers non retrouvés, décision à formaliser |
+| 1.23 | Évaluer CampaignData (historique campagnes martelage — restaurer si utile) | Domain | APK-v2.1 | 0.5j | ❌ PAS FAIT |
+
+**Recommandation immédiate** : traiter en priorité 1.16 (CI/CD absent = aucun filet de
+sécurité automatique sur les prochains commits des agents) et 1.1-1.3 (i18n, cohérent avec
+le score encore faible 4→5/10).
 
 ### 3.4 Phase 2 — Consolidation
 
@@ -576,15 +610,17 @@ Voir `CONTRIBUTING.md` et `global_rules.md` :
 
 ### 9.1 KPIs techniques
 
-| KPI | Cible | Actuel |
-|---|---|---|
-| CRITICAL issues | 0 | 40 |
-| HIGH issues | 0 | 58 |
-| Couverture tests | 60%+ | 35% |
-| Build time | <2min | ~5min (incremental=false) |
-| OOM crashes | 0 | Risque élevé |
-| i18n chaînes en dur | 0 | 100+ |
-| RGPD conformité | Conforme | Non conforme |
+| KPI | Cible | Actuel (06-29) | Actuel (07-01) |
+|---|---|---|---|
+| CRITICAL issues | 0 | 40 | ≥4 confirmées résolues (SQLCipher, cert pinning, injection SQL, FLAG_SECURE) sur 40 — 36 non re-vérifiées individuellement |
+| HIGH issues | 0 | 58 | non re-vérifié individuellement |
+| Tests unitaires | 0 échec | non mesuré | **467 tests, 0 échec, 0 erreur** (`testDebugUnitTest`) |
+| Couverture tests | 60%+ | 35% | non recalculée (35% à confirmer) |
+| Build time | <2min | ~5min (incremental=false) | `kotlin.incremental=true` actif — build ~6-7min observé (KSP + compile, à profiler) |
+| OOM crashes | 0 | Risque élevé | Coil toujours absent — risque inchangé |
+| i18n chaînes en dur (€, dates) | 0 | 100+ | 53 `€` + 71 `SimpleDateFormat` codés en dur toujours présents |
+| RGPD conformité | Conforme | Non conforme | Nettement amélioré (registre traitements, consentement onboarding, transferts documentés) — `PRIVACY_POLICY.md` reste à vérifier en détail |
+| CI/CD | Tests+lint+build auto | Absent | **Toujours absent** — aucun `.github/workflows/`, risque élevé de régression silencieuse pour un projet multi-agents |
 
 ### 9.2 KPIs business
 
@@ -608,6 +644,10 @@ Voir `CONTRIBUTING.md` et `global_rules.md` :
 | 2026-06-29 | Réécriture AI_CONTEXT.md | Refléter l'état réel du code (v2.3.0, DB v29) |
 | 2026-06-29 | Analyse APK v2.1.0 vs code v2.3.0 | 6 classes perdues identifiées (GeoPackageExporter, AutecologyExpansion, EcologyFertilityTab, CampaignData, TappedDiagnosticInfo, ReferenceMode). Code v2.3.0 largement supérieur (+13 entités, +6 repos). Restauration ajoutée Phase 1.18-1.23. |
 | 2026-06-29 | Recherche opportunités (5 sous-agents) | 150+ opportunités identifiées : 31 APIs FR (11 intégrées, 20 à intégrer), 40+ libraries OS, 30+ techno IA, 35+ aides financement (~600K$ cloud + 1.2M€ aides), 21 devices IoT. Synthèse dans `RESEARCH_OPPORTUNITIES.md`. |
+| 2026-07-01 | Sécurisation de ~35 fichiers non commités (`feature/pro-pricing-engine`) | Refactor repositories→modèles domaine + polish UI, vérifiés build+467 tests OK avant commit (3 commits distincts). Aucune perte de travail. |
+| 2026-07-01 | Re-audit factuel de la Phase 0/1 du plan vs code réel | 9/12 items Phase 0 étaient déjà FAITS (SQLCipher, cert pinning, FLAG_SECURE, RGPD onboarding/registre, collectAsStateWithLifecycle...) contrairement à ce que le plan indiquait. Phase 1 très largement non faite (2/23). Voir §2.4, §3.2, §3.3. |
+| 2026-07-01 | Création de `.devin/AGENT_COORDINATION.md` | Protocole d'admission des rapports d'agents externes (checklist build/tests/architecture/sécurité/i18n avant tout merge), pour éviter que ce plan (ou le code) ne se re-périme silencieusement. |
+| 2026-07-01 | Création de `docs/REFERENTIELS_FORESTIERS_EXTERNES.md` + scaffold `docs/recherche/` | 18 sources officielles/scientifiques (ONF, IGN, CNPF, France Bois Forêt, SAFER, AFNOR NF EN 1316...) pour fiabiliser cubage/prix/IBP/GRECO, avec méthodologie de sourcing pour les recherches futures. |
 
 ---
 
@@ -615,20 +655,23 @@ Voir `CONTRIBUTING.md` et `global_rules.md` :
 
 | Document | Rôle | Statut |
 |---|---|---|
-| `MASTER_PLAN.md` (ce fichier) | Vision + plan + écosystème | **Actif** |
-| `AI_CONTEXT.md` | Contexte technique du code | **Actif** (réécrit) |
-| `RESEARCH_OPPORTUNITIES.md` | Opportunités techniques, IA, financement, hardware (150+ entrées) | **Actif** (créé 2026-06-29) |
-| `AUDIT_FORESTIER_COMPLET.md` | Audit vague 1 (101 issues) | Référence |
-| `AUDIT_GLOBAL_GEOSYLVA.md` | Audit vague 2 (123 issues) | Référence |
+| `MASTER_PLAN.md` (ce fichier) | Vision + plan + écosystème | **Actif** (révisé 2026-07-01) |
+| `AI_CONTEXT.md` | Contexte technique du code | Actif — **daté 2026-06-29, DB version à corriger (29→32)** |
+| `.devin/AGENT_COORDINATION.md` | Protocole d'admission des rapports d'agents externes | **Actif** (créé 2026-07-01) |
+| `docs/REFERENTIELS_FORESTIERS_EXTERNES.md` | 18 sources officielles/scientifiques pour fiabiliser cubage/prix/IBP/GRECO | **Actif** (créé 2026-07-01) |
+| `docs/recherche/` | Scaffold + méthodologie pour les futures recherches multi-agents sourcées | **Actif** (créé 2026-07-01, dossiers vides à peupler) |
+| `RESEARCH_OPPORTUNITIES.md` | Opportunités techniques, IA, financement, hardware (150+ entrées) | Actif (créé 2026-06-29) |
+| `AUDIT_FORESTIER_COMPLET.md` | Audit vague 1 (101 issues) | Référence — **statut des items non rafraîchi, voir §2.4/§3 pour les items déjà re-vérifiés** |
+| `AUDIT_GLOBAL_GEOSYLVA.md` | Audit vague 2 (123 issues) | Référence — idem |
 | `docs/RGPD_AUDIT_REPORT.md` | Audit RGPD initial | Référence |
 | `docs/methodes_calcul_volume.md` | Référence technique cubage | Référence |
 | `README.md` | Présentation publique | À mettre à jour |
 | `CHANGELOG.md` | Historique des versions | Actif |
 | `CONTRIBUTING.md` | Standards de contribution | Actif |
 | `COMMERCIAL_LICENSE.md` | Licence dual AGPL/commerciale | Actif |
-| `PRIVACY_POLICY.md` | Politique de confidentialité | **À réécrire** (Phase 0.6) |
+| `PRIVACY_POLICY.md` | Politique de confidentialité | **À vérifier en détail** (Phase 0.6 — fichier existe mais contenu non ré-audité) |
 
 ---
 
-*Document maintenu par Camil, fondateur de GeoSylva.*
-*Dernière mise à jour : 2026-06-29*
+*Document maintenu par Camil, fondateur de GeoSylva, avec revue factuelle par IA (build/tests/grep avant toute mise à jour de statut).*
+*Dernière mise à jour : 2026-07-01*
