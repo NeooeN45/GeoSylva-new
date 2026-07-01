@@ -425,7 +425,7 @@ class DataInterpretationEngine {
             parcelleId = parcelle.parcelleId,
             interpretationType = InterpretationType.ECONOMIC_VALUATION,
             title = "Valeur économique estimée",
-            // TODO(i18n): extraire cette chaîne vers les string resources (titre + description)
+            // TODO(#3) i18n: extraire cette chaîne vers les string resources (titre + description)
             //  une fois un Context disponible dans le moteur d'interprétation.
             description = "La valeur estimée du peuplement est de ${valuePerHectare.toInt()} €/ha.",
             confidenceScore = 0.7,

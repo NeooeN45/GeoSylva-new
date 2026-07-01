@@ -14,7 +14,7 @@ import org.json.JSONObject
  *
  * Responsabilités :
  * - inventaire des packs installés / disponibles
- * - téléchargement de packs (⚠ actuellement simulé — voir TODO #INFRA-1 dans installPack())
+ * - téléchargement de packs (⚠ actuellement simulé — voir TODO(#4) dans installPack())
  * - cache disque des métadonnées
  * - flag feature pour activation progressive des modules
  * - API propre pour le PackManagerScreen
@@ -106,7 +106,7 @@ class PackManager(private val context: Context) {
      * ⚠ **Implémentation actuelle** : simulation de progression (800 ms) sans téléchargement réel.
      * Le pack est immédiatement marqué installé dans SharedPreferences.
      *
-     * **À faire** (voir TODO #INFRA-1 dans le corps) : téléchargement HTTP signé depuis
+     * **À faire** (voir TODO(#4) dans le corps) : téléchargement HTTP signé depuis
      * le serveur de distribution GeoSylva + validation checksum SHA-256.
      *
      * @param packId    Identifiant du pack (ex: `fr.region.11`, `fr.dept.75`)
@@ -117,7 +117,7 @@ class PackManager(private val context: Context) {
         if (pack.status == PackStatus.EMBEDDED) return
 
         // ⚠ FONCTIONNALITÉ NON IMPLÉMENTÉE — simulation de progression uniquement.
-        // TODO(#INFRA-1): Remplacer par un vrai téléchargement HTTP depuis
+        // TODO(#4): Remplacer par un vrai téléchargement HTTP depuis
         //   https://api.geosylva.fr/packs/{packId}/download
         //   — OkHttp avec checksum SHA-256, retry × 3, timeout 120 s.
         //   — Stocker le fichier dans context.filesDir/packs/{packId}/

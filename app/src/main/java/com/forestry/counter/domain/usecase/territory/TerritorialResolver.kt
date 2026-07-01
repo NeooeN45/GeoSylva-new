@@ -17,7 +17,7 @@ import kotlin.math.*
 //  Limites documentées :
 //   - Précision ~5–30 km selon la densité locale (acceptable pour l'inférence
 //     de zone bioclimatique et la sélection de pack)
-//   - Pour une précision < 1 km, un WKT/GeoJSON IGN est requis (TODO_METIER)
+//   - Pour une précision < 1 km, un WKT/GeoJSON IGN est requis (TODO(#2) METIER)
 // ══════════════════════════════════════════════════════════════════════════════
 
 object TerritorialResolver {
@@ -312,7 +312,7 @@ object TerritorialResolver {
      *
      * Précision typique : ±50–200 m selon la complexité du relief.
      * Suffisant pour ClimateZone.detect() et l'inférence de contexte.
-     * TODO_METIER : remplacer par MNT 75m embarqué (SRTM France) pour ±10 m.
+     * TODO(#2) METIER : remplacer par MNT 75m embarqué (SRTM France) pour ±10 m.
      */
     fun interpolateAltitude(lat: Double, lon: Double): Double {
         val k = 8

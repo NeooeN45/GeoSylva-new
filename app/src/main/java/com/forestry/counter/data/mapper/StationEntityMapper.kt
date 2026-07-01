@@ -1,0 +1,424 @@
+package com.forestry.counter.data.mapper
+
+import com.forestry.counter.data.local.entity.DiagnosticSylvicoleEntity
+import com.forestry.counter.data.local.entity.FloraFtsEntity
+import com.forestry.counter.data.local.entity.ForetEntity
+import com.forestry.counter.data.local.entity.GpsContextCacheEntity
+import com.forestry.counter.data.local.entity.InventaireSessionEntity
+import com.forestry.counter.data.local.entity.ObservationFloreEntity
+import com.forestry.counter.data.local.entity.StationEnvironnementaleEntity
+import com.forestry.counter.data.local.entity.ValeurFonciereEntity
+import com.forestry.counter.domain.model.DiagnosticSylvicole
+import com.forestry.counter.domain.model.FloraFts
+import com.forestry.counter.domain.model.Foret
+import com.forestry.counter.domain.model.GpsContextCache
+import com.forestry.counter.domain.model.InventaireSession
+import com.forestry.counter.domain.model.ObservationFlore
+import com.forestry.counter.domain.model.StationEnvironnementale
+import com.forestry.counter.domain.model.ValeurFonciere
+
+// ── StationEnvironnementale ─────────────────────────────────────────────────
+
+fun StationEnvironnementaleEntity.toDomain(): StationEnvironnementale = StationEnvironnementale(
+    stationId = stationId,
+    parcelleId = parcelleId,
+    altitudeM = altitudeM,
+    slopePct = slopePct,
+    aspectDeg = aspectDeg,
+    aspectLabel = aspectLabel,
+    soilPh = soilPh,
+    soilRumMm = soilRumMm,
+    soilRufMm = soilRufMm,
+    soilTexture = soilTexture,
+    soilDrainage = soilDrainage,
+    soilProfondeurCm = soilProfondeurCm,
+    soilHydromorphieCm = soilHydromorphieCm,
+    soilTypeWrb = soilTypeWrb,
+    soilPhTerrain = soilPhTerrain,
+    rumClasseBdgsf = rumClasseBdgsf,
+    profondeurSolClasse = profondeurSolClasse,
+    phSolForestier = phSolForestier,
+    cOrganiqueTha = cOrganiqueTha,
+    typeWrbBdgsf = typeWrbBdgsf,
+    pierrositeClassePct = pierrositeClassePct,
+    rocheMere = rocheMere,
+    lithologie = lithologie,
+    phIndicatif = phIndicatif,
+    tempMoyC = tempMoyC,
+    tempMinJanvC = tempMinJanvC,
+    tempMaxJuillC = tempMaxJuillC,
+    precipMmAn = precipMmAn,
+    precipEteMm = precipEteMm,
+    etpMm = etpMm,
+    joursGel = joursGel,
+    joursSecs = joursSecs,
+    ensoleilH = ensoleilH,
+    climateType = climateType,
+    idhe = idhe,
+    spei6Score = spei6Score,
+    indiceProductivite = indiceProductivite,
+    scoreVulnCC2050 = scoreVulnCC2050,
+    codeSer = codeSer,
+    nomSer = nomSer,
+    dvfPrixMedianEurM2 = dvfPrixMedianEurM2,
+    dvfNbTransactions = dvfNbTransactions,
+    dvfDateFetch = dvfDateFetch,
+    vulnerabiliteActuelle = vulnerabiliteActuelle,
+    vulnerabilite2050 = vulnerabilite2050,
+    natura2000Code = natura2000Code,
+    natura2000Nom = natura2000Nom,
+    znieffType1 = znieffType1,
+    znieffType2 = znieffType2,
+    isForetAncienne = isForetAncienne,
+    risqueIncendieZone = risqueIncendieZone,
+    risqueInondation = risqueInondation,
+    surfaceCadastraleHa = surfaceCadastraleHa,
+    geometrieWkt = geometrieWkt,
+    natureCadastraleCode = natureCadastraleCode,
+    sourceDataQualityJson = sourceDataQualityJson,
+    fetchedAt = fetchedAt
+)
+
+fun StationEnvironnementale.toEntity(): StationEnvironnementaleEntity = StationEnvironnementaleEntity(
+    stationId = stationId,
+    parcelleId = parcelleId,
+    altitudeM = altitudeM,
+    slopePct = slopePct,
+    aspectDeg = aspectDeg,
+    aspectLabel = aspectLabel,
+    soilPh = soilPh,
+    soilRumMm = soilRumMm,
+    soilRufMm = soilRufMm,
+    soilTexture = soilTexture,
+    soilDrainage = soilDrainage,
+    soilProfondeurCm = soilProfondeurCm,
+    soilHydromorphieCm = soilHydromorphieCm,
+    soilTypeWrb = soilTypeWrb,
+    soilPhTerrain = soilPhTerrain,
+    rumClasseBdgsf = rumClasseBdgsf,
+    profondeurSolClasse = profondeurSolClasse,
+    phSolForestier = phSolForestier,
+    cOrganiqueTha = cOrganiqueTha,
+    typeWrbBdgsf = typeWrbBdgsf,
+    pierrositeClassePct = pierrositeClassePct,
+    rocheMere = rocheMere,
+    lithologie = lithologie,
+    phIndicatif = phIndicatif,
+    tempMoyC = tempMoyC,
+    tempMinJanvC = tempMinJanvC,
+    tempMaxJuillC = tempMaxJuillC,
+    precipMmAn = precipMmAn,
+    precipEteMm = precipEteMm,
+    etpMm = etpMm,
+    joursGel = joursGel,
+    joursSecs = joursSecs,
+    ensoleilH = ensoleilH,
+    climateType = climateType,
+    idhe = idhe,
+    spei6Score = spei6Score,
+    indiceProductivite = indiceProductivite,
+    scoreVulnCC2050 = scoreVulnCC2050,
+    codeSer = codeSer,
+    nomSer = nomSer,
+    dvfPrixMedianEurM2 = dvfPrixMedianEurM2,
+    dvfNbTransactions = dvfNbTransactions,
+    dvfDateFetch = dvfDateFetch,
+    vulnerabiliteActuelle = vulnerabiliteActuelle,
+    vulnerabilite2050 = vulnerabilite2050,
+    natura2000Code = natura2000Code,
+    natura2000Nom = natura2000Nom,
+    znieffType1 = znieffType1,
+    znieffType2 = znieffType2,
+    isForetAncienne = isForetAncienne,
+    risqueIncendieZone = risqueIncendieZone,
+    risqueInondation = risqueInondation,
+    surfaceCadastraleHa = surfaceCadastraleHa,
+    geometrieWkt = geometrieWkt,
+    natureCadastraleCode = natureCadastraleCode,
+    sourceDataQualityJson = sourceDataQualityJson,
+    fetchedAt = fetchedAt
+)
+
+// ── DiagnosticSylvicole ─────────────────────────────────────────────────────
+
+fun DiagnosticSylvicoleEntity.toDomain(): DiagnosticSylvicole = DiagnosticSylvicole(
+    diagnosticId = diagnosticId,
+    parcelleId = parcelleId,
+    sessionId = sessionId,
+    dateCreation = dateCreation,
+    operateurNom = operateurNom,
+    scoreStation = scoreStation,
+    scorePeuplement = scorePeuplement,
+    scoreBiodiversite = scoreBiodiversite,
+    scoreRisque = scoreRisque,
+    scoreGlobal = scoreGlobal,
+    gHa = gHa,
+    nHa = nHa,
+    vHa = vHa,
+    hoM = hoM,
+    hgM = hgM,
+    dgCm = dgCm,
+    siteIndex = siteIndex,
+    accroissementIg = accroissementIg,
+    accroissementIv = accroissementIv,
+    biomasseTotalTonnes = biomasseTotalTonnes,
+    carboneTotalTonnes = carboneTotalTonnes,
+    essencesRecommandeesJson = essencesRecommandeesJson,
+    essencesDeconseillees = essencesDeconseillees,
+    essencesVigilanceJson = essencesVigilanceJson,
+    risquesDetectesJson = risquesDetectesJson,
+    recommandationsSylvicolesJson = recommandationsSylvicolesJson,
+    typeSylviculturePreco = typeSylviculturePreco,
+    volumeEclairciePreco = volumeEclairciePreco,
+    delaiInterventionAns = delaiInterventionAns,
+    syntheseTextuelle = syntheseTextuelle,
+    algoVersion = algoVersion,
+    dataSourcesJson = dataSourcesJson,
+    remarques = remarques,
+    updatedAt = updatedAt
+)
+
+fun DiagnosticSylvicole.toEntity(): DiagnosticSylvicoleEntity = DiagnosticSylvicoleEntity(
+    diagnosticId = diagnosticId,
+    parcelleId = parcelleId,
+    sessionId = sessionId,
+    dateCreation = dateCreation,
+    operateurNom = operateurNom,
+    scoreStation = scoreStation,
+    scorePeuplement = scorePeuplement,
+    scoreBiodiversite = scoreBiodiversite,
+    scoreRisque = scoreRisque,
+    scoreGlobal = scoreGlobal,
+    gHa = gHa,
+    nHa = nHa,
+    vHa = vHa,
+    hoM = hoM,
+    hgM = hgM,
+    dgCm = dgCm,
+    siteIndex = siteIndex,
+    accroissementIg = accroissementIg,
+    accroissementIv = accroissementIv,
+    biomasseTotalTonnes = biomasseTotalTonnes,
+    carboneTotalTonnes = carboneTotalTonnes,
+    essencesRecommandeesJson = essencesRecommandeesJson,
+    essencesDeconseillees = essencesDeconseillees,
+    essencesVigilanceJson = essencesVigilanceJson,
+    risquesDetectesJson = risquesDetectesJson,
+    recommandationsSylvicolesJson = recommandationsSylvicolesJson,
+    typeSylviculturePreco = typeSylviculturePreco,
+    volumeEclairciePreco = volumeEclairciePreco,
+    delaiInterventionAns = delaiInterventionAns,
+    syntheseTextuelle = syntheseTextuelle,
+    algoVersion = algoVersion,
+    dataSourcesJson = dataSourcesJson,
+    remarques = remarques,
+    updatedAt = updatedAt
+)
+
+// ── ValeurFonciere ──────────────────────────────────────────────────────────
+
+fun ValeurFonciereEntity.toDomain(): ValeurFonciere = ValeurFonciere(
+    valeurId = valeurId,
+    parcelleId = parcelleId,
+    dateEstimation = dateEstimation,
+    valeurFonciereNuEurHa = valeurFonciereNuEurHa,
+    sourceValeurFonciere = sourceValeurFonciere,
+    prixMarcheRegionalEurHa = prixMarcheRegionalEurHa,
+    volumeCommercialisableM3 = volumeCommercialisableM3,
+    valeurBoisSurPiedEur = valeurBoisSurPiedEur,
+    carboneTotalTonnes = carboneTotalTonnes,
+    valeurCarboneLabelBcEur = valeurCarboneLabelBcEur,
+    valeurTotalePatrimoineEur = valeurTotalePatrimoineEur,
+    coutEclaircieEstimeEur = coutEclaircieEstimeEur,
+    coutRenouvellementEstimeEur = coutRenouvellementEstimeEur,
+    revenuBrutAnnuelMoyenEur = revenuBrutAnnuelMoyenEur,
+    eligiblePsg = eligiblePsg,
+    eligibleDefiForet = eligibleDefiForet,
+    eligibleIfiExoneration = eligibleIfiExoneration,
+    eligibleDpa = eligibleDpa,
+    alertesFiscalesJson = alertesFiscalesJson,
+    remarques = remarques,
+    updatedAt = updatedAt
+)
+
+fun ValeurFonciere.toEntity(): ValeurFonciereEntity = ValeurFonciereEntity(
+    valeurId = valeurId,
+    parcelleId = parcelleId,
+    dateEstimation = dateEstimation,
+    valeurFonciereNuEurHa = valeurFonciereNuEurHa,
+    sourceValeurFonciere = sourceValeurFonciere,
+    prixMarcheRegionalEurHa = prixMarcheRegionalEurHa,
+    volumeCommercialisableM3 = volumeCommercialisableM3,
+    valeurBoisSurPiedEur = valeurBoisSurPiedEur,
+    carboneTotalTonnes = carboneTotalTonnes,
+    valeurCarboneLabelBcEur = valeurCarboneLabelBcEur,
+    valeurTotalePatrimoineEur = valeurTotalePatrimoineEur,
+    coutEclaircieEstimeEur = coutEclaircieEstimeEur,
+    coutRenouvellementEstimeEur = coutRenouvellementEstimeEur,
+    revenuBrutAnnuelMoyenEur = revenuBrutAnnuelMoyenEur,
+    eligiblePsg = eligiblePsg,
+    eligibleDefiForet = eligibleDefiForet,
+    eligibleIfiExoneration = eligibleIfiExoneration,
+    eligibleDpa = eligibleDpa,
+    alertesFiscalesJson = alertesFiscalesJson,
+    remarques = remarques,
+    updatedAt = updatedAt
+)
+
+// ── ObservationFlore ────────────────────────────────────────────────────────
+
+fun ObservationFloreEntity.toDomain(): ObservationFlore = ObservationFlore(
+    observationId = observationId,
+    parcelleId = parcelleId,
+    placetteId = placetteId,
+    sessionId = sessionId,
+    codeEspece = codeEspece,
+    nomScientifique = nomScientifique,
+    nomCommun = nomCommun,
+    abundanceDominance = abundanceDominance,
+    strate = strate,
+    sociabilite = sociabilite,
+    indicateurEllenbergL = indicateurEllenbergL,
+    indicateurEllenbergT = indicateurEllenbergT,
+    indicateurEllenbergR = indicateurEllenbergR,
+    indicateurEllenbergF = indicateurEllenbergF,
+    indicateurEllenbergN = indicateurEllenbergN,
+    isEspeceProtegee = isEspeceProtegee,
+    isEspeceIndicatrice = isEspeceIndicatrice,
+    dateSaisie = dateSaisie,
+    createdAt = createdAt
+)
+
+fun ObservationFlore.toEntity(): ObservationFloreEntity = ObservationFloreEntity(
+    observationId = observationId,
+    parcelleId = parcelleId,
+    placetteId = placetteId,
+    sessionId = sessionId,
+    codeEspece = codeEspece,
+    nomScientifique = nomScientifique,
+    nomCommun = nomCommun,
+    abundanceDominance = abundanceDominance,
+    strate = strate,
+    sociabilite = sociabilite,
+    indicateurEllenbergL = indicateurEllenbergL,
+    indicateurEllenbergT = indicateurEllenbergT,
+    indicateurEllenbergR = indicateurEllenbergR,
+    indicateurEllenbergF = indicateurEllenbergF,
+    indicateurEllenbergN = indicateurEllenbergN,
+    isEspeceProtegee = isEspeceProtegee,
+    isEspeceIndicatrice = isEspeceIndicatrice,
+    dateSaisie = dateSaisie,
+    createdAt = createdAt
+)
+
+// ── InventaireSession ───────────────────────────────────────────────────────
+
+fun InventaireSessionEntity.toDomain(): InventaireSession = InventaireSession(
+    sessionId = sessionId,
+    parcelleId = parcelleId,
+    typeSession = typeSession,
+    dateDebut = dateDebut,
+    dateFin = dateFin,
+    operateurNom = operateurNom,
+    methode = methode,
+    intensiteEchantillonnagePct = intensiteEchantillonnagePct,
+    objectifSession = objectifSession,
+    remarques = remarques,
+    createdAt = createdAt
+)
+
+fun InventaireSession.toEntity(): InventaireSessionEntity = InventaireSessionEntity(
+    sessionId = sessionId,
+    parcelleId = parcelleId,
+    typeSession = typeSession,
+    dateDebut = dateDebut,
+    dateFin = dateFin,
+    operateurNom = operateurNom,
+    methode = methode,
+    intensiteEchantillonnagePct = intensiteEchantillonnagePct,
+    objectifSession = objectifSession,
+    remarques = remarques,
+    createdAt = createdAt
+)
+
+// ── Foret ───────────────────────────────────────────────────────────────────
+
+fun ForetEntity.toDomain(): Foret = Foret(
+    foretId = foretId,
+    nom = nom,
+    proprietaireNom = proprietaireNom,
+    proprietaireEmail = proprietaireEmail,
+    gestionnaireNom = gestionnaireNom,
+    typeForet = typeForet,
+    objectifGestion = objectifGestion,
+    psgNumero = psgNumero,
+    psgDateExpiration = psgDateExpiration,
+    departement = departement,
+    remarques = remarques,
+    createdAt = createdAt,
+    updatedAt = updatedAt
+)
+
+fun Foret.toEntity(): ForetEntity = ForetEntity(
+    foretId = foretId,
+    nom = nom,
+    proprietaireNom = proprietaireNom,
+    proprietaireEmail = proprietaireEmail,
+    gestionnaireNom = gestionnaireNom,
+    typeForet = typeForet,
+    objectifGestion = objectifGestion,
+    psgNumero = psgNumero,
+    psgDateExpiration = psgDateExpiration,
+    departement = departement,
+    remarques = remarques,
+    createdAt = createdAt,
+    updatedAt = updatedAt
+)
+
+// ── FloraFts ────────────────────────────────────────────────────────────────
+
+fun FloraFtsEntity.toDomain(): FloraFts = FloraFts(
+    speciesId = speciesId,
+    nomFrancais = nomFrancais,
+    nomScientifique = nomScientifique,
+    vernaculaires = vernaculaires,
+    synonymes = synonymes,
+    typeMilieu = typeMilieu,
+    strate = strate
+)
+
+fun FloraFts.toEntity(): FloraFtsEntity = FloraFtsEntity(
+    speciesId = speciesId,
+    nomFrancais = nomFrancais,
+    nomScientifique = nomScientifique,
+    vernaculaires = vernaculaires,
+    synonymes = synonymes,
+    typeMilieu = typeMilieu,
+    strate = strate
+)
+
+// ── GpsContextCache ─────────────────────────────────────────────────────────
+
+fun GpsContextCacheEntity.toDomain(): GpsContextCache = GpsContextCache(
+    latKey = latKey,
+    lonKey = lonKey,
+    regionCode = regionCode,
+    deptCode = deptCode,
+    altitudeApproxM = altitudeApproxM,
+    topoHint = topoHint,
+    zoneHumideProb = zoneHumideProb,
+    packIdActive = packIdActive,
+    computedAt = computedAt
+)
+
+fun GpsContextCache.toEntity(): GpsContextCacheEntity = GpsContextCacheEntity(
+    latKey = latKey,
+    lonKey = lonKey,
+    regionCode = regionCode,
+    deptCode = deptCode,
+    altitudeApproxM = altitudeApproxM,
+    topoHint = topoHint,
+    zoneHumideProb = zoneHumideProb,
+    packIdActive = packIdActive,
+    computedAt = computedAt
+)

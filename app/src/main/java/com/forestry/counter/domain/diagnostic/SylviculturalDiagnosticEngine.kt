@@ -1,8 +1,8 @@
 package com.forestry.counter.domain.diagnostic
 
 import android.content.Context
-import com.forestry.counter.data.local.entity.DiagnosticSylvicoleEntity
-import com.forestry.counter.data.local.entity.StationEnvironnementaleEntity
+import com.forestry.counter.domain.model.DiagnosticSylvicole
+import com.forestry.counter.domain.model.StationEnvironnementale
 import com.forestry.counter.domain.model.Tige
 import com.forestry.counter.domain.repository.DiagnosticSylvicoleRepository
 import com.forestry.counter.domain.repository.StationEnvironnementaleRepository
@@ -22,7 +22,7 @@ import java.util.UUID
  *  4. Indicateurs de peuplement (G, N, DG, H100, IBP si dispo)
  *
  * Produit :
- *  - DiagnosticSylvicoleEntity persisté en DB
+ *  - DiagnosticSylvicole persisté en DB
  *  - DiagnosticResult retourné immédiatement
  *
  * Architecture :
@@ -130,7 +130,7 @@ class SylviculturalDiagnosticEngine(
     // ──────────────────────────────────────────────────────────────────────────
     // Construction des indicateurs station
     // ──────────────────────────────────────────────────────────────────────────
-    private fun buildStationQualite(station: StationEnvironnementaleEntity?): StationQualite {
+    private fun buildStationQualite(station: StationEnvironnementale?): StationQualite {
         val scoreStation = computeScoreStation(station)
         val classeIV = when {
             scoreStation >= 75 -> "I — Très favorable"
@@ -152,7 +152,7 @@ class SylviculturalDiagnosticEngine(
         )
     }
 
-    private fun computeScoreStation(station: StationEnvironnementaleEntity?): Int {
+    private fun computeScoreStation(station: StationEnvironnementale?): Int {
         if (station == null) return 50
         var score = 50
         station.soilPh?.let { if (it in 4.5..7.5) score += 15 else score -= 10 }
@@ -202,7 +202,7 @@ class SylviculturalDiagnosticEngine(
     // ──────────────────────────────────────────────────────────────────────────
     private fun detectEssencesToScore(
         tiges: List<Tige>,
-        station: StationEnvironnementaleEntity?
+        station: StationEnvironnementale?
     ): List<String> {
         val fromTiges = tiges.map { it.essenceCode }.distinct()
         val serCode = station?.codeSer
@@ -253,7 +253,7 @@ class SylviculturalDiagnosticEngine(
     // Alertes sanitaires (depuis PathoEntomoDB × espèces × station)
     // ──────────────────────────────────────────────────────────────────────────
     private fun buildAlerteSanitaires(
-        station: StationEnvironnementaleEntity?,
+        station: StationEnvironnementale?,
         tiges: List<Tige>
     ): List<String> {
         val alertes = mutableListOf<String>()
@@ -301,7 +301,7 @@ class SylviculturalDiagnosticEngine(
     private suspend fun persistDiagnostic(
         diagnosticId: String,
         parcelleId: String,
-        station: StationEnvironnementaleEntity?,
+        station: StationEnvironnementale?,
         scores: List<EssenceSuitabilityScorer.SuitabilityScore>,
         peuplement: PeuplementIndicateurs,
         recommandations: List<String>,
@@ -315,7 +315,7 @@ class SylviculturalDiagnosticEngine(
                 "classe" to it.classeAdequation.name
             )
         })
-        val entity = DiagnosticSylvicoleEntity(
+        val entity = DiagnosticSylvicole(
             diagnosticId                  = diagnosticId,
             parcelleId                    = parcelleId,
             sessionId                     = null,

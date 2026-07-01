@@ -2,7 +2,7 @@ package com.forestry.counter.domain.location
 
 import android.content.Context
 import android.util.Log
-import com.forestry.counter.data.local.entity.StationEnvironnementaleEntity
+import com.forestry.counter.domain.model.StationEnvironnementale
 import com.forestry.counter.domain.repository.StationEnvironnementaleRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -47,7 +47,7 @@ interface NormalesContextProvider {
  *   3. Normales climatiques embarquées → T, P, ETP, jGel, jSec
  *   4. WMS INRAE BDGSF (en ligne) → RU, texture, pH sol forestier
  *   5. DVF Cerema open (en ligne) → prix médian €/m²
- *   Met à jour StationEnvironnementaleEntity en DB.
+ *   Met à jour StationEnvironnementale en DB.
  */
 class StationDataAggregator(
     private val context: Context,
@@ -84,7 +84,7 @@ class StationDataAggregator(
         var bdgsfOk = false
         var dvfOk = false
 
-        var updated: StationEnvironnementaleEntity = initialStation
+        var updated: StationEnvironnementale = initialStation
 
         // 1. DEM embarqué
         try {
@@ -267,8 +267,8 @@ class StationDataAggregator(
     // ──────────────────────────────────────────────────────────────────────────
     // Helpers
     // ──────────────────────────────────────────────────────────────────────────
-    private fun buildEmptyStation(parcelleId: String): StationEnvironnementaleEntity =
-        StationEnvironnementaleEntity(
+    private fun buildEmptyStation(parcelleId: String): StationEnvironnementale =
+        StationEnvironnementale(
             stationId = UUID.randomUUID().toString(),
             parcelleId = parcelleId,
             altitudeM = null, slopePct = null, aspectDeg = null, aspectLabel = null,

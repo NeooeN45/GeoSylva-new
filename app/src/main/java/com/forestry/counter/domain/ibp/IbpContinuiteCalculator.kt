@@ -1,7 +1,7 @@
 package com.forestry.counter.domain.ibp
 
-import com.forestry.counter.data.local.entity.StationEnvironnementaleEntity
 import com.forestry.counter.domain.model.IbpAnswers
+import com.forestry.counter.domain.model.StationEnvironnementale
 
 /**
  * Calcule le score CF (H — Continuité temporelle forestière) de l'IBP
@@ -29,7 +29,7 @@ object IbpContinuiteCalculator {
     )
 
     fun calculate(
-        station: StationEnvironnementaleEntity?,
+        station: StationEnvironnementale?,
         ancienneteManuelleAns: Int = 0,
         connectiviteManuelPct: Int = 0
     ): ContinuiteResult {

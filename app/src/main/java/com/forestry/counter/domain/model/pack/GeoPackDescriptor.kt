@@ -99,7 +99,7 @@ data class PackMetaInfo(
     val notes: String           = "",
     val minAppVersion: String   = "1.0.0",
     val featureFlags: Map<String, Boolean> = emptyMap(),
-    // TODO_METIER : ajouter des indicateurs de qualité terrain (validé par expert régional ?)
+    // TODO(#2) METIER : ajouter des indicateurs de qualité terrain (validé par expert régional ?)
     val expertValidated: Boolean = false
 )
 

@@ -2,8 +2,10 @@ package com.forestry.counter.domain.usecase.brain
 
 import android.content.Context
 import com.forestry.counter.data.local.ForestryDatabase
-import com.forestry.counter.data.local.entity.FloraFtsEntity
-import com.forestry.counter.data.local.entity.GpsContextCacheEntity
+import com.forestry.counter.data.mapper.toDomain
+import com.forestry.counter.data.mapper.toEntity
+import com.forestry.counter.domain.model.FloraFts
+import com.forestry.counter.domain.model.GpsContextCache
 import com.forestry.counter.domain.usecase.florist.FloristDatabase
 import com.forestry.counter.domain.usecase.florist.FloraNormalizer
 import com.forestry.counter.domain.usecase.florist.TypeMilieu
@@ -58,7 +60,7 @@ class LocalBrainCore(private val db: ForestryDatabase, private val context: Cont
         if (existingCount >= FloristDatabase.species.size) return@withContext true
 
         val entities = FloristDatabase.species.map { sp ->
-            FloraFtsEntity(
+            FloraFts(
                 speciesId       = sp.id,
                 nomFrancais     = sp.taxonomie.nomFrancais,
                 nomScientifique = sp.taxonomie.nomScientifique,
@@ -69,7 +71,7 @@ class LocalBrainCore(private val db: ForestryDatabase, private val context: Cont
             )
         }
         dao.clearAll()
-        dao.insertAll(entities)
+        dao.insertAll(entities.map { it.toEntity() })
         true
     }
 
@@ -144,7 +146,7 @@ class LocalBrainCore(private val db: ForestryDatabase, private val context: Cont
 
         // Cache valide ?
         if (cached != null && (System.currentTimeMillis() - cached.computedAt) < CACHE_GPS_TTL_MS) {
-            return@withContext cached.toGpsContext()
+            return@withContext cached.toDomain().toGpsContext()
         }
 
         // Recalcul
@@ -152,7 +154,7 @@ class LocalBrainCore(private val db: ForestryDatabase, private val context: Cont
 
         // Sauvegarder
         dao.insertGpsContext(
-            GpsContextCacheEntity(
+            GpsContextCache(
                 latKey          = latKey,
                 lonKey          = lonKey,
                 regionCode      = context.regionCode ?: "",
@@ -163,7 +165,7 @@ class LocalBrainCore(private val db: ForestryDatabase, private val context: Cont
                 packIdActive    = packManager.getContextFor(lat, lon).activePacks
                     .maxByOrNull { it.level.priority }?.id ?: PackResolver.EMBEDDED_NATIONAL_PACK.id,
                 computedAt      = System.currentTimeMillis()
-            )
+            ).toEntity()
         )
 
         // Éviction cache > 6 mois
@@ -303,7 +305,7 @@ class LocalBrainCore(private val db: ForestryDatabase, private val context: Cont
 
     enum class FtsSource { FTS_INDEX, NORMALIZER, NORMALIZER_FALLBACK }
 
-    private fun GpsContextCacheEntity.toGpsContext() = GpsContext(
+    private fun GpsContextCache.toGpsContext() = GpsContext(
         regionCode      = regionCode.ifBlank { null },
         deptCode        = deptCode.ifBlank { null },
         altitudeApproxM = altitudeApproxM,
