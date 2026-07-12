@@ -396,3 +396,12 @@ Ouvrez une [issue](../../issues) avec :
 *GeoSylva — L'inventaire forestier, simplifié.*
 
 </div>
+
+---
+
+## Contact
+
+Pour toute question, réclamation ou collaboration :
+
+**5jvw9s5zj@mozmail.com**
+
