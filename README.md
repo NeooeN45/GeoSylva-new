@@ -10,8 +10,13 @@
 [![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)](LICENSE)
 [![No Forks](https://img.shields.io/badge/Forks-NOT%20ALLOWED-red?style=for-the-badge)](CONTRIBUTING.md)
 
-**Conçue par des forestiers, pour les forestiers.**  
+**Conçue par des forestiers, pour les forestiers.**
 Inventaire terrain, martelage, cartographie et synthèse dendrométrique — entièrement hors-ligne.
+
+> **GeoSylva** est la spécialisation forestière de
+> [**Quintessences**](https://github.com/NeooeN45/Quintessences) —
+> écosystème d'intelligence environnementale propulsé par le moteur
+> GSIE (General System Intelligence Engine).
 
 ---
 
