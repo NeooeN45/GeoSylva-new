@@ -169,7 +169,7 @@ suspend fun computeMartelageStats(
     forestryCalculator: ForestryCalculator,
     nHaAvant: Double? = null,
     gHaAvant: Double? = null,
-    region: com.forestry.counter.domain.calculation.pricing.GrecoRegion? = null
+    region: com.forestry.counter.domain.calculation.pricing.FrenchRegion? = null
 ): MartelageStats? {
     if (tigesInScope.isEmpty() || surfaceM2 <= 0.0) return null
 

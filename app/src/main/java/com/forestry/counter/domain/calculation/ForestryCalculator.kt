@@ -497,7 +497,7 @@ class ForestryCalculator(
         method: String? = null,
         params: ForestrySynthesisParams? = null,
         requireHeights: Boolean = false,
-        region: com.forestry.counter.domain.calculation.pricing.GrecoRegion? = null
+        region: com.forestry.counter.domain.calculation.pricing.FrenchRegion? = null
     ): Pair<List<ClassSynthesis>, SynthesisTotals> {
         val tarifSel = params?.tarifSelection ?: loadTarifSelection()
         val perClass = mutableListOf<ClassSynthesis>()
@@ -737,7 +737,7 @@ class ForestryCalculator(
         diamClass: Int,
         prices: List<PriceEntry>,
         qualityCode: String? = null,
-        region: com.forestry.counter.domain.calculation.pricing.GrecoRegion? = null
+        region: com.forestry.counter.domain.calculation.pricing.FrenchRegion? = null
     ): Double? {
         // C-PRIX-PRO : Utilisation du moteur de calcul professionnel (8 coefficients).
         // Le moteur cherche le prix de référence dans PriceEntry (en résolvant les alias d'essence),

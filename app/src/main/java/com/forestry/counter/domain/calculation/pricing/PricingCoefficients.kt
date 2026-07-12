@@ -1,88 +1,63 @@
 package com.forestry.counter.domain.calculation.pricing
 
 /**
- * Coefficients régionaux par GRECO — écarts documentés vs moyenne nationale.
+ * Coefficients régionaux par RÉGION ADMINISTRATIVE — écarts vs moyenne nationale.
  *
- * Source : France Bois Forêt - Cartes écarts régionaux,
- * Fibois Occitanie, Fibois Grand Est, observatoires régionaux.
+ * Source : France Bois Forêt - Cartes écarts régionaux, observatoires Fibois régionaux.
+ * Le coefficient moyen par région vient de [FrenchRegion.priceCoefficient] ;
+ * des surcharges essence×région couvrent les écarts documentés les plus forts.
  *
- * Les écarts sont exprimés en coefficient multiplicateur (1.0 = moyenne nationale).
- * Ils varient par essence mais une valeur moyenne par GRECO est utilisée ici,
- * ajustable par l'utilisateur dans les Settings.
+ * ⚠️ Régions sans source de prix publique (FrenchRegion.hasPriceSource = false) :
+ * coefficient national (×1.0) assumé. Valeurs indicatives, ajustables dans les Settings.
  */
 object RegionalCoefficients {
 
     /**
-     * Coefficient régional moyen par GRECO.
-     * Basé sur les écarts documentés FBF/Fibois (2024-2025).
+     * Surcharges spécifiques par essence × région (prioritaires sur le coefficient moyen).
+     * Source : Étude Douglas FBF (écart >50% Est vs Occitanie), observatoires Fibois.
      */
-    val grecoCoefficients: Map<GrecoRegion, Double> = mapOf(
-        GrecoRegion.A to 0.95,  // Grand Ouest : feuillus moyens, moins de demande
-        GrecoRegion.B to 1.05,  // Centre Nord : chêne valorisé, proximité IDF
-        GrecoRegion.C to 1.10,  // Grand Est : résineux attractifs, filière dense
-        GrecoRegion.D to 1.12,  // Vosges : résineux premium, scieries nombreuses
-        GrecoRegion.E to 1.15,  // Jura : chêne premium, hêtre, douglas
-        GrecoRegion.F to 0.92,  // Sud-Ouest : pin maritime spécifique, douglas bas
-        GrecoRegion.G to 0.88,  // Massif Central : douglas inférieur à moyenne
-        GrecoRegion.H to 1.08,  // Alpes : résineux montagne, accès difficile
-        GrecoRegion.I to 0.90,  // Pyrénées : marché local, accès difficile
-        GrecoRegion.J to 1.05,  // Méditerranée : bois énergie premium, pin d'Alep
-        GrecoRegion.K to 0.85,  // Corse : faible valeur économique
-        GrecoRegion.L to 1.00   // Alluvions : moyenne nationale (azonal)
-    )
-
-    /**
-     * Coefficients spécifiques par essence × GRECO (prioritaire sur la moyenne).
-     * Source : Étude Douglas FBF 2019 (écart >50% Est vs Occitanie),
-     * Fibois Occitanie 2025, observatoires régionaux.
-     */
-    val essenceGrecoCoefficients: Map<Pair<String, GrecoRegion>, Double> = mapOf(
+    val essenceRegionCoefficients: Map<Pair<String, FrenchRegion>, Double> = mapOf(
         // Douglas : écart massif Est vs Occitanie/Massif Central
-        ("DOUGLAS_VERT" to GrecoRegion.C) to 1.30,   // Grand Est : demande forte
-        ("DOUGLAS_VERT" to GrecoRegion.D) to 1.35,   // Vosges : prix record
-        ("DOUGLAS_VERT" to GrecoRegion.E) to 1.25,   // Jura : bon marché
-        ("DOUGLAS_VERT" to GrecoRegion.G) to 0.70,   // Massif Central : prix bas
-        ("DOUGLAS_VERT" to GrecoRegion.I) to 0.65,   // Occitanie/Pyrénées : très bas
-        ("DOUGLAS_VERT" to GrecoRegion.F) to 0.75,   // Sud-Ouest : bas
+        ("DOUGLAS_VERT" to FrenchRegion.GES) to 1.30,   // Grand Est : demande forte, prix record Vosges
+        ("DOUGLAS_VERT" to FrenchRegion.BFC) to 1.25,   // Jura/Bourgogne : bon marché
+        ("DOUGLAS_VERT" to FrenchRegion.ARA) to 0.75,   // Massif Central (Auvergne) : prix bas
+        ("DOUGLAS_VERT" to FrenchRegion.OCC) to 0.70,   // Occitanie : très bas
+        ("DOUGLAS_VERT" to FrenchRegion.NAQ) to 0.80,   // Limousin/Sud-Ouest : bas
 
-        // Chêne : prime Bourgogne/BFC (Jura, E)
-        ("CH_SESSILE" to GrecoRegion.E) to 1.25,     // Jura/BFC : grain fin, réputation
-        ("CH_SESSILE" to GrecoRegion.B) to 1.15,     // Centre : demande industrielle
-        ("CH_SESSILE" to GrecoRegion.C) to 1.10,     // Grand Est : bon marché
-        ("CH_PEDONCULE" to GrecoRegion.E) to 1.20,
-        ("CH_PEDONCULE" to GrecoRegion.B) to 1.10,
+        // Chêne : prime Bourgogne-Franche-Comté et Grand Est
+        ("CH_SESSILE" to FrenchRegion.BFC) to 1.25,     // grain fin, réputation
+        ("CH_SESSILE" to FrenchRegion.GES) to 1.10,
+        ("CH_SESSILE" to FrenchRegion.CVL) to 1.15,     // Centre : demande industrielle
+        ("CH_PEDONCULE" to FrenchRegion.BFC) to 1.20,
+        ("CH_PEDONCULE" to FrenchRegion.CVL) to 1.10,
 
-        // Hêtre : Est et BFC dominent
-        ("HETRE_COMMUN" to GrecoRegion.C) to 1.15,
-        ("HETRE_COMMUN" to GrecoRegion.E) to 1.20,
-        ("HETRE_COMMUN" to GrecoRegion.D) to 1.10,
+        // Hêtre : Grand Est et BFC dominent
+        ("HETRE_COMMUN" to FrenchRegion.GES) to 1.15,
+        ("HETRE_COMMUN" to FrenchRegion.BFC) to 1.20,
 
-        // Pin maritime : spécifique Landes (F)
-        ("PIN_MARITIME" to GrecoRegion.F) to 1.15,   // Landes : filière intégrée
-
-        // Bois énergie : PACA et IDF plus chers
-        // (appliqué via seasonCoefficient pour BCh, mais aussi régional)
+        // Pin maritime : filière intégrée Landes (Nouvelle-Aquitaine)
+        ("PIN_MARITIME" to FrenchRegion.NAQ) to 1.15
     )
 
     /**
      * Index normalisé (code essence en MAJUSCULES) — évite les ratés silencieux
-     * quand l'appelant passe un alias minuscule ou avec espaces (cf. bug casse A4).
+     * quand l'appelant passe un alias minuscule ou avec espaces.
      */
-    private val normalizedEssenceGreco: Map<Pair<String, GrecoRegion>, Double> =
-        essenceGrecoCoefficients.entries.associate { (key, value) ->
+    private val normalizedEssenceRegion: Map<Pair<String, FrenchRegion>, Double> =
+        essenceRegionCoefficients.entries.associate { (key, value) ->
             (key.first.trim().uppercase() to key.second) to value
         }
 
     /**
-     * Retourne le coefficient régional pour une essence dans une GRECO.
-     * Priorité : coefficient spécifique essence×GRECO > coefficient GRECO moyen.
+     * Coefficient régional pour une essence dans une région.
+     * Priorité : surcharge spécifique essence×région > coefficient moyen de la région.
      * Insensible à la casse / aux espaces sur le code essence.
      */
-    fun coefficient(essenceCode: String, region: GrecoRegion): Double {
+    fun coefficient(essenceCode: String, region: FrenchRegion): Double {
         val key = essenceCode.trim().uppercase()
-        val specific = normalizedEssenceGreco[key to region]
+        val specific = normalizedEssenceRegion[key to region]
         if (specific != null) return specific
-        return grecoCoefficients[region] ?: 1.0
+        return region.priceCoefficient
     }
 }
 

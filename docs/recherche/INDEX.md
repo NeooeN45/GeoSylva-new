@@ -187,13 +187,319 @@ _(à compléter par les agents de la vague 2)_
      confondre lors d'une future intégration.
 
 ## 3. Climat (03_climat/)
-_(à compléter par les agents de la vague 3)_
+_(à compléter par les agents de la vague 3 — relance après bug de persistance)_
+
+- **`03_climat/01_metéo_france_api.md`** — Statut : brouillon (tests API réels réussis le 2026-07-01
+  sur l'API mobile `webservice.meteofrance.com` ; API officielle `public-api.meteofrance.fr` testée
+  en échec 401 sans token — inscription non effectuée, flow OAuth2 à valider manuellement).
+  3 points clés :
+  1. **Deux API distinctes** : l'API officielle Open Data (`public-api.meteofrance.fr`, OAuth2 Bearer
+     token obligatoire, gratuit depuis le 01/01/2024, quotas 60–100 req/min) et l'API « mobile » non
+     documentée (`webservice.meteofrance.com`, token statique embarqué dans l'app officielle
+     `__Wj7d...kj8__`, zéro inscription, 14 jours de prévisions humanisées par point GPS résolu en
+     commune INSEE) — à ne pas confondre ; l'officielle est seule sûre pour la production commerciale.
+  2. **Tests réels documentés** : sans token, l'officielle renvoie HTTP 401
+     (`{"code":"900902","message":"Missing Credentials"}`) sur `DPObs/liste-stations` et
+     `DPVigilance/v1/cartevigilance/encours` ; avec le token mobile, `forecast` (Lyon, HTTP 200,
+     14 jours daily + horaire, `insee`/`dept`/`sun`/`wind.gust`), `v3/warning/currentphenomenons`
+     (HTTP 200, vigilance tous départements, phénomènes 1–9 / couleurs 1–4) et `v2/observation`
+     (HTTP 200, GeoJSON Feature gridded au point GPS) fonctionnent — payloads extraits in extenso.
+  3. **Recommandation GeoSylva** : POC via API mobile (vigilance départementale + prévisions 7 j +
+     obs temps réel par point GPS parcelle, unique apport vs Open-Meteo déjà intégré = vigilance
+     officielle FR + Météo des forêts), puis migration production vers API officielle (DPVigilance,
+     Météo des forêts saisonnière juin–sept, DPObs par station) via proxy backend OAuth2 ; la Météo
+     des forêts (danger feux, 4 niveaux, J+1/J+2, départemental) est l'apport le plus spécifique au
+     forestier mais reste grossière (pas d'IFM maillé public).
+
+- **`03_climat/05_indices_bioclimatiques_forestiers.md`** — Statut : brouillon (formules sourcées
+  Persée/Wikipédia/Climessences/INRAE ; seuils par essence derrière compte Climessences, non extraits).
+  **3 points clés** :
+  1. GeoSylva calcule **déjà** l'indice de De Martonne (P/(T+10)) dans `ClimateContextService.kt`
+     (l. 112) et stocke une ETP Turc annuelle dans `NormalesClimatiques.kt` — mais l'ETP n'est
+     **pas exploitée** dans un bilan hydrique, et De Martonne est calculé sur 1 an ERA5 2023 (pas
+     sur normales 30 ans). `BioClimaticRiskDatabase.kt` est un catalogue qualitatif, pas des indices
+     calculés. Wacussel, Emberger Q2, bilan P−ETP, DHYa, BILJOU = **non implémentés**.
+  2. L'indice à implémenter en **priorité absolue** est le **DHYa de Climessences** (ONF/CNPF) :
+     bilan mensuel P−ETP avec tampon RUM, boucle 3 ans, ETP via **Hargreaves**
+     (`0,0023·(Tmoy+17,8)·(Tmax−Tmin)^0,5·Ra`). Standard professionnel français de fait pour le
+     choix d'essence sous changement climatique ; méthodologie publique et réimplémentable en
+     Kotlin offline. Lacune data : `NormalesClimatiques.kt` n'a que T/P annuels + JJA/DJF, pas les
+     12 mois — à étoffer (Météo-France normales 1991-2020 ou data.gouv.fr ETP Safran Hargreaves 8 km,
+     Licence Ouverte 2.0).
+  3. **Climessences n'expose aucune API ouverte** (test webfetch 2026-07-01 : site Drupal avec
+     login obligatoire, export CSV/GEOJSON par espèce derrière compte, pas de REST/JSON public) ;
+     BILJOU (INRAE) similaire (simulation à accès restreint, fiches publiques). Recommandation :
+     réimplémenter DHYa+Hargreaves en Kotlin natif, et extraire **manuellement** les seuils par
+     essence via un compte Climessences pour alimenter une table `EssenceBioclimThresholds`. Ne pas
+     crawler. BILJOU journalier écarté (trop gourmand en données pour mobile offline).
+
+- **`03_climat/02_drias_projections_climatiques.md`** — Statut : brouillon (sources officielles
+  Météo-France/DRIAS/INRAE/Gouvernement recoupées ; test d'accès réel au portail effectué le
+  2026-07-02 ; origine point par point des deltas embarqués dans `ProjectionClimatiqueSerData.kt`
+  non vérifiée — cf. limites).
+  3 points clés :
+  1. **DRIAS-2020** (référence actuelle) = 12 couples GCM/RCM Euro-Cordex (ALADIN63, RACMO22E…)
+     reprojétés/corrigés sur grille **SAFRAN 8 km**, pas de temps **journalier** 1950-2100,
+     scénarios **RCP 2.6/4.5/8.5** (CMIP5) — **PAS SSP** ; ~24 indicateurs (températures, jours
+     de gel/chaleur, précipitations, ETP, **bilan hydrique**) aux fréquences mensuelle/saisonnière/
+     annuelle. Approche alternative **TRACC** (+2/+2,7/+4 °C France à 2030/2050/2100), doctrine
+     officielle d'adaptation.
+  2. **Test d'accès réel** : consultation cartes/documentation **libre sans compte**, mais
+     **téléchargement = compte personnel requis** (formulaire web, gratuit) et **aucune API
+     REST/JSON publique** (fichiers NetCDF) → accès programmatique direct depuis l'APK Android
+     **impossible** ; stratégie viable = pré-traitement hors-ligne + embarquement d'un sous-ensemble
+     compact (déjà fait dans `ProjectionClimatiqueSerData.kt`).
+  3. **Écart critique identifié** : `ProjectionClimatiqueSerData.kt` étiquette ses scénarios
+     `SSP1-2.6/SSP2-4.5/SSP5-8.5` (AR6) et cite « DRIAS Météo-France », alors que DRIAS-2020 livre
+     du **RCP** (AR5) — les valeurs chiffrées des deltas ne sont pas sourcées point par point
+     `[À VÉRIFIER MANUELLEMENT]` ; recommandation : re-sourcer/re-étiqueter, ajouter une vue TRACC
+     dans `StationDiagnosticScreen.kt`, et créer un compte DRIAS pour remplacer les deltas en dur
+     par des valeurs traçables téléchargées.
+
+- **`03_climat/04_open_meteo_comparatif.md`** — Statut : brouillon (tests d'API réels réussis le
+  2026-07-02 sur Forecast + Archive ; licence commerciale et quota "fair use" à vérifier manuellement).
+  3 points clés :
+  1. Open-Meteo est **déjà intégré** dans `ClimateContextService.kt` (endpoint `archive-api.open-meteo.com`,
+     2 variables only : `temperature_2m_mean` + `precipitation_sum`, année 2023 figée, modèle "Best Match"
+     par défaut) — mais **n'exploite aucune variable forestièrement clé** (ET₀ FAO-56, soil moisture/temp,
+     vent/gel) qui sont pourtant disponibles gratuitement ; le calcul du mois par index `(i*12)/n` est
+     une approximation à corriger.
+  2. **Test réel d'API documenté** : Forecast (Paris, 7 j, 0.17 ms) + Archive hourly avec `models=era5`
+     (ET₀ horaire 0.01-0.60 mm/h, soil moisture 0.17 m³/m³, vent 15-21 km/h — toutes variables forestières
+     renseignées) ; ⚠ **découverte critique** : `et0_fao_evapotranspiration_sum` et `wind_speed_10m_max`
+     renvoient `null` en daily avec le modèle "Best Match" par défaut → il faut ajouter `&models=era5`
+     (ou `era5-land`) pour les débloquer.
+  3. **Comparatif Open-Meteo / Météo-France / ERA5** : Open-Meteo = proxy sans clé sur ERA5 (meilleur
+     compromis intégration mobile, déjà opérationnel) ; Météo-France = meilleure précision locale FR
+     (stations + AROME 1.3 km, clé requise, à intégrer en Priorité 1 pour temps réel/alertes) ;
+     ERA5 direct (Copernicus CDS) = source ultime mais inadapté à un appel mobile direct (grilles
+     mondiales) — aucun intérêt à court-circuiter Open-Meteo. Recommandation : étendre
+     `ClimateContextService` (modèle era5 explicite + ET₀/soil/vent + normale 30 ans au lieu de 2023 seule).
+
+- **`03_climat/03_copernicus_era5.md`** — Statut : brouillon (catalogue CDS consulté par
+  webfetch réel réussi, code source cdsapi examiné ; aucun téléchargement de données
+  effectué faute de compte/clé — vérification manuelle requise).
+  **3 points clés** :
+  1. **ERA5-Land** (0.1° ≈ **9 km**, horaire, **1950→présent**, ~50 variables de surface dont
+     humidité volumique du sol sur 4 couches 0-289 cm et `potential_evaporation`) est
+     préférable à ERA5 (0.25° ≈ 31 km) pour la climatologie communale française : une
+     commune moyenne (~15 km²) couvre ~1-2 pixels ERA5-Land vs ~0,2 pixel ERA5. Licence
+     CC-BY (ERA5 confirmé ; ERA5-Land à confirmer).
+  2. **Faisabilité Android : NON en appel direct.** Le seul client officiel est `cdsapi`
+     (Python) ; l'API REST HTTP existe sous le capot (PUT `/tasks/services/...`, polling
+     `/jobs/{id}`, download) mais est explicitement « non supportée » par ECMWF, asynchrone
+     (job + polling minutes→heures), renvoie des fichiers GRIB/NetCDF volumineux (grille
+     entière, pas de point unique), et exigerait d'embarquer la clé CDS dans l'APK (faille
+     de sécurité). **Un backend intermédiaire Python/FastAPI est nécessaire** : il
+     télécharge ERA5-Land via cdsapi, pré-calcule la climatologie par commune (normales 30
+     ans, ETP, bilan hydrique), et sert une API JSON légère à l'app.
+  3. **Recommandation séquencée** : court terme, exploiter **Open-Meteo** (déjà intégré,
+     dérivé d'ERA5, API REST sans clé) pour la série historique par point GPS ; moyen terme,
+     backend ERA5-Land pour les variables sol détaillées et la série 1950→ ; long terme,
+     croiser avec **DRIAS** (projections 2050/2100) pour l'aptitude future des essences.
 
 ## 4. Sol / RHU (04_sol_rhu/)
 _(à compléter par les agents de la vague 4)_
 
+- **`04_sol_rhu/01_inrae_gissol_bdgsf.md`** — Statut : brouillon (tests d'accès WMS/WFS réels
+  réussis sur geodata.inrae.fr/geoserver ; granularité 1:1M = indication régionale, pas parcellaire).
+  **3 points clés** :
+  1. **BDGSF exposée en WFS sans clé** sur `geodata.inrae.fr/geoserver/inra_bdgsf/wfs` — couche
+     `bdgsf_classe_ru` (RU en classes) et `geometrie_bdgsf` (type de sol WRB) requêtables par BBOX
+     WGS84 (Test 3.5-B validé) ; intégration directe possible côté Kotlin (OkHttp + GeoJSON).
+  2. **Profondeur non exposée en WFS** (téléchargement shapefile DOI 10.15454/7ZDND6 uniquement) →
+     nécessite un index local (Room/GeoPackage) dans l'app ; pH et matière organique non disponibles
+     par point via GisSol (BDAT = synthèses régionales agrégées seulement).
+  3. **Piège CRS** : natif Lambert II étendu (EPSG:27582) — utiliser exclusivement le paramètre
+     `BBOX=...,EPSG:4326` qui délègue la reprojection à GeoServer ; éviter les filtres CQL spatiaux.
+     Préférer le téléchargement bulk + index local pour un usage intensif (robustesse offline).
+
+- **`04_sol_rhu/03_methode_calcul_rhu.md`** — Statut : brouillon (sources officielles/scientifiques
+  INRAE/CNPF/Climessences recoupées ; table Biljou extraite du HTML et vérifiée arithmétiquement ;
+  mapping TextureSol→coef U et bornes de classes RUM à valider manuellement).
+  **3 points clés** :
+  1. La formule opérationnelle forestière est `RUM = Σ (épaisseur_cm × coef_U_texture × (1 −
+     pierrosité%))` — la table de référence des coef U (mm/cm par classe de texture du triangle de
+     Jamagne) est fournie par Biljou© INRAE Nancy (S=0,70 ; Lm=1,75 ; LA=1,95 ; A=1,75 ; AL=1,80 ;
+     AS=1,70…), citée par la plaquette CNPF 2024 et cohérente avec GIS Sol/Arvalis.
+  2. **Lacune code identifiée** : `EmbeddedSoilService.kt` interpole un RUM codé en dur par IDW
+     (~110 points) mais **aucun calcul** n'existe à partir des saisies terrain (texture+profondeur+
+     pierrosité) pourtant présentes dans `StationObservation.kt` — un `ComputeRumUseCase` est
+     proposé (pseudocode Kotlin + mapping `TextureSol`→coef U) pour combler ce manque en priorité
+     haute.
+  3. Le RUM est **paramètre d'entrée obligatoire** du DHYa (Climessences, modèle IKS) : Climessences
+     v2 utilise la carte Dobarco et al. 2021 (90 m, FPT Al Majou 2008, base DoneSol, RUM moyen
+     France = 104 mm) comme tampon du bilan hydrique P−ETP mensuel sur 3 ans ; GeoSylva a les
+     normales climatiques mais manque l'ETP mensuelle et la boucle pour reproduire le DHYa (à
+     différer jusqu'à la vague climat, dossier `03_climat/` encore vide).
+
+- **`04_sol_rhu/04_typologie_stations_cnpf.md`** — Statut : brouillon (sources officielles CNPF/IGN +
+  scientifiques HAL/INRAE recoupées ; PDF IGN `TypoWeb_2008.pdf`/`L_IF_no04_typologie.pdf` non extraits
+  en texte — liste exhaustive des catalogues par région à confirmer manuellement).
+  **3 points clés** :
+  1. **Emboîtement confirmé** : GRECO (12 dont 1 d'alluvions) > SER (91 dont 5 azonales) > région
+     forestière (309 regroupées) > **station** (étendue homogène climat/relief/sol/flore) > **type de
+     station** (unité conceptuelle). GRECO/SER déjà couverts par `GrecoDetector.kt` ; **station et type
+     de station sont les niveaux manquants** dans GeoSylva. Méthode standard = phytoécologie (végétation
+     indicatrice + sondage tarière + humus), **jamais sans observations pédologiques**.
+  2. **Catalogues/guides CNPF en accès libre (PDF)** mais **sans base structurée ni API**, couverture
+     **inégale et incomplète** (2-3 ans de travail par document, certaines régions sans guide récent) ;
+     **écogrammes** (Flore forestière française, Rameau et al.) = diagramme **niveau hydrique × niveau
+     trophique** avec 2 aires par essence (verte = production rapide, jaune = amplitude totale), méthode
+     **graphique comparative** (pas de seuil chiffré universel) ; ouvrage **payant** (droits IDF à
+     respecter pour extraction).
+  3. **Faisabilité automatisation** : **faisable court terme** comme **assistant** (pré-diagnostic
+     géolocalisé GRECO/SER + géologie BRGM WMS + capteurs altitude/exposition → « station probable à
+     confirmer », puis fiche de relevés guidée + exécution de la clé régionale numérisée + superposition
+     écogramme essence), mais **impossible sans saisie terrain humaine** (reconnaissance flore herbacée
+     non fiable par photo, sondage tarière non automatisable). **Aucune pré-cartographie nationale
+     ouverte** — approches prédictives régionales uniquement (Normandie WMS, Gégout massif vosgien au
+     quart d'hectare) ; recommandé : 2-3 régions pilotes + table `EssenceEcogramAreas` extraite
+     manuellement, dans `StationDiagnosticScreen.kt`.
+
+- **`04_sol_rhu/05_geologie_brgm_roche_mere.md`** — Statut : brouillon (tests d'accès WMS/WFS BRGM
+  réels et vérifiés 2026-07-03 ; mapping roche mère → sol → essences qualitatif, à affiner par CSR).
+  **3 points clés** :
+  1. Le BRGM diffuse la carte géologique de France sous **Licence Ouverte Etalab 2.0** (gratuit,
+     sans clé, citation source obligatoire) via WMS/WFS sur `geoservices.brgm.fr/geologie` ; les
+     couches WMS (`SCAN_H_GEOL50`, `GEOL50_HARM`) sont **non queryables** (GetFeatureInfo rejeté),
+     mais le **WFS `LITHO_1M_SIMPLIFIEE`** est queryable — test réel réussi sur 2 points forestiers
+     (Fontainebleau → « Calcaires, marnes et gypse » ; Morvan → « Basaltes et rhyolites »).
+  2. **Précision 1/1M insuffisante** pour un diagnostic stationnel fin (le grès de Fontainebleau
+     n'apparaît pas, noyé dans la lithologie régionale) ; pour GeoSylva, approche à 2 niveaux :
+     (a) court terme, WFS live `LITHO_1M_SIMPLIFIEE` comme indication régionale de roche mère ;
+     (b) moyen terme, Bd Charm-50 (1/50k vectorielle, téléchargement gratuit) en GeoPackage embarqué
+     pour capter les formations locales.
+  3. La roche mère (granite→sol acide filtrant→chêne sessile ; marne/argile→sol frais profond→chêne
+     pédonculé ; calcaire→chlorose→éviter châtaignier/douglas) est une **couche explicative**
+     complémentaire à BDGSF/SoilGrids (qui donnent le sol mesuré/prédit, couche décisionnelle) — à
+     intégrer comme interprétation dans le diagnostic stationnel, pas comme substitut du sol.
+
+- **`04_sol_rhu/02_alternatives_soilgrids_esdac_hwsd.md`** — Statut : brouillon (test d'API réel
+  SoilGrids effectué mais valeurs `null` — service ISRIC partiellement dégradé à retester
+  manuellement ; licences et conventions pF à valider).
+  **3 points clés** :
+  1. **Comparatif résolution** : SoilGrids 2.0 (ISRIC) = 250 m raster continu (pH, texture %,
+     densité apparente, CEC, teneur en eau à 10/33/1500 kPa), CC-BY 4.0, API REST sans clé
+     (`rest.isric.org/soilgrids/v2.0/properties/query`) ; ESDB ESDAC = 1 km classes (AWC_TOP/SUB),
+     accès sur inscription sans API ; HWSD v2.0 (FAO/IIASA) = ~1 km, **CC BY-NC-SA 4.0
+     (NonCommercial — incompatible app commerciale)** ; BDGSF INRAE = 1/1M vectoriel, RU en
+     classes, licence ouverte, source primaire FR validée par expertise nationale.
+  2. **Test API réel (2026-07-02)** : l'endpoint REST SoilGrids répond 200 OK avec JSON GeoJSON
+     structuré (6 profondeurs 0-200 cm, Q0.05/Q0.5/Q0.95/mean) **sans clé**, mais renvoie `null`
+     sur Paris (48.85N/2.35E) et Fontainebleau (48.4N/2.7E) — `query_time_s` 0.7–36 s (serveur
+     actif). La doc ISRIC évoque un service en cours de restauration. `awc` n'est pas une
+     propriété de base (HTTP 500) — produit dérivé (wv0033−wv1500) via WCS/GEE uniquement.
+  3. **Recommandation combinaison** : **BDGSF en source primaire FR** (RU/AWC + profondeur en
+     classes, référence pédologique française) **+ SoilGrids 250m en complément** (pH, texture %,
+     densité, CEC continus, CC-BY 4.0 commercial OK). Exclure HWSD (licence NC) et ESDB
+     (redondant avec BDGSF pour la France). Calcul AWC continu = `wv0033 − wv1500` SoilGrids, à
+     calibrer contre la classe BDGSF (convention pF 33 kPa vs 10 kPa à valider manuellement).
+
 ## 5. APIs externes (05_apis_externes/)
 _(à compléter par les agents de la vague 5)_
+
+- **`05_apis_externes/01_apis_ign_carto_nature_urbanisme.md`** — Statut : vérifié (tests API réels
+  effectués le 2026-07-02, codes HTTP + extraits de réponse documentés).
+  **3 points clés** :
+  1. Les 4 APIs IGN (Carto Nature, Carto Urbanisme, BD Ortho, Corine Land Cover) sont accessibles
+     **SANS clé API** via les endpoints publics `data.geopf.fr` (WMTS/WMS/WFS) et `apicarto.ign.fr`
+     (REST) — Licence Ouverte 2.0, usage commercial autorisé. BD Ortho est **déjà intégrée** dans
+     GeoSylva (`MapScreen.kt:932`, `geopfLayer()`), les 3 autres sont à intégrer.
+  2. **Tests réels confirmés** : WFS Natura 2000 (`patrinat_sic:sic`) retourne « Massif de
+     Fontainebleau » sur un BBOX test (HTTP 200, 494 Ko JSON) ; API Carto REST Urbanisme
+     (`/api/gpu/zone-urba?geom=...`) retourne `typezone:"N"` (zone naturelle) sur un point
+     Fontainebleau (HTTP 200, 310 Ko JSON) ; WMS CLC `LANDCOVER.CLC18_FR` exige `STYLES=` vide
+     (piège : `STYLE=normal` renvoie HTTP 400) ; WFS CLC retourne `code_18:"523"` et `"211"`.
+  3. **Quotas Géoplateforme** (rate limiting par IP depuis 25/02/2025) : WMTS **illimité** (idéal
+     pour `OfflineTileManager`), WMS-R 40 req/s, WFS 30 req/s, HTTP 429 + blocage 5 s au-delà.
+     Recommandation : intégrer en P1 Carto Urbanisme REST (effort faible, alerte PLU sur parcelle)
+     et Carto Nature WFS (alerte Natura 2000/ZNIEFF), en P2 Corine Land Cover (overlay contexte).
+
+- **`05_apis_externes/04_apis_biodiversite_inpn_gbif.md`** — Statut : vérifié (tests d'API réels
+  effectués le 2026-07-02 ; endpoint MNHN confirmé indisponible, miroir carmencarto + GBIF testés
+  opérationnels).
+  **3 points clés** :
+  1. L'endpoint INPN WFS officiel `inpn-inspire.mnhn.fr/geoservices/ows` retourne **HTTP 403**
+     suite à l'attaque cybernétique sur le MNHN (durée d'indisponibilité indéterminée) — les
+     couches `DHFF_*_ESPECES` / `DHFF_*_HABITATS` (répartition espèces/habitats Natura 2000) ne
+     sont donc **pas accessibles**. Le miroir `ws.carmencarto.fr/WFS/119/fxx_inpn` est
+     **opérationnel** et expose les zonages d'espaces protégés (ZNIEFF I/II, ZSC/SIC, ZPS, RNN,
+     réserves biologiques) en Lambert 93 — filtre BBOX WGS84 testé et fonctionnel (cas d'usage
+     parcelle validé), sans clé API, Licence Ouverte Etalab 2.0.
+  2. GBIF API (`api.gbif.org/v1`) testée opérationnelle sans clé : 324 591 occurrences de
+     *Quercus robur* en FR, filtre `geometry=WKT POLYGON` fonctionnel (934 150 occurrences sur un
+     rectangle test). ⚠️ **Critique** : les coordonnées des taxons menacés sont **volontairement
+     floutées** (Lynx lynx → `coordinateUncertaintyInMeters: 26935m`, « to protect threatened
+     taxon ») → GBIF est utilisable pour un **contexte régional** mais **pas** pour localiser une
+     espèce protégée à l'échelle de la parcelle (risque juridique/éthique).
+  3. Recommandation GeoSylva : intégrer en **P1** un client WFS sur le miroir carmencarto pour
+     lever une alerte « zone réglementée » (ZNIEFF/Natura 2000/RNN) sur la parcelle via BBOX +
+     intersection JTS côté client, avec cache GeoPackage offline ; intégrer GBIF en **P2** pour
+     le contexte naturaliste (rayon 10 km) en croisant avec TAXREF/BDC (ZIP PatriNat) pour le
+     statut de protection ; surveiller en **P3** la restauration de l'endpoint MNHN pour accéder
+     aux couches habitats/espèces Natura 2000 manquantes.
+
+- **`05_apis_externes/05_apis_foncier_hydrographie.md`** — Statut : vérifié (tests API réels
+  effectués le 2026-07-02 via webfetch ; corrections de code à implémenter).
+  3 points clés :
+  1. **Bug DVF critique confirmé** : l'endpoint utilisé dans `StationDataAggregator.kt`
+     (`apidf-preprod.cerema.fr/dvf_opendata/geomutations/?lat=...&lon=...&rayon=1000&nature_culture_code=B`)
+     renvoie **HTTP 403** — les paramètres `lat/lon/rayon/nature_culture_code` ne sont pas
+     supportés. L'API réelle fonctionne par `code_insee` + `codtypbien` (testé 200 OK, 112
+     mutations sur La Bourgonce 88068). De plus le parsing lit `valeur_fonciere`/`surface_terrain`
+     alors que l'API renvoie `valeurfonc`/`sterr` → double échec silencieux. À corriger en
+     priorité HAUTE.
+  2. **Cadastre reverse (IGN) fonctionnel mais incomplet** : `data.geopf.fr/geocodage/reverse?...&index=parcel`
+     répond 200 OK et renvoie section/numéro/city, mais **pas les champs `contenance` ni `nature`**
+     lus par `LocalisationResolverService.kt` → ces champs seront toujours `null` en production ;
+    il faut compléter par un WFS GetFeature sur `CADASTRALPARCELS.PARCELLAIRE_EXPRESS`.
+  3. **BD Topage® (Sandre) WFS opérationnel** : `services.sandre.eaufrance.fr/geo/topage`
+     GetCapabilities + GetFeature `sa:CoursEau` testés 200 OK (GeoJSON avec cours d'eau métriques,
+    Licence Ouverte 2.0, sans clé) — à intégrer pour la détection ripisylves (tronçons
+    hydrographiques) et contraintes hydriques (bassins versants) sur parcelle.
+
+- **`05_apis_externes/02_synthese_apis_meteo_climat.md`** — Statut : brouillon
+  (synthèse opérationnelle consolidant les 5 fiches `03_climat/01` à `05` ; pas de
+  nouveau test API — s'appuie sur les tests documentés en vague 3).
+  **3 points clés** :
+  1. **Tableau comparatif unique** : seul appel Android direct sans clé = Open-Meteo
+     (Archive/Forecast/Climate, déjà intégré) ; Météo-France officielle = via proxy
+     backend OAuth2 (token non embarquable) ; ERA5/ERA5-Land (CDS) et DRIAS-2020 =
+     backend obligatoire (Python-only/async/GRIB/NetCDF, clé CDS = faille de sécurité).
+     Climessences/BILJOU = aucune API (extraction manuelle seuils DHYa).
+  2. **Architecture recommandée** : app offline-first (Open-Meteo `models=era5` +
+     données embarquées) en court terme ; backend Python/FastAPI moyen terme pour
+     Météo-France (vigilance + Météo des forêts, apport unique), ERA5-Land (normales
+     30 ans + humidité sol 4 couches) et DRIAS (deltas par SER traçables). Ordre :
+     P0 étendre Open-Meteo → P1 Météo-France + DHYa Climessences Kotlin natif →
+     P2 projections re-sourcées + backend ERA5-Land/DRIAS → P3 seuils essence manuels.
+  3. **Variables minimales diagnostic stationnel** : Tmoy/Tmax/Tmin/P mensuelles
+     (12 mois, Open-Meteo `models=era5`) + ET₀ (Hargreaves calculé côté app) + RUM
+     (de `04_sol_rhu/`) pour alimenter DHYa (P1 absolue), De Martonne (à passer de
+     2023 à normale 30 ans) et bilan P−ETP. Lacune bloquante : `NormalesClimatiques.kt`
+     n'a que T/P annuels + JJA/DJF (pas les 12 mois) — à étoffer en P1.
+
+- **`05_apis_externes/03_synthese_apis_sol_pedologie.md`** — Statut : brouillon (synthèse
+  opérationnelle consolidant les 5 fichiers de `04_sol_rhu/`, pas de nouveau test d'API ;
+  retest SoilGrids à faire manuellement).
+  **3 points clés** :
+  1. **Tableau comparatif unique** des APIs sol/géologie testées (BDGSF, SoilGrids, ESDAC,
+     HWSD, BRGM) : seules **BDGSF (RU + WRB)** et **BRGM Lithologie 1/1M** sont intégrables
+     en live sur Android sans clé (WFS testés OK, Licence Etalab 2.0) ; **SoilGrids**
+     (CC-BY 4.0) est le complément pH/texture 250m mais a renvoyé `null` sur points FR le
+     2026-07-02 (à retester) ; **HWSD exclu** (licence NonCommercial) et **ESDB exclu pour
+     la France** (redondant avec BDGSF, pas d'API).
+  2. **Schéma de chaîne de diagnostic stationnel** : point GPS → BRGM (roche mère) → BDGSF
+     (RU/type sol WRB) → SoilGrids (pH/texture complément) → typologie station CNPF
+     (écogramme NH×NT) → aptitude essence (aires verte/jaune). Hiérarchie de confiance :
+     saisie terrain > BDGSF > SoilGrids > BRGM 1/1M ; tout pré-diagnostic est « à confirmer
+     par relevé terrain ».
+  3. **Variables sol minimales** : RU (BDGSF) + type WRB (BDGSF) + pH + texture % + densité
+     (SoilGrids) + roche mère (BRGM) suffisent pour un pré-diagnostic sans saisie terrain ;
+     profondeur/pierrosité/hydromorphie/calcaire/flore enrichissent mais exigent une saisie
+     terrain (tarière + flore) — `ComputeRumUseCase` (coef U Biljou × profondeur effective
+     × terre fine) surcharge la valeur IDW de `EmbeddedSoilService`.
 
 ## 6. Essences (06_essences/)
 _(à compléter par les agents des vagues 6-8)_

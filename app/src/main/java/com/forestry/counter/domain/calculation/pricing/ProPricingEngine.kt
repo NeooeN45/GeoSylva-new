@@ -13,7 +13,7 @@ import com.forestry.counter.domain.calculation.quality.WoodQualityGrade
  * Prix final = PrixRéférence(essence, produit, diam, région)
  *           × CoefficientQualité(essence, grade A/B/C/D)        [NF EN 1316/1927]
  *           × (1 - ΣDépréciationDéfauts)                          [NF EN 1310]
- *           × CoefficientRégional(GRECO)                          [écarts FBF]
+ *           × CoefficientRégional(région administrative)          [écarts FBF]
  *           × CoefficientAccessibilité(pente, distance)           [CNPF]
  *           × CoefficientSaison(mois)                             [CIBE]
  *           × CoefficientCertification(PEFC/FSC)                  [+5-15%]
@@ -100,10 +100,11 @@ object ProPricingEngine {
             "${context.defects.size} défaut(s) — plafonné à ${"%.0f".format(WoodDefect.MAX_TOTAL_DEPRECIATION * 100)}%"
         }
 
-        // 4. Coefficient régional (GRECO)
+        // 4. Coefficient régional (région administrative)
         val regionalCoef = context.region?.let { RegionalCoefficients.coefficient(context.essenceCode, it) } ?: 1.0
         val regionalSource = context.region?.let {
-            "GRECO ${it.code} (${it.labelFr}) — FBF/Cartes écarts régionaux"
+            val src = if (it.hasPriceSource) it.source else "sans source publique — coefficient national assumé"
+            "${it.labelFr} — $src"
         } ?: "Aucune région spécifiée (×1.0)"
 
         // 5. Coefficient accessibilité
@@ -179,7 +180,7 @@ object ProPricingEngine {
         diamCm: Int,
         qualityGrade: String? = null,
         prices: List<PriceEntry> = emptyList(),
-        region: GrecoRegion? = null,
+        region: FrenchRegion? = null,
         position: SalePosition = SalePosition.SUR_PIED
     ): Double {
         val context = PricingContext(
@@ -207,7 +208,7 @@ object ProPricingEngine {
      * est appliqué si `region` est fourni (sinon ×1.0).
      *
      * @param essenceCandidates liste de codes d'essence candidats (alias inclus)
-     * @param region GRECO de la parcelle (null = pas d'ajustement régional)
+     * @param region région administrative de la parcelle (null = pas d'ajustement régional)
      */
     fun calculateFromEntryOnly(
         essenceCode: String,
@@ -217,7 +218,7 @@ object ProPricingEngine {
         prices: List<PriceEntry> = emptyList(),
         position: SalePosition = SalePosition.SUR_PIED,
         essenceCandidates: List<String> = listOf(essenceCode),
-        region: GrecoRegion? = null
+        region: FrenchRegion? = null
     ): Double? {
         val basePrice = findBasePrice(essenceCandidates, product, diamCm, qualityGrade, prices) ?: return null
         val context = PricingContext(

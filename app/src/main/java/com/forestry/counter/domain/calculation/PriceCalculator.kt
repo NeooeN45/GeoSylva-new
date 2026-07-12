@@ -174,7 +174,7 @@ object PriceCalculator {
      * Version enrichie de [buildBreakdown] qui génère aussi le rapport de calcul professionnel
      * (breakdown transparent des 8 coefficients) pour chaque produit.
      *
-     * @param greco région écologique détectée automatiquement (null = moyenne nationale)
+     * @param region région administrative détectée automatiquement (null = moyenne nationale)
      * @param essenceCandidates codes d'essence candidats (alias inclus)
      */
     fun buildBreakdownWithReport(
@@ -183,7 +183,7 @@ object PriceCalculator {
         volumeByProduct: Map<String, Double>,
         diamCm: Int,
         quality: String? = null,
-        greco: com.forestry.counter.domain.calculation.pricing.GrecoRegion? = null,
+        region: com.forestry.counter.domain.calculation.pricing.FrenchRegion? = null,
         essenceCandidates: List<String> = listOf(essenceCode)
     ): List<ProductBreakdownRow> {
         return volumeByProduct.map { (product, volume) ->
@@ -193,7 +193,7 @@ object PriceCalculator {
                 diamCm = diamCm,
                 qualityGrade = quality,
                 prices = prices,
-                region = greco,
+                region = region,
                 position = com.forestry.counter.domain.calculation.pricing.SalePosition.SUR_PIED
             )
             val result = com.forestry.counter.domain.calculation.pricing.ProPricingEngine.calculate(context)

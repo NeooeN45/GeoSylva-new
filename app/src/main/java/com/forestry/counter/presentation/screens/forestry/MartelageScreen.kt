@@ -108,8 +108,7 @@ import com.forestry.counter.presentation.utils.ColorUtils
 import com.forestry.counter.domain.calculation.PriceCalculator
 import com.forestry.counter.domain.calculation.ProductBreakdownRow
 import com.forestry.counter.domain.calculation.EssenceAliases
-import com.forestry.counter.domain.calculation.pricing.GrecoRegion
-import com.forestry.counter.domain.geo.GrecoDetector
+import com.forestry.counter.domain.calculation.pricing.FrenchRegion
 import kotlinx.coroutines.launch
 import com.forestry.counter.domain.model.ClimateZone
 import com.forestry.counter.domain.usecase.fertility.FertilityClassifier
@@ -624,12 +623,12 @@ fun MartelageScreen(
         gHaAvant
     ) {
         value = if (surfaceM2 != null && surfaceM2 > 0.0) {
-            // GRECO déduite du code commune de la parcelle → le coefficient régional
-            // est appliqué dans le revenu AUTORITAIRE (et plus seulement à l'affichage),
+            // Région administrative déduite du code commune de la parcelle → le coefficient
+            // régional est appliqué dans le revenu AUTORITAIRE (et plus seulement à l'affichage),
             // ce qui supprime la divergence avec le breakdown produit.
-            val greco = parcellesInScope
+            val region = parcellesInScope
                 .firstNotNullOfOrNull { it.codeInseeCommune }
-                ?.let { GrecoDetector.fromCodeCommune(it) }
+                ?.let { FrenchRegion.fromCodeCommune(it) }
             computeMartelageStats(
                 tigesInScope = tigesInScope,
                 surfaceM2 = surfaceM2,
@@ -641,7 +640,7 @@ fun MartelageScreen(
                 forestryCalculator = forestryCalculator,
                 nHaAvant = nHaAvant,
                 gHaAvant = gHaAvant,
-                region = greco
+                region = region
             )
         } else null
     }
@@ -1477,10 +1476,10 @@ fun MartelageScreen(
                             // Ventilation produits par essence
                             LaunchedEffect(s.perEssence) {
                                 val prices = forestryCalculator.loadPriceEntries()
-                                // Déduction automatique de la GRECO à partir du code commune de la parcelle
-                                val greco: GrecoRegion? = parcellesInScope
+                                // Déduction déterministe de la région administrative (commune → département → région)
+                                val region: FrenchRegion? = parcellesInScope
                                     .firstNotNullOfOrNull { it.codeInseeCommune }
-                                    ?.let { GrecoDetector.fromCodeCommune(it) }
+                                    ?.let { FrenchRegion.fromCodeCommune(it) }
                                 val result = mutableMapOf<String, List<ProductBreakdownRow>>()
                                 s.perEssence.forEach { ess ->
                                     if (ess.vTotal <= 0.0) return@forEach
@@ -1499,7 +1498,7 @@ fun MartelageScreen(
                                     val baseBreakdown = PriceCalculator.buildBreakdownWithReport(
                                         prices = prices, essenceCode = ess.essenceCode,
                                         volumeByProduct = products, diamCm = diam, quality = q,
-                                        greco = greco, essenceCandidates = candidates
+                                        region = region, essenceCandidates = candidates
                                     )
                                     // Align product breakdown total with authoritative synthesis revenue
                                     val synRevenue = ess.revenueTotal

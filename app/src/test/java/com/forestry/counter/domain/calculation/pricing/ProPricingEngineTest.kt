@@ -94,7 +94,7 @@ class ProPricingEngineTest {
             PricingContext("DOUGLAS_VERT", "BO", diamCm = 40, prices = prices, region = null)
         ).finalPricePerM3
         val grandEst = ProPricingEngine.calculate(
-            PricingContext("DOUGLAS_VERT", "BO", diamCm = 40, prices = prices, region = GrecoRegion.C)
+            PricingContext("DOUGLAS_VERT", "BO", diamCm = 40, prices = prices, region = FrenchRegion.GES)
         ).finalPricePerM3
         // DOUGLAS_VERT × GRECO C = 1.30 (spécifique). Seule la région change → ratio = 1.30.
         assertEquals(1.30, grandEst / sansRegion, 1e-9)
@@ -106,7 +106,7 @@ class ProPricingEngineTest {
             PricingContext("douglas_vert", "BO", diamCm = 40, prices = prices, region = null)
         ).finalPricePerM3
         val grandEst = ProPricingEngine.calculate(
-            PricingContext("douglas_vert", "BO", diamCm = 40, prices = prices, region = GrecoRegion.C)
+            PricingContext("douglas_vert", "BO", diamCm = 40, prices = prices, region = FrenchRegion.GES)
         ).finalPricePerM3
         // Avant correctif : 1.10 (moyenne GRECO) au lieu de 1.30 (spécifique) car la casse ratait la clé.
         assertEquals(1.30, grandEst / sansRegion, 1e-9)
@@ -175,13 +175,13 @@ class ProPricingEngineTest {
     fun `les deux chemins de calcul donnent le meme prix (regression divergence)`() {
         val ctx = PricingContext(
             essenceCode = "DOUGLAS_VERT", product = "BO", diamCm = 40, qualityGrade = "B",
-            prices = prices, region = GrecoRegion.C, position = SalePosition.BORD_ROUTE
+            prices = prices, region = FrenchRegion.GES, position = SalePosition.BORD_ROUTE
         )
         val viaCalculate = ProPricingEngine.calculate(ctx).finalPricePerM3
         val viaEntryOnly = ProPricingEngine.calculateFromEntryOnly(
             essenceCode = "DOUGLAS_VERT", product = "BO", diamCm = 40, qualityGrade = "B",
             prices = prices, position = SalePosition.BORD_ROUTE,
-            essenceCandidates = listOf("DOUGLAS_VERT"), region = GrecoRegion.C
+            essenceCandidates = listOf("DOUGLAS_VERT"), region = FrenchRegion.GES
         )
         assertNotNull(viaEntryOnly)
         // Doivent être strictement égaux : même source de vérité (buildResult).
@@ -192,7 +192,7 @@ class ProPricingEngineTest {
     fun `le coefficient total est le produit de tous les coefficients`() {
         val ctx = PricingContext(
             "DOUGLAS_VERT", "BO", diamCm = 40, qualityGrade = "B",
-            prices = prices, region = GrecoRegion.C, position = SalePosition.USINE
+            prices = prices, region = FrenchRegion.GES, position = SalePosition.USINE
         )
         val r = ProPricingEngine.calculate(ctx)
         val b = r.breakdown

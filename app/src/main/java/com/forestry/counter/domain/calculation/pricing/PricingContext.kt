@@ -12,7 +12,7 @@ import com.forestry.counter.domain.calculation.PriceEntry
  * @param product Code produit (BO, BI, BCh, PATE)
  * @param diamCm Diamètre à 1,30 m en cm
  * @param qualityGrade Grade qualité (A, B, C, D) — NF EN 1316-1 / NF EN 1927
- * @param region GRECO de la parcelle (A-L) — pour coefficient régional
+ * @param region Région administrative de la parcelle — pour coefficient régional
  * @param position Position de vente (sur pied, bord de route, usine)
  * @param accessibility Niveau d'accessibilité de la parcelle
  * @param season Saison de vente/exploitation
@@ -27,7 +27,7 @@ data class PricingContext(
     val product: String,
     val diamCm: Int,
     val qualityGrade: String? = null,
-    val region: GrecoRegion? = null,
+    val region: FrenchRegion? = null,
     val position: SalePosition = SalePosition.SUR_PIED,
     val accessibility: Accessibility = Accessibility.FACILE,
     val season: SaleSeason = SaleSeason.NEUTRE,
