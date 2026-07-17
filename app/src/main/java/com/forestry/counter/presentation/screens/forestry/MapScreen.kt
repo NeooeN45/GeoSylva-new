@@ -988,54 +988,15 @@ fun MapScreen(
                 }
             }
 
-            // ── Overlay : couverture GPS (compact, en bas à gauche) ──
-            AnimatedVisibility(
-                visible = total > 0 && !showLayerPicker,
-                enter = fadeIn(tween(200)),
-                exit = fadeOut(tween(150)),
+            // ── Overlay : couverture GPS ──
+            MapGpsCoverageOverlay(
+                total = total,
+                withGps = withGps,
+                showLayerPicker = showLayerPicker,
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(8.dp)
-            ) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(10.dp).widthIn(max = 160.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.GpsFixed,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                "$withGps / $total",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                        val progressVal = if (total > 0) withGps.toFloat() / total.toFloat() else 0f
-                        LinearProgressIndicator(
-                            progress = { progressVal },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(3.dp)
-                                .clip(RoundedCornerShape(2.dp)),
-                            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
-                        )
-                    }
-                }
-            }
+            )
 
             // ── Légende par essence ──
             MapLegendPanel(
@@ -1052,68 +1013,24 @@ fun MapScreen(
                     .padding(start = 8.dp, bottom = 88.dp)
             )
 
-            // ── Avertissement GPS mauvais (discret) ──
-            val poorGpsTiges = remember(geoTiges) {
-                geoTiges.count { (t, _, _) -> (t.precisionM ?: 0.0) > 20.0 }
-            }
-            AnimatedVisibility(
-                visible = poorGpsTiges > 0 && !dismissedGpsBanner,
-                enter = fadeIn(tween(400)),
-                exit = fadeOut(tween(250)),
+            // ── Avertissement GPS mauvais ──
+            MapGpsWarningBanner(
+                geoTiges = geoTiges,
+                dismissed = dismissedGpsBanner,
+                onDismiss = { dismissedGpsBanner = true },
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(start = 8.dp, top = 6.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = GpsModere.copy(alpha = 0.82f),
-                    modifier = Modifier.clickable { dismissedGpsBanner = true }
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.GpsFixed,
-                            contentDescription = stringResource(R.string.cd_gps_locate),
-                            tint = Color.White,
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Text(
-                            stringResource(R.string.map_gps_poor_warning, poorGpsTiges),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-            }
+            )
 
             // ── Coordonnées au tap ──
-            AnimatedVisibility(
-                visible = showCoords && coordsText.isNotEmpty(),
-                enter = fadeIn(tween(150)),
-                exit = fadeOut(tween(150)),
+            MapCoordsOverlay(
+                visible = showCoords,
+                coordsText = coordsText,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 12.dp)
-            ) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.88f)
-                    ),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    Text(
-                        coordsText,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.inverseOnSurface,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
+            )
 
             // ── Outils droite : Zoom +/- et Nord ──
             MapZoomControls(
@@ -1474,252 +1391,92 @@ fun MapScreen(
             }
 
             // ── FABs principaux (bas droite) ──
-            Column(
+            MapMainFABs(
+                measureActive = measureActive,
+                measurePointsNotEmpty = measurePoints.isNotEmpty(),
+                traceRecording = traceState.isRecording,
+                traceHasPoints = traceState.points.isNotEmpty(),
+                hasLocationPermission = hasLocationPermission,
+                displayedGeoTiges = displayedGeoTiges,
+                onToggleMeasure = {
+                    measureActive = !measureActive
+                    if (!measureActive) measurePoints = emptyList()
+                },
+                onGpsLocate = {
+                    val map = mapLibreMap ?: return@MapMainFABs
+                    if (!hasLocationPermission) {
+                        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                        return@MapMainFABs
+                    }
+                    try {
+                        val loc = map.locationComponent.lastKnownLocation
+                        if (loc != null) {
+                            map.animateCamera(
+                                CameraUpdateFactory.newLatLngZoom(
+                                    LatLng(loc.latitude, loc.longitude), 18.0
+                                ), 600
+                            )
+                            coordsText = String.format(
+                                java.util.Locale.US,
+                                "%.6f, %.6f",
+                                loc.latitude, loc.longitude
+                            )
+                            showCoords = true
+                        }
+                    } catch (e: Throwable) { Log.w(TAG, "animateCamera to GPS location failed", e) }
+                },
+                onStartTrace = {
+                    if (!hasLocationPermission) {
+                        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                        return@MapMainFABs
+                    }
+                    gpsTracer.startRecording()
+                },
+                onRecenterOnTrees = {
+                    val map = mapLibreMap ?: return@MapMainFABs
+                    try {
+                        val builder = LatLngBounds.Builder()
+                        displayedGeoTiges.forEach { (_, lon, lat) -> builder.include(LatLng(lat, lon)) }
+                        map.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 100), 600)
+                    } catch (e: Throwable) { Log.w(TAG, "recenter on trees failed", e) }
+                    showCoords = false
+                },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 12.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                horizontalAlignment = Alignment.End
-            ) {
-                // Outil de mesure
-                SmallFloatingActionButton(
-                    onClick = {
-                        measureActive = !measureActive
-                        if (!measureActive) measurePoints = emptyList()
-                    },
-                    containerColor = if (measureActive) MartelageEnlever else MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = if (measureActive) Color.White else MaterialTheme.colorScheme.onSecondaryContainer,
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Icon(Icons.Default.Straighten, contentDescription = stringResource(R.string.measure_tool_title))
-                }
-                // Ma position
-                SmallFloatingActionButton(
-                    onClick = {
-                        val map = mapLibreMap ?: return@SmallFloatingActionButton
-                        if (!hasLocationPermission) {
-                            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                            return@SmallFloatingActionButton
-                        }
-                        try {
-                            val loc = map.locationComponent.lastKnownLocation
-                            if (loc != null) {
-                                map.animateCamera(
-                                    CameraUpdateFactory.newLatLngZoom(
-                                        LatLng(loc.latitude, loc.longitude), 18.0
-                                    ), 600
-                                )
-                                coordsText = String.format(
-                                    java.util.Locale.US,
-                                    "%.6f, %.6f",
-                                    loc.latitude, loc.longitude
-                                )
-                                showCoords = true
-                            }
-                        } catch (e: Throwable) { Log.w(TAG, "animateCamera to GPS location failed", e) }
-                    },
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Icon(Icons.Default.GpsFixed, contentDescription = stringResource(R.string.map_my_location))
-                }
-                // Start GPS trace
-                if (!traceState.isRecording && traceState.points.isEmpty()) {
-                    SmallFloatingActionButton(
-                        onClick = {
-                            if (!hasLocationPermission) {
-                                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                                return@SmallFloatingActionButton
-                            }
-                            gpsTracer.startRecording()
-                        },
-                        containerColor = SemanticSuccess,
-                        contentColor = Color.White,
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Icon(Icons.Default.LocationOn, contentDescription = stringResource(R.string.trace_start))
-                    }
-                }
-                // Recentrer sur les arbres
-                if (displayedGeoTiges.isNotEmpty()) {
-                    FloatingActionButton(
-                        onClick = {
-                            val map = mapLibreMap ?: return@FloatingActionButton
-                            try {
-                                val builder = LatLngBounds.Builder()
-                                displayedGeoTiges.forEach { (_, lon, lat) -> builder.include(LatLng(lat, lon)) }
-                                map.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 100), 600)
-                            } catch (e: Throwable) { Log.w(TAG, "recenter on trees failed", e) }
-                            showCoords = false
-                        },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Icon(Icons.Default.Forest, contentDescription = stringResource(R.string.map_recenter))
-                    }
-                }
-            }
+                    .padding(end = 12.dp, bottom = 16.dp)
+            )
 
             // ── Barre de progression téléchargement hors-ligne ──
-            val progress = offlineProgress
-            if (progress != null) {
-                Card(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 64.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val sizeMb = String.format("%.1f", progress.completedSize / 1_048_576.0)
-                            Text(
-                                when {
-                                    progress.isComplete && progress.error == null ->
-                                        "${stringResource(R.string.offline_download_done)} (${progress.completedResources} tuiles, $sizeMb Mo)"
-                                    progress.isComplete && progress.error != null ->
-                                        progress.error ?: stringResource(R.string.offline_download_error)
-                                    else -> stringResource(R.string.offline_downloading)
-                                },
-                                style = MaterialTheme.typography.labelMedium,
-                                color = if (progress.error != null && progress.isComplete) MaterialTheme.colorScheme.error
-                                       else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f)
-                            )
-                            if (progress.isComplete) {
-                                IconButton(
-                                    onClick = { offlineTileManager.clearProgress() },
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(16.dp))
-                                }
-                            }
-                        }
-                        if (!progress.isComplete) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            LinearProgressIndicator(
-                                progress = { (progress.progressPct / 100.0).toFloat().coerceIn(0f, 1f) },
-                                modifier = Modifier.fillMaxWidth(),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                            )
-                            val sizeMbDl = String.format("%.1f", progress.completedSize / 1_048_576.0)
-                            Text(
-                                "${progress.completedResources}/${progress.requiredResources} tuiles · $sizeMbDl Mo (${String.format("%.0f", progress.progressPct)}%)",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 2.dp)
-                            )
-                        }
-                    }
-                }
-            }
+            MapOfflineProgressBar(
+                progress = offlineProgress,
+                onClearProgress = { offlineTileManager.clearProgress() },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 64.dp)
+            )
 
             // ── Message si aucun GPS (fermable) ──
-            if (total > 0 && withGps == 0 && !dismissedGpsBanner) {
-                // Distinguer : points GPS absents vs filtrés (imprécis)
-                val allGeoTigesCount = geoTiges.size
-                val isFilteredOut = allGeoTigesCount > 0 && mapOnlyReliableGps
-                val bannerBg = if (isFilteredOut)
-                    MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.95f)
-                else
-                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.95f)
-                val bannerIcon = if (isFilteredOut)
-                    MaterialTheme.colorScheme.tertiary
-                else
-                    MaterialTheme.colorScheme.error
-
-                Card(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(32.dp),
-                    colors = CardDefaults.cardColors(containerColor = bannerBg),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        // Close button
-                        IconButton(
-                            onClick = { dismissedGpsBanner = true },
-                            modifier = Modifier.align(Alignment.TopEnd).size(32.dp)
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(18.dp))
-                        }
-                        Column(
-                            modifier = Modifier.padding(28.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.LocationOn,
-                                contentDescription = null,
-                                modifier = Modifier.size(40.dp),
-                                tint = bannerIcon
-                            )
-                            Text(
-                                text = if (isFilteredOut)
-                                    stringResource(R.string.map_gps_filtered_out, allGeoTigesCount, mapReliableGpsThresholdM.toInt())
-                                else
-                                    stringResource(R.string.map_no_gps_data),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = if (isFilteredOut) MaterialTheme.colorScheme.onTertiaryContainer
-                                       else MaterialTheme.colorScheme.onErrorContainer,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                }
-            }
+            MapNoGpsMessage(
+                total = total,
+                withGps = withGps,
+                geoTigesSize = geoTiges.size,
+                mapOnlyReliableGps = mapOnlyReliableGps,
+                mapReliableGpsThresholdM = mapReliableGpsThresholdM,
+                onDismiss = { dismissedGpsBanner = true },
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(32.dp)
+            )
 
             // ── Message si aucune tige (fermable) ──
-            if (total == 0 && !dismissedGpsBanner) {
-                Card(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(32.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        IconButton(
-                            onClick = { dismissedGpsBanner = true },
-                            modifier = Modifier.align(Alignment.TopEnd).size(32.dp)
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(18.dp))
-                        }
-                        Column(
-                            modifier = Modifier.padding(28.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.LocationOn,
-                                contentDescription = null,
-                                modifier = Modifier.size(40.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = stringResource(R.string.map_empty),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                }
-            }
+            MapEmptyMessage(
+                total = total,
+                onDismiss = { dismissedGpsBanner = true },
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(32.dp)
+            )
         }
     }
 
