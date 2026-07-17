@@ -395,9 +395,9 @@ class ExpertForestryCalculatorTest {
     @Test
     fun `should_compute_known_schumacher_hall_value_for_chene`() {
         val calc = buildCalculator()
-        // QUPE params: a=-2.0, b=2.0, c=1.0
-        // V = exp(-2.0 + 2.0*ln(40) + 1.0*ln(22))
-        val expected = kotlin.math.exp(-2.0 + 2.0 * kotlin.math.ln(40.0) + 1.0 * kotlin.math.ln(22.0))
+        // QUPE (chêne pédonculé) : coefficients réels Vallet et al. (2006),
+        // SylvicultureDatabase.cubageA/B/C — a=-9.90, b=1.97, c=1.29.
+        val expected = kotlin.math.exp(-9.90 + 1.97 * kotlin.math.ln(40.0) + 1.29 * kotlin.math.ln(22.0))
         val volume = calc.schumacherHallVolume("QUPE", 40.0, 22.0)
 
         assertEquals(expected, volume, 0.001)
@@ -414,5 +414,35 @@ class ExpertForestryCalculatorTest {
             "Different essences should produce different volumes",
             abs(volumeChene - volumeHetre) > 0.01
         )
+    }
+
+    @Test
+    fun `should_use_distinct_sourced_coefficients_for_previously_lumped_oak_species`() {
+        // Avant le branchement sur SylvicultureDatabase, QUPE/QUPES/QUPU
+        // partageaient les mêmes coefficients approximés (a=-2.0, b=2.0, c=1.0).
+        // Vallet et al. (2006) leur donne des coefficients réels distincts.
+        val calc = buildCalculator()
+        val volumePedoncule = calc.schumacherHallVolume("QUPE", 40.0, 22.0)
+        val volumeSessile = calc.schumacherHallVolume("QUPES", 40.0, 22.0)
+        val volumePubescent = calc.schumacherHallVolume("QUPU", 40.0, 22.0)
+
+        assertTrue(
+            "QUPE et QUPES doivent maintenant différer (coefficients sourcés distincts)",
+            abs(volumePedoncule - volumeSessile) > 0.001
+        )
+        assertTrue(
+            "QUPE et QUPU doivent maintenant différer (coefficients sourcés distincts)",
+            abs(volumePedoncule - volumePubescent) > 0.001
+        )
+    }
+
+    @Test
+    fun `should_fall_back_to_generic_parameters_for_essence_absent_from_database`() {
+        // Une essence absente de SylvicultureDatabase (30 essences) doit
+        // utiliser le repli générique plutôt que planter.
+        val calc = buildCalculator()
+        val volume = calc.schumacherHallVolume("ESSENCE_INCONNUE_TEST", 40.0, 22.0)
+
+        assertTrue("Le repli générique doit produire un volume positif", volume > 0.0)
     }
 }

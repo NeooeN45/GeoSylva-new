@@ -4,6 +4,7 @@ import com.forestry.counter.domain.calculation.quality.WoodQualityGrade
 import com.forestry.counter.domain.model.Essence
 import com.forestry.counter.domain.model.Tige
 import com.forestry.counter.domain.repository.ParameterRepository
+import com.forestry.counter.domain.usecase.sylviculture.SylvicultureDatabase
 import kotlinx.coroutines.flow.first
 import kotlin.math.*
 
@@ -524,7 +525,20 @@ class ExpertForestryCalculator(
         )
     }
     
+    /**
+     * Coefficients Schumacher-Hall (a, b, c) pour une essence.
+     *
+     * Source principale : [SylvicultureDatabase] (30 essences, coefficients
+     * Vallet et al. (2006) ajustés sur placettes IFN — voir sa docstring).
+     * Repli sur des valeurs génériques uniquement pour une essence absente
+     * de cette base (⚠ non sourcées par publication spécifique — à
+     * remplacer dès qu'une essence manquante est ajoutée à
+     * SylvicultureDatabase plutôt que laissée sur ce repli).
+     */
     private fun getSchumacherHallParameters(essenceCode: String): SchumacherHallParameters {
+        SylvicultureDatabase.findById(essenceCode)?.let { fiche ->
+            return SchumacherHallParameters(fiche.cubageA, fiche.cubageB, fiche.cubageC)
+        }
         return when (essenceCode.uppercase()) {
             "QUPE", "QUPES", "QUPU", "QUIL", "QURU" -> SchumacherHallParameters(-2.0, 2.0, 1.0)
             "FASY" -> SchumacherHallParameters(-2.2, 2.1, 0.95)
