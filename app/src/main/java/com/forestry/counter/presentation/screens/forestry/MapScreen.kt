@@ -7,22 +7,11 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,17 +22,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Checkbox
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.GpsFixed
@@ -62,13 +46,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -89,12 +70,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import com.forestry.counter.presentation.theme.AccentGreen
 import com.forestry.counter.presentation.theme.MartelageEnlever
-import com.forestry.counter.presentation.theme.SemanticError
-import com.forestry.counter.presentation.theme.SemanticInfo
 import com.forestry.counter.presentation.theme.SemanticSuccess
-import com.forestry.counter.presentation.theme.GpsModere
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
@@ -109,7 +86,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.forestry.counter.R
 import com.forestry.counter.data.preferences.UserPreferencesManager
-import com.forestry.counter.domain.geo.LabelField
 import com.forestry.counter.domain.geo.ShapefileOverlay
 import com.forestry.counter.domain.geo.ShapefileOverlayManager
 import com.forestry.counter.domain.location.GpsParcelTracer
@@ -290,6 +266,21 @@ fun MapScreen(
     var shpGeoJsonFile by remember { mutableStateOf<java.io.File?>(null) }
     var showShpPanel by remember { mutableStateOf(false) }
     var shpImporting by remember { mutableStateOf(false) }
+    var shpErrorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Appliquer l'overlay shapefile quand le fichier ou les paramètres changent
+    fun applyCurrentShpOverlay(style: Style): String {
+        val file = shpGeoJsonFile ?: return "no file"
+        val ov = shpOverlay ?: return "no overlay"
+        return applyShapefileOverlay(style, file, ov)
+    }
+
+    val onApplyShpOverlay = {
+        val map = mapLibreMap
+        if (map != null && mapReady) {
+            map.getStyle { style -> applyCurrentShpOverlay(style) }
+        }
+    }
 
     // ── GPS Parcel Trace state ──
     val gpsTracer = remember(context) { GpsParcelTracer(context) }
@@ -344,6 +335,7 @@ fun MapScreen(
         val overlay = shpOverlay ?: run { shpGeoJsonFile = null; return@LaunchedEffect }
         shpGeoJsonFile = shpManager.getGeoJsonFile(overlay)
         Log.d(TAG, "Overlay ${overlay.id}: geojson file=${shpGeoJsonFile?.absolutePath}, exists=${shpGeoJsonFile?.exists()}")
+        if (mapReady) onApplyShpOverlay()
     }
 
     // File picker pour importer un .zip shapefile
@@ -352,27 +344,23 @@ fun MapScreen(
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         shpImporting = true
+        shpErrorMessage = null
         scope.launch {
             val overlay = shpManager.importFromUri(uri)
             shpImporting = false
             if (overlay != null) {
                 shpOverlay = overlay
+                shpErrorMessage = null
                 Toast.makeText(
                     context,
                     context.getString(R.string.shp_import_success, overlay.featureCount),
                     Toast.LENGTH_LONG
                 ).show()
             } else {
+                shpErrorMessage = context.getString(R.string.shp_import_error)
                 Toast.makeText(context, context.getString(R.string.shp_import_error), Toast.LENGTH_LONG).show()
             }
         }
-    }
-
-    // Appliquer l'overlay shapefile quand le fichier ou les paramètres changent
-    fun applyCurrentShpOverlay(style: Style): String {
-        val file = shpGeoJsonFile ?: return "no file"
-        val ov = shpOverlay ?: return "no overlay"
-        return applyShapefileOverlay(style, file, ov)
     }
 
     fun switchLayer(index: Int) {
@@ -648,17 +636,6 @@ fun MapScreen(
                 }
             }
 
-            // ── Appliquer/mettre à jour overlay shapefile quand les données changent ──
-            LaunchedEffect(shpGeoJsonFile, shpOverlay, mapReady) {
-                val map = mapLibreMap ?: return@LaunchedEffect
-                if (!mapReady) return@LaunchedEffect
-                Log.d(TAG, "Applying shapefile overlay: file=${shpGeoJsonFile?.absolutePath}, overlay=${shpOverlay?.id}")
-                map.getStyle { style ->
-                    val result = applyCurrentShpOverlay(style)
-                    Log.d(TAG, "SHP apply result: $result")
-                }
-            }
-
             // ── Panneau sélecteur de couches (par catégorie) ──
             MapLayerPicker(
                 visible = showLayerPicker,
@@ -676,317 +653,34 @@ fun MapScreen(
             )
 
             // ── Panneau shapefile overlay ──
-            @OptIn(ExperimentalLayoutApi::class)
-            AnimatedVisibility(
-                visible = showShpPanel,
-                enter = fadeIn(tween(200)) + slideInVertically(tween(250)) { -it / 4 },
-                exit = fadeOut(tween(150)) + slideOutVertically(tween(200)) { -it / 4 },
+            MapShapefilePanel(
+                state = MapShapefilePanelState(
+                    overlay = shpOverlay,
+                    isVisible = showShpPanel
+                ),
+                onEvent = { event ->
+                    when (event) {
+                        is MapShapefilePanelEvent.SetOverlay -> shpOverlay = event.overlay
+                        is MapShapefilePanelEvent.DeleteOverlay -> {
+                            shpOverlay = null
+                            shpGeoJsonFile = null
+                        }
+                    }
+                },
+                shpManager = shpManager,
+                context = context,
+                shpImporting = shpImporting,
+                shpErrorMessage = shpErrorMessage,
+                onImportRequest = {
+                    shpPickerLauncher.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream"))
+                },
+                onApplyOverlay = onApplyShpOverlay,
+                onDismissPanel = { showShpPanel = false },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 4.dp, start = 6.dp, end = 6.dp)
                     .fillMaxWidth()
-            ) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
-                    shape = RoundedCornerShape(18.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .padding(14.dp)
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        // En-tête
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(Icons.Default.Map, contentDescription = stringResource(R.string.cd_map), modifier = Modifier.size(20.dp), tint = SemanticSuccess)
-                                Text(stringResource(R.string.shp_overlay), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                            }
-                            IconButton(onClick = { showShpPanel = false }, modifier = Modifier.size(32.dp)) {
-                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(18.dp))
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        if (shpOverlay == null) {
-                            Text(
-                                stringResource(R.string.shp_no_overlay),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Surface(
-                                onClick = {
-                                    shpPickerLauncher.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream"))
-                                },
-                                color = SemanticSuccess,
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_add), tint = Color.White, modifier = Modifier.size(18.dp))
-                                    Text(stringResource(R.string.shp_import), color = Color.White, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelLarge)
-                                }
-                            }
-                        } else {
-                            val ov = shpOverlay ?: return@Column
-
-                            // ── Info + Visibilité ──
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(ov.displayName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = SemanticSuccess)
-                                    Text(stringResource(R.string.shp_info_format, ov.featureCount, ov.forestNames.size), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Switch(
-                                    checked = ov.visible,
-                                    onCheckedChange = { vis ->
-                                        val updated = ov.copy(visible = vis)
-                                        shpOverlay = updated
-                                        shpManager.updateOverlay(updated)
-                                    }
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Surface(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), modifier = Modifier.fillMaxWidth().height(1.dp)) {}
-
-                            // ── REMPLISSAGE ──
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(stringResource(R.string.shp_fill_color), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                SHP_COLOR_PALETTE.forEach { c ->
-                                    val isSelected = (ov.fillColor and 0x00FFFFFF) == (c and 0x00FFFFFF)
-                                    Box(
-                                        modifier = Modifier
-                                            .size(28.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(c))
-                                            .then(
-                                                if (isSelected) Modifier.border(2.5.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
-                                                else Modifier
-                                            )
-                                            .clickable {
-                                                val updated = ov.copy(fillColor = c)
-                                                shpOverlay = updated
-                                                shpManager.updateOverlay(updated)
-                                            }
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(stringResource(R.string.shp_fill_opacity, (ov.fillOpacity * 100).toInt()), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Slider(
-                                value = ov.fillOpacity,
-                                onValueChange = { v -> shpOverlay = ov.copy(fillOpacity = v) },
-                                onValueChangeFinished = { shpOverlay?.let { shpManager.updateOverlay(it) } },
-                                valueRange = 0f..1f,
-                                modifier = Modifier.fillMaxWidth().height(32.dp)
-                            )
-
-                            // ── CONTOUR ──
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Surface(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), modifier = Modifier.fillMaxWidth().height(1.dp)) {}
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(stringResource(R.string.shp_border_color), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                SHP_COLOR_PALETTE.forEach { c ->
-                                    val isSelected = (ov.borderColor and 0x00FFFFFF) == (c and 0x00FFFFFF)
-                                    Box(
-                                        modifier = Modifier
-                                            .size(28.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(c))
-                                            .then(
-                                                if (isSelected) Modifier.border(2.5.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
-                                                else Modifier
-                                            )
-                                            .clickable {
-                                                val updated = ov.copy(borderColor = c)
-                                                shpOverlay = updated
-                                                shpManager.updateOverlay(updated)
-                                            }
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(stringResource(R.string.shp_border_opacity, (ov.borderOpacity * 100).toInt()), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Slider(
-                                value = ov.borderOpacity,
-                                onValueChange = { v -> shpOverlay = ov.copy(borderOpacity = v) },
-                                onValueChangeFinished = { shpOverlay?.let { shpManager.updateOverlay(it) } },
-                                valueRange = 0f..1f,
-                                modifier = Modifier.fillMaxWidth().height(32.dp)
-                            )
-                            Text(
-                                stringResource(R.string.shp_border_width, "%.1f".format(java.util.Locale.US, ov.borderWidth)),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Slider(
-                                value = ov.borderWidth,
-                                onValueChange = { v -> shpOverlay = ov.copy(borderWidth = v) },
-                                onValueChangeFinished = { shpOverlay?.let { shpManager.updateOverlay(it) } },
-                                valueRange = 0.5f..5f,
-                                modifier = Modifier.fillMaxWidth().height(32.dp)
-                            )
-
-                            // ── ÉTIQUETTES ──
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Surface(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), modifier = Modifier.fillMaxWidth().height(1.dp)) {}
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(stringResource(R.string.shp_labels_title), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            val isFr = java.util.Locale.getDefault().language == "fr"
-                            LabelField.entries.forEach { field ->
-                                val checked = field in ov.labelFields
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            val newFields = if (checked) ov.labelFields - field else ov.labelFields + field
-                                            val updated = ov.copy(labelFields = newFields)
-                                            shpOverlay = updated
-                                            shpManager.updateOverlay(updated)
-                                        }
-                                        .padding(vertical = 1.dp)
-                                ) {
-                                    Checkbox(
-                                        checked = checked,
-                                        onCheckedChange = { isChecked ->
-                                            val newFields = if (isChecked) ov.labelFields + field else ov.labelFields - field
-                                            val updated = ov.copy(labelFields = newFields)
-                                            shpOverlay = updated
-                                            shpManager.updateOverlay(updated)
-                                        },
-                                        modifier = Modifier.size(32.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        if (isFr) field.frLabel else field.enLabel,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            }
-
-                            // Option combiner
-                            if (ov.labelFields.size > 1) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            val updated = ov.copy(combineLabels = !ov.combineLabels)
-                                            shpOverlay = updated
-                                            shpManager.updateOverlay(updated)
-                                        }
-                                        .padding(vertical = 2.dp)
-                                ) {
-                                    Switch(
-                                        checked = ov.combineLabels,
-                                        onCheckedChange = { combine ->
-                                            val updated = ov.copy(combineLabels = combine)
-                                            shpOverlay = updated
-                                            shpManager.updateOverlay(updated)
-                                        }
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(stringResource(R.string.shp_combine_labels), style = MaterialTheme.typography.bodySmall)
-                                }
-                            }
-
-                            // Taille des étiquettes
-                            if (ov.labelFields.isNotEmpty()) {
-                                Text(
-                                    stringResource(R.string.shp_label_size, ov.labelSize.toInt()),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Slider(
-                                    value = ov.labelSize,
-                                    onValueChange = { v -> shpOverlay = ov.copy(labelSize = v) },
-                                    onValueChangeFinished = { shpOverlay?.let { shpManager.updateOverlay(it) } },
-                                    valueRange = 6f..24f,
-                                    modifier = Modifier.fillMaxWidth().height(32.dp)
-                                )
-                            }
-
-                            // ── ACTIONS ──
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Surface(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), modifier = Modifier.fillMaxWidth().height(1.dp)) {}
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Surface(
-                                    onClick = {
-                                        shpPickerLauncher.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream"))
-                                    },
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(
-                                        stringResource(R.string.shp_replace),
-                                        modifier = Modifier.padding(vertical = 8.dp),
-                                        textAlign = TextAlign.Center,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                    )
-                                }
-                                Surface(
-                                    onClick = {
-                                        shpManager.deleteOverlay(ov.id)
-                                        shpOverlay = null
-                                        shpGeoJsonFile = null
-                                    },
-                                    color = MaterialTheme.colorScheme.errorContainer,
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(
-                                        stringResource(R.string.shp_delete),
-                                        modifier = Modifier.padding(vertical = 8.dp),
-                                        textAlign = TextAlign.Center,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onErrorContainer
-                                    )
-                                }
-                            }
-                        }
-
-                        // Indicateur d'import en cours
-                        if (shpImporting) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                            Text(stringResource(R.string.shp_importing), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
-            }
+            )
 
             // ── Overlay : couverture GPS ──
             MapGpsCoverageOverlay(
