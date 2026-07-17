@@ -1116,39 +1116,12 @@ fun MapScreen(
             }
 
             // ── Outils droite : Zoom +/- et Nord ──
-            Column(
+            MapZoomControls(
+                mapLibreMap = mapLibreMap,
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .padding(end = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Zoom +
-                MapToolButton(
-                    onClick = {
-                        val map = mapLibreMap ?: return@MapToolButton
-                        map.animateCamera(CameraUpdateFactory.zoomIn(), 200)
-                    },
-                    icon = { Icon(Icons.Default.Add, contentDescription = stringResource(R.string.map_zoom_in), modifier = Modifier.size(20.dp)) }
-                )
-                // Zoom -
-                MapToolButton(
-                    onClick = {
-                        val map = mapLibreMap ?: return@MapToolButton
-                        map.animateCamera(CameraUpdateFactory.zoomOut(), 200)
-                    },
-                    icon = { Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.map_zoom_out), modifier = Modifier.size(20.dp)) }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                // Nord / Boussole
-                MapToolButton(
-                    onClick = {
-                        val map = mapLibreMap ?: return@MapToolButton
-                        map.animateCamera(CameraUpdateFactory.bearingTo(0.0), 400)
-                    },
-                    icon = { Icon(Icons.Default.Explore, contentDescription = stringResource(R.string.map_north), modifier = Modifier.size(20.dp)) }
-                )
-            }
+                    .padding(end = 10.dp)
+            )
 
             // ── Tapped tree info card (top center) ──
             MapTigeInfoPanel(
@@ -1796,26 +1769,4 @@ fun MapScreen(
             }
         }
     )
-}
-
-/**
- * Bouton outil carte (petit, rond, semi-transparent).
- */
-@Composable
-private fun MapToolButton(
-    onClick: () -> Unit,
-    icon: @Composable () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.size(48.dp),
-        shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-        shadowElevation = 3.dp,
-        contentColor = MaterialTheme.colorScheme.onSurface
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            icon()
-        }
-    }
 }
