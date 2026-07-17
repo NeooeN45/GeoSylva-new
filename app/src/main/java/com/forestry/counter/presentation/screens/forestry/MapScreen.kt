@@ -660,106 +660,20 @@ fun MapScreen(
             }
 
             // ── Panneau sélecteur de couches (par catégorie) ──
-            AnimatedVisibility(
+            MapLayerPicker(
                 visible = showLayerPicker,
-                enter = fadeIn(tween(200)) + slideInVertically(tween(250)) { -it / 4 },
-                exit = fadeOut(tween(150)) + slideOutVertically(tween(200)) { -it / 4 },
+                currentLayerIdx = currentLayerIdx,
+                hasOfflineTilesState = hasOfflineTilesState,
+                offlineTileManager = offlineTileManager,
+                onLayerSelected = { index ->
+                    switchLayer(index)
+                    showLayerPicker = false
+                },
+                onDismiss = { showLayerPicker = false },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 4.dp, start = 6.dp, end = 6.dp)
-            ) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
-                    shape = RoundedCornerShape(18.dp)
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        // En-tête
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Layers,
-                                    contentDescription = stringResource(R.string.cd_layers),
-                                    modifier = Modifier.size(20.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    stringResource(R.string.map_layer_picker_title),
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            IconButton(
-                                onClick = { showLayerPicker = false },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(18.dp))
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            MAP_LAYERS.forEachIndexed { index, layer ->
-                                if (layer.key == "OFFLINE_LOCAL") return@forEachIndexed
-                                LayerChip(
-                                    layer = layer,
-                                    isSelected = index == currentLayerIdx,
-                                    onClick = {
-                                        switchLayer(index)
-                                        showLayerPicker = false
-                                    }
-                                )
-                            }
-                            // Couche hors-ligne : visible uniquement si des tuiles sont téléchargées
-                            val offlineIdx = MAP_LAYERS.indexOfFirst { it.key == "OFFLINE_LOCAL" }
-                            if (hasOfflineTilesState && offlineIdx >= 0) {
-                                val (tileCount, _) = remember(hasOfflineTilesState) {
-                                    offlineTileManager.cacheStats()
-                                }
-                                Box {
-                                    LayerChip(
-                                        layer = MAP_LAYERS[offlineIdx],
-                                        isSelected = offlineIdx == currentLayerIdx,
-                                        onClick = {
-                                            switchLayer(offlineIdx)
-                                            showLayerPicker = false
-                                        }
-                                    )
-                                    if (tileCount > 0) {
-                                        Surface(
-                                            color = MaterialTheme.colorScheme.primary,
-                                            shape = RoundedCornerShape(8.dp),
-                                            modifier = Modifier
-                                                .align(Alignment.TopEnd)
-                                                .padding(2.dp)
-                                        ) {
-                                            Text(
-                                                "$tileCount",
-                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onPrimary,
-                                                fontSize = 8.sp
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            )
 
             // ── Panneau shapefile overlay ──
             @OptIn(ExperimentalLayoutApi::class)
@@ -1123,85 +1037,20 @@ fun MapScreen(
                 }
             }
 
-            // ── Légende par essence (améliorée) ──
-            AnimatedVisibility(
-                visible = showLegend && essenceColors.isNotEmpty(),
-                enter = fadeIn(tween(200)) + expandVertically(tween(250)),
-                exit = fadeOut(tween(150)) + shrinkVertically(tween(200)),
+            // ── Légende par essence ──
+            MapLegendPanel(
+                visible = showLegend,
+                essenceColors = essenceColors,
+                essenceCounts = essenceCounts,
+                hiddenEssences = hiddenEssences,
+                essenceMap = essenceMap,
+                onToggleEssence = { code, hide ->
+                    hiddenEssences = if (hide) hiddenEssences + code else hiddenEssences - code
+                },
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(start = 8.dp, bottom = 88.dp)
-            ) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(5.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Forest,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                stringResource(R.string.map_legend),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                        val totalWithGps = essenceCounts.values.sum()
-                        essenceColors.forEach { (code, color) ->
-                            val name = essenceMap[code]?.name ?: code
-                            val count = essenceCounts[code] ?: 0
-                            val pct = if (totalWithGps > 0) count * 100 / totalWithGps else 0
-                            val isHidden = code in hiddenEssences
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.clickable {
-                                    hiddenEssences = if (isHidden) hiddenEssences - code
-                                    else hiddenEssences + code
-                                }
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(14.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isHidden) Color.LightGray else Color(color))
-                                        .border(1.5.dp, Color.White, CircleShape)
-                                )
-                                Text(
-                                    name,
-                                    modifier = Modifier.weight(1f),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Medium,
-                                    color = if (isHidden) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                                            else MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    "($count · $pct%)",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (isHidden) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                            else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+            )
 
             // ── Avertissement GPS mauvais (discret) ──
             val poorGpsTiges = remember(geoTiges) {
@@ -1302,355 +1151,69 @@ fun MapScreen(
             }
 
             // ── Tapped tree info card (top center) ──
-            val currentTapped = tappedTree
-            if (currentTapped != null && !navState.isActive) {
-                Card(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 70.dp, start = 16.dp, end = 16.dp)
-                        .widthIn(max = 340.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val catLabel = when (currentTapped.categorie) {
-                                "DEPERISSANT" -> "\u26A0 Dépérissant"
-                                "ARBRE_BIO" -> "\uD83C\uDF3F Arbre bio"
-                                "MORT" -> "\uD83D\uDC80 Mort"
-                                "PARASITE" -> "\uD83D\uDC1B Parasité"
-                                else -> null
-                            }
-                            Column {
-                                if (catLabel != null) {
-                                    Text(catLabel, style = MaterialTheme.typography.labelSmall, color = Color(0xFFEF6C00))
-                                }
-                                Text(
-                                    currentTapped.essenceName,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            IconButton(
-                                onClick = { tappedTree = null },
-                                modifier = Modifier.size(48.dp)
-                            ) {
-                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(16.dp))
-                            }
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            currentTapped.diamCm?.let {
-                                Text(stringResource(R.string.map_diam_format, it.roundToInt()), style = MaterialTheme.typography.bodySmall)
-                            }
-                            currentTapped.hauteurM?.let {
-                                Text(stringResource(R.string.map_height_label, it.roundToInt()), style = MaterialTheme.typography.bodySmall)
-                            }
-                            currentTapped.precisionM?.let {
-                                Text(stringResource(R.string.map_precision_format, String.format(Locale.US, "%.1f", it)), style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                        // Navigate button
-                        SmallFloatingActionButton(
-                            onClick = {
-                                val target = TreeNavigator.Target(
-                                    tigeId = "",
-                                    essenceName = currentTapped.essenceName,
-                                    essenceCode = currentTapped.essenceCode,
-                                    diamCm = currentTapped.diamCm ?: 0.0,
-                                    hauteurM = currentTapped.hauteurM,
-                                    lat = currentTapped.lat,
-                                    lon = currentTapped.lon
-                                )
-                                if (!hasLocationPermission) {
-                                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                                } else {
-                                    treeNavigator.startNavigation(target)
-                                    tappedTree = null
-                                }
-                            },
-                            containerColor = SemanticInfo,
-                            contentColor = Color.White,
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                modifier = Modifier.padding(horizontal = 12.dp)
-                            ) {
-                                Icon(Icons.Default.Navigation, contentDescription = stringResource(R.string.cd_navigate), modifier = Modifier.size(16.dp))
-                                Text(stringResource(R.string.nav_navigate_to), style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-                    }
-                }
-            }
+            MapTigeInfoPanel(
+                tappedTree = tappedTree,
+                navActive = navState.isActive,
+                hasLocationPermission = hasLocationPermission,
+                onRequestPermission = {
+                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                },
+                onStartNavigation = { info ->
+                    val target = TreeNavigator.Target(
+                        tigeId = "",
+                        essenceName = info.essenceName,
+                        essenceCode = info.essenceCode,
+                        diamCm = info.diamCm ?: 0.0,
+                        hauteurM = info.hauteurM,
+                        lat = info.lat,
+                        lon = info.lon
+                    )
+                    treeNavigator.startNavigation(target)
+                    tappedTree = null
+                },
+                onDismiss = { tappedTree = null },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 70.dp, start = 16.dp, end = 16.dp)
+            )
 
             // ── Navigation compass overlay (top center) ──
-            if (navState.isActive) {
-                Card(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 70.dp, start = 16.dp, end = 16.dp)
-                        .widthIn(max = 300.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (navState.arrived) SemanticSuccess.copy(alpha = 0.95f)
-                                         else MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // Close button
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                stringResource(R.string.nav_title),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = if (navState.arrived) Color.White else MaterialTheme.colorScheme.onSurface
-                            )
-                            IconButton(
-                                onClick = { treeNavigator.stopNavigation() },
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = stringResource(R.string.nav_stop),
-                                    modifier = Modifier.size(16.dp),
-                                    tint = if (navState.arrived) Color.White else MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-
-                        // Target info
-                        navState.target?.let { target ->
-                            Text(
-                                "${target.essenceName} · \u2300 ${target.diamCm.roundToInt()} cm",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (navState.arrived) Color.White.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        if (navState.arrived) {
-                            // Arrived!
-                            Text(
-                                stringResource(R.string.nav_arrived),
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        } else {
-                            // Compass
-                            val relativeBearing = navState.relativeBearingDeg ?: 0f
-                            val compassColor = if (navState.arrived) Color.White else SemanticInfo
-
-                            Box(
-                                modifier = Modifier.size(120.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Canvas(modifier = Modifier.size(120.dp)) {
-                                    // Outer ring
-                                    drawCircle(
-                                        color = compassColor.copy(alpha = 0.15f),
-                                        radius = size.minDimension / 2f
-                                    )
-                                    drawCircle(
-                                        color = compassColor.copy(alpha = 0.3f),
-                                        radius = size.minDimension / 2f,
-                                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2f)
-                                    )
-
-                                    // Arrow
-                                    val angleRad = Math.toRadians(relativeBearing.toDouble()).toFloat()
-                                    val cx = center.x
-                                    val cy = center.y
-                                    val arrowLen = size.minDimension / 2f - 10f
-
-                                    val tipX = cx + arrowLen * kotlin.math.sin(angleRad)
-                                    val tipY = cy - arrowLen * kotlin.math.cos(angleRad)
-
-                                    val baseLen = 12f
-                                    val leftX = cx + baseLen * kotlin.math.sin(angleRad - Math.PI.toFloat() * 0.85f)
-                                    val leftY = cy - baseLen * kotlin.math.cos(angleRad - Math.PI.toFloat() * 0.85f)
-                                    val rightX = cx + baseLen * kotlin.math.sin(angleRad + Math.PI.toFloat() * 0.85f)
-                                    val rightY = cy - baseLen * kotlin.math.cos(angleRad + Math.PI.toFloat() * 0.85f)
-
-                                    val path = androidx.compose.ui.graphics.Path().apply {
-                                        moveTo(tipX, tipY)
-                                        lineTo(leftX, leftY)
-                                        lineTo(cx, cy)
-                                        lineTo(rightX, rightY)
-                                        close()
-                                    }
-                                    drawPath(path, color = compassColor)
-                                }
-                            }
-
-                            // Distance
-                            navState.distanceM?.let { dist ->
-                                val distText = if (dist >= 1000f) {
-                                    String.format(Locale.getDefault(), "%.1f km", dist / 1000f)
-                                } else {
-                                    String.format(Locale.getDefault(), "%.0f m", dist)
-                                }
-                                Text(
-                                    distText,
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SemanticInfo
-                                )
-                            }
-
-                            // Accuracy
-                            navState.userAccuracyM?.let { acc ->
-                                Text(
-                                    stringResource(R.string.nav_accuracy, String.format(Locale.getDefault(), "%.1f", acc)),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+            MapNavigationOverlay(
+                navState = navState,
+                onStopNavigation = { treeNavigator.stopNavigation() },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 70.dp, start = 16.dp, end = 16.dp)
+            )
 
             // ── GPS Trace control panel (bas gauche) ──
-            AnimatedVisibility(
-                visible = traceState.isRecording || traceState.points.isNotEmpty(),
+            MapTraceControlPanel(
+                traceState = traceState,
+                onAddManualPoint = {
+                    val map = mapLibreMap ?: return@MapTraceControlPanel
+                    try {
+                        val loc = map.locationComponent.lastKnownLocation
+                        if (loc != null) {
+                            gpsTracer.addManualPoint(
+                                lat = loc.latitude,
+                                lon = loc.longitude,
+                                alt = if (loc.hasAltitude()) loc.altitude else null,
+                                precisionM = loc.accuracy
+                            )
+                        }
+                    } catch (e: Throwable) { Log.w(TAG, "addManualPoint from lastKnownLocation failed", e) }
+                },
+                onUndoLastPoint = { gpsTracer.undoLastPoint() },
+                onStopRecording = { gpsTracer.stopRecording() },
+                onSaveTrace = {
+                    traceName = ""
+                    showTraceSaveDialog = true
+                },
+                onClearTrace = { gpsTracer.clearTrace() },
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(start = 12.dp, bottom = 16.dp),
-                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
-            ) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        // Info line
-                        Text(
-                            stringResource(R.string.trace_title),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (traceState.isRecording) SemanticSuccess
-                                    else MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            stringResource(R.string.trace_points_count, traceState.points.size),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        traceState.surfaceHa?.let { ha ->
-                            Text(
-                                stringResource(R.string.trace_surface_ha, String.format(Locale.getDefault(), "%.4f", ha)),
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = SemanticSuccess
-                            )
-                        }
-                        traceState.perimeterM?.let { p ->
-                            Text(
-                                stringResource(R.string.trace_perimeter_m, String.format(Locale.getDefault(), "%.0f", p)),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                        // Action buttons
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            if (traceState.isRecording) {
-                                // Add manual point
-                                SmallFloatingActionButton(
-                                    onClick = {
-                                        val map = mapLibreMap ?: return@SmallFloatingActionButton
-                                        try {
-                                            val loc = map.locationComponent.lastKnownLocation
-                                            if (loc != null) {
-                                                gpsTracer.addManualPoint(
-                                                    lat = loc.latitude,
-                                                    lon = loc.longitude,
-                                                    alt = if (loc.hasAltitude()) loc.altitude else null,
-                                                    precisionM = loc.accuracy
-                                                )
-                                            }
-                                        } catch (e: Throwable) { Log.w(TAG, "addManualPoint from lastKnownLocation failed", e) }
-                                    },
-                                    containerColor = AccentGreen,
-                                    contentColor = Color.White,
-                                    shape = RoundedCornerShape(10.dp),
-                                    modifier = Modifier.size(36.dp)
-                                ) {
-                                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.trace_add_point), modifier = Modifier.size(18.dp))
-                                }
-                                // Undo last point
-                                SmallFloatingActionButton(
-                                    onClick = { gpsTracer.undoLastPoint() },
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    shape = RoundedCornerShape(10.dp),
-                                    modifier = Modifier.size(36.dp)
-                                ) {
-                                    Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.trace_undo), modifier = Modifier.size(18.dp))
-                                }
-                                // Stop recording
-                                SmallFloatingActionButton(
-                                    onClick = { gpsTracer.stopRecording() },
-                                    containerColor = SemanticError,
-                                    contentColor = Color.White,
-                                    shape = RoundedCornerShape(10.dp),
-                                    modifier = Modifier.size(36.dp)
-                                ) {
-                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.trace_stop), modifier = Modifier.size(18.dp))
-                                }
-                            } else if (traceState.points.isNotEmpty()) {
-                                // Save trace
-                                if (traceState.points.size >= 3) {
-                                    SmallFloatingActionButton(
-                                        onClick = {
-                                            traceName = ""
-                                            showTraceSaveDialog = true
-                                        },
-                                        containerColor = SemanticSuccess,
-                                        contentColor = Color.White,
-                                        shape = RoundedCornerShape(10.dp),
-                                        modifier = Modifier.size(36.dp)
-                                    ) {
-                                        Icon(Icons.Default.LocationOn, contentDescription = stringResource(R.string.trace_save), modifier = Modifier.size(18.dp))
-                                    }
-                                }
-                                // Clear trace
-                                SmallFloatingActionButton(
-                                    onClick = { gpsTracer.clearTrace() },
-                                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                                    shape = RoundedCornerShape(10.dp),
-                                    modifier = Modifier.size(36.dp)
-                                ) {
-                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.trace_clear), modifier = Modifier.size(18.dp))
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+                    .padding(start = 12.dp, bottom = 16.dp)
+            )
 
             // ── Panneau outil de mesure (bas gauche) ──
             AnimatedVisibility(
@@ -2188,207 +1751,51 @@ fun MapScreen(
     }
 
     // ── Save measure dialog ──
-    if (showMeasureSaveDialog) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showMeasureSaveDialog = false },
-            title = { Text(stringResource(R.string.measure_save_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (measureMode == MeasureMode.DISTANCE && measurePoints.size >= 2) {
-                        val dist = measurePolylineM(measurePoints)
-                        val t = if (dist >= 1000.0) String.format(Locale.getDefault(), "%.3f km", dist / 1000.0)
-                                else String.format(Locale.getDefault(), "%.1f m", dist)
-                        Text(
-                            stringResource(R.string.measure_panel_distance, t),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MartelageEnlever
-                        )
-                    }
-                    if (measureMode == MeasureMode.AREA && measurePoints.size >= 3) {
-                        val ha = measureAreaM2(measurePoints) / 10_000.0
-                        val t = if (ha >= 0.01) String.format(Locale.getDefault(), "%.4f ha", ha)
-                                else String.format(Locale.getDefault(), "%.0f m²", measureAreaM2(measurePoints))
-                        Text(
-                            stringResource(R.string.measure_panel_area, t),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MartelageEnlever
-                        )
-                    }
-                    Text(
-                        stringResource(R.string.measure_points_count, measurePoints.size),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    androidx.compose.material3.OutlinedTextField(
-                        value = measureSaveName,
-                        onValueChange = { measureSaveName = it },
-                        label = { Text(stringResource(R.string.measure_name_label)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                androidx.compose.material3.TextButton(
-                    onClick = {
-                        val pts = measurePoints
-                        val mode = measureMode
-                        val dist = if (mode == MeasureMode.DISTANCE) measurePolylineM(pts) else 0.0
-                        val areaM2 = if (mode == MeasureMode.AREA) measureAreaM2(pts) else 0.0
-                        val name = measureSaveName.trim().ifBlank {
-                            "${if (mode == MeasureMode.DISTANCE) "distance" else "surface"}_${System.currentTimeMillis()}"
-                        }
-                        val ptsJson = pts.joinToString(",") {
-                            "[${String.format(Locale.US, "%.7f", it.latitude)},${String.format(Locale.US, "%.7f", it.longitude)}]"
-                        }
-                        val json = """{"name":"${name.replace("\"", "\\\"")}","mode":"$mode","points":[$ptsJson],"distanceM":$dist,"areaHa":${areaM2 / 10_000.0},"timestamp":${System.currentTimeMillis()}}"""
-                        try {
-                            val dir = File(context.getExternalFilesDir(null), "measurements")
-                            dir.mkdirs()
-                            File(dir, "${name}_${System.currentTimeMillis()}.json").writeText(json)
-                            android.widget.Toast.makeText(context, context.getString(R.string.measure_saved), android.widget.Toast.LENGTH_SHORT).show()
-                        } catch (e: Throwable) { Log.w(TAG, "save measurement file failed", e) }
-                        showMeasureSaveDialog = false
-                    }
-                ) { Text(stringResource(R.string.measure_save)) }
-            },
-            dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { showMeasureSaveDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            }
-        )
-    }
+    MapMeasureSaveDialog(
+        visible = showMeasureSaveDialog,
+        measureMode = measureMode,
+        measurePoints = measurePoints,
+        measureSaveName = measureSaveName,
+        onMeasureSaveNameChange = { measureSaveName = it },
+        onDismiss = { showMeasureSaveDialog = false },
+        context = context
+    )
 
     // ── Save trace dialog ──
-    if (showTraceSaveDialog) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showTraceSaveDialog = false },
-            title = { Text(stringResource(R.string.trace_save_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    traceState.surfaceHa?.let { ha ->
-                        Text(
-                            stringResource(R.string.trace_surface_ha, String.format(Locale.getDefault(), "%.4f", ha)),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    traceState.perimeterM?.let { p ->
-                        Text(
-                            stringResource(R.string.trace_perimeter_m, String.format(Locale.getDefault(), "%.0f", p)),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                    Text(
-                        stringResource(R.string.trace_points_count, traceState.points.size),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    androidx.compose.material3.OutlinedTextField(
-                        value = traceName,
-                        onValueChange = { traceName = it },
-                        label = { Text(stringResource(R.string.trace_name_label)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                androidx.compose.material3.TextButton(
-                    onClick = {
-                        val wkt = gpsTracer.toWktPolygon()
-                        val surfHa = traceState.surfaceHa
-                        if (wkt != null && parcelleRepository != null) {
-                            scope.launch {
-                                if (parcelleId != "none" && parcelleId != "all" && !parcelleId.startsWith("forest_")) {
-                                    try {
-                                        val parcelle = parcelleRepository.getParcelleById(parcelleId).first()
-                                        if (parcelle != null) {
-                                            parcelleRepository.updateParcelle(
-                                                parcelle.copy(
-                                                    shape = wkt,
-                                                    surfaceHa = surfHa ?: parcelle.surfaceHa,
-                                                    updatedAt = System.currentTimeMillis()
-                                                )
-                                            )
-                                        }
-                                    } catch (e: Throwable) { Log.w(TAG, "updateParcelle with trace shape failed", e) }
-                                }
-                                gpsTracer.clearTrace()
-                                showTraceSaveDialog = false
+    MapTraceSaveDialog(
+        visible = showTraceSaveDialog,
+        traceState = traceState,
+        traceName = traceName,
+        onTraceNameChange = { traceName = it },
+        onDismiss = { showTraceSaveDialog = false },
+        onConfirm = {
+            val wkt = gpsTracer.toWktPolygon()
+            val surfHa = traceState.surfaceHa
+            if (wkt != null && parcelleRepository != null) {
+                scope.launch {
+                    if (parcelleId != "none" && parcelleId != "all" && !parcelleId.startsWith("forest_")) {
+                        try {
+                            val parcelle = parcelleRepository.getParcelleById(parcelleId).first()
+                            if (parcelle != null) {
+                                parcelleRepository.updateParcelle(
+                                    parcelle.copy(
+                                        shape = wkt,
+                                        surfaceHa = surfHa ?: parcelle.surfaceHa,
+                                        updatedAt = System.currentTimeMillis()
+                                    )
+                                )
                             }
-                        } else {
-                            gpsTracer.clearTrace()
-                            showTraceSaveDialog = false
-                        }
+                        } catch (e: Throwable) { Log.w(TAG, "updateParcelle with trace shape failed", e) }
                     }
-                ) {
-                    Text(stringResource(R.string.trace_save))
+                    gpsTracer.clearTrace()
+                    showTraceSaveDialog = false
                 }
-            },
-            dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { showTraceSaveDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
+            } else {
+                gpsTracer.clearTrace()
+                showTraceSaveDialog = false
             }
-        )
-    }
-}
-
-/**
- * Tuile individuelle de couche dans le sélecteur.
- */
-@Composable
-private fun LayerChip(
-    layer: MapLayerDef,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-    val bgColor = if (isSelected)
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-    else
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-
-    Card(
-        modifier = Modifier
-            .width(72.dp)
-            .border(
-                width = if (isSelected) 2.dp else 1.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = bgColor),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 1.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                layer.emoji,
-                fontSize = 24.sp
-            )
-            Spacer(modifier = Modifier.height(3.dp))
-            Text(
-                stringResource(layer.labelResId),
-                style = MaterialTheme.typography.labelSmall,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                lineHeight = 13.sp,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-            )
         }
-    }
+    )
 }
 
 /**
