@@ -74,7 +74,9 @@ object SecureHttpClient {
         "tile.opentopomap.org",
         "basemaps.cartocdn.com",
         "server.arcgisonline.com",
-        "data.geopf.fr"
+        "data.geopf.fr",
+        "api.maptiler.com",
+        "tiles.maptiler.com"
     )
 
     /** Retourne true si l'URL cible un domaine de la liste [SECURE_DOMAINS]. */

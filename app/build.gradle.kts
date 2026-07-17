@@ -30,6 +30,18 @@ android {
         buildConfigField("String", "BUILD_ID", "\"$buildId\"")
         buildConfigField("Long", "BUILD_TIMESTAMP", "${System.currentTimeMillis()}L")
 
+        // Clé API MapTiler (tuiles vectorielles + terrain 3D)
+        // Récupérée depuis local.properties ou variable d'environnement
+        val localPropsFile = rootProject.file("local.properties")
+        val localProps = Properties()
+        if (localPropsFile.exists()) {
+            localProps.load(StringReader(localPropsFile.readText(Charsets.UTF_8).removePrefix("\uFEFF")))
+        }
+        val maptilerKey = localProps.getProperty("MAPTILER_KEY")
+            ?: System.getenv("MAPTILER_KEY")
+            ?: ""
+        buildConfigField("String", "MAPTILER_KEY", "\"$maptilerKey\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true

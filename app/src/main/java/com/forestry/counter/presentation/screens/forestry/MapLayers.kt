@@ -1,0 +1,368 @@
+package com.forestry.counter.presentation.screens.forestry
+
+import android.util.Log
+import com.forestry.counter.BuildConfig
+import com.forestry.counter.R
+import com.forestry.counter.network.SecureHttpClient
+
+private const val TAG_LAYERS = "MapLayers"
+
+// ── Attributions légales obligatoires ──────────────────────────────────────
+internal const val ATTR_IGN = "IGN Géoportail — Licence Ouverte 2.0 (Etalab)"
+internal const val ATTR_OSM = "© OpenStreetMap contributors (ODbL)"
+internal const val ATTR_OPENTOPO = "© OpenStreetMap contributors, SRTM | OpenTopoMap (CC-BY-SA)"
+internal const val ATTR_CARTO = "© OpenStreetMap contributors, © CARTO"
+internal const val ATTR_ESRI = "© Esri, Maxar, Earthstar Geographics"
+internal const val ATTR_MAPTILER = "© MapTiler © OpenStreetMap contributors"
+
+// ── URL WMTS GéoPortail (data.geopf.fr) ─────────────────────────────────────
+internal fun geopfLayer(layer: String, format: String = "image/png") =
+    "https://data.geopf.fr/wmts?" +
+    "SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=normal&FORMAT=$format" +
+    "&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&LAYER=$layer"
+
+// ── URL tuiles vectorielles MapTiler ────────────────────────────────────────
+private fun maptilerUrl(style: String): String {
+    val key = BuildConfig.MAPTILER_KEY
+    if (key.isBlank()) {
+        Log.w(TAG_LAYERS, "MAPTILER_KEY is empty — vector tiles will fail")
+    }
+    return "https://api.maptiler.com/maps/$style/style.json?key=$key"
+}
+
+private fun maptilerTilesUrl(style: String): String {
+    val key = BuildConfig.MAPTILER_KEY
+    return "https://api.maptiler.com/tiles/$style/{z}/{x}/{y}.pbf?key=$key"
+}
+
+private fun maptilerTerrainUrl(): String {
+    val key = BuildConfig.MAPTILER_KEY
+    return "https://api.maptiler.com/tiles/terrain-rgb/{z}/{x}/{y}.png?key=$key"
+}
+
+// ── Styles raster (fallback / couches IGN) ──────────────────────────────────
+
+internal fun offlineLocalStyle(name: String = "Offline Local"): String {
+    return """{
+  "version": 8,
+  "name": "$name",
+  "sources": {},
+  "layers": [
+    { "id": "background", "type": "background", "paint": { "background-color": "#EFF5EC" } }
+  ]
+}"""
+}
+
+internal fun rasterStyle(
+    name: String,
+    tileUrl: String,
+    tileSize: Int = 256,
+    maxZoom: Int = 19,
+    attribution: String = ""
+): String {
+    if (!SecureHttpClient.isSecureDomain(tileUrl)) {
+        Log.e(TAG_LAYERS, "URL de tuile non sécurisée: $tileUrl")
+        throw SecurityException("URL de tuile non sécurisée: $tileUrl")
+    }
+    val attributionField = if (attribution.isNotEmpty()) ""","attribution":"$attribution"""" else ""
+    return """{
+  "version": 8,
+  "name": "$name",
+  "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
+  "sources": {
+    "tiles": {
+      "type": "raster",
+      "tiles": ["$tileUrl"],
+      "tileSize": $tileSize,
+      "maxzoom": $maxZoom$attributionField
+    }
+  },
+  "layers": [
+    { "id": "tiles", "type": "raster", "source": "tiles" }
+  ]
+}"""
+}
+
+internal fun rasterStyleMulti(
+    name: String,
+    baseTileUrl: String,
+    overlayTileUrls: List<String> = emptyList(),
+    tileSize: Int = 256,
+    maxZoom: Int = 19,
+    baseAttribution: String = "",
+    overlayAttributions: List<String> = emptyList()
+): String {
+    val sources = mutableListOf<String>()
+    val layers = mutableListOf<String>()
+    val baseAttrField = if (baseAttribution.isNotEmpty()) ""","attribution":"$baseAttribution"""" else ""
+    sources += """"base":{"type":"raster","tiles":["$baseTileUrl"],"tileSize":$tileSize,"maxzoom":$maxZoom$baseAttrField}"""
+    layers += """{ "id": "base", "type": "raster", "source": "base" }"""
+    overlayTileUrls.forEachIndexed { i, url ->
+        val ovAttr = overlayAttributions.getOrNull(i) ?: ""
+        val ovAttrField = if (ovAttr.isNotEmpty()) ""","attribution":"$ovAttr"""" else ""
+        sources += """"overlay$i":{"type":"raster","tiles":["$url"],"tileSize":256,"maxzoom":$maxZoom$ovAttrField}"""
+        layers += """{ "id": "overlay$i", "type": "raster", "source": "overlay$i", "paint": { "raster-opacity": 0.7 } }"""
+    }
+    return """{"version":8,"name":"$name","glyphs":"https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf","sources":{${sources.joinToString(",")}},"layers":[${layers.joinToString(",")}]}"""
+}
+
+// ── Styles vectoriels MapTiler avec terrain 3D ──────────────────────────────
+
+/**
+ * Style vectoriel MapTiler avec relief 3D (terrain-rgb + hillshade).
+ * Inclut source DEM pour terrain 3D + hillshade.
+ */
+internal fun vectorStyleWithTerrain(
+    styleName: String,
+    maptilerStyleId: String,
+    displayName: String,
+    isDark: Boolean = false
+): String {
+    val key = BuildConfig.MAPTILER_KEY
+    if (key.isBlank()) {
+        Log.w(TAG_LAYERS, "MAPTILER_KEY empty — falling back to raster style")
+        return rasterStyle(displayName, geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"), attribution = ATTR_IGN)
+    }
+
+    val terrainSource = """
+    "terrain-rgb": {
+      "type": "raster-dem",
+      "tiles": ["${maptilerTerrainUrl()}"],
+      "tileSize": 256,
+      "maxzoom": 12,
+      "attribution": "$ATTR_MAPTILER"
+    }"""
+
+    val hillshadeLayer = """
+    { "id": "hillshade", "type": "hillshade", "source": "terrain-rgb",
+      "paint": {
+        "hillshade-shadow-color": "${if (isDark) "#1a1a2e" else "#473B30"}",
+        "hillshade-highlight-color": "${if (isDark) "#2a2a4e" else "#EEEEEE"}",
+        "hillshade-accent-color": "${if (isDark) "#3a3a5e" else "#8c7a60"}",
+        "hillshade-illumination-direction": 315,
+        "hillshade-illumination-anchor": "map",
+        "hillshade-exaggeration": 1.2
+      }
+    }"""
+
+    return """{
+  "version": 8,
+  "name": "$displayName",
+  "glyphs": "https://api.maptiler.com/fonts/{fontstack}/{range}.pbf?key=$key",
+  "sources": {
+    "maptiler": {
+      "type": "vector",
+      "url": "https://api.maptiler.com/tiles/$maptilerStyleId/tiles.json?key=$key"
+    },
+    $terrainSource
+  },
+  "terrain": {
+    "source": "terrain-rgb",
+    "exaggeration": 1.3
+  },
+  "layers": [
+    { "id": "background", "type": "background",
+      "paint": { "background-color": "${if (isDark) "#1a1a2e" else "#f5f5f0"}" } },
+    $hillshadeLayer
+  ]
+}"""
+}
+
+/**
+ * Style vectoriel MapTiler simple (sans terrain 3D).
+ */
+internal fun vectorStyleSimple(
+    maptilerStyleId: String,
+    displayName: String
+): String {
+    val key = BuildConfig.MAPTILER_KEY
+    if (key.isBlank()) {
+        Log.w(TAG_LAYERS, "MAPTILER_KEY empty — falling back to raster")
+        return rasterStyle(displayName, geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"), attribution = ATTR_IGN)
+    }
+    // Utiliser l'URL style.json complète de MapTiler (style prêt-à-l'emploi)
+    return maptilerUrl(maptilerStyleId)
+}
+
+// ── Catégories de couches ───────────────────────────────────────────────────
+
+enum class LayerCategory(val labelResId: Int) {
+    GENERAL(R.string.map_category_general)
+}
+
+/**
+ * Description d'une couche de fond de carte.
+ * @param styleJson Style MapLibre JSON (vectoriel ou raster)
+ * @param isVector Indique si la couche utilise des tuiles vectorielles
+ * @param hasTerrain Indique si la couche inclut le terrain 3D
+ * @param isDark Indique si la couche est sombre (pour l'UI)
+ * @param tileUrls URLs de tuiles pour téléchargement hors-ligne
+ */
+data class MapLayerDef(
+    val key: String,
+    val labelResId: Int,
+    val emoji: String,
+    val styleJson: String,
+    val isVector: Boolean = false,
+    val hasTerrain: Boolean = false,
+    val isDark: Boolean = false,
+    val category: LayerCategory = LayerCategory.GENERAL,
+    val tileUrls: List<String> = emptyList()
+)
+
+// ── Liste des couches disponibles ───────────────────────────────────────────
+
+internal val MAP_LAYERS: List<MapLayerDef> = buildList {
+    // ── Couches vectorielles MapTiler (qualité supérieure) ──
+    add(MapLayerDef(
+        key = "MAPTILER_TOPO",
+        labelResId = R.string.map_layer_topo,
+        emoji = "⛰️",
+        styleJson = vectorStyleWithTerrain("topo", "topo-v2", "MapTiler Topo 3D"),
+        isVector = true,
+        hasTerrain = true,
+        category = LayerCategory.GENERAL,
+        tileUrls = listOf(maptilerTilesUrl("topo-v2"))
+    ))
+    add(MapLayerDef(
+        key = "MAPTILER_SATELLITE",
+        labelResId = R.string.map_layer_satellite,
+        emoji = "🛰️",
+        styleJson = vectorStyleSimple("hybrid", "MapTiler Satellite"),
+        isVector = true,
+        isDark = true,
+        category = LayerCategory.GENERAL,
+        tileUrls = listOf(maptilerTilesUrl("hybrid"))
+    ))
+    add(MapLayerDef(
+        key = "MAPTILER_STREETS",
+        labelResId = R.string.map_layer_carto,
+        emoji = "🧭",
+        styleJson = vectorStyleSimple("streets-v2", "MapTiler Streets"),
+        isVector = true,
+        category = LayerCategory.GENERAL,
+        tileUrls = listOf(maptilerTilesUrl("streets-v2"))
+    ))
+    add(MapLayerDef(
+        key = "MAPTILER_DARK",
+        labelResId = R.string.map_layer_dark,
+        emoji = "🌙",
+        styleJson = vectorStyleSimple("dark-v2", "MapTiler Dark Matter"),
+        isVector = true,
+        isDark = true,
+        category = LayerCategory.GENERAL,
+        tileUrls = listOf(maptilerTilesUrl("dark-v2"))
+    ))
+
+    // ── Couches IGN (raster — hybride) ──
+    add(MapLayerDef(
+        key = "PLAN_IGN",
+        labelResId = R.string.map_layer_plan_ign,
+        emoji = "🗺️",
+        styleJson = rasterStyle("Plan IGN v2", geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"), attribution = ATTR_IGN),
+        category = LayerCategory.GENERAL,
+        tileUrls = listOf(geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"))
+    ))
+    add(MapLayerDef(
+        key = "ORTHO_IGN",
+        labelResId = R.string.map_layer_ortho_ign,
+        emoji = "🛰️",
+        styleJson = rasterStyle("Ortho IGN", geopfLayer("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"), attribution = ATTR_IGN),
+        isDark = true,
+        category = LayerCategory.GENERAL,
+        tileUrls = listOf(geopfLayer("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"))
+    ))
+
+    // ── Couches composites IGN ──
+    add(MapLayerDef(
+        key = "PLAN_IGN_CADASTRE",
+        labelResId = R.string.map_layer_plan_ign_cadastre,
+        emoji = "📐",
+        styleJson = rasterStyleMulti(
+            "Plan IGN + Cadastre",
+            geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"),
+            overlayTileUrls = listOf(geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")),
+            baseAttribution = ATTR_IGN,
+            overlayAttributions = listOf(ATTR_IGN)
+        ),
+        category = LayerCategory.GENERAL,
+        tileUrls = listOf(
+            geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"),
+            geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
+        )
+    ))
+    add(MapLayerDef(
+        key = "ORTHO_CADASTRE",
+        labelResId = R.string.map_layer_ortho_cadastre,
+        emoji = "🏘️",
+        styleJson = rasterStyleMulti(
+            "Ortho IGN + Cadastre",
+            geopfLayer("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"),
+            overlayTileUrls = listOf(geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")),
+            baseAttribution = ATTR_IGN,
+            overlayAttributions = listOf(ATTR_IGN)
+        ),
+        isDark = true,
+        category = LayerCategory.GENERAL,
+        tileUrls = listOf(
+            geopfLayer("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"),
+            geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
+        )
+    ))
+
+    // ── Couches internationales (raster) ──
+    add(MapLayerDef(
+        key = "TOPO",
+        labelResId = R.string.map_layer_topo,
+        emoji = "🏔️",
+        styleJson = rasterStyle("OpenTopoMap", "https://tile.opentopomap.org/{z}/{x}/{y}.png", maxZoom = 17, attribution = ATTR_OPENTOPO),
+        tileUrls = listOf("https://tile.opentopomap.org/{z}/{x}/{y}.png")
+    ))
+    add(MapLayerDef(
+        key = "SATELLITE",
+        labelResId = R.string.map_layer_satellite,
+        emoji = "🌍",
+        styleJson = rasterStyle("ESRI Satellite", "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", attribution = ATTR_ESRI),
+        isDark = true,
+        tileUrls = listOf("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}")
+    ))
+
+    // ── Couche hors-ligne locale ──
+    add(MapLayerDef(
+        key = "OFFLINE_LOCAL",
+        labelResId = R.string.map_layer_offline_local,
+        emoji = "📥",
+        styleJson = offlineLocalStyle("Offline Local"),
+        tileUrls = emptyList()
+    ))
+}
+
+// ── Palette de couleurs pour les essences ───────────────────────────────────
+internal val ESSENCE_COLOR_PALETTE = intArrayOf(
+    0xFF2E7D32.toInt(),
+    0xFF1565C0.toInt(),
+    0xFFEF6C00.toInt(),
+    0xFF7B1FA2.toInt(),
+    0xFFC62828.toInt(),
+    0xFF00838F.toInt(),
+    0xFF4E342E.toInt(),
+    0xFF9E9D24.toInt(),
+    0xFFAD1457.toInt(),
+    0xFF37474F.toInt(),
+)
+
+// ── Palette pour les pickers de couleur (fill / border) ─────────────────────
+internal val SHP_COLOR_PALETTE = listOf(
+    0xFF2E7D32.toInt(),
+    0xFF1B5E20.toInt(),
+    0xFF4CAF50.toInt(),
+    0xFF81C784.toInt(),
+    0xFF1565C0.toInt(),
+    0xFF42A5F5.toInt(),
+    0xFFEF6C00.toInt(),
+    0xFFF44336.toInt(),
+    0xFF9C27B0.toInt(),
+    0xFF795548.toInt(),
+    0xFF607D8B.toInt(),
+    0xFF000000.toInt(),
+)

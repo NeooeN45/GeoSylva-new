@@ -354,6 +354,7 @@
     <string name="map_layer_plan_ign">Plan IGN</string>
     <string name="map_layer_plan_ign_cadastre">IGN + Cad.</string>
     <string name="map_layer_ortho_cadastre">Ortho + Cad.</string>
+    <string name="map_layer_dark">Dark</string>
 
     <string name="map_choose_scope_title">Open map</string>
     <string name="map_scope_all">All trees</string>
