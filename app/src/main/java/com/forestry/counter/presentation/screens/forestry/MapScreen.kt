@@ -1106,289 +1106,42 @@ fun MapScreen(
             )
 
             // ── Panneau outil de mesure (bas gauche) ──
-            AnimatedVisibility(
-                visible = measurePoints.isNotEmpty() || measureActive,
+            MapMeasurePanel(
+                state = MapMeasurePanelState(
+                    isActive = measureActive,
+                    points = measurePoints,
+                    mode = measureMode,
+                    distUnit = measureDistUnit,
+                    areaUnit = measureAreaUnit,
+                    color = measureColor,
+                    showSavedPanel = showSavedMeasuresPanel
+                ),
+                traceHasContent = traceState.isRecording || traceState.points.isNotEmpty(),
+                context = context,
+                onEvent = { event ->
+                    when (event) {
+                        is MapMeasurePanelEvent.SetActive -> measureActive = event.active
+                        is MapMeasurePanelEvent.SetPoints -> measurePoints = event.points
+                        is MapMeasurePanelEvent.SetMode -> measureMode = event.mode
+                        is MapMeasurePanelEvent.SetDistUnit -> measureDistUnit = event.unit
+                        is MapMeasurePanelEvent.SetAreaUnit -> measureAreaUnit = event.unit
+                        is MapMeasurePanelEvent.SetColor -> measureColor = event.color
+                        MapMeasurePanelEvent.ToggleSavedPanel -> showSavedMeasuresPanel = !showSavedMeasuresPanel
+                        MapMeasurePanelEvent.SaveRequest -> { measureSaveName = ""; showMeasureSaveDialog = true }
+                        is MapMeasurePanelEvent.LoadSavedMeasure -> {
+                            measureMode = event.mode
+                            measurePoints = event.points
+                            showSavedMeasuresPanel = false
+                        }
+                    }
+                },
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(
                         start = 12.dp,
                         bottom = if (traceState.isRecording || traceState.points.isNotEmpty()) 170.dp else 16.dp
-                    ),
-                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
-            ) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp).widthIn(max = 220.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        // Titre + bascule mode
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Straighten,
-                                contentDescription = stringResource(R.string.cd_straighten),
-                                tint = MartelageEnlever,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                stringResource(R.string.measure_tool_title),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MartelageEnlever
-                            )
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            listOf(MeasureMode.DISTANCE to R.string.measure_mode_distance,
-                                   MeasureMode.AREA to R.string.measure_mode_area).forEach { (mode, resId) ->
-                                val sel = measureMode == mode
-                                Surface(
-                                    onClick = { if (measureMode != mode) { measureMode = mode; measurePoints = emptyList() } },
-                                    color = if (sel) MartelageEnlever else MaterialTheme.colorScheme.surfaceVariant,
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.height(26.dp)
-                                ) {
-                                    Text(
-                                        stringResource(resId),
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (sel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
-                        }
-
-                        // Indice si aucun point
-                        if (measureActive && measurePoints.isEmpty()) {
-                            Text(
-                                stringResource(R.string.measure_tap_hint),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        // Sélecteur d'unité (affiché selon le mode)
-                        if (measureMode == MeasureMode.DISTANCE) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                listOf(MeasureDistUnit.M to "m", MeasureDistUnit.KM to "km").forEach { (unit, label) ->
-                                    val sel = measureDistUnit == unit
-                                    Surface(
-                                        onClick = { measureDistUnit = unit },
-                                        color = if (sel) measureColor else MaterialTheme.colorScheme.surfaceVariant,
-                                        shape = RoundedCornerShape(6.dp),
-                                        modifier = Modifier.height(22.dp)
-                                    ) {
-                                        Text(
-                                            label,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = if (sel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                }
-                            }
-                        } else {
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                listOf(MeasureAreaUnit.M2 to "m²", MeasureAreaUnit.ARES to "ares", MeasureAreaUnit.HA to "ha").forEach { (unit, label) ->
-                                    val sel = measureAreaUnit == unit
-                                    Surface(
-                                        onClick = { measureAreaUnit = unit },
-                                        color = if (sel) measureColor else MaterialTheme.colorScheme.surfaceVariant,
-                                        shape = RoundedCornerShape(6.dp),
-                                        modifier = Modifier.height(22.dp)
-                                    ) {
-                                        Text(
-                                            label,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = if (sel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        // Résultats
-                        if (measurePoints.size >= 2 && measureMode == MeasureMode.DISTANCE) {
-                            val dist = measurePolylineM(measurePoints)
-                            val t = when (measureDistUnit) {
-                                MeasureDistUnit.M  -> String.format(Locale.getDefault(), "%.1f m", dist)
-                                MeasureDistUnit.KM -> String.format(Locale.getDefault(), "%.4f km", dist / 1000.0)
-                            }
-                            Text(
-                                stringResource(R.string.measure_panel_distance, t),
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = measureColor
-                            )
-                        }
-                        if (measureMode == MeasureMode.AREA && measurePoints.size >= 3) {
-                            val areaM2 = measureAreaM2(measurePoints)
-                            val t = when (measureAreaUnit) {
-                                MeasureAreaUnit.M2   -> String.format(Locale.getDefault(), "%.1f m²", areaM2)
-                                MeasureAreaUnit.ARES -> String.format(Locale.getDefault(), "%.2f ares", areaM2 / 100.0)
-                                MeasureAreaUnit.HA   -> String.format(Locale.getDefault(), "%.4f ha", areaM2 / 10_000.0)
-                            }
-                            Text(
-                                stringResource(R.string.measure_panel_area, t),
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = measureColor
-                            )
-                        }
-                        if (measurePoints.isNotEmpty()) {
-                            Text(
-                                stringResource(R.string.measure_points_count, measurePoints.size),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        // Palette de couleurs
-                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                            MEASURE_COLORS.forEach { c ->
-                                val isSelected = c == measureColor
-                                Box(
-                                    modifier = Modifier
-                                        .size(if (isSelected) 20.dp else 16.dp)
-                                        .clip(CircleShape)
-                                        .background(c)
-                                        .border(if (isSelected) 2.dp else 0.dp, Color.White, CircleShape)
-                                        .clickable { measureColor = c }
-                                )
-                            }
-                        }
-
-                        // Boutons action
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            if (measurePoints.isNotEmpty()) {
-                                SmallFloatingActionButton(
-                                    onClick = { if (measurePoints.isNotEmpty()) measurePoints = measurePoints.dropLast(1) },
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    shape = RoundedCornerShape(10.dp),
-                                    modifier = Modifier.size(34.dp)
-                                ) {
-                                    Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.measure_undo), modifier = Modifier.size(16.dp))
-                                }
-                                SmallFloatingActionButton(
-                                    onClick = { measurePoints = emptyList() },
-                                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                                    shape = RoundedCornerShape(10.dp),
-                                    modifier = Modifier.size(34.dp)
-                                ) {
-                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.measure_clear), modifier = Modifier.size(16.dp))
-                                }
-                                if (measurePoints.size >= 2) {
-                                    SmallFloatingActionButton(
-                                        onClick = { measureSaveName = ""; showMeasureSaveDialog = true },
-                                        containerColor = MartelageEnlever,
-                                        contentColor = Color.White,
-                                        shape = RoundedCornerShape(10.dp),
-                                        modifier = Modifier.size(34.dp)
-                                    ) {
-                                        Icon(Icons.Default.LocationOn, contentDescription = stringResource(R.string.measure_save), modifier = Modifier.size(16.dp))
-                                    }
-                                }
-                            }
-                            // Bouton mesures sauvegardées
-                            SmallFloatingActionButton(
-                                onClick = { showSavedMeasuresPanel = !showSavedMeasuresPanel },
-                                containerColor = if (showSavedMeasuresPanel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = if (showSavedMeasuresPanel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.size(34.dp)
-                            ) {
-                                Icon(Icons.Default.Layers, contentDescription = stringResource(R.string.map_mesures_sauvegardees), modifier = Modifier.size(16.dp))
-                            }
-                        }
-
-                        // Panneau mesures sauvegardées
-                        if (showSavedMeasuresPanel) {
-                            val measureDir = remember { File(context.getExternalFilesDir(null), "measurements") }
-                            val savedFiles = remember(showSavedMeasuresPanel) {
-                                if (measureDir.exists()) measureDir.listFiles { f -> f.extension == "json" }?.sortedByDescending { it.lastModified() } ?: emptyList()
-                                else emptyList()
-                            }
-                            if (savedFiles.isEmpty()) {
-                                Text(stringResource(R.string.map_no_saved_measures), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            } else {
-                                Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.heightIn(max = 200.dp).verticalScroll(rememberScrollState())) {
-                                    savedFiles.forEach { file ->
-                                        val raw = remember(file) { try { file.readText() } catch (_: Throwable) { "" } }
-                                        val name  = remember(raw) { Regex("\"name\":\"([^\"]*)\"").find(raw)?.groupValues?.get(1) ?: file.nameWithoutExtension }
-                                        val mode  = remember(raw) { if (raw.contains("\"mode\":\"AREA\"")) MeasureMode.AREA else MeasureMode.DISTANCE }
-                                        val value = remember(raw) {
-                                            if (mode == MeasureMode.AREA) {
-                                                val ha = Regex("\"areaHa\":([\\d.E-]+)").find(raw)?.groupValues?.get(1)?.toDoubleOrNull() ?: 0.0
-                                                String.format(Locale.getDefault(), "%.4f ha", ha)
-                                            } else {
-                                                val m = Regex("\"distanceM\":([\\d.E-]+)").find(raw)?.groupValues?.get(1)?.toDoubleOrNull() ?: 0.0
-                                                if (m >= 1000.0) String.format(Locale.getDefault(), "%.3f km", m / 1000.0)
-                                                else String.format(Locale.getDefault(), "%.1f m", m)
-                                            }
-                                        }
-                                        Surface(
-                                            onClick = {
-                                                try {
-                                                    val ptsStr = Regex("\"points\":\\[([^\\]]+(?:\\][^\\]]*)*?)\\],\"distanceM\"").find(raw)?.groupValues?.get(1) ?: ""
-                                                    val coordPattern = Regex("\\[([\\d.E+-]+),([\\d.E+-]+)\\]")
-                                                    val parsed = coordPattern.findAll(ptsStr).map { m ->
-                                                        LatLng(m.groupValues[1].toDouble(), m.groupValues[2].toDouble())
-                                                    }.toList()
-                                                    if (parsed.isNotEmpty()) {
-                                                        measureMode = mode
-                                                        measurePoints = parsed
-                                                        showSavedMeasuresPanel = false
-                                                    }
-                                                } catch (e: Throwable) { Log.w(TAG, "parse saved measure points failed", e) }
-                                            },
-                                            shape = RoundedCornerShape(6.dp),
-                                            color = MaterialTheme.colorScheme.surfaceVariant,
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                            ) {
-                                                Icon(
-                                                    if (mode == MeasureMode.AREA) Icons.Default.Map else Icons.Default.Straighten,
-                                                    contentDescription = if (mode == MeasureMode.AREA) stringResource(R.string.cd_map) else stringResource(R.string.cd_straighten),
-                                                    modifier = Modifier.size(14.dp),
-                                                    tint = MartelageEnlever
-                                                )
-                                                Column(Modifier.weight(1f)) {
-                                                    Text(name, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                                                    Text(value, style = MaterialTheme.typography.labelSmall, color = MartelageEnlever)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+                    )
+            )
 
             // ── FABs principaux (bas droite) ──
             MapMainFABs(
