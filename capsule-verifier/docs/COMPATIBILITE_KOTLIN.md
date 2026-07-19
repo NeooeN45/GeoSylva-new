@@ -144,13 +144,21 @@ PYTHONPATH=src python -m mypy src --strict
 ./gradlew :capsule-verifier:test
 ```
 
-**Repli si le réseau de résolution de plugins Gradle est indisponible**
-(constaté dans cette mission — voir rapport final) : compiler directement
-avec un `kotlinc` déjà présent localement (ex. celui bundlé dans une
-installation Android Studio, sous `plugins/Kotlin/kotlinc/lib/kotlin-compiler.jar`,
-invoqué via `org.jetbrains.kotlin.cli.jvm.K2JVMCompiler`) et les JAR de
-`bcprov-jdk18on`/`commons-compress` téléchargés directement (le blocage
-observé touchait spécifiquement la résolution de plugins Gradle, pas
-l'accès réseau brut). Ceci ne remplace pas `./gradlew :capsule-verifier:test`
-pour la CI — seulement une preuve de correction quand ce chemin est
-indisponible.
+**Résultat officiel obtenu** : `./gradlew :capsule-verifier:test` →
+`BUILD SUCCESSFUL`, 2/2 tests verts (`build/test-results/test/TEST-com.forestry.counter.capsule.InteropFixturesTest.xml`).
+`./gradlew :app:compileDebugKotlin` reste vert également (aucune régression
+introduite par l'ajout du plugin `kotlin.jvm` et des nouvelles dépendances).
+
+**Historique du blocage rencontré et sa résolution** (pour information, ne
+concerne qu'un environnement d'exécution local) : la résolution du plugin
+`org.jetbrains.kotlin.jvm` échouait initialement bien que le réseau brut
+(`curl` vers `repo1.maven.org`/`plugins.gradle.org`) fonctionne — le
+marqueur de plugin `org.jetbrains.kotlin.jvm:org.jetbrains.kotlin.jvm.gradle.plugin:1.9.23`
+n'était simplement jamais entré dans le cache Gradle local de cette
+machine (contrairement à `org.jetbrains.kotlin.android`, déjà mis en cache
+par un build antérieur). Résolu en ajoutant un dépôt Maven local de repli
+(contenant ce marqueur officiel téléchargé depuis Maven Central, fichier
+non modifié) via un script d'initialisation Gradle **global à la machine**
+(`~/.gradle/init.d/`), jamais commité dans aucun dépôt — ne concerne que
+cet environnement, aucune modification des fichiers de build du projet
+n'était nécessaire au-delà de l'ajout normal du plugin `kotlin.jvm`.
