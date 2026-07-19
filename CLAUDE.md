@@ -47,12 +47,17 @@ canaux de communication, à ne jamais confondre dans le code ou la doc :
    partagée par le chef d'équipe — voir
    `docs/VOLUME_CALCULATION_NEXT_GEN.md` §17, `encodeTeamKeyQr`).
 
-Ces trois canaux sont déjà posés au niveau architecture réseau générique
-dans **RFC-0003** (`Quintessences/02_RFC/RFC-0003.md`, statut *Proposé*)
-— stack GSIE-Net en couches (physique/transport/GSIE-Net/métier). Toute
-évolution de cette architecture réseau doit rester cohérente avec
-RFC-0003 ; la valider/amender relève du Fondateur (Quintessences), pas
-de ce dépôt.
+Ces trois canaux s'inspirent de l'architecture réseau générique posée
+dans **RFC-0003** (`Quintessences/02_RFC/RFC-0003.md`, statut *Proposé*
+— non encore activé, à valider par le Fondateur en Phase 2) — stack
+GSIE-Net en couches (physique/transport/GSIE-Net/métier). À noter :
+RFC-0003 décrit le Bluetooth comme lien **téléphone ↔ module radio
+XIAO+SX1262** (Niveau 1), pas comme canal phone-to-phone entre deux
+techniciens — le canal 2 ci-dessus est une spécificité GeoSylva non
+encore ancrée dans le RFC. Le canal 3 (LoRa mesh) correspond au
+Niveau 2 du RFC. Toute évolution de cette architecture réseau doit
+rester cohérente avec RFC-0003 ; la valider/amender relève du
+Fondateur (Quintessences), pas de ce dépôt.
 
 ## 4. Garde-fou scientifique — même discipline qu'ADR-007 (GSIE)
 
@@ -60,12 +65,15 @@ Le Knowledge Engine GSIE applique ADR-007 : aucun coefficient
 scientifique n'est inventé, tout est sourcé. GeoSylva n'est pas
 contractuellement lié à cet ADR, mais **doit appliquer le même principe
 en pratique** : les coefficients dendrométriques (Schaeffer, Algan, IFN
-dans `TarifData.kt`) sont déjà bien sourcés (citations en en-tête). Un
-écart connu existe : `ExpertForestryCalculator.kt` fonction
-`getSchumacherHallParameters()` — coefficients par essence (chêne,
-hêtre, sapin) **sans citation**, à corriger en priorité (soit sourcer
-depuis une vraie publication INRAE/IGN, soit brancher sur le Knowledge
-Engine GSIE une fois ses propres coefficients sourcés).
+dans `TarifData.kt`) sont déjà bien sourcés (citations en en-tête). Les
+coefficients Schumacher-Hall par essence de
+`ExpertForestryCalculator.getSchumacherHallParameters()` sont désormais
+sourcés via `SylvicultureDatabase` (28 essences, coefficients Vallet et
+al. 2006, *Revue Forestière Française* LVIII(5):481-496) — l'alias
+historique `ABAL`→`ABBA` (Sapin pectiné) garantit que le code métier
+hérité profite bien des coefficients sourcés plutôt que du repli
+générique. Le repli générique reste marqué « ⚠ non sourcé » et ne doit
+servir que pour les essences absentes de la base.
 
 ## 5. Conventions
 
