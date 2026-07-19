@@ -775,7 +775,10 @@ fun MartelageScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbar) },
         topBar = {
-            val topBarBackground = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+            // Le martelage est un écran de décision : la lisibilité prime sur le décor.
+            // La photographie reste visible en arrière-plan, mais ne doit pas concurrencer
+            // les indicateurs dendrométriques et les actions terrain.
+            val topBarBackground = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
             val topBarContent = ColorUtils.getContrastingTextColor(topBarBackground)
             TopAppBar(
                 title = { Text(stringResource(R.string.martelage_before_cut_title)) },
@@ -856,7 +859,7 @@ fun MartelageScreen(
             val contentScrollState = rememberScrollState()
 
             // Fond semi-opaque pour le contenu et couleur de texte auto-contrastée globale
-            val pageBackground = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f)
+            val pageBackground = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
             val pageTextColor = ColorUtils.getContrastingTextColor(pageBackground)
 
             CompositionLocalProvider(LocalContentColor provides pageTextColor) {
@@ -867,7 +870,7 @@ fun MartelageScreen(
                         .verticalScroll(contentScrollState)
                         .padding(padding)
                         .background(pageBackground)
-                        .padding(12.dp)
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
                         .animateContentSize(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {

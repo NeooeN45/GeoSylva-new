@@ -19,7 +19,7 @@ Ce fichier est la **source de vérité technique** pour comprendre le code de Ge
 
 GeoSylva est une application Android (Kotlin / Jetpack Compose) de **gestion forestière de terrain** : inventaire, martelage, diagnostic sylvicole, IBP CNPF, cartographie, exports SIG.
 
-**Version actuelle** : 2.3.0 (versionCode 9)
+**Version actuelle** : 2.4.0 (versionCode 10)
 **DB version** : 32 (mis à jour 2026-07-01, était 29 au 2026-06-29 — voir `MASTER_PLAN.md` §2.4 pour le détail des items déjà résolus depuis l'audit initial)
 **Statut** : En développement — voir `MASTER_PLAN.md` §2.4/§3.2 pour le statut vérifié (Phase 0 sécurité/RGPD très avancée, Phase 1 i18n/perf encore largement à faire)
 
@@ -33,11 +33,11 @@ GeoSylva est une application Android (Kotlin / Jetpack Compose) de **gestion for
 | UI | Jetpack Compose | BOM 2024.09.00 | À mettre à jour |
 | Design | Material 3 | — | Dark mode + dynamic colors |
 | Navigation | Navigation Compose | 2.8.5 | Sealed class Screen, 5 sous-graphes |
-| Persistance | Room | 2.6.1 | DB v29, 4 entités commentées (problème KSP) |
+| Persistance | Room | 2.6.1 | DB v32, migrations actives |
 | Préférences | DataStore | 1.0.0 | Non chiffré (à corriger) |
 | Sérialisation | kotlinx.serialization | 1.6.3 | |
 | Coroutines | kotlinx.coroutines | 1.8.1 | Bien scopées (viewModelScope, lifecycleScope) |
-| Network | OkHttp | 4.12.0 | SecureHttpClient existe mais cert pinning désactivé |
+| Network | OkHttp | 4.12.0 | SecureHttpClient avec certificate pinning actif en release |
 | Maps | MapLibre GL | 10.3.1 | 12 couches carto |
 | Camera | CameraX | 1.3.3 | Clinomètre numérique |
 | Location | Play Services Location | 21.3.0 | + LocationManager legacy (à remplacer) |
@@ -47,7 +47,7 @@ GeoSylva est une application Android (Kotlin / Jetpack Compose) de **gestion for
 | Formules | exp4j | 0.4.8 | FormulaParser |
 | Build | AGP | 8.2.2 | À monter vers 8.6.0+ |
 | SDK | compileSdk/targetSdk | 35 | minSdk 26 |
-| Chiffrement DB | SQLCipher | **DÉSACTIVÉ** | Commenté — CRITICAL à réactiver |
+| Chiffrement DB | SQLCipher | **ACTIF** | Clé stockée via Android Keystore |
 
 ---
 
@@ -79,7 +79,7 @@ com.forestry.counter/
 │   ├── classification/      # Classification
 │   └── usecase/             # Use cases (export, import, brain, confidence, network, pack, territory, autecology, florist, fertility, ripisylve, station, sylviculture)
 ├── network/                 # Couche réseau
-│   ├── SecureHttpClient.kt  # OkHttp + cert pinning (DÉSACTIVÉ)
+│   ├── SecureHttpClient.kt  # OkHttp + cert pinning (actif en release)
 │   ├── SecureTileService.kt
 │   └── MobileCoverageEngine.kt
 ├── security/                # Couche sécurité
@@ -102,7 +102,7 @@ com.forestry.counter/
 | Application | `ForestryCounterApplication.kt` |
 | Activity | `presentation/MainActivity.kt` |
 | Navigation | `presentation/navigation/ForestryNavigation.kt` |
-| Database | `data/local/ForestryDatabase.kt` (DB v29) |
+| Database | `data/local/ForestryDatabase.kt` (DB v32) |
 | Preferences | `data/preferences/UserPreferences.kt` |
 | Calculator | `domain/calculation/ForestryCalculator.kt` |
 | Tarifs | `domain/calculation/TarifCalculator.kt` + `TarifData.kt` |
@@ -265,8 +265,8 @@ Fichier clé : `domain/calculation/ForestryCalculator.kt`
 
 | Élément | Statut | Fichier |
 |---|---|---|
-| SQLCipher | **DÉSACTIVÉ** (commenté) | `build.gradle.kts:220`, `ForestryDatabase.kt:124-137` |
-| Certificate pinning | **DÉSACTIVÉ** (commenté) | `SecureHttpClient.kt:47-56` |
+| SQLCipher | **ACTIF** | `build.gradle.kts`, `ForestryDatabase.kt` |
+| Certificate pinning | **ACTIF en release** (désactivé en debug) | `SecureHttpClient.kt` |
 | FLAG_SECURE | **Absent** | `MainActivity.kt` |
 | DataStore chiffrement | **Absent** | `UserPreferences.kt` |
 | Root detection | **Absent** | — |
@@ -346,7 +346,7 @@ Voir `docs/RGPD_AUDIT_REPORT.md` + `AUDIT_GLOBAL_GEOSYLVA.md` §6.
 ### 13.2 Configuration
 
 - `compileSdk = 35`, `targetSdk = 35`, `minSdk = 26`
-- `versionCode = 9`, `versionName = "2.3.0"`
+- `versionCode = 10`, `versionName = "2.4.0"`
 - `BUILD_ID` injecté à chaque compilation (timestamp)
 - Signing : `keystore.properties` externalisé, conditionnel
 - ProGuard : `proguard-android-optimize.txt` + `proguard-rules.pro`
@@ -388,4 +388,4 @@ Priorité immédiate :
 
 ---
 
-*Document mis à jour le 2026-06-29. Source de vérité technique pour GeoSylva v2.3.0.*
+*Document mis à jour le 2026-07-17. Source de vérité technique pour GeoSylva v2.4.0.*

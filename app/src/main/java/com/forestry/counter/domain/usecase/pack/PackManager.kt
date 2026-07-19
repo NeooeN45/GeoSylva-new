@@ -6,15 +6,22 @@ import com.forestry.counter.domain.model.pack.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
+import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import java.security.MessageDigest
 
 /**
  * Gestionnaire de packs GeoSylva.
  *
  * Responsabilités :
  * - inventaire des packs installés / disponibles
- * - téléchargement de packs (⚠ actuellement simulé — voir TODO(#4) dans installPack())
+ * - téléchargement vérifié des packs quand une URL et un SHA-256 sont fournis
  * - cache disque des métadonnées
  * - flag feature pour activation progressive des modules
  * - API propre pour le PackManagerScreen
@@ -77,7 +84,7 @@ class PackManager(private val context: Context) {
 
         // Packs régionaux (catalogue officiel, état installé ou disponible)
         PackResolver.REGIONAL_CATALOG.forEach { desc ->
-            val isInstalled = desc.id in installedIds
+            val isInstalled = desc.id in installedIds && packFile(desc).isFile
             val storedVersion = versions[desc.id]
             val hasUpdate = isInstalled && storedVersion != null && storedVersion != desc.version
             result += desc.copy(
@@ -103,11 +110,9 @@ class PackManager(private val context: Context) {
     /**
      * Démarre l'installation d'un pack GeoSylva.
      *
-     * ⚠ **Implémentation actuelle** : simulation de progression (800 ms) sans téléchargement réel.
-     * Le pack est immédiatement marqué installé dans SharedPreferences.
-     *
-     * **À faire** (voir TODO(#4) dans le corps) : téléchargement HTTP signé depuis
-     * le serveur de distribution GeoSylva + validation checksum SHA-256.
+     * Le pack n'est marqué installé qu'après téléchargement complet et validation
+     * du checksum SHA-256. Une URL ou un checksum manquant provoque une erreur
+     * explicite : un pack ne peut plus être présenté comme installé par simulation.
      *
      * @param packId    Identifiant du pack (ex: `fr.region.11`, `fr.dept.75`)
      * @param onProgress Callback de progression [0.0 ; 1.0]
@@ -115,32 +120,33 @@ class PackManager(private val context: Context) {
     suspend fun installPack(packId: String, onProgress: (Float) -> Unit = {}) {
         val pack = _packState.value.allPacks.find { it.id == packId } ?: return
         if (pack.status == PackStatus.EMBEDDED) return
+        val url = pack.downloadUrl?.takeIf { it.isNotBlank() }
+            ?: throw IllegalStateException("Aucune URL de téléchargement pour ${pack.id}")
+        val expectedSha = pack.checksum?.trim()?.lowercase()?.takeIf { it.matches(Regex("[0-9a-f]{64}")) }
+            ?: throw IllegalStateException("Checksum SHA-256 manquant ou invalide pour ${pack.id}")
 
-        // ⚠ FONCTIONNALITÉ NON IMPLÉMENTÉE — simulation de progression uniquement.
-        // TODO(#4): Remplacer par un vrai téléchargement HTTP depuis
-        //   https://api.geosylva.fr/packs/{packId}/download
-        //   — OkHttp avec checksum SHA-256, retry × 3, timeout 120 s.
-        //   — Stocker le fichier dans context.filesDir/packs/{packId}/
-        //   — Valider signature avant activation (clé publique embarquée).
-        // Comportement actuel : simule une progression en 10 étapes (~800 ms total)
-        // pour permettre le test de l'UI sans serveur de distribution.
         updateDownloadProgress(packId, 0f)
-        var progress = 0f
-        while (progress < 1f) {
-            progress = (progress + 0.1f).coerceAtMost(1f)
-            updateDownloadProgress(packId, progress)
-            onProgress(progress)
-            kotlinx.coroutines.delay(80)
+        val target = packFile(pack)
+        val partial = File(target.parentFile, "${target.name}.part")
+        try {
+            target.parentFile?.mkdirs()
+            withContext(Dispatchers.IO) {
+                downloadWithChecksum(URL(url), partial, expectedSha) { progress ->
+                    updateDownloadProgress(packId, progress)
+                    onProgress(progress)
+                }
+            }
+            if (!partial.renameTo(target)) error("Impossible d'activer le fichier téléchargé")
+            saveInstalledIds(loadInstalledIds() + packId)
+            saveStoredVersions(loadStoredVersions() + (packId to pack.version))
+            refreshState()
+        } catch (error: Throwable) {
+            partial.delete()
+            updateDownloadProgress(packId, -1f)
+            _packState.value = _packState.value.copy(lastError = error.message ?: "Échec du téléchargement")
+            throw error
         }
-
-        // Marquer comme installé
-        val updatedIds = loadInstalledIds() + packId
-        saveInstalledIds(updatedIds)
-        val updatedVersions = loadStoredVersions() + (packId to pack.version)
-        saveStoredVersions(updatedVersions)
-
-        updateDownloadProgress(packId, -1f) // -1 = terminé
-        refreshState()
+        updateDownloadProgress(packId, -1f)
     }
 
     /**
@@ -153,7 +159,48 @@ class PackManager(private val context: Context) {
 
         val updatedIds = loadInstalledIds() - packId
         saveInstalledIds(updatedIds)
+        _packState.value.allPacks.find { it.id == packId }?.let { packFile(it).parentFile?.deleteRecursively() }
         refreshState()
+    }
+
+    private fun packFile(pack: GeoPackDescriptor): File =
+        File(context.filesDir, "packs/${pack.id}/${pack.version}.pack")
+
+    private fun downloadWithChecksum(
+        url: URL,
+        destination: File,
+        expectedSha256: String,
+        onProgress: (Float) -> Unit
+    ) {
+        val connection = (url.openConnection() as HttpURLConnection).apply {
+            connectTimeout = 15_000
+            readTimeout = 120_000
+            requestMethod = "GET"
+            instanceFollowRedirects = true
+        }
+        try {
+            check(connection.responseCode in 200..299) { "Serveur packs HTTP ${connection.responseCode}" }
+            val total = connection.contentLengthLong
+            val digest = MessageDigest.getInstance("SHA-256")
+            connection.inputStream.use { input ->
+                FileOutputStream(destination).use { output ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    var readTotal = 0L
+                    var read: Int
+                    while (input.read(buffer).also { read = it } >= 0) {
+                        if (read == 0) continue
+                        output.write(buffer, 0, read)
+                        digest.update(buffer, 0, read)
+                        readTotal += read
+                        if (total > 0) onProgress((readTotal.toFloat() / total).coerceIn(0f, 1f))
+                    }
+                }
+            }
+            val actualSha256 = digest.digest().joinToString("") { "%02x".format(it) }
+            check(actualSha256 == expectedSha256) { "Checksum SHA-256 invalide pour ${url.path}" }
+        } finally {
+            connection.disconnect()
+        }
     }
 
     /**

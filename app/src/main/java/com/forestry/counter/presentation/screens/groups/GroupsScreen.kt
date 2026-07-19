@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import coil.compose.AsyncImage
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
@@ -48,8 +49,6 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import android.os.Build
 import android.app.Activity
-import android.net.Uri
-import android.widget.ImageView
 import eightbitlab.com.blurview.BlurView
 import eightbitlab.com.blurview.RenderEffectBlur
 import android.view.ViewGroup
@@ -105,17 +104,11 @@ fun GroupsScreen(
         if (backgroundImageEnabled) {
             val uriString = backgroundImageUri
             if (uriString != null) {
-                val uri = remember(uriString) { Uri.parse(uriString) }
-                AndroidView(
+                AsyncImage(
+                    model = uriString,
+                    contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
-                    factory = { context ->
-                        ImageView(context).apply {
-                            scaleType = ImageView.ScaleType.CENTER_CROP
-                        }
-                    },
-                    update = { imageView ->
-                        imageView.setImageURI(uri)
-                    }
+                    contentScale = ContentScale.Crop
                 )
             } else {
                 Image(

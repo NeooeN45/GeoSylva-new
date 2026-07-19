@@ -572,69 +572,22 @@ fun MapScreen(
                 )
             }
 
-            // Zoom initial sur la position GPS à altitude modérée quand pas de données d'arbres
-            LaunchedEffect(mapReady, hasLocationPermission) {
-                val map = mapLibreMap ?: return@LaunchedEffect
-                if (!mapReady) return@LaunchedEffect
-                // Attendre un peu pour laisser le LocationComponent s'initialiser
-                kotlinx.coroutines.delay(600)
-                if (displayedGeoTiges.isNotEmpty()) return@LaunchedEffect
-                try {
-                    val lc = map.locationComponent
-                    val lastLoc = lc.lastKnownLocation
-                    if (lastLoc != null) {
-                        map.animateCamera(
-                            CameraUpdateFactory.newLatLngZoom(
-                                LatLng(lastLoc.latitude, lastLoc.longitude), 13.0
-                            ), 1000
-                        )
-                    }
-                } catch (_: Throwable) { /* permission pas encore accordée */ }
-            }
-
-            // Ajouter/mettre à jour les tiges (source GeoJSON + clusters) quand la carte et les données sont prêtes
-            LaunchedEffect(mapReady, filteredGeoTiges, essenceColors) {
-                val map = mapLibreMap ?: return@LaunchedEffect
-                if (!mapReady) return@LaunchedEffect
-
-                map.getStyle { style ->
-                    renderTigesOnMap(style, filteredGeoTiges, essenceMap, essenceColors)
-                }
-
-                if (displayedGeoTiges.isNotEmpty()) {
-                    val boundsBuilder = LatLngBounds.Builder()
-                    displayedGeoTiges.forEach { (_, lon, lat) ->
-                        boundsBuilder.include(LatLng(lat, lon))
-                    }
-                    try {
-                        val bounds = boundsBuilder.build()
-                        map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100), 800)
-                    } catch (_: Throwable) {
-                        val first = displayedGeoTiges.first()
-                        map.animateCamera(
-                            CameraUpdateFactory.newLatLngZoom(LatLng(first.third, first.second), 17.0),
-                            800
-                        )
-                    }
-                }
-            }
-
-            // ── Mettre à jour le tracé GPS sur la carte ──
-            LaunchedEffect(mapReady, traceState) {
-                val map = mapLibreMap ?: return@LaunchedEffect
-                if (!mapReady) return@LaunchedEffect
-                map.getStyle { style -> renderTraceOnMap(style, gpsTracer) }
-            }
-
-            // ── Mettre à jour la couche de mesure ──
-            LaunchedEffect(mapReady, measurePoints, measureMode, measureColor) {
-                val map = mapLibreMap ?: return@LaunchedEffect
-                if (!mapReady) return@LaunchedEffect
-                map.getStyle { style ->
-                    try { renderMeasureOnMap(style, measurePoints, measureMode, measureColor.toArgb()) }
-                    catch (e: Throwable) { Log.w(TAG, "renderMeasureOnMap failed", e) }
-                }
-            }
+            // ── Side-effects de rendu carte ──
+            MapRenderEffects(
+                mapLibreMap = mapLibreMap,
+                mapReady = mapReady,
+                hasLocationPermission = hasLocationPermission,
+                displayedGeoTiges = displayedGeoTiges,
+                filteredGeoTiges = filteredGeoTiges,
+                geoTiges = geoTiges,
+                essenceColors = essenceColors,
+                essenceMap = essenceMap,
+                traceState = traceState,
+                gpsTracer = gpsTracer,
+                measurePoints = measurePoints,
+                measureMode = measureMode,
+                measureColor = measureColor
+            )
 
             // ── Panneau sélecteur de couches (par catégorie) ──
             MapLayerPicker(

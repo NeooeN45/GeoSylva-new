@@ -8,7 +8,6 @@
 [![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)](LICENSE)
-[![No Forks](https://img.shields.io/badge/Forks-NOT%20ALLOWED-red?style=for-the-badge)](CONTRIBUTING.md)
 
 **Conçue par des forestiers, pour les forestiers.**
 Inventaire terrain, martelage, cartographie et synthèse dendrométrique — entièrement hors-ligne.
@@ -359,9 +358,7 @@ Requise pour une utilisation **sans les obligations AGPL-3.0** (intégration pro
 
 ## 👥 Contribution
 
-> ⛔ **Les forks de ce dépôt sont strictement interdits.**
->
-> GeoSylva est un projet en développement actif et contrôlé. Toute copie du code source dans un dépôt tiers, redistribution sous un autre nom ou réutilisation commerciale sans licence commerciale explicite constitue une violation des conditions d'utilisation et de la licence AGPL-3.0.
+> GeoSylva est distribué sous licence AGPL-3.0. Les forks et les modifications sont autorisés à condition de respecter cette licence : conserver les mentions de droit d'auteur, redistribuer sous AGPL-3.0 et fournir le code source correspondant lors d'une mise à disposition réseau. Les intégrations commerciales nécessitant des conditions différentes doivent faire l'objet d'un accord séparé.
 
 ### 💬 Vos retours sont précieux — et fortement encouragés !
 

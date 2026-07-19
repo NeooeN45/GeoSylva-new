@@ -22,8 +22,8 @@ android {
         applicationId = "com.forestry.counter"
         minSdk = 26
         targetSdk = 35
-        versionCode = 9
-        versionName = "2.3.0"
+        versionCode = 10
+        versionName = "2.4.0"
 
         val buildId = LocalDateTime.now()
             .format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
@@ -137,6 +137,7 @@ ksp {
 }
 
 dependencies {
+    implementation(libs.coil.compose)
     // Core Android
     implementation(libs.core.ktx)
     implementation(libs.core.splashscreen)

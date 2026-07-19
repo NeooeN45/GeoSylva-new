@@ -1815,8 +1815,9 @@ internal fun DataCompletenessCard(stats: MartelageStats) {
     val completenessScore = run {
         var score = 0
         if (stats.nTotal > 0)                     score += 20
-        if (stats.volumeCompletenessPct > 0.5)     score += 20
-        if (stats.volumeCompletenessPct > 0.9)     score += 10
+        // volumeCompletenessPct est un pourcentage (0..100), pas une fraction.
+        if (stats.volumeCompletenessPct > 50.0)    score += 20
+        if (stats.volumeCompletenessPct > 90.0)    score += 10
         if (stats.qualityAssessedCount > 0)        score += 15
         if (stats.qualityAssessedCount >= stats.qualityTotalCount && stats.qualityTotalCount > 0) score += 10
         if (stats.surfaceHa > 0)                  score += 10
@@ -1843,10 +1844,10 @@ internal fun DataCompletenessCard(stats: MartelageStats) {
             "Seulement ${stats.nTotal} tige(s). La précision des indicateurs est faible. Visez ≥ 30 tiges pour une analyse fiable.", urgent = true))
         if (stats.surfaceHa <= 0.0) add(Tip("📐", "Surface non renseignée",
             "Sans surface connue, les indicateurs /ha sont incorrects. Renseignez la surface de la parcelle.", urgent = true))
-        if (stats.volumeCompletenessPct < 0.5) add(Tip("📡", "Hauteurs manquantes",
-            "${(100 - stats.volumeCompletenessPct * 100).toInt()}% des tiges n'ont pas de hauteur. " +
+        if (stats.volumeCompletenessPct < 50.0) add(Tip("📡", "Hauteurs manquantes",
+            "${(100 - stats.volumeCompletenessPct).toInt()}% des tiges n'ont pas de hauteur. " +
             "Utilisez un tarif 1 entrée (Schaeffer, IFN Rapide ou Chaudé) ou saisissez des hauteurs d'arbres-type.", urgent = true))
-        else if (stats.volumeCompletenessPct < 0.9) add(Tip("📡", "Quelques hauteurs manquantes",
+        else if (stats.volumeCompletenessPct < 90.0) add(Tip("📡", "Quelques hauteurs manquantes",
             "${stats.missingHeightEssenceNames.take(3).joinToString(", ")} — " +
             "l'application estime le volume pour ces essences via tarif 1 entrée."))
         if (stats.qualityAssessedCount == 0 && stats.nTotal > 0) add(Tip("🔍", "Qualité non évaluée",
@@ -1865,7 +1866,7 @@ internal fun DataCompletenessCard(stats: MartelageStats) {
 
     // ── Recommandation tarif ───────────────────────────────────────────────
     val tarifReco = when {
-        stats.volumeCompletenessPct > 0.85 -> "Tarif 2 entrées recommandé (Algan, Schaeffer 2E, IFN Lent) — hauteurs disponibles."
+        stats.volumeCompletenessPct > 85.0 -> "Tarif 2 entrées recommandé (Algan, Schaeffer 2E, IFN Lent) — hauteurs disponibles."
         stats.volumeCompletenessPct > 0.0  -> "Tarif mixte : 2 entrées où disponible, sinon Chaudé ou IFN Rapide pour les tiges sans hauteur."
         else                               -> "Tarif 1 entrée recommandé : Chaudé (arbres sur pied) pour feuillus, IFN Rapide pour résineux."
     }

@@ -52,5 +52,13 @@ martelage_calcul/
 
 # Captures / generated
 *.hprof
+replay_pid*.log
+hs_err_pid*.log
+
+# Build outputs and local performance artifacts
+app/build/
+.gradle/
+**/mapping/
+**/reports/
 *.log
 gsie/
