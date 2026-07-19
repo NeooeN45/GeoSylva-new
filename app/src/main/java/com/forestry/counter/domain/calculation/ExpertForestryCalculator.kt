@@ -528,8 +528,10 @@ class ExpertForestryCalculator(
     /**
      * Coefficients Schumacher-Hall (a, b, c) pour une essence.
      *
-     * Source principale : [SylvicultureDatabase] (30 essences, coefficients
+     * Source principale : [SylvicultureDatabase] (28 essences, coefficients
      * Vallet et al. (2006) ajustés sur placettes IFN — voir sa docstring).
+     * Les alias historiques (ex: "ABAL" pour le Sapin pectiné "ABBA") sont
+     * résolus par [SylvicultureDatabase.findById].
      * Repli sur des valeurs génériques uniquement pour une essence absente
      * de cette base (⚠ non sourcées par publication spécifique — à
      * remplacer dès qu'une essence manquante est ajoutée à
@@ -539,10 +541,11 @@ class ExpertForestryCalculator(
         SylvicultureDatabase.findById(essenceCode)?.let { fiche ->
             return SchumacherHallParameters(fiche.cubageA, fiche.cubageB, fiche.cubageC)
         }
+        // Repli générique non sourcé — uniquement pour les essences absentes
+        // de SylvicultureDatabase. QUIL/QURU/FASY/ABAL/QUPE/QUPES/QUPU y sont
+        // toutes présentes (ou aliasées) et ne doivent jamais tomber ici.
         return when (essenceCode.uppercase()) {
-            "QUPE", "QUPES", "QUPU", "QUIL", "QURU" -> SchumacherHallParameters(-2.0, 2.0, 1.0)
             "FASY" -> SchumacherHallParameters(-2.2, 2.1, 0.95)
-            "ABAL" -> SchumacherHallParameters(-1.8, 1.9, 1.05)
             else -> SchumacherHallParameters(-2.0, 2.0, 1.0)
         }
     }

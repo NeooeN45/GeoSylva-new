@@ -438,11 +438,37 @@ class ExpertForestryCalculatorTest {
 
     @Test
     fun `should_fall_back_to_generic_parameters_for_essence_absent_from_database`() {
-        // Une essence absente de SylvicultureDatabase (30 essences) doit
+        // Une essence absente de SylvicultureDatabase (28 essences) doit
         // utiliser le repli générique plutôt que planter.
         val calc = buildCalculator()
         val volume = calc.schumacherHallVolume("ESSENCE_INCONNUE_TEST", 40.0, 22.0)
 
         assertTrue("Le repli générique doit produire un volume positif", volume > 0.0)
+    }
+
+    @Test
+    fun `should_resolve_abal_alias_to_abba_sourced_coefficients`() {
+        // Le code métier historique utilise "ABAL" pour le Sapin pectiné,
+        // tandis que SylvicultureDatabase utilise "ABBA". L'alias doit
+        // résoudre vers les coefficients sourcés (Vallet et al. 2006) et
+        // non vers le repli générique non sourcé — garde-fou ADR-007.
+        val calc = buildCalculator()
+        val volumeAbal = calc.schumacherHallVolume("ABAL", 40.0, 22.0)
+        val volumeAbba = calc.schumacherHallVolume("ABBA", 40.0, 22.0)
+
+        assertEquals(
+            "ABAL (alias hérité) et ABBA (canonique) doivent donner le même volume",
+            volumeAbba,
+            volumeAbal,
+            0.0001
+        )
+        // Garde-fou : le volume sourc ABBA doit différer du repli générique
+        // (-2.0, 2.0, 1.0) pour garantir qu'on n'utilise pas silencieusement
+        // le repli non sourcé.
+        val volumeRepli = calc.schumacherHallVolume("ESSENCE_INCONNUE_TEST", 40.0, 22.0)
+        assertTrue(
+            "ABBA doit utiliser des coefficients sourcés distincts du repli générique",
+            abs(volumeAbba - volumeRepli) > 0.01
+        )
     }
 }

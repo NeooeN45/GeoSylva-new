@@ -1,7 +1,7 @@
 package com.forestry.counter.domain.usecase.sylviculture
 
 /**
- * Base de données sylvicoles — 30 essences avec paramètres de cubage et de croissance.
+ * Base de données sylvicoles — 28 essences avec paramètres de cubage et de croissance.
  *
  * ## Sources scientifiques
  *
@@ -93,7 +93,25 @@ object SylvicultureDatabase {
     }
 
     /** Lookup par ID (code essence canonique, ex: "QUPE" ou "FASY"). */
-    fun findById(id: String): FicheEssence? = ALL.find { it.id.equals(id, ignoreCase = true) }
+    fun findById(id: String): FicheEssence? {
+        val normalized = id.trim().uppercase()
+        val aliased = ALIASES[normalized] ?: normalized
+        return ALL.find { it.id.equals(aliased, ignoreCase = true) }
+    }
+
+    /**
+     * Alias d'identifiants d'essences : mappe les codes historiques utilisés
+     * dans le code métier (ExpertForestryCalculator, PathoEntomoDatabase,
+     * AutecologyStubs…) vers les codes canoniques de cette base.
+     *
+     * Sans cette table, un appel `findById("ABAL")` (Sapin pectiné, code
+     * hérité) ne trouverait pas la fiche `ABBA` et retomberait silencieusement
+     * sur des coefficients de cubage non sourcés — contournant le garde-fou
+     * ADR-007 (aucun coefficient scientifique non sourcé).
+     */
+    private val ALIASES: Map<String, String> = mapOf(
+        "ABAL" to "ABBA"   // Sapin pectiné — Abies alba
+    )
 
     /** Lookup tolérant sur le nom français ou scientifique. */
     fun findByName(query: String): List<FicheEssence> {
