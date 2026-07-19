@@ -123,6 +123,11 @@ class PackManager(private val context: Context) {
         val expectedSha = pack.checksum?.trim()?.lowercase()?.takeIf { it.matches(Regex("[0-9a-f]{64}")) }
             ?: throw IllegalStateException("Checksum SHA-256 manquant ou invalide pour ${pack.id}")
 
+        // Sécurité : HTTPS obligatoire. Le SHA-256 protège l'intégrité mais
+        // pas la confidentialité de la source — un MITM sur HTTP pourrait
+        // observer le flux. Validé ici (API publique) plutôt que dans
+        // downloadWithChecksum (fonction pure testée avec MockWebServer HTTP).
+        checkHttpsScheme(URL(url))
         updateDownloadProgress(packId, 0f)
         val target = packFile(pack)
         val partial = File(target.parentFile, "${target.name}.part")

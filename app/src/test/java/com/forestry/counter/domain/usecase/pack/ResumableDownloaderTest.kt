@@ -166,6 +166,48 @@ class ResumableDownloaderTest {
     }
 
     @Test
+    fun `schema non HTTPS est rejete explicitement`() {
+        // Le SHA-256 protège l'intégrité mais pas la confidentialité de la
+        // source — HTTP est interdit pour éviter un MITM qui observerait le
+        // flux. Validé par checkHttpsScheme (fonction pure) car MockWebServer
+        // tourne en HTTP, ce qui rendrait impossible le déclenchement de
+        // cette branche via un téléchargement mocké.
+        val httpUrl = URL("http://example.com/pack/region.pack")
+        val error = runCatching { checkHttpsScheme(httpUrl) }.exceptionOrNull()
+
+        assertTrue(error is IllegalArgumentException)
+        assertTrue(error?.message?.contains("HTTPS obligatoire") == true)
+        assertTrue(error?.message?.contains("http") == true)
+    }
+
+    @Test
+    fun `schema HTTPS est accepte`() {
+        // Garde-fou symétrique : la fonction ne doit pas lever pour HTTPS.
+        checkHttpsScheme(URL("https://example.com/pack/region.pack"))
+        checkHttpsScheme(URL("HTTPS://example.com/pack/region.pack"))
+    }
+
+    @Test
+    fun `pack depassant la taille maximale est rejete`() {
+        // Garde-fou streaming : un serveur compromis peut mentir sur
+        // Content-Length ou l'omettre et streamer indéfiniment. checkPackSize
+        // impose un plafond dur (MAX_PACK_BYTES = 512 Mo) indépendant de
+        // l'en-tête serveur.
+        val oversized = 600L * 1024 * 1024 // 600 Mo > 512 Mo
+        val error = runCatching { checkPackSize(oversized, "/pack/region.pack") }.exceptionOrNull()
+
+        assertTrue(error is IllegalStateException)
+        assertTrue(error?.message?.contains("trop volumineux") == true)
+    }
+
+    @Test
+    fun `pack sous la taille maximale est accepte`() {
+        // Garde-fou symétrique : la fonction ne doit pas lever sous le plafond.
+        checkPackSize(0L, "/pack/empty.pack")
+        checkPackSize(512L * 1024 * 1024, "/pack/limit.pack") // exactement 512 Mo
+    }
+
+    @Test
     fun `code HTTP d'erreur serveur est signale explicitement`() {
         server.enqueue(MockResponse().setResponseCode(500))
 
