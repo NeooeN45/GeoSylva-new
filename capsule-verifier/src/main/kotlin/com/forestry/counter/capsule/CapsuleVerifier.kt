@@ -110,7 +110,9 @@ class ZipCapsuleVerifier : CapsuleVerifier {
                 throw CapsuleVerificationError.CapsuleIdMismatch()
             }
 
-            val manifestSignature = manifest.get("signature") as JsonValue.Obj
+            val manifestSignature =
+                manifest.get("signature") as? JsonValue.Obj
+                    ?: throw CapsuleVerificationError.InvalidManifestField("Métadonnée de signature absente du manifeste")
             if ((signatureDocument.get("schema_version") as? JsonValue.Str)?.value != SIGNATURE_SCHEMA_VERSION) {
                 throw CapsuleVerificationError.UnsupportedSignatureVersion(
                     "Version du document de signature non supportée"
@@ -174,6 +176,15 @@ class ZipCapsuleVerifier : CapsuleVerifier {
                         if (read < 0) break
                         digest.update(buffer, 0, read)
                         observedSize += read
+                        // Garde-fou streaming : un ZIP avec un en-tête
+                        // central mensonger pourrait faire décompresser bien
+                        // plus que la taille déclarée. On impose le plafond
+                        // pendant la lecture, pas seulement a posteriori.
+                        if (observedSize > policy.maxMemberUncompressedBytes) {
+                            throw CapsuleVerificationError.BudgetExceeded(
+                                "Membre ${entry.path} dépasse le plafond en streaming : $observedSize octets"
+                            )
+                        }
                     }
                 }
                 val observedDigest = digest.digest().joinToString("") { "%02x".format(it) }
@@ -198,11 +209,21 @@ class ZipCapsuleVerifier : CapsuleVerifier {
                 }
             }
 
-            val territory = manifest.get("territory") as JsonValue.Obj
-            val territoryId = (territory.get("territory_id") as JsonValue.Str).value
-            val capsuleId = (manifest.get("capsule_id") as JsonValue.Str).value
-            val schemaVersion = (manifest.get("schema_version") as JsonValue.Str).value
-            val createdAt = (manifest.get("created_at") as JsonValue.Str).value
+            val territory =
+                manifest.get("territory") as? JsonValue.Obj
+                    ?: throw CapsuleVerificationError.InvalidManifestField("Résumé territorial absent du manifeste")
+            val territoryId =
+                (territory.get("territory_id") as? JsonValue.Str)?.value
+                    ?: throw CapsuleVerificationError.InvalidManifestField("territory_id absent du manifeste")
+            val capsuleId =
+                (manifest.get("capsule_id") as? JsonValue.Str)?.value
+                    ?: throw CapsuleVerificationError.InvalidManifestField("capsule_id absent du manifeste")
+            val schemaVersion =
+                (manifest.get("schema_version") as? JsonValue.Str)?.value
+                    ?: throw CapsuleVerificationError.InvalidManifestField("schema_version absent du manifeste")
+            val createdAt =
+                (manifest.get("created_at") as? JsonValue.Str)?.value
+                    ?: throw CapsuleVerificationError.InvalidManifestField("created_at absent du manifeste")
 
             return VerifiedCapsuleManifest(
                 capsuleId = capsuleId,
@@ -266,7 +287,43 @@ class ZipCapsuleVerifier : CapsuleVerifier {
         if (entry.size > policy.maxMetadataBytes) {
             throw CapsuleVerificationError.BudgetExceeded("Métadonnée trop volumineuse : $name")
         }
-        return archive.getInputStream(entry).use { it.readBytes() }
+        // Lecture bornée en streaming : entry.size vient de l'en-tête ZIP
+        // (potentiellement mensonger). On lit avec un plafond dur pour
+        // éviter qu'un membre malicieux ne remplisse la mémoire avant la
+        // vérification a posteriori.
+        return archive.getInputStream(entry).use { stream ->
+            readBoundedBytes(stream, policy.maxMetadataBytes, name)
+        }
+    }
+
+    /**
+     * Lit un flux en imposant un plafond dur sur le cumul d'octets lus.
+     * Garde-fou streaming contre les ZIP à en-tête central mensonger : un
+     * membre dont `ZipArchiveEntry.size` est sous le plafond mais dont le
+     * contenu réel le dépasse est rejeté pendant la lecture, pas a posteriori.
+     *
+     * @throws CapsuleVerificationError.BudgetExceeded si le flux dépasse [maxBytes]
+     */
+    private fun readBoundedBytes(
+        stream: java.io.InputStream,
+        maxBytes: Long,
+        name: String,
+    ): ByteArray {
+        val out = java.io.ByteArrayOutputStream()
+        val buffer = ByteArray(64 * 1024)
+        var total = 0L
+        while (true) {
+            val read = stream.read(buffer)
+            if (read < 0) break
+            total += read
+            if (total > maxBytes) {
+                throw CapsuleVerificationError.BudgetExceeded(
+                    "Métadonnée $name dépasse le plafond en streaming : $total octets (max $maxBytes)"
+                )
+            }
+            out.write(buffer, 0, read)
+        }
+        return out.toByteArray()
     }
 
     private fun validateManifestStructure(manifest: JsonValue.Obj): List<VerifiedFileEntry> {
