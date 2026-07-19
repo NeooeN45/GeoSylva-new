@@ -11,10 +11,8 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
-import java.io.FileOutputStream
-import java.net.HttpURLConnection
+import java.io.IOException
 import java.net.URL
-import java.security.MessageDigest
 
 /**
  * Gestionnaire de packs GeoSylva.
@@ -141,7 +139,15 @@ class PackManager(private val context: Context) {
             saveStoredVersions(loadStoredVersions() + (packId to pack.version))
             refreshState()
         } catch (error: Throwable) {
-            partial.delete()
+            // Une coupure réseau (IOException) laisse le fragment `.part` et son
+            // `.etag` en place : la prochaine tentative reprendra le
+            // téléchargement au lieu de repartir de zéro. Toute autre erreur
+            // (checksum invalide, espace disque, code HTTP) signale un état non
+            // fiable pour la reprise -> nettoyage complet.
+            if (error !is IOException) {
+                partial.delete()
+                File(partial.parentFile, "${partial.name}.etag").delete()
+            }
             updateDownloadProgress(packId, -1f)
             _packState.value = _packState.value.copy(lastError = error.message ?: "Échec du téléchargement")
             throw error
@@ -165,43 +171,6 @@ class PackManager(private val context: Context) {
 
     private fun packFile(pack: GeoPackDescriptor): File =
         File(context.filesDir, "packs/${pack.id}/${pack.version}.pack")
-
-    private fun downloadWithChecksum(
-        url: URL,
-        destination: File,
-        expectedSha256: String,
-        onProgress: (Float) -> Unit
-    ) {
-        val connection = (url.openConnection() as HttpURLConnection).apply {
-            connectTimeout = 15_000
-            readTimeout = 120_000
-            requestMethod = "GET"
-            instanceFollowRedirects = true
-        }
-        try {
-            check(connection.responseCode in 200..299) { "Serveur packs HTTP ${connection.responseCode}" }
-            val total = connection.contentLengthLong
-            val digest = MessageDigest.getInstance("SHA-256")
-            connection.inputStream.use { input ->
-                FileOutputStream(destination).use { output ->
-                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-                    var readTotal = 0L
-                    var read: Int
-                    while (input.read(buffer).also { read = it } >= 0) {
-                        if (read == 0) continue
-                        output.write(buffer, 0, read)
-                        digest.update(buffer, 0, read)
-                        readTotal += read
-                        if (total > 0) onProgress((readTotal.toFloat() / total).coerceIn(0f, 1f))
-                    }
-                }
-            }
-            val actualSha256 = digest.digest().joinToString("") { "%02x".format(it) }
-            check(actualSha256 == expectedSha256) { "Checksum SHA-256 invalide pour ${url.path}" }
-        } finally {
-            connection.disconnect()
-        }
-    }
 
     /**
      * Précharge automatiquement les packs autour d'une position GPS.
