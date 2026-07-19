@@ -42,6 +42,8 @@ blurview = "version-2.0.6"
 maplibre = "10.3.1"
 okhttp = "4.12.0"
 sqlcipher = "4.5.4"
+bouncycastle = "1.80"
+commonsCompress = "1.28.0"
 
 # Testing
 junit = "4.13.2"
@@ -113,6 +115,8 @@ blurview = { module = "com.github.Dimezis:BlurView", version.ref = "blurview" }
 maplibre = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 sqlcipher = { module = "net.zetetic:android-database-sqlcipher", version.ref = "sqlcipher" }
+bouncycastle-provider = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 
 # Testing
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -175,5 +179,6 @@ android-testing = [
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

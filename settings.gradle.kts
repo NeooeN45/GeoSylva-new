@@ -18,3 +18,4 @@ dependencyResolutionManagement {
 rootProject.name = "GéoSylva"
 include(":app")
 include(":dem_pack")
+include(":capsule-verifier")
