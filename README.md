@@ -7,7 +7,7 @@
 [![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](CHANGELOG.md)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
-[![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)](LICENSE)
+[![License](https://img.shields.io/badge/License-Propri%C3%A9taire-red?style=for-the-badge)](LICENSE)
 
 **Conçue par des forestiers, pour les forestiers.**
 Inventaire terrain, martelage, cartographie et synthèse dendrométrique — entièrement hors-ligne.
@@ -51,7 +51,7 @@ GeoSylva remplace le carnet de terrain et les tableurs Excel par une **applicati
 | 🌳 **Marché** | Forêt métropolitaine ≈ **17 M ha** (~31 % du territoire), **~3,5 M de propriétaires privés**, filière forêt-bois ≈ **400 000 emplois**. Utilisateurs cibles : experts forestiers, coopératives, ONF, CRPF/CNPF, techniciens et propriétaires gestionnaires.<sup>(chiffres publics à confirmer en due diligence)</sup> |
 | 🎯 **Problème** | L'inventaire et le martelage se font encore au carnet papier + Excel : lent, source d'erreurs, sans GPS, sans calculs normalisés, ré-saisie au bureau. |
 | 💡 **Solution** | Une app Android **tout-en-un, 100 % hors-ligne** : saisie terrain, GPS de précision, 7 méthodes de cubage, IBP CNPF officiel, cartographie 12 couches, exports SIG/PDF. |
-| 💰 **Modèle économique** | **Double licence** : open source AGPL-3.0 (adoption, confiance, communauté) + **licence commerciale** pour intégrations propriétaires/SaaS. Potentiel d'abonnement pro & modules entreprise. |
+| 💰 **Modèle économique** | Logiciel **propriétaire** (voir [LICENSE](LICENSE)) : usage personnel et professionnel forestier autorisés, fork/redistribution/modification interdits. Une **licence commerciale** séparée existe pour les intégrations tierces/SaaS — voir [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md). Potentiel d'abonnement pro & modules entreprise. |
 | 🛡️ **Atouts différenciants** | IBP CNPF officiel, chiffrement SQLCipher, conformité RGPD documentée, 420+ tests, architecture Clean — **maturité technique rare** pour un produit de ce stade. |
 
 📄 **Dossier détaillé pour investisseurs & partenaires → [INVESTORS.md](INVESTORS.md)**
@@ -346,19 +346,19 @@ cd GeoSylva
 
 ## 📄 Licence
 
-Ce projet est sous **double licence**.
+GeoSylva est un logiciel **propriétaire** — voir [LICENSE](LICENSE) pour le texte complet.
 
-### Open Source
-**GNU Affero General Public License v3.0 (AGPL-3.0)** — libre pour usage personnel, éducatif et projets open-source compatibles. L'usage commercial est autorisé sous AGPL-3.0 à condition de divulguer le code source complet.
+### Licence par défaut
+Usage **personnel** et **professionnel forestier** autorisés. **Fork, redistribution et modification du code source sont formellement interdits.** Le code source, la documentation, les ressources graphiques et les bases de données embarquées restent la propriété exclusive de GeoSylva.
 
-### Commerciale
-Requise pour une utilisation **sans les obligations AGPL-3.0** (intégration propriétaire, SaaS, services hébergés). Voir [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
+### Licence commerciale
+Un accord commercial séparé est requis pour toute intégration tierce, SaaS ou service hébergé n'entrant pas dans le cadre de la licence par défaut. Voir [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
 
 ---
 
 ## 👥 Contribution
 
-> GeoSylva est distribué sous licence AGPL-3.0. Les forks et les modifications sont autorisés à condition de respecter cette licence : conserver les mentions de droit d'auteur, redistribuer sous AGPL-3.0 et fournir le code source correspondant lors d'une mise à disposition réseau. Les intégrations commerciales nécessitant des conditions différentes doivent faire l'objet d'un accord séparé.
+> GeoSylva est un logiciel propriétaire (voir [LICENSE](LICENSE)) — **les forks et modifications du code source ne sont pas autorisés**. Les retours d'expérience terrain, suggestions de fonctionnalités et rapports de bugs restent les bienvenus (voir contact ci-dessous). Les intégrations commerciales nécessitant des conditions différentes doivent faire l'objet d'un accord séparé — voir [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
 
 ### 💬 Vos retours sont précieux — et fortement encouragés !
 

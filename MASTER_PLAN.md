@@ -876,7 +876,7 @@ Voir `CONTRIBUTING.md` et `global_rules.md` :
 | `README.md` | Présentation publique | À mettre à jour |
 | `CHANGELOG.md` | Historique des versions | Actif |
 | `CONTRIBUTING.md` | Standards de contribution | Actif |
-| `COMMERCIAL_LICENSE.md` | Licence dual AGPL/commerciale | Actif |
+| `COMMERCIAL_LICENSE.md` | Licence commerciale (complète la licence propriétaire par défaut, voir `LICENSE`) | Actif |
 | `PRIVACY_POLICY.md` | Politique de confidentialité | **Actif** (réécrit 2026-07-01, audit factuel vs code — 8 erreurs corrigées) |
 | `INVESTORS.md` | Dossier de pitch investisseurs | **Actif** (créé sur main, commit dba459e) |
 | `SECURITY.md` | Politique de sécurité (responsible disclosure) | **Actif** (créé sur main, commit dba459e) |
