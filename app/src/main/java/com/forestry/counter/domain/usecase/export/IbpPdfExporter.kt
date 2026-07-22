@@ -50,7 +50,7 @@ object IbpPdfExporter {
         canvas.drawText("IBP — Indice de Biodiversité Potentielle", margin, 38f, titlePaint)
 
         val subTitlePaint = Paint().apply { color = Color.WHITE; textSize = 11f; isAntiAlias = true; alpha = 200 }
-        canvas.drawText("Peuplement forestier — Évaluation terrain", margin, 58f, subTitlePaint)
+        canvas.drawText("${eval.answers.methodLabel} — Évaluation terrain", margin, 58f, subTitlePaint)
 
         // GeoSylva brand (right-aligned, below title to avoid overlap)
         val brandPaint = Paint().apply { color = Color.WHITE; textSize = 9f; isAntiAlias = true; alpha = 200; textAlign = Paint.Align.RIGHT }
@@ -174,7 +174,7 @@ object IbpPdfExporter {
         val headerPaint = Paint().apply { color = Color.parseColor("#1565C0"); isAntiAlias = true }
         canvas.drawRect(0f, 0f, w.toFloat(), 60f, headerPaint)
         val titlePaint = Paint().apply { color = Color.WHITE; textSize = 16f; isFakeBoldText = true; isAntiAlias = true }
-        canvas.drawText("IBP — Groupe B (Contexte) & Synthèse complète", margin, 38f, titlePaint)
+        canvas.drawText("IBP — Groupe B & Synthèse — ${eval.answers.methodLabel}", margin, 38f, titlePaint)
         y = 80f
 
         // Group B table
@@ -192,22 +192,22 @@ object IbpPdfExporter {
 
         // Complete criteria detail
         val detailTitle = Paint().apply { color = Color.parseColor("#424242"); textSize = 12f; isFakeBoldText = true; isAntiAlias = true }
-        canvas.drawText("Référentiel des critères (seuils officiels IBP)", margin, y, detailTitle)
+        canvas.drawText("Référentiel : ${eval.answers.methodLabel}", margin, y, detailTitle)
         y += 14f
 
         val smallPaint = Paint().apply { color = Color.parseColor("#616161"); textSize = 9f; isAntiAlias = true }
-        val criteria = listOf(
+        val criteria = if (eval.answers.isCurrentMethod) listOf(
             "A – Essences autochtones" to "0: 0–1 genre | 1: 2 genres | 2: 3–4 genres | 5: ≥5 genres (plaine/mont.)",
             "B – Structure verticale" to "0: 0–1 strate | 1: 2 strates | 2: 3–4 strates | 5: 5 strates",
             "C – Bois morts sur pied" to "0: aucun | 1: BMm≥1/ha (BMg<1) | 2: BMg≥1/ha | 5: BMg≥3/ha",
             "D – Bois morts au sol" to "0: aucun | 1: BMm≥1/ha (BMg<1) | 2: BMg≥1/ha | 5: BMg≥3/ha",
             "E – Très gros bois vivants" to "0: TGB<1 & GB<1/ha | 1: GB≥1/ha (TGB<1) | 2: TGB≥1/ha | 5: TGB≥5/ha",
-            "F – Dendromicrohabitats" to "0: <2 arbres/ha | 1: 2 arbres/ha | 2: 3–4 arbres/ha | 5: ≥5 arbres/ha",
+            "F – Dendromicrohabitats" to "Somme plafonnée à 2/groupe | 0: <2 | 1: 2–<3 | 2: 3–<8 | 5: ≥8",
             "G – Milieux ouverts florifères" to "0: 0% | 2: <1% ou >5% | 5: 1–5% surface ouverte",
             "H – Continuité temporelle" to "0: forêt récente | 2: boisé partiel | 5: forêt ancienne (XIXe)",
             "I – Milieux aquatiques" to "0: aucun type | 2: 1 type | 5: ≥2 types",
             "J – Milieux rocheux" to "0: aucun type | 2: 1 type | 5: ≥2 types"
-        )
+        ) else listOf("Méthode historique" to "Scores conservés sans recalcul avec le référentiel v3.2.")
         criteria.forEach { (name, desc) ->
             val labelPaint = Paint().apply { color = Color.parseColor("#424242"); textSize = 9f; isFakeBoldText = true; isAntiAlias = true }
             canvas.drawText(name, margin, y, labelPaint)
@@ -219,9 +219,9 @@ object IbpPdfExporter {
 
         // IBP source reference
         val refPaint = Paint().apply { color = Color.parseColor("#9E9E9E"); textSize = 8f; isAntiAlias = true; textSkewX = -0.25f }
-        canvas.drawText("Source : IBP — Larrieu & Cabanettes (INRAE/ONF). Méthode de diagnostic de la biodiversité forestière.", margin, y, refPaint)
+        canvas.drawText("Méthode enregistrée : ${eval.answers.methodLabel} (schéma ${eval.answers.schemaVersion}).", margin, y, refPaint)
         y += 12f
-        canvas.drawText("Référence : Guide IBP — méthode de diagnostic rapide de la biodiversité potentielle forestière.", margin, y, refPaint)
+        canvas.drawText(if (eval.answers.isCurrentMethod) IbpCriterionData.REFERENCE_URL else "Historique GeoSylva en lecture seule.", margin, y, refPaint)
 
         drawFooter(canvas, "Rapport IBP — GeoSylva — Page 2/2", w, h)
     }

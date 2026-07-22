@@ -30,7 +30,7 @@ object IbpQgisExporter {
             writeGeoJson(zip, evaluations)
             writeCsv(zip, evaluations)
             writeQmlStyle(zip)
-            writeMetadata(zip, projectName, evaluations.size)
+            writeMetadata(zip, projectName, evaluations)
         }
     }
 
@@ -56,6 +56,8 @@ object IbpQgisExporter {
   "score_B":${ev.scoreB},
   "niveau":"${level.name}",
   "mode":"${ev.ibpMode.name}",
+  "method_version":"${ev.answers.methodLabel}",
+  "schema_version":${ev.answers.schemaVersion},
 ${criteriaProperties(ev)}
 }}""".trimIndent())
             if (idx < withGps.lastIndex) sb.append(",")
@@ -77,7 +79,7 @@ ${criteriaProperties(ev)}
         zip.putNextEntry(ZipEntry("ibp_all.csv"))
         val header = buildString {
             append("id,date,placette_id,parcelle_id,evaluateur,latitude,longitude,")
-            append("score_total,score_A,score_B,niveau,mode,")
+            append("score_total,score_A,score_B,niveau,mode,method_version,schema_version,")
             append(IbpCriterionId.ALL.joinToString(",") { it.displayCode })
         }
         val rows = evals.map { ev ->
@@ -96,6 +98,8 @@ ${criteriaProperties(ev)}
                 append("${ev.scoreB},")
                 append("${level.name},")
                 append("${ev.ibpMode.name},")
+                append("\"${ev.answers.methodLabel}\",")
+                append("${ev.answers.schemaVersion},")
                 append(IbpCriterionId.ALL.joinToString(",") { cid ->
                     val v = ev.answers.get(cid); if (v >= 0) "$v" else ""
                 })
@@ -145,14 +149,16 @@ ${criteriaProperties(ev)}
     }
 
     /* ─── Metadata JSON ─────────────────────────────────────────── */
-    private fun writeMetadata(zip: ZipOutputStream, projectName: String, count: Int) {
+    private fun writeMetadata(zip: ZipOutputStream, projectName: String, evaluations: List<IbpEvaluation>) {
         zip.putNextEntry(ZipEntry("ibp_metadata.json"))
+        val protocolsJson = evaluations.distinctBy { it.answers.methodLabel }
+            .joinToString(",") { "\"${it.answers.methodLabel}\"" }
         val meta = """
 {
   "project": "${projectName.replace("\"", "\\\"")}",
-  "protocol": "IBP v3.2 CNPF/IDF",
+  "protocol_versions": [$protocolsJson],
   "export_date": "${sdf.format(Date())}",
-  "evaluation_count": $count,
+  "evaluation_count": ${evaluations.size},
   "generator": "GeoSylva",
   "criteria_group_A": ["A","B","C","D","E","F","G"],
   "criteria_group_B": ["H","I","J"],

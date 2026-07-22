@@ -2032,7 +2032,7 @@
     <string name="ibpeval_contexte_hj">Contexte H–J : %1$s</string>
     <string name="ibpeval_peuplement_axis">← Peuplement et Gestion (A–G) / 35 →</string>
     <string name="ibpeval_big_tree_count_title">Comptage terrain – arbres vivants (arbres/ha)</string>
-    <string name="ibpeval_open_habitat_threshold">Seuil optimal : 1–5 % → 5 pts | >0 % → 2 pts | 0 % → 0 pt</string>
+    <string name="ibpeval_open_habitat_threshold" formatted="false">Cas 1/2/4 : 1–5 % → 5 pts. Cas 3 : ≥1 % → 5 pts. Sinon &gt;0 % → 2 pts.</string>
     <string name="ibpeval_tgb_subalpine">TGB (∅>47.5 cm) /ha</string>
     <string name="ibpeval_tgb_default">TGB (∅>67.5 cm) /ha</string>
     <string name="ibpeval_gb_subalpine">GB (∅ 27.5–47.5 cm) /ha</string>
@@ -2040,7 +2040,21 @@
     <string name="ibpeval_hint_example">ex : 5.0</string>
     <string name="ibpeval_badge_5_pts">→ 5 pts</string>
     <string name="ibpeval_badge_2_pts">→ 2 pts</string>
+    <string name="ibpeval_badge_1_pt">→ 1 pt</string>
     <string name="ibpeval_badge_0_pt">→ 0 pt</string>
+    <string name="ibp_save_error">Échec de la sauvegarde. L’évaluation n’a pas été modifiée.</string>
+    <string name="ibp_method_current_title">IBP FR v3.2 — protocole actuel</string>
+    <string name="ibp_method_current_body">Référentiel CNPF du 02/02/2026. Les observations et le score sont enregistrés avec cette version.</string>
+    <string name="ibp_method_history_title">Historique — %1$s</string>
+    <string name="ibp_method_history_body">Cette évaluation reste consultable et exportable, mais elle est verrouillée pour éviter un recalcul silencieux avec le barème v3.2.</string>
+    <string name="ibp_start_v32">Créer une nouvelle évaluation v3.2</string>
+    <string name="ibp_read_only">Lecture seule</string>
+    <string name="ibp_history_observations">Observations historiques enregistrées</string>
+    <string name="ibp_history_no_details">Aucun détail de terrain supplémentaire n’a été enregistré avec cette version.</string>
+    <string name="ibp_dmh_v32_instruction">Saisissez le nombre d’arbres/ha pour chacun des 15 groupes. Chaque groupe contribue au maximum pour 2 au total officiel.</string>
+    <string name="ibp_dmh_v32_total">Total officiel plafonné : %1$.1f</string>
+    <string name="ibp_dmh_group_count">Arbres/ha</string>
+    <string name="ibp_dmh_group_capped">Contribution retenue : %1$.1f / 2</string>
     <string name="ibpeval_dmh_count_label">Arbres porteurs de ≥1 dmh (arbres/ha)</string>
     <string name="ibpeval_zone_0">0%</string>
     <string name="ibpeval_zone_low">&lt;1% ou &gt;5%</string>

@@ -20,7 +20,7 @@ object IbpCsvExporter {
 
         // Header
         val criteriaHeaders = IbpCriterionId.ALL.joinToString(",") { it.code }
-        sb.appendLine("\"Placette\",\"Date\",\"Evaluateur\",\"Score_A\",\"Score_B\",\"Score_Total\",\"Niveau\",$criteriaHeaders,\"Complet\",\"Notes\"")
+        sb.appendLine("\"Placette\",\"Date\",\"Methode_IBP\",\"Schema\",\"Evaluateur\",\"Score_A\",\"Score_B\",\"Score_Total\",\"Niveau\",$criteriaHeaders,\"Complet\",\"Notes\"")
 
         // Rows
         for (eval in evaluations.sortedByDescending { it.observationDate }) {
@@ -37,7 +37,8 @@ object IbpCsvExporter {
             }
             val complete = if (eval.isComplete) "1" else "0"
             val notes = csvEscape(eval.globalNote)
-            sb.appendLine("$name,\"$date\",$evaluator,$scoreA,$scoreB,$scoreTotal,\"$level\",$criteriaValues,$complete,$notes")
+            val method = csvEscape(eval.answers.methodLabel)
+            sb.appendLine("$name,\"$date\",$method,${eval.answers.schemaVersion},$evaluator,$scoreA,$scoreB,$scoreTotal,\"$level\",$criteriaValues,$complete,$notes")
         }
 
         out.write(sb.toString().toByteArray(Charsets.UTF_8))
