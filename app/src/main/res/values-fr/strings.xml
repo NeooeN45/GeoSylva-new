@@ -1444,7 +1444,7 @@
     <string name="onboarding_privacy_title">Confidentialité &amp; Protection des données</string>
     <string name="onboarding_privacy_desc">GeoSylva respecte votre vie privée. Toutes les données restent sur votre appareil. Découvrez quelles données sont collectées et comment elles sont protégées.</string>
     <string name="onboarding_privacy_b1">Toutes les données forestières (arbres, placettes, parcelles, photos) sont stockées localement et chiffrées en AES-256 (SQLCipher + Android Keystore)</string>
-    <string name="onboarding_privacy_b2">Aucune donnée personnelle n\'est envoyée vers un serveur. Le réseau sert uniquement pour les tuiles cartographiques (IGN, OSM, Esri). Le certificate pinning protège contre les attaques MITM.</string>
+    <string name="onboarding_privacy_b2">Aucune donnée personnelle n\'est envoyée vers un serveur. Le réseau sert aux tuiles cartographiques et, si vous l\'activez, à la synchronisation d\'une grille tarifaire. HTTPS et la validation stricte des destinations protègent les échanges.</string>
     <string name="onboarding_privacy_b3">Vous gardez le contrôle : export (CSV/XLSX/JSON), suppression, révocation des permissions GPS/caméra à tout moment. Consultez la politique de confidentialité complète dans les Paramètres.</string>
     <string name="onboarding_accept">Accepter &amp; Continuer</string>
     <string name="onboarding_decline">Refuser</string>

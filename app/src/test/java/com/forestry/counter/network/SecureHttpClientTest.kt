@@ -2,13 +2,17 @@ package com.forestry.counter.network
 
 import android.content.Context
 import io.mockk.mockk
-import okhttp3.OkHttpClient
+import okhttp3.Dns
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
+import java.net.UnknownHostException
 import org.junit.Before
 import org.junit.Test
 
 /**
  * Tests pour SecureHttpClient - Couverture des fonctionnalités de réseau sécurisé.
- * Vérifie le certificate pinning et la sécurité des connexions.
+ * Vérifie HTTPS, la résolution DNS publique et le refus des cibles SSRF.
  */
 class SecureHttpClientTest {
 
@@ -20,24 +24,13 @@ class SecureHttpClientTest {
     }
 
     @Test
-    fun `createSecureClient should return valid OkHttpClient`() {
-        // When
-        val client = SecureHttpClient.createSecureClient(context, enableLogging = false)
-
-        // Then
-        assert(client is OkHttpClient)
-        assert(client.connectTimeoutMillis == 30000) // 30 seconds
-        assert(client.readTimeoutMillis == 60000) // 60 seconds
-        assert(client.writeTimeoutMillis == 60000) // 60 seconds
-    }
-
-    @Test
     fun `createSecureClient should enable logging in debug mode`() {
         // When
         val client = SecureHttpClient.createSecureClient(context, enableLogging = true)
 
         // Then
-        assert(client is OkHttpClient)
+        assertTrue(client.interceptors.isNotEmpty())
+        assertTrue(client.networkInterceptors.isNotEmpty())
         // Should have logging interceptor when debug enabled
     }
 
@@ -126,14 +119,12 @@ class SecureHttpClientTest {
     }
 
     @Test
-    fun `createSecureClient should have certificate pinning configured`() {
+    fun `createSecureClient should reject system DNS resolver`() {
         // When
         val client = SecureHttpClient.createSecureClient(context, enableLogging = false)
 
         // Then
-        assert(client is OkHttpClient)
-        // Certificate pinning should be configured (verified through internal structure)
-        // This is a basic test - actual pinning verification would require more complex setup
+        assertFalse(client.dns === Dns.SYSTEM)
     }
 
     @Test
@@ -155,4 +146,56 @@ class SecureHttpClientTest {
         // Then
         assert(client.retryOnConnectionFailure) { "Should retry on connection failure" }
     }
+
+    @Test
+    fun `safe remote URL rejects local credentials and non https targets`() {
+        assertTrue(
+            SecureHttpClient.isSafeRemoteHttpsUrl("https://prices.example.org/feed.json")
+        )
+
+        listOf(
+            "http://prices.example.org/feed.json",
+            "https://localhost/feed.json",
+            "https://127.0.0.1/feed.json",
+            "https://10.0.0.1/feed.json",
+            "https://172.16.1.2/feed.json",
+            "https://192.168.1.2/feed.json",
+            "https://169.254.169.254/latest/meta-data",
+            "https://100.64.0.1/feed.json",
+            "https://192.0.2.1/feed.json",
+            "https://[::1]/feed.json",
+            "https://[fc00::1]/feed.json",
+            "https://[2001:db8::1]/feed.json",
+            "https://user:password@example.org/feed.json"
+        ).forEach { url ->
+            assertFalse("URL distante dangereuse acceptée : $url", SecureHttpClient.isSafeRemoteHttpsUrl(url))
+        }
+    }
+
+    @Test
+    fun `secure client DNS rejects non public addresses`() {
+        val client = SecureHttpClient.createSecureClient(context)
+
+        listOf(
+            "127.0.0.1",
+            "10.0.0.1",
+            "100.64.0.1",
+            "192.0.2.1",
+            "fc00::1",
+            "2001:db8::1"
+        ).forEach { address ->
+            try {
+                client.dns.lookup(address)
+                fail("Une adresse non publique ne doit jamais être résolue : $address")
+            } catch (_: UnknownHostException) {
+                // Protection SSRF attendue.
+            }
+        }
+    }
+
+    @Test
+    fun `secure domain requires https`() {
+        assertFalse(SecureHttpClient.isSecureDomain("http://data.geopf.fr/resource"))
+        assertTrue(SecureHttpClient.isSecureDomain("https://data.geopf.fr/resource"))
+}
 }

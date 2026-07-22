@@ -152,31 +152,21 @@ object MobileCoverageEngine {
 
     private fun buildMobileState(context: Context): NetworkState {
         val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
-        val isRoaming = tm?.isNetworkRoaming ?: false
-
-        val (gen, type, signal) = when (tm?.networkType) {
-            TelephonyManager.NETWORK_TYPE_GPRS,
-            TelephonyManager.NETWORK_TYPE_EDGE,
-            TelephonyManager.NETWORK_TYPE_CDMA,
-            TelephonyManager.NETWORK_TYPE_1xRTT  -> Triple(RadioGeneration.G2, NetworkType.MOBILE_WEAK,   SignalLevel.WEAK)
-            TelephonyManager.NETWORK_TYPE_UMTS,
-            TelephonyManager.NETWORK_TYPE_HSPA,
-            TelephonyManager.NETWORK_TYPE_HSPAP,
-            TelephonyManager.NETWORK_TYPE_HSDPA,
-            TelephonyManager.NETWORK_TYPE_HSUPA,
-            TelephonyManager.NETWORK_TYPE_EVDO_0,
-            TelephonyManager.NETWORK_TYPE_EVDO_A,
-            TelephonyManager.NETWORK_TYPE_EVDO_B -> Triple(RadioGeneration.G3, NetworkType.MOBILE_CORRECT, SignalLevel.ACCEPTABLE)
-            TelephonyManager.NETWORK_TYPE_LTE     -> Triple(RadioGeneration.G4, NetworkType.MOBILE_STRONG,  SignalLevel.GOOD)
-            TelephonyManager.NETWORK_TYPE_NR      -> Triple(RadioGeneration.G5, NetworkType.MOBILE_STRONG,  SignalLevel.EXCELLENT)
-            else                                  -> Triple(RadioGeneration.UNKNOWN, NetworkType.MOBILE_WEAK, SignalLevel.WEAK)
-        }
-
+        val isRoaming = runCatching { tm?.isNetworkRoaming ?: false }.getOrDefault(false)
+        val generation = RadioGeneration.UNKNOWN
         val label = buildString {
-            append(gen.labelFr)
+            append("Réseau mobile")
             if (isRoaming) append(" (roaming)")
         }
-        return NetworkState(type, gen, signal, isRoaming, label)
+        // La génération radio exige READ_PHONE_STATE, permission sensible qui
+        // n'est pas nécessaire au métier. On préfère un état générique fiable.
+        return NetworkState(
+            NetworkType.MOBILE_CORRECT,
+            generation,
+            SignalLevel.ACCEPTABLE,
+            isRoaming,
+            label
+        )
     }
 
     // ─── Présomption couverture ───────────────────────────────────────────────

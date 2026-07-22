@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <!-- Camera for IBP photo attachments and height measurement -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Media access (API 33+) -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <!-- Legacy storage (API < 33) -->
