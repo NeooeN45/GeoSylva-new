@@ -1,5 +1,3 @@
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.io.StringReader
 import java.util.Properties
 
@@ -25,10 +23,20 @@ android {
         versionCode = 10
         versionName = "2.4.0"
 
-        val buildId = LocalDateTime.now()
-            .format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
+        // Stable by default: wall-clock values here invalidate every incremental build
+        // and make two builds of the same source produce different artifacts.
+        val buildId = providers.gradleProperty("geosylva.buildId")
+            .orElse(providers.environmentVariable("GEOSYLVA_BUILD_ID"))
+            .orElse("dev")
+            .get()
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+        val buildTimestampMs = providers.gradleProperty("geosylva.buildTimestampMs")
+            .orElse(providers.environmentVariable("GEOSYLVA_BUILD_TIMESTAMP_MS"))
+            .orElse("0")
+            .get().toLongOrNull() ?: error("geosylva.buildTimestampMs must be an integer")
+        buildConfigField("Long", "BUILD_TIMESTAMP", "${buildTimestampMs}L")
         buildConfigField("String", "BUILD_ID", "\"$buildId\"")
-        buildConfigField("Long", "BUILD_TIMESTAMP", "${System.currentTimeMillis()}L")
 
         // Clé API MapTiler (tuiles vectorielles + terrain 3D)
         // Récupérée depuis local.properties ou variable d'environnement
