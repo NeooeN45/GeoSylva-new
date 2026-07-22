@@ -325,7 +325,7 @@
     <string name="map_layer_picker_title">Base maps</string>
     <string name="map_layer_osm">OSM</string>
     <string name="gps_periodic_unavailable">⚠ GPS signal unavailable — location capture may fail</string>
-    <string name="gps_periodic_poor">⚠ Poor GPS accuracy (±%.0f m) — threshold is ±%.0f m. Move to an open area for better signal.</string>
+    <string name="gps_periodic_poor">⚠ Poor GPS accuracy (±%1$.0f m) — threshold is ±%2$.0f m. Move to an open area for better signal.</string>
     <string name="map_gps_filtered_out">%1$d stems have GPS but precision exceeds %2$d m threshold.\nDisable the precision filter or move to open sky.</string>
     <string name="offline_download">Download tiles for offline</string>
     <string name="settings_section_offline_map">Offline map</string>
@@ -1295,9 +1295,9 @@
 
     <!-- IBP Criterion G (VS) – Milieux ouverts florifères -->
     <string name="ibp_vs_title">G – Flowering open habitats</string>
-    <string name="ibp_vs_subtitle">Clearings, glades, wide forest edges — % of traversed area (1–5% = optimal)</string>
+    <string name="ibp_vs_subtitle" formatted="false">Clearings, glades, wide forest edges — % of traversed area (1–5% = optimal)</string>
     <string name="ibp_vs_o0">0% open area — Score 0 pt</string>
-    <string name="ibp_vs_o1">&lt; 1% or &gt; 5% open area — Score 2 pts</string>
+    <string name="ibp_vs_o1" formatted="false">&lt; 1% or &gt; 5% open area — Score 2 pts</string>
     <string name="ibp_vs_o2">1–5% open flowering area — Score 5 pts</string>
 
     <!-- IBP Criterion H (CF) – Continuité temporelle -->
@@ -1588,8 +1588,8 @@
     <string name="martelage_quick_field_entry">Quick field entry</string>
     <string name="martelage_quick_field_desc">G + triangle without individual stems</string>
     <string name="martelage_basal_area_g">Basal area G</string>
-    <string name="martelage_structure_triangle">Structure triangle (% on pre-counted stems ≥ 17.5 cm)</string>
-    <string name="martelage_pct_normalized">Percentages are automatically normalized to 100%</string>
+    <string name="martelage_structure_triangle" formatted="false">Structure triangle (% on pre-counted stems ≥ 17.5 cm)</string>
+    <string name="martelage_pct_normalized" formatted="false">Percentages are automatically normalized to 100%</string>
 
     <!-- i18n: ParcellesScreen extras (I-C1) -->
     <string name="parcelles_menu_ibp_biodiversity">IBP Biodiversity</string>

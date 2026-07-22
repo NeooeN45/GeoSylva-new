@@ -323,7 +323,7 @@
     <string name="sanity_revenue_ha_negative">Revenu/ha négatif — vérifier les tables de prix</string>
     <string name="sanity_revenue_ha_very_high">Revenu/ha = %.0f € très élevé — à vérifier</string>
     <string name="gps_periodic_unavailable">⚠ Signal GPS indisponible — la capture de position risque d\'échouer</string>
-    <string name="gps_periodic_poor">⚠ Précision GPS faible (±%.0f m) — seuil : ±%.0f m. Déplacez-vous en zone dégagée.</string>
+    <string name="gps_periodic_poor">⚠ Précision GPS faible (±%1$.0f m) — seuil : ±%2$.0f m. Déplacez-vous en zone dégagée.</string>
     <string name="map_gps_filtered_out">%1$d tiges ont un GPS mais la précision dépasse le seuil de %2$d m.\nDésactivez le filtre de précision ou allez en zone dégagée.</string>
     <string name="map_layer_picker_title">Fonds de carte</string>
     <string name="map_layer_osm">OSM</string>
@@ -1283,9 +1283,9 @@
 
     <!-- IBP Critère G (VS) – Milieux ouverts florifères -->
     <string name="ibp_vs_title">G – Milieux ouverts florifères</string>
-    <string name="ibp_vs_subtitle">Trouées, clairières, larges lisières — % de la surface parcourue (1–5 % = optimal)</string>
+    <string name="ibp_vs_subtitle" formatted="false">Trouées, clairières, larges lisières — % de la surface parcourue (1–5 % = optimal)</string>
     <string name="ibp_vs_o0">0 % de surface ouverte — Score 0 pt</string>
-    <string name="ibp_vs_o1">&lt; 1 % ou &gt; 5 % de surface ouverte — Score 2 pts</string>
+    <string name="ibp_vs_o1" formatted="false">&lt; 1 % ou &gt; 5 % de surface ouverte — Score 2 pts</string>
     <string name="ibp_vs_o2">1–5 % de milieux ouverts florifères — Score 5 pts</string>
 
     <!-- IBP Critère H (CF) – Continuité temporelle -->
@@ -1579,8 +1579,8 @@
     <string name="martelage_quick_field_entry">Saisie terrain rapide</string>
     <string name="martelage_quick_field_desc">G + triangle sans tiges individuelles</string>
     <string name="martelage_basal_area_g">Surface terrière G</string>
-    <string name="martelage_structure_triangle">Triangle des structures (% sur tiges précomptables ≥ 17.5 cm)</string>
-    <string name="martelage_pct_normalized">Les % sont normalisés automatiquement à 100%</string>
+    <string name="martelage_structure_triangle" formatted="false">Triangle des structures (% sur tiges précomptables ≥ 17.5 cm)</string>
+    <string name="martelage_pct_normalized" formatted="false">Les % sont normalisés automatiquement à 100%</string>
 
     <!-- i18n : ParcellesScreen extras (I-C1) -->
     <string name="parcelles_menu_ibp_biodiversity">IBP Biodiversité</string>
