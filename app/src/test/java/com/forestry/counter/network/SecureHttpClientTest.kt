@@ -1,8 +1,10 @@
 package com.forestry.counter.network
 
 import android.content.Context
+import com.forestry.counter.BuildConfig
 import io.mockk.mockk
 import okhttp3.Dns
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -24,14 +26,13 @@ class SecureHttpClientTest {
     }
 
     @Test
-    fun `createSecureClient should enable logging in debug mode`() {
+    fun `createSecureClient should gate logging on build type`() {
         // When
         val client = SecureHttpClient.createSecureClient(context, enableLogging = true)
 
         // Then
-        assertTrue(client.interceptors.isNotEmpty())
+        assertEquals(BuildConfig.DEBUG, client.interceptors.isNotEmpty())
         assertTrue(client.networkInterceptors.isNotEmpty())
-        // Should have logging interceptor when debug enabled
     }
 
     @Test
