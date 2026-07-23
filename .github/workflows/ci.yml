@@ -37,8 +37,6 @@ jobs:
 
       - name: Run Android Lint
         run: ./gradlew lint --stacktrace
-        env:
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
 
       - name: Upload lint report
         if: always()
@@ -73,7 +71,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: unit-test-report
-          path: app/build/reports/tests/
+          path: |
+            app/build/reports/tests/
+            capsule-verifier/build/reports/tests/
 
       - name: Upload coverage report
         if: success()
