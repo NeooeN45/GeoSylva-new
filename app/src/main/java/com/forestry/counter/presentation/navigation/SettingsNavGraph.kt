@@ -190,6 +190,7 @@ fun NavGraphBuilder.settingsNavGraph(
     ) {
         DeveloperOptionsScreen(
             repository = app.identityRepository,
+            parcelSyncRepository = app.parcelleSyncRepository,
             preferences = app.userPreferences,
             onNavigateBack = { navController.popBackStack() },
         )

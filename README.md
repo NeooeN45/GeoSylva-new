@@ -171,7 +171,8 @@ GeoSylva remplace le carnet de terrain et les tableurs Excel par une **applicati
 - **Espace compte** — état de session, fournisseur courant, rôles et déconnexion
 - **Profil et vérification** — modification du nom affiché et confirmation de l'adresse par code
 - **Récupération** — nouveau mot de passe par code à usage unique, avec fermeture des anciennes sessions
-- **Options développeur** — huit pressions sur la version ouvrent un diagnostic GSIE en lecture seule
+- **Options développeur** — huit pressions sur la version ouvrent le diagnostic GSIE et la commande explicite de synchronisation
+- **Parcelles connectées en option** — activation manuelle, file SQLCipher, reprise WorkManager, versions serveur et conflits sans écrasement silencieux
 - **Transport protégé** — en production, HTTPS vers la bordure Cloudflare puis tunnel privé vers GSIE ; les JWT et rôles GSIE restent obligatoires
 
 ---
@@ -197,11 +198,12 @@ GeoSylva remplace le carnet de terrain et les tableurs Excel par une **applicati
 app/src/main/java/com/forestry/counter/
 ├── data/
 │   ├── local/
-│   │   ├── entity/              # Room entities (28 tables)
+│   │   ├── entity/              # Room entities (29 tables)
 │   │   ├── dao/                 # Data Access Objects
 │   │   ├── CanonicalEssences.kt # 95+ espèces pré-configurées
-│   │   ├── DatabaseMigrations.kt# Migrations v1→v32
-│   │   └── ForestryDatabase.kt  # Room database (v32, SQLCipher)
+│   │   ├── DatabaseMigrations.kt# Migrations v1→v33
+│   │   └── ForestryDatabase.kt  # Room database (v33, SQLCipher)
+│   ├── sync/                    # Contrat GSIE, file et politique de reprise
 │   ├── preferences/             # DataStore (GPS, affichage, tarifs…)
 │   ├── repository/              # Implémentations Repository
 │   ├── mapper/                  # Entity ↔ Domain mappers
@@ -247,13 +249,13 @@ app/src/main/java/com/forestry/counter/
 |---|---|
 | **Langage** | Kotlin 1.9 + Coroutines + Flow |
 | **UI** | Jetpack Compose + Material 3 |
-| **Base de données** | Room (SQLite) — 28 tables, 32 migrations, DB v32, SQLCipher |
+| **Base de données** | Room (SQLite) — 29 tables, DB v33, SQLCipher |
 | **Préférences** | DataStore Preferences |
 | **Cartographie** | MapLibre GL Native 10.3 |
 | **Géolocalisation** | Google Fused Location Provider |
 | **Export** | Apache POI (XLSX), OpenCSV, Shapefile (pur Java), PDF |
 | **Sérialisation** | kotlinx.serialization |
-| **Background** | WorkManager (sauvegardes planifiées) |
+| **Background** | WorkManager (sauvegardes et synchronisation réseau différée) |
 | **Sécurité** | SQLCipher (Keystore), Certificate Pinning (SHA-256) |
 | **Build** | Gradle 8.2 + KSP + ProGuard/R8 |
 
@@ -357,6 +359,7 @@ ses jetons GSIE.
 - ✅ **Aucune publicité** — expérience 100% professionnelle
 - ✅ **Aucun tracking / analytics** — aucune télémétrie publicitaire ou comportementale
 - ✅ **Données de terrain locales par défaut** — aucune synchronisation sans action explicite
+- ✅ **Synchronisation maîtrisée** — seules les parcelles sont concernées après activation ; tiges, placettes, photos et diagnostics restent locaux
 - ✅ **Compte optionnel transparent** — seules les données d’identité nécessaires sont transmises à GSIE lors d’une inscription ou connexion
 - ✅ **Chiffrement SQLCipher** — base de données chiffrée au repos (Keystore Android)
 - ✅ **Réseau durci** — HTTPS obligatoire pour GSIE, validation TLS système,

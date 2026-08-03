@@ -9,7 +9,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 class ParcelleRepositoryImpl(
-    private val parcelleDao: ParcelleDao
+    private val parcelleDao: ParcelleDao,
+    private val onUpsert: suspend (String) -> Unit = {},
+    private val onDelete: suspend (String) -> Unit = {},
 ) : ParcelleRepository {
 
     override fun getAllParcelles(): Flow<List<Parcelle>> {
@@ -26,17 +28,22 @@ class ParcelleRepositoryImpl(
 
     override suspend fun insertParcelle(parcelle: Parcelle) {
         parcelleDao.insertParcelle(parcelle.toParcelleEntity())
+        runCatching { onUpsert(parcelle.id) }
     }
 
     override suspend fun updateParcelle(parcelle: Parcelle) {
         parcelleDao.updateParcelle(parcelle.toParcelleEntity())
+        runCatching { onUpsert(parcelle.id) }
     }
 
     override suspend fun deleteParcelle(parcelleId: String) {
         parcelleDao.deleteParcelleById(parcelleId)
+        runCatching { onDelete(parcelleId) }
     }
 
     override suspend fun deleteAllParcelles() {
+        val ids = parcelleDao.getAllParcellesNow().map { it.parcelleId }
         parcelleDao.deleteAllParcelles()
+        ids.forEach { id -> runCatching { onDelete(id) } }
     }
 }

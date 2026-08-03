@@ -41,6 +41,7 @@ import com.forestry.counter.domain.model.ApiConnectionState
 import com.forestry.counter.domain.model.ApiDiagnostic
 import com.forestry.counter.domain.model.ProviderCapability
 import com.forestry.counter.domain.repository.IdentityRepository
+import com.forestry.counter.domain.repository.ParcelSyncRepository
 import com.forestry.counter.presentation.viewmodel.DeveloperOptionsUiState
 import com.forestry.counter.presentation.viewmodel.DeveloperOptionsViewModel
 import com.forestry.counter.presentation.viewmodel.GeoSylvaViewModelFactory
@@ -51,11 +52,14 @@ import java.util.Date
 @Composable
 fun DeveloperOptionsScreen(
     repository: IdentityRepository,
+    parcelSyncRepository: ParcelSyncRepository,
     preferences: UserPreferencesManager,
     onNavigateBack: () -> Unit,
 ) {
-    val factory = remember(repository, preferences) {
-        GeoSylvaViewModelFactory { DeveloperOptionsViewModel(repository, preferences) }
+    val factory = remember(repository, parcelSyncRepository, preferences) {
+        GeoSylvaViewModelFactory {
+            DeveloperOptionsViewModel(repository, preferences, parcelSyncRepository)
+        }
     }
     val viewModel: DeveloperOptionsViewModel = viewModel(factory = factory)
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -80,6 +84,7 @@ fun DeveloperOptionsScreen(
             state = state,
             apiBaseUrl = repository.apiBaseUrl,
             onRefresh = viewModel::refresh,
+            onSynchronizeParcels = viewModel::synchronizeParcels,
             onDisable = viewModel::disableDeveloperMode,
             modifier = Modifier.padding(padding),
         )
@@ -91,6 +96,7 @@ private fun DeveloperContent(
     state: DeveloperOptionsUiState,
     apiBaseUrl: String,
     onRefresh: () -> Unit,
+    onSynchronizeParcels: () -> Unit,
     onDisable: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -99,10 +105,11 @@ private fun DeveloperContent(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        item { ReadOnlyNotice() }
+        item { DeveloperSafetyNotice() }
         item { RefreshButton(state.isRefreshing, onRefresh) }
         item { ApiDiagnosticCard(apiBaseUrl, state.diagnostic) }
         item { IdentityDiagnosticCard(state) }
+        item { ParcelSyncDiagnosticCard(state, onSynchronizeParcels) }
         item { BuildDiagnosticCard() }
         item { DeviceDiagnosticCard() }
         item { DisableDeveloperCard(onDisable) }
@@ -110,7 +117,66 @@ private fun DeveloperContent(
 }
 
 @Composable
-private fun ReadOnlyNotice() {
+private fun ParcelSyncDiagnosticCard(
+    state: DeveloperOptionsUiState,
+    onSynchronizeParcels: () -> Unit,
+) {
+    IdentitySectionCard(stringResource(R.string.developer_section_parcel_sync)) {
+        IdentityInfoRow(
+            stringResource(R.string.developer_sync_pending),
+            state.parcelSync.pending.toString(),
+        )
+        IdentityInfoRow(
+            stringResource(R.string.developer_sync_in_progress),
+            state.parcelSync.syncing.toString(),
+        )
+        IdentityInfoRow(
+            stringResource(R.string.developer_sync_synced),
+            state.parcelSync.synced.toString(),
+        )
+        IdentityInfoRow(
+            stringResource(R.string.developer_sync_conflicts),
+            state.parcelSync.conflicts.toString(),
+        )
+        IdentityInfoRow(
+            stringResource(R.string.developer_sync_errors),
+            state.parcelSync.errors.toString(),
+        )
+        state.parcelSync.lastSuccessAt?.let { timestamp ->
+            IdentityInfoRow(
+                stringResource(R.string.developer_sync_last_success),
+                DateFormat.getDateTimeInstance().format(Date(timestamp)),
+            )
+        }
+        state.queuedParcelCount?.let { count ->
+            Text(stringResource(R.string.developer_sync_queued_result, count))
+        }
+        if (state.parcelSyncError) {
+            Text(
+                stringResource(R.string.developer_sync_requires_account),
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+        Button(
+            onClick = onSynchronizeParcels,
+            enabled = !state.isQueueingParcels && state.session != null,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (state.isQueueingParcels) {
+                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else {
+                Icon(Icons.Default.Refresh, contentDescription = null)
+            }
+            Text(
+                stringResource(R.string.developer_sync_all_parcels),
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun DeveloperSafetyNotice() {
     IdentitySectionCard(stringResource(R.string.developer_options_title)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(Icons.Default.WarningAmber, contentDescription = null)

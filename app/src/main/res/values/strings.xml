@@ -2247,7 +2247,7 @@
     <string name="action_cancel">Cancel</string>
 
     <string name="developer_options_title">Developer options</string>
-    <string name="developer_read_only_notice">Read-only local diagnostics. This screen grants no server privilege.</string>
+    <string name="developer_read_only_notice">Les diagnostics sont locaux et n’accordent aucun privilège serveur. La synchronisation ne démarre qu’après votre action explicite.</string>
     <string name="developer_refresh">Refresh diagnostics</string>
     <string name="developer_section_api">GSIE API connection</string>
     <string name="developer_api_url">Configured endpoint</string>
@@ -2280,5 +2280,15 @@
     <string name="developer_primary_abi">Primary ABI</string>
     <string name="developer_disable">Disable developer options</string>
     <string name="developer_disable_desc">The diagnostic entry will disappear from settings.</string>
+    <string name="developer_section_parcel_sync">Synchronisation des parcelles</string>
+    <string name="developer_sync_pending">En attente</string>
+    <string name="developer_sync_in_progress">En cours</string>
+    <string name="developer_sync_synced">Synchronisées</string>
+    <string name="developer_sync_conflicts">Conflits à résoudre</string>
+    <string name="developer_sync_errors">Erreurs</string>
+    <string name="developer_sync_last_success">Dernier succès</string>
+    <string name="developer_sync_all_parcels">Activer et synchroniser les parcelles</string>
+    <string name="developer_sync_queued_result">%1$d parcelle(s) placée(s) dans la file chiffrée</string>
+    <string name="developer_sync_requires_account">Un compte connecté est nécessaire.</string>
 
 </resources>

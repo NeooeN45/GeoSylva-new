@@ -455,6 +455,34 @@ object DatabaseMigrations {
     }
 
     /** Liste ordonnée de toutes les migrations pour Room.databaseBuilder */
+    val MIGRATION_32_33 = object : Migration(32, 33) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS parcel_sync_queue (
+                    accountId TEXT NOT NULL,
+                    parcelId TEXT NOT NULL,
+                    operation TEXT NOT NULL,
+                    operationId TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    serverVersion INTEGER,
+                    retryCount INTEGER NOT NULL,
+                    queuedAt INTEGER NOT NULL,
+                    lastAttemptAt INTEGER,
+                    lastSuccessAt INTEGER,
+                    nextAttemptAt INTEGER NOT NULL,
+                    lastErrorCode TEXT,
+                    PRIMARY KEY(accountId, parcelId)
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_parcel_sync_state_next " +
+                    "ON parcel_sync_queue(accountId, state, nextAttemptAt)"
+            )
+        }
+    }
+
     val ALL = arrayOf(
         MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
         MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
@@ -464,6 +492,7 @@ object DatabaseMigrations {
         com.forestry.counter.data.local.migration.MIGRATION_28_29,
         com.forestry.counter.data.local.migration.MIGRATION_29_30,
         com.forestry.counter.data.local.migration.MIGRATION_30_31,
-        com.forestry.counter.data.local.migration.MIGRATION_31_32
+        com.forestry.counter.data.local.migration.MIGRATION_31_32,
+        MIGRATION_32_33,
     )
 }

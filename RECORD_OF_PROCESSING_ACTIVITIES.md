@@ -121,7 +121,22 @@ Conformément à l'Article 30 du RGPD (UE 2016/679), ce document constitue le re
 | **Transferts hors UE** | À déterminer et documenter avant ouverture publique selon Cloudflare, l’hébergeur et le flux Google retenus |
 | **Durée de conservation** | Compte jusqu’à effacement ou politique d’inactivité ; empreintes des codes 15 minutes maximum ou consommation antérieure |
 | **Mesures de sécurité** | HTTPS, Argon2id serveur, codes à usage unique, anti-énumération, révocation de session, JWT RS256, refresh rotatif, coffre Android chiffré, aucun secret dans les logs |
-| **Limite de la tranche** | Aucune donnée forestière synchronisée ; compte facultatif et application utilisable hors ligne |
+| **Limite de la tranche** | La connexion seule ne synchronise aucune donnée forestière ; compte facultatif et application utilisable hors ligne |
+
+### T-10 : Synchronisation facultative des parcelles avec GSIE
+
+| Rubrique | Détail |
+|----------|--------|
+| **Finalité** | Continuité des fiches de parcelles entre GeoSylva et les futurs services GSIE |
+| **Déclenchement** | Action explicite « Activer et synchroniser les parcelles » ; la connexion seule ne suffit pas |
+| **Base légale** | Exécution du service demandé (Art. 6§1.b) et intérêt légitime de sécurité/reprise (Art. 6§1.f) |
+| **Catégories de données** | Identifiant local, nom, surface, paramètres forestiers, commune, cadastre, géométrie WKT, altitude, SER, remarques, versions et horodatages |
+| **Catégories de personnes** | Utilisateurs connectés ayant activé la fonction ; propriétaires ou gestionnaires éventuellement nommés dans les remarques |
+| **Destinataires** | Opérateur et hébergeur GSIE ; Cloudflare comme bordure prévue |
+| **Transferts hors UE** | À déterminer avant ouverture publique selon l’hébergeur et Cloudflare |
+| **Durée de conservation** | Jusqu’à effacement demandé ou politique contractuelle à publier ; tombstones conservées pour prévenir une résurrection de donnée |
+| **Mesures de sécurité** | SQLCipher, WorkManager avec contrainte réseau, HTTPS/JWT, UUID idempotent, version optimiste, RLS PostgreSQL par compte, aucun écrasement automatique sur conflit |
+| **Limite de la tranche** | Tiges, placettes, photos et diagnostics non synchronisés ; pull serveur→mobile et interface d’effacement centralisée à venir |
 
 ---
 
@@ -138,6 +153,8 @@ Conformément à l'Article 30 du RGPD (UE 2016/679), ce document constitue le re
 | Hébergeur GSIE | T-09 Identité Quintessences | À sélectionner | Contrat, localisation et garanties à finaliser avant ouverture publique |
 | Google | T-09 Connexion Google facultative | International | Garanties et configuration de marque à finaliser avant ouverture publique |
 | Cloudflare | T-09 Bordure de sécurité GSIE | Réseau mondial | DPA, localisation des journaux et garanties à finaliser avant ouverture publique |
+| Hébergeur GSIE | T-10 Synchronisation de parcelles | À sélectionner | Contrat, localisation, conservation et effacement à finaliser avant ouverture publique |
+| Cloudflare | T-10 Bordure de la synchronisation | Réseau mondial | DPA, localisation des journaux et garanties à finaliser avant ouverture publique |
 
 **Note sur les transferts hors UE (Art. 46 RGPD)** : Les transferts vers MapLibre,
 CartoCDN et Esri (USA) sont couverts par les Standard Contractual Clauses (SCC)
@@ -157,6 +174,7 @@ ne remettent pas en cause les garanties des SCC pour les données transférées
 | Chiffrement base de données | SQLCipher 4.5.4, AES-256, clé Keystore |
 | Chiffrement en transit | TLS ; HTTPS obligatoire et cibles publiques uniquement pour GSIE |
 | Jetons d’identité mobiles | Coffre `EncryptedSharedPreferences`, séparé de DataStore |
+| File de synchronisation | Table Room dans la base SQLCipher ; compteurs seulement dans l’interface, aucun jeton affiché |
 | Stockage des clés | Android Keystore (hardware-backed si disponible) |
 | Anti-capture d'écran | FLAG_SECURE sur MainActivity |
 | Validation des entrées | Sanitisation des imports, validation SQL |

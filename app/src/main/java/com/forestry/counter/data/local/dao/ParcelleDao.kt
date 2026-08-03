@@ -9,6 +9,9 @@ interface ParcelleDao {
     @Query("SELECT * FROM parcelles ORDER BY name ASC")
     fun getAllParcelles(): Flow<List<ParcelleEntity>>
 
+    @Query("SELECT * FROM parcelles ORDER BY name ASC")
+    suspend fun getAllParcellesNow(): List<ParcelleEntity>
+
     @Query("SELECT * FROM parcelles WHERE forestOwnerId = :forestId ORDER BY name ASC")
     fun getParcellesByForest(forestId: String): Flow<List<ParcelleEntity>>
 

@@ -11,7 +11,9 @@ import com.forestry.counter.domain.model.ApiDiagnostic
 import com.forestry.counter.domain.model.IdentityClientException
 import com.forestry.counter.domain.model.IdentityError
 import com.forestry.counter.domain.model.ProviderCapability
+import com.forestry.counter.domain.model.ParcelSyncSummary
 import com.forestry.counter.domain.repository.IdentityRepository
+import com.forestry.counter.domain.repository.ParcelSyncRepository
 import com.forestry.counter.presentation.account.AccountInputValidator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -378,11 +380,16 @@ data class DeveloperOptionsUiState(
     val diagnostic: ApiDiagnostic? = null,
     val providers: List<ProviderCapability> = emptyList(),
     val isRefreshing: Boolean = false,
+    val parcelSync: ParcelSyncSummary = ParcelSyncSummary(),
+    val isQueueingParcels: Boolean = false,
+    val queuedParcelCount: Int? = null,
+    val parcelSyncError: Boolean = false,
 )
 
 class DeveloperOptionsViewModel(
     private val repository: IdentityRepository,
     private val preferences: UserPreferencesManager,
+    private val parcelSyncRepository: ParcelSyncRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(
         DeveloperOptionsUiState(session = repository.session.value)
@@ -398,6 +405,11 @@ class DeveloperOptionsViewModel(
         viewModelScope.launch {
             preferences.developerModeEnabled.collect { enabled ->
                 _uiState.update { it.copy(developerModeEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            parcelSyncRepository.observeSummary().collect { summary ->
+                _uiState.update { it.copy(parcelSync = summary) }
             }
         }
         refresh()
@@ -421,6 +433,31 @@ class DeveloperOptionsViewModel(
 
     fun disableDeveloperMode() {
         viewModelScope.launch { preferences.setDeveloperModeEnabled(false) }
+    }
+
+    fun synchronizeParcels() {
+        if (_uiState.value.isQueueingParcels) return
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isQueueingParcels = true,
+                    queuedParcelCount = null,
+                    parcelSyncError = false,
+                )
+            }
+            parcelSyncRepository.enqueueAll().fold(
+                onSuccess = { count ->
+                    _uiState.update {
+                        it.copy(isQueueingParcels = false, queuedParcelCount = count)
+                    }
+                },
+                onFailure = {
+                    _uiState.update {
+                        it.copy(isQueueingParcels = false, parcelSyncError = true)
+                    }
+                },
+            )
+        }
     }
 }
 

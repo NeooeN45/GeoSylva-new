@@ -19,6 +19,7 @@ import com.forestry.counter.data.local.dao.GroupVariableDao
 import com.forestry.counter.data.local.dao.InventaireSessionDao
 import com.forestry.counter.data.local.dao.ObservationFloreDao
 import com.forestry.counter.data.local.dao.ParcelleDao
+import com.forestry.counter.data.local.dao.ParcelSyncDao
 import com.forestry.counter.data.local.dao.PlacetteDao
 import com.forestry.counter.data.local.dao.EssenceDao
 import com.forestry.counter.data.local.dao.ProjectionClimatiqueSerDao
@@ -40,6 +41,7 @@ import com.forestry.counter.data.local.entity.GroupEntity
 import com.forestry.counter.data.local.entity.GroupVariableEntity
 import com.forestry.counter.data.local.entity.ObservationFloreEntity
 import com.forestry.counter.data.local.entity.ParcelleEntity
+import com.forestry.counter.data.local.entity.ParcelSyncEntity
 import com.forestry.counter.data.local.entity.PlacetteEntity
 import com.forestry.counter.data.local.entity.ProjectionClimatiqueSerEntity
 import com.forestry.counter.data.local.entity.StationEnvironnementaleEntity
@@ -92,9 +94,10 @@ import com.forestry.counter.data.local.entity.AdvancedCalculationEntity
         DataCorrelationEntity::class,
         DataInterpretationEntity::class,
         EntityRelationEntity::class,
-        AdvancedCalculationEntity::class
+        AdvancedCalculationEntity::class,
+        ParcelSyncEntity::class
     ],
-    version = 32,
+    version = 33,
     exportSchema = true
 )
 @TypeConverters(EnumConverters::class)
@@ -104,6 +107,7 @@ abstract class ForestryDatabase : RoomDatabase() {
     abstract fun formulaDao(): FormulaDao
     abstract fun groupVariableDao(): GroupVariableDao
     abstract fun parcelleDao(): ParcelleDao
+    abstract fun parcelSyncDao(): ParcelSyncDao
     abstract fun placetteDao(): PlacetteDao
     abstract fun essenceDao(): EssenceDao
     abstract fun tigeDao(): TigeDao

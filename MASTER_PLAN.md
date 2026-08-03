@@ -2,7 +2,7 @@
 
 **Document de référence stratégique et opérationnel**
 **Date de création** : 2026-06-29
-**Dernière révision factuelle** : 2026-08-03 (cycle du compte Quintessences et preuves Android)
+**Dernière révision factuelle** : 2026-08-03 (première synchronisation de parcelles avec GSIE)
 **Statut** : Actif — remplace tous les documents de planification précédents
 **Fondateur** : Camil (auto-entrepreneur, Poitiers, Nouvelle-Aquitaine)
 
@@ -180,7 +180,7 @@ Voir :
 | Exports | 8/10 | PDF, XLSX, CSV, GeoJSON et Shapefile ; passeport reproductible de parcelle manquant | F-10 |
 | Offline-first | 7/10 | Données locales opérationnelles ; installation vérifiée, catalogue serveur à raccorder | F-11 |
 | IA locale | 3/10 | `LocalBrainCore` est un moteur de règles/FTS, pas encore un LLM intégré | F-12 |
-| GSIE Serveur / GSIE PC | 3,5/10 | Client d’identité, session chiffrée et diagnostic API livrés ; synchronisation métier et SDK complet à construire | F-13 |
+| GSIE Serveur / GSIE PC | 5/10 | Identité et première synchronisation de parcelles livrées ; pull, résolution des conflits et SDK complet restent à construire | F-13 |
 | Tests métier | 7/10 | Nombreux tests unitaires ; peu de jeux réels, tests instrumentés et validations de précision | F-14 |
 | Robustesse production | 6,5/10 | Base solide ; erreurs silencieuses, migrations, gros volumes et reprises réseau à durcir | F-15 |
 
@@ -461,7 +461,7 @@ le score encore faible 4→5/10).
 | F-10 | Passeport de parcelle | Données, méthodes, sources, versions, erreurs, incertitudes | Inventaire reproductible sur un autre appareil |
 | F-11 | Packs réellement offline | Téléchargement signé, checksum, reprise, suppression, rollback | Un pack installé fonctionne sans réseau et peut être vérifié |
 | F-12 | Assistant IA contrôlé | LLM local + appels d'outils typés + RAG local | 100 % des réponses IA sourcées et validables |
-| F-13 | GSIE Mobile ↔ Serveur ↔ PC | Identité commune livrée ; restent outbox, sync, conflits, calcul lourd et retours versionnés | Reprise réseau sans perte ni écrasement silencieux |
+| F-13 | GSIE Mobile ↔ Serveur ↔ PC | Identité et parcelles local→serveur livrées ; restent pull, résolution des conflits, calcul lourd et retours versionnés | Reprise réseau sans perte ni écrasement silencieux |
 | F-14 | Jeux de données de référence | Placettes dorées et scénarios de martelage annotés | Non-régression scientifique automatisée |
 | F-15 | Tests terrain réels | GPS, clinomètre, batterie, pluie, gants, gros inventaires | Validation sur appareils Android bas, moyen et haut de gamme |
 | F-16 | Mode capture ultra-rapide | Parcours une main, raccourcis, voix offline, retour haptique | Tige standard saisie en moins de trois secondes |
@@ -859,6 +859,7 @@ Voir `CONTRIBUTING.md` et `global_rules.md` :
 | 2026-08-03 | Première tranche cliente d’identité Quintessences | Écrans connexion/compte, local + Google Credential Manager, session chiffrée, diagnostic GSIE et mode développeur après huit pressions ; cœur terrain toujours hors ligne. |
 | 2026-08-03 | Cycle du compte Quintessences complété | Profil, vérification e-mail et récupération livrés ; révocation des anciennes sessions ; 513 tests, Lint sans erreur et APK validé sur émulateur. |
 | 2026-08-03 | Protocole de bordure Cloudflare validé | GeoSylva rejoint GSIE par HTTPS + JWT derrière Cloudflare Tunnel ; aucun secret Access, mTLS ou tunnel dans l'APK ; activation externe en attente du domaine et du token du Fondateur. |
+| 2026-08-03 | Première synchronisation métier GeoSylva ↔ GSIE | Parcelles envoyées après activation explicite par une file SQLCipher/WorkManager ; idempotence, versions, tombstones et conflits visibles. Pull serveur→mobile et résolution guidée restent à produire. |
 
 ---
 

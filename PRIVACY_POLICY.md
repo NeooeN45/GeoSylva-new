@@ -1,7 +1,7 @@
 # Politique de confidentialité — GeoSylva
 
 **Dernière mise à jour :** 3 août 2026
-**Version app concernée :** 2.4.0 (fonction d’identité en développement)
+**Version app concernée :** 2.4.0 (identité et synchronisation optionnelle en développement)
 
 ## Introduction
 
@@ -23,9 +23,11 @@ Cette politique de confidentialité explique quelles données l'Application trai
 
 Les données forestières restent **locales par défaut** dans une base chiffrée
 SQLCipher. Si l’utilisateur choisit de créer ou de connecter un compte
-Quintessences, les seules données d’identité nécessaires sont transmises à
-l’API GSIE (voir §1.7 et §3). Aucune donnée de parcelle, de tige, de photo ou
-d’inventaire n’est synchronisée par cette première tranche.
+Quintessences, les données d’identité nécessaires sont transmises à l’API
+GSIE (voir §1.7 et §3). La connexion seule n’envoie aucune donnée forestière.
+Si l’utilisateur active ensuite explicitement la synchronisation, les données
+de parcelles décrites au §1.8 sont transmises ; les tiges, placettes, photos et
+diagnostics restent locaux dans cette tranche.
 
 ### 1.1 Identité et contact
 
@@ -103,6 +105,21 @@ hachés côté serveur, utilisables une seule fois et supprimables après leur
 expiration de quinze minutes. Mailpit est réservé au développement local et
 ne doit contenir aucune donnée réelle.
 
+### 1.8 Synchronisation facultative des parcelles
+
+| Donnée | Finalité | Base légale | Stockage |
+|---|---|---|---|
+| Identifiant local, nom, surface et paramètres sylvicoles de la parcelle | Continuité entre appareils et futurs services GSIE | Exécution du service demandé après activation explicite (Art. 6§1.b) | Appareil et serveur GSIE |
+| Commune, références cadastrales, géométrie IGN/WKT, altitude et SER | Restitution de la parcelle synchronisée | Exécution du service demandé (Art. 6§1.b) | Appareil et serveur GSIE |
+| Remarques libres | Conservation de la fiche choisie par l’utilisateur ; elles peuvent contenir des données personnelles | Exécution du service demandé (Art. 6§1.b) | Appareil et serveur GSIE |
+| UUID d’opération, version serveur, état, tentatives et horodatages | Idempotence, reprise réseau, détection des conflits et audit technique | Intérêt légitime de sécurité et de fiabilité (Art. 6§1.f) | File locale chiffrée et serveur GSIE |
+
+La première transmission nécessite l’action « Activer et synchroniser les
+parcelles ». Après cette activation, les modifications et suppressions de
+parcelles sont automatiquement ajoutées à la file du compte. Une suppression
+est conservée côté serveur sous forme de tombstone pour éviter qu’un autre
+appareil ne recrée silencieusement une ancienne version.
+
 ---
 
 ## 2. Stockage et sécurité
@@ -115,11 +132,13 @@ ne doit contenir aucune donnée réelle.
 - **Fichiers sensibles** : stockés dans le stockage interne de l'Application (scoped storage
   Android 10+)
 
-### 2.2 Transfert d’identité optionnel vers GSIE
+### 2.2 Transferts optionnels vers GSIE
 
 Sans compte, aucune donnée d’identité n’est envoyée à GSIE. Lors d’une
 inscription ou d’une connexion volontaire, les données décrites au §1.7 sont
-transmises via HTTPS. Cette tranche ne synchronise aucune donnée forestière.
+transmises via HTTPS. Les parcelles du §1.8 ne sont transmises qu’après leur
+activation explicite. La file reste dans la base SQLCipher et WorkManager
+attend un réseau disponible ; un conflit est conservé sans écrasement.
 Le lieu d’hébergement de production, le sous-traitant éventuel et la procédure
 d’effacement opérationnelle doivent être publiés avant l’ouverture publique du
 service de comptes.
@@ -158,7 +177,7 @@ coordonnées nécessaires à leur fonctionnement.
 
 | Service | Usage | Données envoyées | Hébergement | Transfert hors UE |
 |---------|-------|------------------|-------------|-------------------|
-| **API GSIE / Quintessences** | Compte, session et découverte des fournisseurs | Données décrites au §1.7 | À documenter avant ouverture publique | À déterminer selon l’hébergement retenu |
+| **API GSIE / Quintessences** | Compte, session et synchronisation facultative des parcelles | Données décrites aux §1.7 et §1.8 après les actions correspondantes | À documenter avant ouverture publique | À déterminer selon l’hébergement retenu |
 | **Cloudflare** (bordure GSIE prévue) | Protection DDoS/WAF et tunnel vers l'API | Adresse IP et métadonnées techniques HTTP | Réseau mondial ; garanties à valider | DPA, localisation des journaux et transferts à finaliser avant activation publique |
 | **Google Identity** (facultatif) | Connexion Google via Credential Manager | Nonce, client OAuth et données du compte Google choisies | Google | Potentiellement oui — à finaliser avant ouverture publique |
 | **IGN Géoportail** (`data.geopf.fr`) | Tuiles cartographiques WMTS | Coordonnées bbox (zone visible) | France (UE) | Non |
@@ -210,7 +229,7 @@ L'Application utilise les services tiers suivants :
 
 | Sous-traitant | Service | Données traitées | Localisation | Statut transfert |
 |---------------|---------|------------------|--------------|------------------|
-| Hébergeur GSIE | Identité Quintessences | E-mail, nom affiché, identifiants, rôles et horodatages | À sélectionner | À documenter avant ouverture publique |
+| Hébergeur GSIE | Identité et synchronisation Quintessences | E-mail, profil, identifiants et parcelles activées | À sélectionner | À documenter avant ouverture publique |
 | Google | Connexion Google facultative | Identité Google choisie par l’utilisateur | International | Conditions et garanties à finaliser avant ouverture publique |
 | Cloudflare | Bordure de sécurité de l'API GSIE | IP et métadonnées techniques | International | DPA et garanties de transfert à finaliser avant ouverture publique |
 | IGN | Géoportail WMS/WMTS + géocodage reverse | Coordonnées bbox, lat/lon | France (UE) | — |
@@ -226,9 +245,9 @@ L'Application utilise les services tiers suivants :
 | Esri | ArcGIS Online (imagerie) | Coordonnées bbox | USA | SCC + TIA |
 
 Les fournisseurs cartographiques n’ont pas accès aux données personnelles
-stockées sur l’appareil. GSIE et Google traitent uniquement les données
-d’identité nécessaires au parcours choisi ; aucune donnée forestière n’est
-envoyée par cette tranche.
+stockées sur l’appareil. Google traite uniquement l’identité du parcours
+choisi. GSIE traite l’identité et, uniquement après activation, les parcelles
+décrites au §1.8.
 
 ---
 
@@ -246,6 +265,7 @@ envoyée par cette tranche.
 | Compte Quintessences | Jusqu’à la demande d’effacement ou l’application de la politique d’inactivité à définir avant ouverture publique | Procédure serveur dédiée ; la déconnexion ne supprime que la session locale |
 | Jetons de session locaux | Jusqu’à déconnexion, expiration ou désinstallation | Effacement du coffre local lors de la déconnexion |
 | Empreintes des codes d'action | 15 minutes maximum, ou consommation antérieure | Expiration et purge serveur |
+| Répliques serveur des parcelles et tombstones | Jusqu’à désactivation/effacement demandé ou politique contractuelle à publier avant ouverture publique | Procédure serveur ; l’effacement centralisé autonome reste à compléter |
 
 **Désinstallation** : la désinstallation de l'Application supprime toutes les données
 stockées sur l'appareil (base de données chiffrée, préférences, photos, sauvegardes
@@ -267,6 +287,7 @@ Conformément au RGPD (UE 2016/679), vous disposez des droits suivants :
 | **Opposition** (Art. 21) | S'opposer au traitement | Désactivation des permissions Android | ✅ Disponible |
 | **Consentement** (Art. 7) | Retirer votre consentement | Révocation des permissions Android à tout moment + page consentement RGPD dans l'onboarding (acceptation/decline) | ✅ Disponible |
 | **Compte Quintessences** | Accès, rectification et effacement de l’identité serveur | Demande à `contact@geosylva.fr` ; interface autonome à compléter avant ouverture publique | ⚠️ Procédure manuelle en développement |
+| **Parcelles synchronisées** | Accès, rectification, portabilité et effacement de la copie serveur | Données locales éditables ; demande serveur à `contact@geosylva.fr` avant l’interface autonome | ⚠️ Procédure serveur manuelle en développement |
 
 ### Exercice de vos droits
 
@@ -327,6 +348,7 @@ Pour toute question relative à cette politique de confidentialité :
 | 2026-08-03 | 1.2 | Ajout transparent du compte Quintessences facultatif, du stockage chiffré de session et des flux GSIE/Google ; aucune synchronisation de donnée forestière dans cette tranche. |
 | 2026-08-03 | 1.3 | Ajout du profil, de la vérification e-mail, de la récupération et de la conservation maximale de 15 minutes des empreintes de codes. |
 | 2026-08-03 | 1.4 | Transparence sur la bordure Cloudflare prévue et ses métadonnées techniques ; aucun secret Cloudflare embarqué dans l'application. |
+| 2026-08-03 | 1.5 | Ajout de la synchronisation facultative des parcelles, de son activation explicite, de la file chiffrée, des tombstones et des limites de la première tranche. |
 
 ---
 

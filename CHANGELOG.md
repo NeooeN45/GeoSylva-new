@@ -7,6 +7,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com).
 
 ### Added
 
+- **Synchronisation des parcelles avec GSIE** — activation explicite depuis
+  les options développeur, puis file Room/SQLCipher et traitement WorkManager.
+- **Protocole sans écrasement** — UUID d’opération, version serveur, tombstones
+  de suppression et conflits conservés pour résolution humaine.
+- **File résistante aux courses** — réclamation conditionnelle des opérations,
+  conservation des éditions locales sur réponse tardive et continuation des
+  lots de plus de 50 parcelles.
+- **Migration Room 32→33** — table `parcel_sync_queue`, index de reprise et
+  schéma Room v33 exporté.
+- **Diagnostic de synchronisation** — compteurs en attente, synchronisés, en
+  conflit et en erreur, sans exposition des jetons.
+
 - **Compte Quintessences** — écrans Compose distincts pour la connexion, la
   création de compte et la consultation de la session GSIE.
 - **Connexion locale et Google** — client Retrofit conforme au contrat
@@ -15,13 +27,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com).
 - **Session chiffrée** — jetons GSIE stockés dans un coffre
   `EncryptedSharedPreferences`, séparé des préférences ordinaires.
 - **Options développeur** — activation persistante après huit pressions sur
-  la version, puis diagnostic en lecture seule de `/health`, `/ready`, des
-  fournisseurs d’identité, du build et de l’appareil.
+  la version, puis diagnostic local de `/health`, `/ready`, des fournisseurs
+  d’identité, du build et de l’appareil, avec commande de synchronisation.
 - **Cycle complet du compte** — profil modifiable, vérification d'adresse,
   récupération de mot de passe et révocation des sessions antérieures.
-- **513 tests unitaires** — 513 passés, aucun échec ni test ignoré.
+- **518 tests unitaires** — 518 passés, aucun échec ni test ignoré.
 - **Validation Android** — compilation Kotlin, assemblage de l’APK et lint
-  réussis ; 0 erreur lint et 576 avertissements non bloquants.
+  réussis ; 0 erreur lint et 577 avertissements non bloquants.
 - **Validation émulateur** — parcours compte, récupération et page développeur
   reliée à l'API locale ; diagnostic `/health` et `/ready` fonctionnel.
 
@@ -35,6 +47,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com).
   la ligne de version reste accessible pendant tout le déverrouillage.
 - Le protocole de production prévoit Cloudflare Tunnel devant GSIE sans
   embarquer de secret Cloudflare ou de certificat mTLS partagé dans l'APK.
+- Une connexion au compte n’envoie aucune parcelle à elle seule. La première
+  transmission requiert « Activer et synchroniser les parcelles » ; ensuite,
+  les changements sont placés dans la file pour ce compte.
 
 ## [2.4.0] — 2026-06-30
 

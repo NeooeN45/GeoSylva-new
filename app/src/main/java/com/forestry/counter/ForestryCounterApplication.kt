@@ -26,6 +26,7 @@ import com.forestry.counter.domain.repository.RipisylveRepository
 import com.forestry.counter.domain.repository.StationRepository
 import com.forestry.counter.domain.repository.IdentityRepository
 import com.forestry.counter.data.repository.IdentityRepositoryFactory
+import com.forestry.counter.data.sync.ParcelSyncRepositoryFactory
 import com.forestry.counter.domain.calculator.FormulaParser
 import com.forestry.counter.domain.calculation.ForestryCalculator
 import com.forestry.counter.domain.calculation.PeuplementAvantCoupeCalculator
@@ -37,6 +38,7 @@ import com.forestry.counter.domain.repository.GroupRepository
 import com.forestry.counter.domain.repository.InventaireSessionRepository
 import com.forestry.counter.domain.repository.ObservationFloreRepository
 import com.forestry.counter.domain.repository.ParcelleRepository
+import com.forestry.counter.domain.repository.ParcelSyncRepository
 import com.forestry.counter.domain.repository.PlacetteRepository
 import com.forestry.counter.domain.repository.EssenceRepository
 import com.forestry.counter.domain.repository.StationEnvironnementaleRepository
@@ -113,6 +115,8 @@ class ForestryCounterApplication : Application() {
         private set
     lateinit var identityRepository: IdentityRepository
         private set
+    lateinit var parcelleSyncRepository: ParcelSyncRepository
+        private set
 
     // Services
     lateinit var localisationResolverService: LocalisationResolverService
@@ -159,6 +163,17 @@ class ForestryCounterApplication : Application() {
         // Install crash logger (controlled via settings)
         CrashLogger.install(this)
 
+        // Initialiser le compte et la file avant les dépôts métier permet de
+        // mettre chaque mutation de parcelle en attente, sans bloquer le mode local.
+        userPreferences = UserPreferencesManager(applicationContext)
+        identityRepository = IdentityRepositoryFactory.create(applicationContext)
+        parcelleSyncRepository = ParcelSyncRepositoryFactory.create(
+            context = applicationContext,
+            syncDao = database.parcelSyncDao(),
+            parcelleDao = database.parcelleDao(),
+            identityRepository = identityRepository,
+        )
+
         // Initialize calculator
         formulaParser = FormulaParser()
 
@@ -189,7 +204,11 @@ class ForestryCounterApplication : Application() {
         )
 
         // Forestry repositories
-        parcelleRepository = ParcelleRepositoryImpl(database.parcelleDao())
+        parcelleRepository = ParcelleRepositoryImpl(
+            parcelleDao = database.parcelleDao(),
+            onUpsert = parcelleSyncRepository::enqueueUpsert,
+            onDelete = parcelleSyncRepository::enqueueDelete,
+        )
         placetteRepository = PlacetteRepositoryImpl(database.placetteDao())
         essenceRepository = EssenceRepositoryImpl(database.essenceDao())
         tigeRepository = TigeRepositoryImpl(database.tigeDao())
@@ -212,10 +231,6 @@ class ForestryCounterApplication : Application() {
 
         // Initialize offline tile manager
         offlineTileManager = com.forestry.counter.domain.location.OfflineTileManager(applicationContext)
-
-        // Initialize preferences
-        userPreferences = UserPreferencesManager(applicationContext)
-        identityRepository = IdentityRepositoryFactory.create(applicationContext)
 
         applyAppLocale()
 
