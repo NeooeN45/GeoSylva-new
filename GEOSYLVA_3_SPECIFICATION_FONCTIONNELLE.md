@@ -497,9 +497,405 @@ Cette roadmap consolide sans les réinventer les visions existantes :
 - `GEO-001` à `GEO-004` (exigences fonctionnelles existantes)
 - `MASTER_PLAN.md` (programme DENDRO-EXCELLENCE, promesse produit)
 
-## 13. Références
+## 14. Connexion GSIE Serveur — contrats détaillés
 
-### 13.1 Documents GeoSylva
+### 14.1 Principe
+
+GeoSylva 3.0 ne réimplémente pas la science forestière côté serveur. Elle
+délègue aux moteurs GSIE via le **canal 1** (Wi-Fi/4G stable) et consomme
+leurs contrats documentés (`GSIE/ENGINES/*/`, `ENGINE_INTERFACE_CONTRACTS.md`).
+La spécification détaillée des contrats d'interface fait l'objet de la
+**RFC-0033** (§12.5, Phase P4). Cette section pose le cadre et les formats
+communs ; la RFC détaillera les endpoints REST, les codes d'erreur et les
+schémas JSON complets.
+
+### 14.2 Enveloppe commune de requête
+
+Toute requête GeoSylva → GSIE porte une enveloppe commune garantissant la
+traçabilité (ADR-009, GSIE-CON-005) :
+
+```text
+GeoSylvaRequest = {
+  requete_id     : UUID          — généré côté mobile, idempotence
+  session_id     : UUID          — session de martelage courante (§6.3)
+  auteur         : texte         — identifiant compte Quintessences
+  device_id      : texte         — identifiant appareil (Android ID hashé)
+  source         : enum { manual, sync, gps }
+  version        : entier        — version des données envoyées (optimistic locking)
+  moteur_cible   : enum { correlation, reasoning, diagnostic,
+                          recommendation, forest_dynamics, simulation,
+                          botanical, learning }
+  payload        : <MoteurSpecificRequest>
+  cache_hint     : texte (optionnel) — clé de cache pour rejouer hors ligne
+}
+```
+
+### 14.3 Enveloppe commune de réponse
+
+Toute réponse GSIE → GeoSylva porte l'enveloppe commune suivante :
+
+```text
+GeoSylvaResponse = {
+  resultat_id    : UUID          — généré côté serveur
+  requete_origine: UUID          — reflète requete_id de la requête
+  moteur_version: texte         — ex. « correlation-engine@1.3.0 »
+  source_reference : SourceReference  — provenance de la sortie (ADR-009)
+  evidence_level : enum { A, B, C, D, E, F }
+  incertitude    : décimal (optionnel) — intervalle ou écart-type
+  chaine_inference : liste de EtapeInference (optionnel — Reasoning/Diagnostic)
+  date_calcul    : ISO 8601
+  payload        : <MoteurSpecificResponse>
+  cache_ttl      : entier (optionnel) — durée de validité du cache en secondes
+}
+```
+
+### 14.4 Moteurs appelés et déclencheurs
+
+| Moteur | Déclencheur GeoSylva | Entrée clé | Sortie clé | Statut |
+|---|---|---|---|---|
+| **Correlation** | Bouton « Analyser corrélations » sur une placette | `CorrelationRequest` (parametres, zone_etude) | `CorrelationMatrix` (coefficients, p_valeur, domaine_validite) | Livré |
+| **Reasoning** | Question libre « quelles essences adaptées ? » | `ReasoningRequest` (contexte, question) | `InferenceResult` (conclusions, chaine_inference) | Livré |
+| **Diagnostic** | Bouton « Analyse GSIE approfondie » post-martelage | `DiagnosticRequest` (station_id, conclusions) | `Diagnostic` (contraintes, atouts, risques, confiance) | Draft |
+| **Recommendation** | Suite à un diagnostic validé | `RecommendationRequest` (diagnostic_id, objectif) | `RecommendationSet` (recommandations, alternatives) | Stub |
+| **Forest Dynamics** | Martelage assisté, scénario +10/+30 ans | `DynamicsRequest` (etat_initial, horizon) | `DynamicsProjection` (trajectoires, incertitude) | Livré |
+| **Simulation** | Comparatif sylvicole avant validation coupe | `ScenarioSimulation` (scenarios) | `SimulationResult` (comparatif) | Architecture |
+| **Botanical** | Résolution essence, autécologie, identification PlantNet | `BotanicalQuery` (taxon, station) | `BotanicalData` (autécologie, synonymes) | Livré |
+| **Learning** | Retour forestier sur recommandation (accepte/refuse) | `LearningSignal` (decision, contexte) | `LearningOutput` (calibration proposée) | Architecture |
+
+### 14.5 Chaîne d'appel type — analyse GSIE approfondie
+
+Le parcours « Analyse GSIE approfondie » post-martelage enchaîne les moteurs
+sans intervention utilisateur entre chaque étape :
+
+```text
+1. Correlation Engine
+   Entrée : observations terrain (placette) + données domaine (GIS, Climate,
+            Pedology, Botanical) déjà en cache serveur
+   Sortie : CorrelationMatrix → injectée dans Reasoning
+
+2. Reasoning Engine
+   Entrée : StationContexte (géographie, climat, sol, botanique, peuplement)
+            + CorrelationMatrix
+   Sortie : InferenceResult (conclusions + chaîne d'inférence)
+            → injecté dans Diagnostic
+
+3. Diagnostic Engine
+   Entrée : conclusions du Reasoning + station_id + type_diagnostic
+   Sortie : Diagnostic (contraintes, atouts, risques, confiance)
+            → persisté côté serveur (diagnostic_id UUID5)
+            → renvoyé à GeoSylva pour affichage
+
+4. Recommendation Engine (sur action explicite forestier)
+   Entrée : diagnostic_id + objectif_forestier + contraintes_forestier
+   Sortie : RecommendationSet (recommandations + alternatives)
+            → toutes contournables (GSIE-CON-001)
+
+5. Simulation Engine (sur action explicite forestier)
+   Entrée : scénarios de martelage (avant/après coupe)
+   Sortie : SimulationResult (comparatif +5/+10/+30 ans)
+```
+
+Chaque étape est tracée dans la session de martelage (§6.3) avec son
+`resultat_id`, sa `moteur_version` et son `evidence_level`. Le forestier
+peut consulter la chaîne complète d'inférence à tout moment (GSIE-CON-004).
+
+### 14.6 Cache local et mode hors ligne
+
+Les réponses des moteurs sont mises en cache local (SQLCipher, table
+`gsie_cache`) avec :
+
+- `requete_id` (clé primaire)
+- `moteur_cible`
+- `payload` sérialisé (JSON chiffré)
+- `moteur_version` (pour détecter une obsolescence)
+- `date_calcul` + `cache_ttl` (pour expiration)
+- `source_reference` + `evidence_level` (pour affichage provenance)
+
+**Règles de cache** :
+
+- Un résultat en cache est affiché avec un badge « amplification GSIE
+  (version X, date Y) ». Si la `moteur_version` est antérieure à la
+  dernière version connue du moteur, un badge « obsolète » est affiché et
+  une ré-exécution est proposée.
+- Un appel échoué (réseau indisponible) ne bloque jamais le parcours
+  terrain. Le résultat est marqué `EN_ATTENTE_AMPLIFICATION` et
+  l'utilisateur continue avec les calculs locaux déterministes.
+- À retour du réseau, les requêtes `EN_ATTENTE_AMPLIFICATION` sont
+  rejouées automatiquement (WorkManager, retry exponentiel 15s → 1h).
+- Le forestier peut forcer une ré-exécution manuelle (mode développeur,
+  §10) pour comparer un résultat en cache avec une nouvelle exécution.
+
+### 14.7 Pull serveur → mobile et résolution de conflits
+
+La synchronisation parcelles (DEC-000048) est actuellement unidirectionnelle
+(push mobile → serveur). GeoSylva 3.0 ajoute le **pull serveur → mobile**
+pour récupérer les diagnostics, recommandations et connaissances produites
+côté serveur (par un autre technicien ou par une analyse différée).
+
+**Contrat pull** (à spécifier dans RFC-0033) :
+
+- `GET /api/v1/sync/geosylva/resources/{client_id}?since={timestamp}` —
+  récupère les ressources modifiées depuis `timestamp`, paginé.
+- Chaque ressource renvoyée porte son `version` (optimistic locking).
+- Si la version locale est identique → ignorée.
+- Si la version locale est plus récente → conflit 409, résolution
+  explicite requise (écran `ConflictResolutionScreen`).
+
+**Résolution de conflits** (écran dédié, Phase P4) :
+
+- L'écran affiche côte à côte la version locale et la version serveur.
+- Le forestier choisit : garder local, garder serveur, ou fusionner
+  manuellement.
+- La décision est tracée (auteur, date, choix, justification optionnelle).
+- Aucune fusion automatique silencieuse — les deux versions et la
+  décision restent récupérables (§8).
+
+### 14.8 SDK Kotlin
+
+GeoSylva consomme l'API GSIE via un **SDK Kotlin** dédié
+(`GSIE/SDK/kotlin/`, actuellement non implémenté). Le SDK encapsule :
+
+- L'authentification JWT (refresh automatique, pattern existant
+  `IdentityRepositoryImpl`).
+- Les contrats d'enveloppe commune (§14.2, §14.3).
+- Le cache local avec expiration et détection d'obsolescence.
+- La file d'attente `EN_ATTENTE_AMPLIFICATION` (WorkManager).
+- La sérialisation kotlinx.serialization (alignée sur le métamodèle GSIE
+  v6.2).
+
+En attendant le SDK, les endpoints Identity et Sync parcelles sont
+consommés directement via Retrofit (pattern Factory existant,
+`IdentityApiFactory`, `ParcelSyncApiFactory`). Le SDK Kotlin est un
+livrable de la Phase P4.
+
+### 14.9 Garde-fous
+
+- **ADR-009** : toute valeur retournée par un moteur expose sa
+  `source_reference`, son `evidence_level` et est reconstructible. Une
+  réponse sans `source_reference` est un défaut bloquant.
+- **GSIE-CON-001** : toute recommandation est `contournable: vrai`. Le
+  forestier peut refuser, modifier ou demander une alternative.
+- **GSIE-CON-004** : toute conclusion expose sa `chaine_inference`. Le
+  forestier peut consulter chaque étape (règle, source, prémisses).
+- **Offline-first** : un appel GSIE échoué ne dégrade jamais le cœur
+  forestier. Le résultat est `EN_ATTENTE_AMPLIFICATION`, pas une erreur
+  bloquante.
+- **Pas de LLM sans moteur** : le LLM serveur (T3, §15) invoque toujours
+  un moteur pour produire une valeur numérique forestière. Une sortie LLM
+  non citée est un défaut bloquant (ADR-009).
+
+## 15. LLM on-device et multi-tier — architecture détaillée
+
+### 15.1 Vision consolidée
+
+Cette section consolide sans les réinventer les visions existantes :
+`VOLUME_CALCULATION_NEXT_GEN.md` §10 (multi-tier LLM),
+`RESEARCH_OPPORTUNITIES.md` §3 (stack IA séquencée),
+`VISION_LLM_SPECIALISES_GSIE_CORE` (adaptateurs LoRA, famille de modèles),
+`RFC-0019` (gsie-ai-gateway serveur). La spécification opérationnelle
+détaillée (formats de prompts, schéma RAG, stratégie de quantification,
+banc d'évaluation) fait l'objet de la **RFC-0034** (§12.5, Phase P5).
+
+### 15.2 Architecture multi-tier
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│  Tier 1 — Mobile (on-device, offline)                        │
+│  Modèle    : SmolLM3 3B (quantifié INT4) ou Phi-3-mini 4B     │
+│  Runtime   : ONNX Runtime / llama.cpp Android                 │
+│  Mémoire   : < 2 GB stockage, < 1.5 GB RAM au runtime         │
+│  Rôle      : assistance vocale, explication des calculs      │
+│              locaux, saisie contextuelle, identification     │
+│              essence (TFLite + PureForest)                    │
+│  Réseau    : aucun                                            │
+│  Latence   : < 500 ms (génération courte)                     │
+│  Garde-fou : n'invoque jamais un moteur GSIE (pas de réseau) │
+│              → explique les résultats locaux, ne calcule pas │
+├──────────────────────────────────────────────────────────────┤
+│  Tier 2 — Edge (Wi-Fi local, Jetson / NIM dev)                │
+│  Modèle    : Mistral 7B (quantifié AWQ 4-bit)                │
+│  Runtime   : vLLM ou NIM sur Jetson Orin / poste GSIE PC      │
+│  Rôle      : RAG sur documentation forestière locale,        │
+│              raisonnement intermédiaire, cascade si T1        │
+│              insuffisant                                      │
+│  Réseau    : Wi-Fi local (terrain, base vie)                 │
+│  Latence   : < 3 s                                            │
+│  Garde-fou : peut invoquer les moteurs GSIE locaux (cache)   │
+│              → cite le moteur, ne calcule pas de mémoire      │
+├──────────────────────────────────────────────────────────────┤
+│  Tier 3 — Serveur (4G/Wi-Fi, gsie-ai-gateway RFC-0019)        │
+│  Modèle    : Phi-4-reasoning 14B (vLLM) ou Mistral 7B servé   │
+│  Runtime   : vLLM sur GPU serveur (RFC-0019)                  │
+│  Rôle      : raisonnement profond via moteurs GSIE,          │
+│              diagnostic, recommandation, simulation,         │
+│              RAG scientifique (pgvector, /ai/research)        │
+│  Réseau    : 4G/Wi-Fi stable                                  │
+│  Latence   : < 10 s                                           │
+│  Garde-fou : invoque toujours un moteur pour toute valeur     │
+│              numérique forestière (ADR-009)                  │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 15.3 Règles de cascade
+
+1. **T1 répond seul** tant que la question reste dans le périmètre des
+   calculs locaux et des connaissances cachées. Aucune donnée n'est
+   envoyée au serveur pour une question que le téléphone peut traiter.
+2. **T1 délègue à T2/T3** uniquement pour le raisonnement profond
+   (diagnostic stationnel, projection de croissance, recommandation
+   sylvicole). La délégation est **explicite et tracée** dans la session
+   de martelage (§6.3) : `tier_source`, `prompt_envoye`, `moteur_invoque`.
+3. **T3 appelle les moteurs GSIE** (Correlation, Reasoning, Diagnostic,
+   Recommendation, Forest Dynamics, Simulation) et renvoie une conclusion
+   **expliquée avec la chaîne d'inférence** — jamais un verdict brut.
+4. **Le LLM ne produit jamais une valeur numérique forestière de
+   lui-même** : il invoque un moteur et cite le résultat. Une sortie LLM
+   non citée est un défaut bloquant (ADR-009).
+5. **Le forestier voit la cascade** : l'UI affiche « réponse locale »,
+   « réponse edge » ou « réponse serveur » avec le tier source et la
+   latence. Aucune réponse n'est présentée sans indiquer son origine.
+
+### 15.4 Adaptateurs LoRA spécialisés
+
+D'après `VISION_LLM_SPECIALISES_GSIE_CORE` §2, les adaptateurs LoRA sont
+spécialisés par application et partagent un modèle de base multilingue :
+
+| Adaptateur | Application | Rôle | Tier |
+|---|---|---|---|
+| `GeoSylva-Forest` | GeoSylva | Sylviculture, dendrométrie, autécologie | T2/T3 |
+| `GSIE-Research` | GSIE Core | Recherche, comparaison des preuves, citations | T3 |
+| `Ignis-Operations` | Ignis | Analyse d'incidents, appels d'outils | T3 |
+| `Hydro-Atmos` | Hydro | Explication de modèles et scénarios | T3 |
+| `GSIE-Data` | GSIE Core | Extraction structurée depuis documents | T3 |
+
+**Le modèle terrain T1 reste un modèle généraliste quantifié**, sans LoRA
+spécialisée. Raison : contrainte mémoire (un adaptateur LoRA ajoute
+~100-300 MB) et simplicité de mise à jour (un seul fichier modèle à
+distribuer via packs de données, §9).
+
+### 15.5 RAG scientifique
+
+Le RAG (Retrieval-Augmented Generation) alimente T2 et T3 avec la
+documentation forestière sourcée :
+
+**Sources indexées** (RFC-0019, gsie-ai-gateway) :
+
+- Documentation ONF (guides martelage, sylviculture)
+- Documentation CNPF (IBP, gestion)
+- Documentation INRAE (recherche forestière)
+- Référentiels IGN (BD Forêt, tarifs)
+- `GSIE/KNOWLEDGE/` (base de connaissances structurée)
+- `GSIE/RESEARCH/` (travaux scientifiques)
+
+**Infrastructure** :
+
+- `pgvector` déjà activé dans PostgreSQL (migration 20260731_0024)
+- Routes RFC-0019 : `/ai/embed` (indexation), `/ai/rerank` (re-ranking),
+  `/ai/research` (RAG avec citations exactes)
+- Garde-fou : PostgreSQL/PostGIS = vérité canonique, le LLM = assistant
+  (RFC-0019 §48-54)
+
+**RAG local T1** (offline) :
+
+- Index compact embarqué (SQLite-vec ou FAISS mobile, < 200 MB)
+- Sous-ensemble des documents les plus pertinents (guides martelage,
+  autécologie essences locales)
+- Mise à jour via packs de données (§9), pas en temps réel
+
+### 15.6 Identification essence on-device
+
+L'identification d'essence par photo (RFC-0018, GEO-004) suit deux volets :
+
+**Volet en ligne** (adopté, RFC-0018) :
+
+- Capture photo → file locale → serveur GSIE → Pl@ntNet → normalisation
+  TAXREF → décision forestier
+- Cycle : `SUGGESTION_IA` → `VALIDEE_UTILISATEUR` ou `REJETEE`
+- Principe : identification = `EvidenceStatement` modélisé, jamais
+  `observé` (RFC-0018)
+
+**Volet hors ligne** (à l'étude, RFC-0018 § volet hors-ligne) :
+
+- Modèle TFLite/ONNX embarqué, entraîné sur PureForest dataset IGN
+- Classification des essences françaises les plus courantes (~50 espences
+  en première tranche)
+- Quantification INT8 pour Android (taille < 50 MB)
+- Dégradation gracieuse : si le modèle on-device n'est pas confiant
+  (score < seuil), proposer l'envoi à Pl@ntNet au retour du réseau
+- L'identification on-device reste une `SUGGESTION_IA`, jamais une
+  validation automatique
+
+### 15.7 Assistant vocal terrain
+
+L'assistant vocal (T1 on-device) couvre trois cas d'usage :
+
+1. **Saisie vocale de mesures** — « diamètre 32, hauteur 18, essence
+   chêne sessile » → transcription (Vosk FR offline) → remplissage
+   automatique du formulaire de tige. Confirmation visuelle obligatoire
+   avant validation (§6.2 mode hybride).
+2. **Explication des calculs** — « pourquoi ce volume ? » → le LLM
+   récupère le résultat du calcul local (tarif, coefficients) et
+   l'explique en langage naturel avec la source. Ne recalcule pas.
+3. **Question contextuelle** — « quelle essence adaptée ici ? » → le LLM
+   consulte le cache local (autécologie Botanical Engine) et répond. Si
+   le cache est vide ou insuffisant, propose de déléguer à T3 au retour
+   du réseau.
+
+**Garde-fous vocaux** :
+
+- L'audio brut est supprimé après transcription si aucun accord spécifique
+  n'est donné (§6.2, RGPD).
+- Les commandes vocales sensibles (suppression, validation de session)
+  exigent une confirmation visuelle explicite.
+- Le mode vocal peut être forcé ou désactivé par le technicien (§6.2).
+
+### 15.8 Distribution des modèles
+
+Les modèles LLM et les index RAG sont distribués via les **packs de
+données** (§9), pas via le Play Store :
+
+- Pack « Assistant terrain FR » : SmolLM3 3B INT4 + index RAG local +
+  modèle TFLite identification essences (~500 MB total)
+- Pack « Documentation ONF/CNPF » : index RAG complémentaire (~200 MB)
+- Chaque pack expose version, date, source, licence, empreinte et
+  signature (§9)
+- Mises à jour proposées en Wi-Fi, de préférence en charge, réversibles
+  et sans perte de projet (§9)
+
+### 15.9 Évaluation et garde-fous
+
+- **Banc d'essai `GSIE-Eval-FR`** (RFC-0019) : tout modèle LLM doit
+  passer le banc avant activation opérationnelle. Le banc teste la
+  justesse des citations, le refus d'inventer, le respect du format
+  d'enveloppe.
+- **Tests contractuels ADR-009** : toute sortie LLM doit contenir une
+  `source_reference` ou invoquer un moteur. Une sortie sans citation est
+  un défaut bloquant détecté par tests statiques.
+- **Mode expérimental** : une méthode IA non validée est marquée
+  `experimental` et ne peut alimenter une recommandation opérationnelle
+  sans consentement (§7.1).
+- **Consentement RGPD** : l'assistant vocal exige un consentement
+  explicite. L'audio brut est supprimé après transcription sauf accord
+  spécifique (§6.2, `docs/RGPD_AUDIT_REPORT.md`).
+
+### 15.10 Choix de modèles — synthèse
+
+| Modèle | Taille | Licence | Tier | Cas d'usage | Statut |
+|---|---|---|---|---|---|
+| SmolLM3 3B | 3B | Apache 2.0 | T1 | Assistant terrain offline | Cible P5 |
+| Phi-3-mini 4B | 3.8B | MIT | T1 (alternative) | Assistant léger | Cible P5 |
+| Llama 3.2 3B | 3B | Llama 3.2 Community | T1 (alternative) | Assistant terrain offline | Étude |
+| Mistral 7B | 7B | Apache 2.0 | T2 | RAG edge, raisonnement intermédiaire | Cible P5 |
+| Phi-4-reasoning 14B | 14B | MIT | T3 | Raisonnement profond serveur | Différé (RFC-0031) |
+| TFLite (PureForest) | < 50 MB | — | T1 | Identification essence on-device | Étude (RFC-0018) |
+
+**Note** : vLLM + Phi-4-reasoning est explicitement différé (RFC-0031) car
+le Reasoning Engine doit être spécifié avant changement d'inférence. Le
+T3 utilise Mistral 7B servé en attendant.
+
+## 16. Références
+
+### 16.1 Documents GeoSylva
 
 - [MASTER_PLAN] `MASTER_PLAN.md`, vision, programme DENDRO-EXCELLENCE et plan
   technique GeoSylva.
@@ -520,7 +916,7 @@ Cette roadmap consolide sans les réinventer les visions existantes :
 - [CODE-MARTELAGE] `app/src/main/java/com/forestry/counter/presentation/screens/MartelageScreen.kt`.
 - [CALCULS] `app/src/main/java/com/forestry/counter/domain/calculation/MartelageModels.kt`.
 
-### 13.2 Documents GSIE
+### 16.2 Documents GSIE
 
 - [RFC-0003] `02_RFC/RFC-0003.md`, architecture distribuée GSIE-Net,
   offline-first, intelligence distribuée, synchronisation orientée données.
@@ -548,7 +944,7 @@ Cette roadmap consolide sans les réinventer les visions existantes :
 - [GEO-004] `05_SPECIFICATIONS/GEOSYLVA/GEO_004_IDENTIFICATION_BOTANIQUE_PLANTNET.md`,
   spécification identification botanique assistée.
 
-### 13.3 Référentiels externes
+### 16.3 Référentiels externes
 
 - [ONF] Office national des forêts, référentiels et méthodes sylvicoles :
   <https://www.onf.fr/>.
@@ -556,10 +952,11 @@ Cette roadmap consolide sans les réinventer les visions existantes :
   <https://geoservices.ign.fr/documentation/services/api-et-services-ogc/api-carto-rest>.
 - [IGN-BDFORET] IGN, BD Forêt : <https://foret.ign.fr/IGD/fr/ressources>.
 
-## 14. Historique
+## 17. Historique
 
 | Version | Date | Modification |
 |---|---|---|
 | 0.1.0 | 2026-08-03 | Création de la liste fonctionnelle et de la doctrine scientifique issue du brainstorming validé. |
-| 0.2.0 | 2026-08-03 | Roadmap structurée (§12) : architecture cible, cascade LLM multi-tier, connexion GSIE Serveur (moteurs et contrats), 8 phases, décisions/RFC requises, critères de sortie. Sources consolidées (§13). |
+| 0.2.0 | 2026-08-03 | Roadmap structurée (§12) : architecture cible, cascade LLM multi-tier, connexion GSIE Serveur (moteurs et contrats), 8 phases, décisions/RFC requises, critères de sortie. Sources consolidées (§16). |
+| 0.3.0 | 2026-08-03 | §14 Connexion GSIE Serveur détaillée (enveloppes communes, moteurs, chaîne d'appel, cache, pull/conflits, SDK Kotlin, garde-fous). §15 LLM on-device et multi-tier (architecture 3 tiers, cascade, LoRA, RAG, identification on-device, assistant vocal, distribution, évaluation). |
 
