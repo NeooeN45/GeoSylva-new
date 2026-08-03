@@ -2,7 +2,7 @@
 
 **Document de référence stratégique et opérationnel**
 **Date de création** : 2026-06-29
-**Dernière révision factuelle** : 2026-07-17 (alignement version, sécurité, CI, packs et dépendances images)
+**Dernière révision factuelle** : 2026-08-03 (cycle du compte Quintessences et preuves Android)
 **Statut** : Actif — remplace tous les documents de planification précédents
 **Fondateur** : Camil (auto-entrepreneur, Poitiers, Nouvelle-Aquitaine)
 
@@ -180,7 +180,7 @@ Voir :
 | Exports | 8/10 | PDF, XLSX, CSV, GeoJSON et Shapefile ; passeport reproductible de parcelle manquant | F-10 |
 | Offline-first | 7/10 | Données locales opérationnelles ; installation vérifiée, catalogue serveur à raccorder | F-11 |
 | IA locale | 3/10 | `LocalBrainCore` est un moteur de règles/FTS, pas encore un LLM intégré | F-12 |
-| GSIE Serveur / GSIE PC | 2/10 | Architecture prévue mais connecteurs et synchronisation métier à construire | F-13 |
+| GSIE Serveur / GSIE PC | 3,5/10 | Client d’identité, session chiffrée et diagnostic API livrés ; synchronisation métier et SDK complet à construire | F-13 |
 | Tests métier | 7/10 | Nombreux tests unitaires ; peu de jeux réels, tests instrumentés et validations de précision | F-14 |
 | Robustesse production | 6,5/10 | Base solide ; erreurs silencieuses, migrations, gros volumes et reprises réseau à durcir | F-15 |
 
@@ -461,7 +461,7 @@ le score encore faible 4→5/10).
 | F-10 | Passeport de parcelle | Données, méthodes, sources, versions, erreurs, incertitudes | Inventaire reproductible sur un autre appareil |
 | F-11 | Packs réellement offline | Téléchargement signé, checksum, reprise, suppression, rollback | Un pack installé fonctionne sans réseau et peut être vérifié |
 | F-12 | Assistant IA contrôlé | LLM local + appels d'outils typés + RAG local | 100 % des réponses IA sourcées et validables |
-| F-13 | GSIE Mobile ↔ Serveur ↔ PC | Outbox, sync, conflits, calcul lourd, retours versionnés | Reprise réseau sans perte ni écrasement silencieux |
+| F-13 | GSIE Mobile ↔ Serveur ↔ PC | Identité commune livrée ; restent outbox, sync, conflits, calcul lourd et retours versionnés | Reprise réseau sans perte ni écrasement silencieux |
 | F-14 | Jeux de données de référence | Placettes dorées et scénarios de martelage annotés | Non-régression scientifique automatisée |
 | F-15 | Tests terrain réels | GPS, clinomètre, batterie, pluie, gants, gros inventaires | Validation sur appareils Android bas, moyen et haut de gamme |
 | F-16 | Mode capture ultra-rapide | Parcours une main, raccourcis, voix offline, retour haptique | Tige standard saisie en moins de trois secondes |
@@ -856,6 +856,8 @@ Voir `CONTRIBUTING.md` et `global_rules.md` :
 | 2026-07-01 | Recherche sourcée vagues 1+2 (commit 81031ef) | 10 fiches de recherche dans `docs/recherche/` : 5 cubage/volume (tarifs Schaeffer/Algan, IFN/EMERGE, coefficients forme/biomasse, tables production, normes qualité) + 5 marché/prix (FBF national, prix régionaux, ONF/coopératives, valeur foncière, marché carbone). Chaque fiche source primaire (URL + date), distingue faits vérifiés vs [À VÉRIFIER MANUELLEMENT]. |
 | 2026-07-17 | Audit dendrométrique approfondi | Confirmation d'un socle riche mais identification de priorités scientifiques : indice de station avec âge de référence, rotation AMA/ACA, domaines de validité, séparation des volumes, incertitude, provenance des mesures et erreur silencieuse dans les calculs. |
 | 2026-07-17 | Programme DENDRO-EXCELLENCE ajouté au plan | GeoSylva évolue vers un moteur de mesure forestière traçable : protocole configurable, jumeau temporel de parcelle, contrôle qualité actif, mesure à valeur d'information maximale, IA outillée, GSIE Serveur/PC et laboratoire de validation. |
+| 2026-08-03 | Première tranche cliente d’identité Quintessences | Écrans connexion/compte, local + Google Credential Manager, session chiffrée, diagnostic GSIE et mode développeur après huit pressions ; cœur terrain toujours hors ligne. |
+| 2026-08-03 | Cycle du compte Quintessences complété | Profil, vérification e-mail et récupération livrés ; révocation des anciennes sessions ; 513 tests, Lint sans erreur et APK validé sur émulateur. |
 
 ---
 

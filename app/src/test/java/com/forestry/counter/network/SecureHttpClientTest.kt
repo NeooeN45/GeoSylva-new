@@ -198,5 +198,31 @@ class SecureHttpClientTest {
     fun `secure domain requires https`() {
         assertFalse(SecureHttpClient.isSecureDomain("http://data.geopf.fr/resource"))
         assertTrue(SecureHttpClient.isSecureDomain("https://data.geopf.fr/resource"))
-}
+    }
+
+    @Test
+    fun `local debug URL accepts only loopback and emulator aliases`() {
+        listOf(
+            "http://localhost:8000/",
+            "http://127.0.0.1:8000/",
+            "http://10.0.2.2:8000/"
+        ).forEach { url ->
+            assertTrue(url, SecureHttpClient.isSafeLocalDebugUrl(url))
+        }
+        listOf(
+            "http://192.168.1.10:8000/",
+            "http://10.0.0.5:8000/",
+            "https://127.0.0.1:8000/",
+            "http://user:password@127.0.0.1:8000/"
+        ).forEach { url ->
+            assertFalse(url, SecureHttpClient.isSafeLocalDebugUrl(url))
+        }
+    }
+
+    @Test
+    fun `local debug client uses system DNS only when explicitly enabled`() {
+        val client = SecureHttpClient.createSecureClient(context, allowLocalDebug = true)
+
+        assertTrue(client.dns === Dns.SYSTEM)
+    }
 }

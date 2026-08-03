@@ -14,6 +14,10 @@ import com.forestry.counter.presentation.screens.groups.GroupsScreen
 import com.forestry.counter.presentation.screens.packs.PackManagerScreen
 import com.forestry.counter.presentation.screens.settings.PriceTablesEditorScreen
 import com.forestry.counter.presentation.screens.settings.SettingsScreen
+import com.forestry.counter.presentation.screens.account.AccountScreen
+import com.forestry.counter.presentation.screens.account.DeveloperOptionsScreen
+import com.forestry.counter.presentation.screens.account.LoginScreen
+import com.forestry.counter.presentation.screens.account.PasswordRecoveryScreen
 
 /**
  * Sous-graphe Settings, outils et groupes (comptage).
@@ -124,8 +128,70 @@ fun NavGraphBuilder.settingsNavGraph(
             parcelleRepository = app.parcelleRepository,
             placetteRepository = app.placetteRepository,
             offlineTileManager = app.offlineTileManager,
+            identityRepository = app.identityRepository,
             onNavigateToPriceTablesEditor = { navController.navigate(Screen.PriceTablesEditor.route) },
+            onNavigateToAccount = { navController.navigate(Screen.Account.route) },
+            onNavigateToDeveloperOptions = {
+                navController.navigate(Screen.DeveloperOptions.route)
+            },
             onNavigateBack = { navController.popBackStack() }
+        )
+    }
+
+    composable(
+        route = Screen.Account.route,
+        enterTransition = transitions.enter,
+        exitTransition = transitions.exit,
+        popEnterTransition = transitions.popEnter,
+        popExitTransition = transitions.popExit,
+    ) {
+        AccountScreen(
+            repository = app.identityRepository,
+            onNavigateToLogin = { navController.navigate(Screen.Login.route) },
+            onNavigateBack = { navController.popBackStack() },
+        )
+    }
+
+    composable(
+        route = Screen.Login.route,
+        enterTransition = transitions.enter,
+        exitTransition = transitions.exit,
+        popEnterTransition = transitions.popEnter,
+        popExitTransition = transitions.popExit,
+    ) {
+        LoginScreen(
+            repository = app.identityRepository,
+            onAuthenticated = { navController.popBackStack() },
+            onContinueOffline = { navController.popBackStack() },
+            onForgotPassword = { navController.navigate(Screen.PasswordRecovery.route) },
+        )
+    }
+
+    composable(
+        route = Screen.PasswordRecovery.route,
+        enterTransition = transitions.enter,
+        exitTransition = transitions.exit,
+        popEnterTransition = transitions.popEnter,
+        popExitTransition = transitions.popExit,
+    ) {
+        PasswordRecoveryScreen(
+            repository = app.identityRepository,
+            onCompleted = { navController.popBackStack() },
+            onNavigateBack = { navController.popBackStack() },
+        )
+    }
+
+    composable(
+        route = Screen.DeveloperOptions.route,
+        enterTransition = transitions.enter,
+        exitTransition = transitions.exit,
+        popEnterTransition = transitions.popEnter,
+        popExitTransition = transitions.popExit,
+    ) {
+        DeveloperOptionsScreen(
+            repository = app.identityRepository,
+            preferences = app.userPreferences,
+            onNavigateBack = { navController.popBackStack() },
         )
     }
 

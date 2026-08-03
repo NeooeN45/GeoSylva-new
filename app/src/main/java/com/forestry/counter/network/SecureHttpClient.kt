@@ -27,11 +27,18 @@ object SecureHttpClient {
      * @param enableLogging Active les logs HTTP en mode DEBUG uniquement
      * @return OkHttpClient configuré pour refuser les cibles réseau non publiques
      */
-    fun createSecureClient(@Suppress("UNUSED_PARAMETER") context: Context, enableLogging: Boolean = false): OkHttpClient {
+    fun createSecureClient(
+        @Suppress("UNUSED_PARAMETER") context: Context,
+        enableLogging: Boolean = false,
+        allowLocalDebug: Boolean = false,
+    ): OkHttpClient {
         val builder = OkHttpClient.Builder()
             .addNetworkInterceptor { chain ->
                 val target = chain.request().url.toString()
-                if (!isSafeRemoteHttpsUrl(target)) {
+                if (
+                    !isSafeRemoteHttpsUrl(target) &&
+                    !(allowLocalDebug && isSafeLocalDebugUrl(target))
+                ) {
                     throw IOException("Redirection vers une URL non publique ou non HTTPS refusée")
                 }
                 chain.proceed(chain.request())
@@ -40,7 +47,7 @@ object SecureHttpClient {
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
-            .dns(PublicOnlyDns)
+            .dns(if (allowLocalDebug) Dns.SYSTEM else PublicOnlyDns)
 
         if (enableLogging && isDebugBuild()) {
             builder.addInterceptor(Interceptor { chain ->
@@ -91,6 +98,17 @@ object SecureHttpClient {
             return false
         }
         return !isForbiddenIpLiteral(host)
+    }
+
+    /** Autorise uniquement les alias locaux Android dans une variante debug. */
+    fun isSafeLocalDebugUrl(url: String): Boolean {
+        val parsed = url.toHttpUrlOrNull() ?: return false
+        if (parsed.scheme != "http" || parsed.username.isNotEmpty() || parsed.password.isNotEmpty()) {
+            return false
+        }
+        return parsed.host.equals("localhost", ignoreCase = true) ||
+            parsed.host == "127.0.0.1" ||
+            parsed.host == "10.0.2.2"
     }
 
     private fun isForbiddenIpLiteral(host: String): Boolean {

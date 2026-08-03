@@ -24,6 +24,8 @@ import com.forestry.counter.data.repository.RipisylveRepositoryImpl
 import com.forestry.counter.data.repository.StationRepositoryImpl
 import com.forestry.counter.domain.repository.RipisylveRepository
 import com.forestry.counter.domain.repository.StationRepository
+import com.forestry.counter.domain.repository.IdentityRepository
+import com.forestry.counter.data.repository.IdentityRepositoryFactory
 import com.forestry.counter.domain.calculator.FormulaParser
 import com.forestry.counter.domain.calculation.ForestryCalculator
 import com.forestry.counter.domain.calculation.PeuplementAvantCoupeCalculator
@@ -108,6 +110,8 @@ class ForestryCounterApplication : Application() {
     lateinit var ripisylveRepository: RipisylveRepository
         private set
     lateinit var stationRepository: StationRepository
+        private set
+    lateinit var identityRepository: IdentityRepository
         private set
 
     // Services
@@ -211,6 +215,7 @@ class ForestryCounterApplication : Application() {
 
         // Initialize preferences
         userPreferences = UserPreferencesManager(applicationContext)
+        identityRepository = IdentityRepositoryFactory.create(applicationContext)
 
         applyAppLocale()
 

@@ -70,6 +70,11 @@ import androidx.work.Data
 import androidx.core.os.LocaleListCompat
 import com.forestry.counter.BuildConfig
 import com.forestry.counter.data.work.PriceSyncWorker
+import android.os.SystemClock
+import android.widget.Toast
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.forestry.counter.domain.repository.IdentityRepository
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.util.Locale
 
@@ -85,12 +90,17 @@ fun SettingsScreen(
     parcelleRepository: ParcelleRepository? = null,
     placetteRepository: PlacetteRepository? = null,
     offlineTileManager: com.forestry.counter.domain.location.OfflineTileManager? = null,
+    identityRepository: IdentityRepository,
     onNavigateToPriceTablesEditor: () -> Unit = {},
+    onNavigateToAccount: () -> Unit = {},
+    onNavigateToDeveloperOptions: () -> Unit = {},
     onNavigateBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val hapticFeedback = LocalHapticFeedback.current
+    val developerUnlocker = remember { DeveloperModeUnlocker() }
 
     fun xmlEscape(s: String): String = buildString {
         s.forEach { ch ->
@@ -141,7 +151,37 @@ fun SettingsScreen(
     val keepScreenOn by preferencesManager.keepScreenOn.collectAsStateWithLifecycle(initialValue = false)
     val mapOnlyReliableGps by preferencesManager.mapOnlyReliableGps.collectAsStateWithLifecycle(initialValue = false)
     val mapReliableGpsThresholdM by preferencesManager.mapReliableGpsThresholdM.collectAsStateWithLifecycle(initialValue = 8f)
+    val developerModeEnabled by preferencesManager.developerModeEnabled.collectAsStateWithLifecycle(initialValue = false)
+    val accountSession by identityRepository.session.collectAsStateWithLifecycle()
     var showCsvDialog by remember { mutableStateOf(false) }
+
+    fun handleVersionTap() {
+        when (
+            val result = developerUnlocker.registerTap(
+                nowMillis = SystemClock.elapsedRealtime(),
+                alreadyEnabled = developerModeEnabled,
+            )
+        ) {
+            DeveloperUnlockResult.Open -> onNavigateToDeveloperOptions()
+            DeveloperUnlockResult.Enabled -> scope.launch {
+                preferencesManager.setDeveloperModeEnabled(true)
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                onNavigateToDeveloperOptions()
+            }
+            is DeveloperUnlockResult.Progress -> {
+                if (result.remainingTaps <= 4) {
+                    Toast.makeText(
+                        context,
+                        context.getString(
+                            R.string.developer_taps_remaining,
+                            result.remainingTaps,
+                        ),
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                }
+            }
+        }
+    }
 
     var settingsLoading by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
@@ -361,6 +401,24 @@ fun SettingsScreen(
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
+            SettingsSection(title = stringResource(R.string.settings_section_quintessences)) {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.settings_account_title)) },
+                    supportingContent = {
+                        Text(
+                            stringResource(
+                                if (accountSession == null) R.string.settings_account_signed_out
+                                else R.string.settings_account_signed_in
+                            )
+                        )
+                    },
+                    leadingContent = {
+                        Icon(Icons.Default.AccountCircle, contentDescription = null)
+                    },
+                    modifier = Modifier.clickable(onClick = onNavigateToAccount),
+                )
+            }
+
             // Appearance Section
             SettingsSection(title = stringResource(R.string.appearance)) {
                 SettingsItem(
@@ -1520,8 +1578,23 @@ fun SettingsScreen(
                     supportingContent = { Text(versionDisplay) },
                     leadingContent = {
                         Icon(Icons.Default.Info, contentDescription = stringResource(R.string.cd_info))
-                    }
+                    },
+                    modifier = Modifier.clickable(onClick = ::handleVersionTap),
                 )
+                if (developerModeEnabled) {
+                    ListItem(
+                        headlineContent = {
+                            Text(stringResource(R.string.settings_developer_options))
+                        },
+                        supportingContent = {
+                            Text(stringResource(R.string.settings_developer_options_desc))
+                        },
+                        leadingContent = {
+                            Icon(Icons.Default.BugReport, contentDescription = null)
+                        },
+                        modifier = Modifier.clickable(onClick = onNavigateToDeveloperOptions),
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

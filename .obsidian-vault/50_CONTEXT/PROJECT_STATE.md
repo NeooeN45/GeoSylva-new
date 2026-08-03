@@ -1,9 +1,9 @@
 ---
 date: 2026-06-29
-updated: 2026-06-29
+updated: 2026-08-03
 project: GeoSylva
-version: 2.3.0
-db_version: 29
+version: 2.4.0
+db_version: 32
 tags: [context, project-state]
 ---
 
@@ -13,17 +13,30 @@ tags: [context, project-state]
 
 - **Projet** : GeoSylva — app Android de gestion forestière française
 - **Fondateur** : Camil (auto-entrepreneur, Poitiers, Nouvelle-Aquitaine)
-- **Version** : 2.3.0 (versionCode 9)
-- **DB** : version 29
+- **Version** : 2.4.0 (versionCode 10)
+- **DB** : version 32
 - **Stack** : Kotlin 1.9.23, Compose BOM 2024.09.00, minSdk 26, targetSdk 35
 
 ## Architecture
 
-- **Pattern** : MVVM + Repository + Hilt DI
-- **DB** : Room (SQLite) — 29 entités, 23 DAOs
+- **Pattern** : MVVM + Repository + injection manuelle dans `Application`
+- **DB** : Room + SQLCipher — version 32
 - **Maps** : MapLibre GL + WMS IGN (Géoportail)
 - **GIS** : Lambert93 (EPSG:2154), WKT, SRTM embarqué
-- **Réseau** : Retrofit + OkHttp, APIs IGN/INRAE/Cerema/Open-Meteo
+- **Réseau** : OkHttp durci + Retrofit pour l’identité GSIE, APIs IGN/INRAE/Cerema/Open-Meteo
+
+## Identité Quintessences — 2026-08-03
+
+- écrans Compose de connexion et de gestion du compte ;
+- profil modifiable, vérification e-mail et récupération de mot de passe ;
+- fournisseurs local, Google et professionnel en développement ;
+- Google Credential Manager avec nonce serveur ;
+- jetons GSIE conservés dans un coffre chiffré ;
+- mode développeur après huit pressions sur la version ;
+- diagnostic API, identité, build et appareil strictement en lecture seule ;
+- aucune fonction forestière locale bloquée en l’absence de compte.
+- 513 tests unitaires verts, Lint sans erreur bloquante et APK vérifié sur
+  émulateur contre l'API locale.
 
 ## État des audits (2026-06-29)
 
@@ -59,11 +72,10 @@ tags: [context, project-state]
 
 ## Phase actuelle
 
-**Phase 0 — Blocages production** (priorité absolue, ~14 j-h) :
-1. SQLCipher (chiffrement DB — CRITICAL RGPD)
-2. `kotlin.incremental=true` (build perf)
-3. Documentation RGPD
-4. + 9 autres actions (voir MASTER_PLAN §3.2)
+**Phase d’intégration GSIE, sans abandon de l’offline-first** : le cycle
+d’identité mobile local est livré. Les prochaines tranches sont la
+configuration OAuth/SMTP publique, le centre de comptes web, puis la
+synchronisation métier versionnée avec reprise réseau.
 
 ## Financement
 

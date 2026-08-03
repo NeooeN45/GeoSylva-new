@@ -1,7 +1,7 @@
 # Politique de confidentialité — GeoSylva
 
-**Dernière mise à jour :** 1 juillet 2026
-**Version app concernée :** 2.3.0
+**Dernière mise à jour :** 3 août 2026
+**Version app concernée :** 2.4.0 (fonction d’identité en développement)
 
 ## Introduction
 
@@ -12,7 +12,7 @@ Cette politique de confidentialité explique quelles données l'Application trai
 **Contact RGPD** : contact@geosylva.fr
 
 > ⚠️ **Note de transparence** : cette politique reflète l'état réel du code vérifié le
-> 2026-07-01 (entités Room, services réseau, workers, UI). Les fonctionnalités marquées
+> 2026-08-03 (entités Room, services réseau, identité, workers, UI). Les fonctionnalités marquées
 > « À venir » sont planifiées dans le `MASTER_PLAN.md` mais pas encore livrées. Nous
 > préférons indiquer honnêtement ce qui existe plutôt que de déclarer des fonctionnalités
 > RGPD absentes du code.
@@ -21,10 +21,11 @@ Cette politique de confidentialité explique quelles données l'Application trai
 
 ## 1. Données personnelles collectées
 
-L'Application stocke les données **exclusivement sur l'appareil** (base de données locale
-chiffrée SQLCipher + stockage interne Android). Aucune donnée personnelle n'est envoyée
-vers un serveur GeoSylva. Les seuls transferts réseau concernent des services tiers
-cartographiques et de géocodage (voir §3).
+Les données forestières restent **locales par défaut** dans une base chiffrée
+SQLCipher. Si l’utilisateur choisit de créer ou de connecter un compte
+Quintessences, les seules données d’identité nécessaires sont transmises à
+l’API GSIE (voir §1.7 et §3). Aucune donnée de parcelle, de tige, de photo ou
+d’inventaire n’est synchronisée par cette première tranche.
 
 ### 1.1 Identité et contact
 
@@ -82,6 +83,26 @@ de ces champs. L'utilisateur est responsable des données qu'il y saisit.
 | Hauteur du téléphone | DataStore (`PHONE_HEIGHT_M`) | Calcul clinomètre | Intérêt légitime (Art. 6§1.f) | Appareil uniquement |
 | Préférences UI (thème, langue, etc.) | DataStore (40+ clés) | Personnalisation | Intérêt légitime (Art. 6§1.f) | Appareil uniquement |
 
+### 1.7 Compte Quintessences facultatif
+
+| Donnée | Finalité | Base légale | Stockage |
+|---|---|---|---|
+| Adresse e-mail normalisée | Création du compte et connexion locale | Exécution du service demandé (Art. 6§1.b) | Serveur GSIE, périmètre d’identités isolé |
+| Nom affiché facultatif | Personnalisation du compte | Exécution du service demandé (Art. 6§1.b) | Serveur GSIE |
+| Identifiant canonique, fournisseur et rôles | Session commune à l’écosystème Quintessences | Exécution du service demandé (Art. 6§1.b) | Serveur GSIE et métadonnées locales chiffrées |
+| Identifiant externe Google (`issuer`, `sub`) | Connexion Google choisie par l’utilisateur | Exécution du service demandé (Art. 6§1.b) | Serveur GSIE |
+| Horodatages de création et de connexion | Sécurité et audit du compte | Intérêt légitime (Art. 6§1.f) | Serveur GSIE |
+| Empreinte d'un code d'action et son expiration | Vérification de l'adresse ou récupération demandée | Exécution du service demandé (Art. 6§1.b) | Serveur GSIE, 15 minutes maximum |
+
+Le mot de passe est transmis uniquement à l’API GSIE via HTTPS puis haché
+avec Argon2id côté serveur. Il n’est jamais stocké par GeoSylva. Les jetons
+GSIE sont conservés dans un coffre Android chiffré et ne sont ni affichés ni
+journalisés.
+Les codes de vérification et de récupération sont envoyés par courrier,
+hachés côté serveur, utilisables une seule fois et supprimables après leur
+expiration de quinze minutes. Mailpit est réservé au développement local et
+ne doit contenir aucune donnée réelle.
+
 ---
 
 ## 2. Stockage et sécurité
@@ -94,10 +115,14 @@ de ces champs. L'utilisateur est responsable des données qu'il y saisit.
 - **Fichiers sensibles** : stockés dans le stockage interne de l'Application (scoped storage
   Android 10+)
 
-### 2.2 Pas de transfert de données vers un serveur GeoSylva
+### 2.2 Transfert d’identité optionnel vers GSIE
 
-**Aucune donnée personnelle n'est transmise vers un serveur GeoSylva.** Toutes les données
-personnelles restent exclusivement sur l'appareil de l'utilisateur.
+Sans compte, aucune donnée d’identité n’est envoyée à GSIE. Lors d’une
+inscription ou d’une connexion volontaire, les données décrites au §1.7 sont
+transmises via HTTPS. Cette tranche ne synchronise aucune donnée forestière.
+Le lieu d’hébergement de production, le sous-traitant éventuel et la procédure
+d’effacement opérationnelle doivent être publiés avant l’ouverture publique du
+service de comptes.
 
 ### 2.3 Sauvegarde locale automatique (BackupWorker)
 
@@ -123,15 +148,18 @@ responsable de la sécurisation des fichiers exportés.
 
 ## 3. Utilisation du réseau et transferts vers des tiers
 
-L'Application utilise une connexion internet pour des services tiers. **Aucun de ces
-services ne reçoit les données personnelles stockées dans l'Application** (noms, emails,
-photos). Les seules données transmises sont des **coordonnées géographiques** (latitude,
-longitude) nécessaires au fonctionnement des services cartographiques et de géocodage.
+L'Application utilise une connexion internet pour GSIE et des services tiers.
+Les données de compte ne sont envoyées qu’à GSIE et, si l’utilisateur choisit
+Google, au flux d’identité Google. Les services cartographiques ne reçoivent
+pas les noms, e-mails ou photos stockés dans l’application ; ils reçoivent les
+coordonnées nécessaires à leur fonctionnement.
 
 ### 3.1 Services utilisés et données envoyées
 
 | Service | Usage | Données envoyées | Hébergement | Transfert hors UE |
 |---------|-------|------------------|-------------|-------------------|
+| **API GSIE / Quintessences** | Compte, session et découverte des fournisseurs | Données décrites au §1.7 | À documenter avant ouverture publique | À déterminer selon l’hébergement retenu |
+| **Google Identity** (facultatif) | Connexion Google via Credential Manager | Nonce, client OAuth et données du compte Google choisies | Google | Potentiellement oui — à finaliser avant ouverture publique |
 | **IGN Géoportail** (`data.geopf.fr`) | Tuiles cartographiques WMTS | Coordonnées bbox (zone visible) | France (UE) | Non |
 | **IGN Géocodage reverse** (`data.geopf.fr/geocodage/reverse`) | Reverse géocodage parcelle (lat/lon → commune, section cadastrale) | Latitude, longitude | France (UE) | Non |
 | **API Géo** (`geo.api.gouv.fr`) | Reverse géocodage commune (lat/lon → code INSEE, nom commune) + détection GRECO | Latitude, longitude | France (UE) | Non |
@@ -181,6 +209,8 @@ L'Application utilise les services tiers suivants :
 
 | Sous-traitant | Service | Données traitées | Localisation | Statut transfert |
 |---------------|---------|------------------|--------------|------------------|
+| Hébergeur GSIE | Identité Quintessences | E-mail, nom affiché, identifiants, rôles et horodatages | À sélectionner | À documenter avant ouverture publique |
+| Google | Connexion Google facultative | Identité Google choisie par l’utilisateur | International | Conditions et garanties à finaliser avant ouverture publique |
 | IGN | Géoportail WMS/WMTS + géocodage reverse | Coordonnées bbox, lat/lon | France (UE) | — |
 | API Géo (gouv.fr) | Reverse géocodage commune | Latitude, longitude | France (UE) | — |
 | OpenStreetMap Foundation | Tuiles OSM | Coordonnées bbox | Royaume-Uni (UE) | — |
@@ -193,8 +223,10 @@ L'Application utilise les services tiers suivants :
 | CartoCDN | Tuiles raster | Coordonnées bbox | USA | SCC + TIA |
 | Esri | ArcGIS Online (imagerie) | Coordonnées bbox | USA | SCC + TIA |
 
-Aucun de ces sous-traitants n'a accès aux données personnelles stockées sur l'appareil
-(noms, emails, photos, données cadastrales saisies).
+Les fournisseurs cartographiques n’ont pas accès aux données personnelles
+stockées sur l’appareil. GSIE et Google traitent uniquement les données
+d’identité nécessaires au parcours choisi ; aucune donnée forestière n’est
+envoyée par cette tranche.
 
 ---
 
@@ -209,6 +241,9 @@ Aucun de ces sous-traitants n'a accès aux données personnelles stockées sur l
 | Sauvegardes locales (BackupWorker) | Jusqu'à suppression par l'utilisateur | Manuelle (les sauvegardes s'accumulent dans `backups/`, pas de rotation automatique) |
 | Préférences utilisateur (DataStore) | Jusqu'à désinstallation | Automatique à la désinstallation |
 | Logs de crash | Jusqu'à désinstallation | Automatique à la désinstallation |
+| Compte Quintessences | Jusqu’à la demande d’effacement ou l’application de la politique d’inactivité à définir avant ouverture publique | Procédure serveur dédiée ; la déconnexion ne supprime que la session locale |
+| Jetons de session locaux | Jusqu’à déconnexion, expiration ou désinstallation | Effacement du coffre local lors de la déconnexion |
+| Empreintes des codes d'action | 15 minutes maximum, ou consommation antérieure | Expiration et purge serveur |
 
 **Désinstallation** : la désinstallation de l'Application supprime toutes les données
 stockées sur l'appareil (base de données chiffrée, préférences, photos, sauvegardes
@@ -229,6 +264,7 @@ Conformément au RGPD (UE 2016/679), vous disposez des droits suivants :
 | **Limitation** (Art. 18) | Restreindre le traitement | Désactivation GPS/caméra dans les permissions Android | ✅ Disponible |
 | **Opposition** (Art. 21) | S'opposer au traitement | Désactivation des permissions Android | ✅ Disponible |
 | **Consentement** (Art. 7) | Retirer votre consentement | Révocation des permissions Android à tout moment + page consentement RGPD dans l'onboarding (acceptation/decline) | ✅ Disponible |
+| **Compte Quintessences** | Accès, rectification et effacement de l’identité serveur | Demande à `contact@geosylva.fr` ; interface autonome à compléter avant ouverture publique | ⚠️ Procédure manuelle en développement |
 
 ### Exercice de vos droits
 
@@ -286,7 +322,9 @@ Pour toute question relative à cette politique de confidentialité :
 |------|---------|------------|
 | 2026-06-29 | 1.0 | Version initiale |
 | 2026-07-01 | 1.1 | Audit factuel vs code : ajout de 6 services réseau manquants (API Géo, IGN géocodage, Open-Meteo, OpenTopoData, INRAE, Cerema), ajout `operateurNom`/`psgNumero`/champs libres, correction « Effacer toutes mes données » (non implémenté), correction purge auto cache GPS (non appelée), ajout §2.3 BackupWorker (ZIP non chiffré), ajout §3.2 PriceSyncWorker (pas de cert pinning), contact RGPD renseigné (contact@geosylva.fr) |
+| 2026-08-03 | 1.2 | Ajout transparent du compte Quintessences facultatif, du stockage chiffré de session et des flux GSIE/Google ; aucune synchronisation de donnée forestière dans cette tranche. |
+| 2026-08-03 | 1.3 | Ajout du profil, de la vérification e-mail, de la récupération et de la conservation maximale de 15 minutes des empreintes de codes. |
 
 ---
 
-*Cette politique de confidentialité s'applique à l'application Android GeoSylva (version 2.3.0).*
+*Cette politique de confidentialité s'applique à l'application Android GeoSylva (version 2.4.0 en développement).*

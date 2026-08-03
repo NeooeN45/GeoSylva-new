@@ -154,12 +154,24 @@ GeoSylva remplace le carnet de terrain et les tableurs Excel par une **applicati
 
 ### 🛡️ Fiabilité terrain
 
-- **100% hors-ligne** — aucune connexion requise pour toutes les fonctionnalités
+- **Cœur métier hors-ligne** — inventaire, calculs, carte locale et exports
+  restent disponibles sans compte ni connexion GSIE
 - **Sauvegarde automatique** quotidienne via WorkManager
 - **Rappel hauteurs avec snooze** — reportez les alertes de hauteurs manquantes (1h, 4h, 24h)
 - **Tri des parcelles** — par nom, surface ou date de mise à jour
 - **Tips contextuels** — aide intégrée sur chaque écran
 - **Onboarding complet** — 14 écrans d'introduction interactifs avec consentement RGPD
+
+### 🔐 Compte Quintessences et connexion GSIE
+
+- **Compte facultatif** — GeoSylva reste utilisable hors ligne sans créer de compte
+- **Connexion locale** — adresse e-mail et mot de passe via l’identité commune Quintessences
+- **Connexion Google** — Credential Manager Android avec nonce vérifié par GSIE
+- **Session chiffrée** — jetons conservés dans un coffre Android séparé des données de terrain
+- **Espace compte** — état de session, fournisseur courant, rôles et déconnexion
+- **Profil et vérification** — modification du nom affiché et confirmation de l'adresse par code
+- **Récupération** — nouveau mot de passe par code à usage unique, avec fermeture des anciennes sessions
+- **Options développeur** — huit pressions sur la version ouvrent un diagnostic GSIE en lecture seule
 
 ---
 
@@ -282,6 +294,30 @@ cd GeoSylva
 # → app/build/outputs/bundle/release/
 ```
 
+### Configuration de l’identité GSIE
+
+Ajouter les valeurs suivantes dans `local.properties` ou dans les variables
+d’environnement de la CI :
+
+```properties
+GSIE_API_BASE_URL=https://api.example.org/
+GOOGLE_WEB_CLIENT_ID=000000000000-example.apps.googleusercontent.com
+```
+
+`GSIE_API_BASE_URL` doit être une URL HTTPS publique en release. Un build
+debug accepte `http://127.0.0.1:8000/` pour les essais locaux. Avec un
+émulateur ou un appareil relié par ADB :
+
+```bash
+adb reverse tcp:8000 tcp:8000
+```
+
+L'API locale fournit les courriels captifs sur <http://localhost:8025>.
+Le client Google n’est
+activé que si le serveur le publie comme disponible **et** si
+`GOOGLE_WEB_CLIENT_ID` est renseigné. Le client ID OAuth n’est pas un secret ;
+aucun secret OAuth ne doit être intégré dans l’application.
+
 ## 🧪 Tests
 
 ```bash
@@ -313,11 +349,12 @@ cd GeoSylva
 ## 🔒 Sécurité & Confidentialité
 
 - ✅ **Aucune publicité** — expérience 100% professionnelle
-- ✅ **Aucun tracking / analytics** — aucune donnée collectée
-- ✅ **Fonctionne hors-ligne** — aucune connexion requise pour les données
-- ✅ **Données 100% locales** — stockées uniquement sur l'appareil
+- ✅ **Aucun tracking / analytics** — aucune télémétrie publicitaire ou comportementale
+- ✅ **Données de terrain locales par défaut** — aucune synchronisation sans action explicite
+- ✅ **Compte optionnel transparent** — seules les données d’identité nécessaires sont transmises à GSIE lors d’une inscription ou connexion
 - ✅ **Chiffrement SQLCipher** — base de données chiffrée au repos (Keystore Android)
-- ✅ **Certificate Pinning** — SHA-256 sur data.geopf.fr, tile.opentopomap.org, basemaps.cartocdn.com, server.arcgisonline.com
+- ✅ **Réseau durci** — HTTPS obligatoire pour GSIE, validation TLS système,
+  refus des redirections non publiques et des résolutions DNS privées
 - ✅ **RGPD compliant** — SCC (Standard Contractual Clauses) pour transferts US (Esri/MapLibre/CartoCDN)
 - ✅ **ProGuard/R8** — code obfusqué en release
 - ✅ **Code source auditable** — open source sous AGPL-3.0

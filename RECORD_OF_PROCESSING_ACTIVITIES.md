@@ -1,6 +1,6 @@
 # Registre des traitements — GeoSylva
 
-**Dernière mise à jour :** 29 juin 2026
+**Dernière mise à jour :** 3 août 2026
 **Responsable du traitement** : Micro Entreprise (camil)
 
 Conformément à l'Article 30 du RGPD (UE 2016/679), ce document constitue le registre des activités de traitement de l'application GeoSylva.
@@ -45,7 +45,7 @@ Conformément à l'Article 30 du RGPD (UE 2016/679), ce document constitue le re
 | **Destinataires** | IGN, OSM, MapLibre, CartoCDN, Esri, OpenTopoMap |
 | **Transferts hors UE** | Oui — Esri (USA), MapLibre (USA), CartoCDN (USA) |
 | **Durée de conservation** | Pas de stockage (requêtes HTTP éphémères) |
-| **Mesures de sécurité** | TLS 1.2+, Certificate pinning (release) |
+| **Mesures de sécurité** | TLS, restrictions réseau Android et validation des cibles distantes |
 
 ### T-04 : Synchronisation des prix du bois
 
@@ -57,7 +57,7 @@ Conformément à l'Article 30 du RGPD (UE 2016/679), ce document constitue le re
 | **Destinataires** | URL configurée par l'utilisateur |
 | **Transferts hors UE** | Variable (selon l'URL configurée) |
 | **Durée de conservation** | Prix stockés localement jusqu'à mise à jour |
-| **Mesures de sécurité** | SecureHttpClient (TLS, pinning en release) |
+| **Mesures de sécurité** | HTTPS recommandé et validation de l’URL distante |
 
 ### T-05 : Export de données
 
@@ -109,6 +109,20 @@ Conformément à l'Article 30 du RGPD (UE 2016/679), ce document constitue le re
 | **Durée de conservation** | Jusqu'à désinstallation |
 | **Mesures de sécurité** | Stockage local uniquement |
 
+### T-09 : Compte Quintessences facultatif
+
+| Rubrique | Détail |
+|----------|--------|
+| **Finalité** | Création d’un compte commun, authentification, profil, vérification d'adresse, récupération et attribution de rôles GSIE |
+| **Base légale** | Exécution du service demandé (Art. 6§1.b) et intérêt légitime de sécurité (Art. 6§1.f) |
+| **Catégories de données** | E-mail normalisé, nom affiché facultatif, identifiant canonique, fournisseur, identifiant Google facultatif, rôles, horodatages et empreintes temporaires de codes d'action |
+| **Catégories de personnes** | Utilisateurs choisissant de créer ou connecter un compte |
+| **Destinataires** | Opérateur et hébergeur GSIE ; Google uniquement si ce fournisseur est choisi |
+| **Transferts hors UE** | À déterminer et documenter avant ouverture publique selon l’hébergeur et le flux Google retenus |
+| **Durée de conservation** | Compte jusqu’à effacement ou politique d’inactivité ; empreintes des codes 15 minutes maximum ou consommation antérieure |
+| **Mesures de sécurité** | HTTPS, Argon2id serveur, codes à usage unique, anti-énumération, révocation de session, JWT RS256, refresh rotatif, coffre Android chiffré, aucun secret dans les logs |
+| **Limite de la tranche** | Aucune donnée forestière synchronisée ; compte facultatif et application utilisable hors ligne |
+
 ---
 
 ## Sous-traitants
@@ -121,6 +135,8 @@ Conformément à l'Article 30 du RGPD (UE 2016/679), ce document constitue le re
 | MapLibre | T-03 Tuiles carto | USA | SCC adoptées (Décision 2021/914), Privacy Shield invalidé |
 | CartoCDN | T-03 Tuiles carto | USA | SCC adoptées (Décision 2021/914), Privacy Shield invalidé |
 | Esri | T-03 Tuiles carto | USA | SCC adoptées (Décision 2021/914), Privacy Shield invalidé |
+| Hébergeur GSIE | T-09 Identité Quintessences | À sélectionner | Contrat, localisation et garanties à finaliser avant ouverture publique |
+| Google | T-09 Connexion Google facultative | International | Garanties et configuration de marque à finaliser avant ouverture publique |
 
 **Note sur les transferts hors UE (Art. 46 RGPD)** : Les transferts vers MapLibre,
 CartoCDN et Esri (USA) sont couverts par les Standard Contractual Clauses (SCC)
@@ -138,7 +154,8 @@ ne remettent pas en cause les garanties des SCC pour les données transférées
 | Mesure | Implémentation |
 |--------|----------------|
 | Chiffrement base de données | SQLCipher 4.5.4, AES-256, clé Keystore |
-| Chiffrement en transit | TLS 1.2+, Certificate pinning (release) |
+| Chiffrement en transit | TLS ; HTTPS obligatoire et cibles publiques uniquement pour GSIE |
+| Jetons d’identité mobiles | Coffre `EncryptedSharedPreferences`, séparé de DataStore |
 | Stockage des clés | Android Keystore (hardware-backed si disponible) |
 | Anti-capture d'écran | FLAG_SECURE sur MainActivity |
 | Validation des entrées | Sanitisation des imports, validation SQL |

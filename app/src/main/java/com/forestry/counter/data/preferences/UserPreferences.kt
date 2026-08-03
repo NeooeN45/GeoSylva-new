@@ -79,6 +79,9 @@ class UserPreferencesManager(private val context: Context) {
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         val IBP_ONBOARDING_SEEN = booleanPreferencesKey("ibp_onboarding_seen")
         val STATION_TUTORIAL_COMPLETED = booleanPreferencesKey("station_tutorial_completed")
+
+        // Options développeur locales — ne confèrent aucun rôle GSIE
+        val DEVELOPER_MODE_ENABLED = booleanPreferencesKey("developer_mode_enabled")
     }
 
     // IBP onboarding
@@ -590,6 +593,16 @@ class UserPreferencesManager(private val context: Context) {
     suspend fun setOnboardingCompleted(completed: Boolean) {
         dataStore.edit { prefs ->
             prefs[ONBOARDING_COMPLETED] = completed
+        }
+    }
+
+    val developerModeEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[DEVELOPER_MODE_ENABLED] ?: false
+    }
+
+    suspend fun setDeveloperModeEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[DEVELOPER_MODE_ENABLED] = enabled
         }
     }
 }

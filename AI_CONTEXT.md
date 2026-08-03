@@ -23,6 +23,12 @@ GeoSylva est une application Android (Kotlin / Jetpack Compose) de **gestion for
 **DB version** : 32 (mis à jour 2026-07-01, était 29 au 2026-06-29 — voir `MASTER_PLAN.md` §2.4 pour le détail des items déjà résolus depuis l'audit initial)
 **Statut** : En développement — voir `MASTER_PLAN.md` §2.4/§3.2 pour le statut vérifié (Phase 0 sécurité/RGPD très avancée, Phase 1 i18n/perf encore largement à faire)
 
+**Identité Quintessences** : cycle mobile local livré le 2026-08-03
+(connexion locale/Google, profil, vérification e-mail, récupération, coffre de
+session chiffré, espace compte et diagnostic développeur). 513 tests passent
+et Lint ne relève aucune erreur bloquante. La synchronisation des données
+forestières reste à construire.
+
 ---
 
 ## 2) Stack technique
@@ -79,9 +85,10 @@ com.forestry.counter/
 │   ├── classification/      # Classification
 │   └── usecase/             # Use cases (export, import, brain, confidence, network, pack, territory, autecology, florist, fertility, ripisylve, station, sylviculture)
 ├── network/                 # Couche réseau
-│   ├── SecureHttpClient.kt  # OkHttp + cert pinning (actif en release)
+│   ├── SecureHttpClient.kt  # OkHttp, HTTPS public uniquement + contrôle DNS
 │   ├── SecureTileService.kt
 │   └── MobileCoverageEngine.kt
+├── data/remote/identity/    # Retrofit, DTO d’identité, Credential Manager, coffre de session
 ├── security/                # Couche sécurité
 │   └── DatabaseEncryptionService.kt  # Existe mais JAMAIS appelé
 └── presentation/            # Couche présentation
@@ -271,6 +278,7 @@ Fichier clé : `domain/calculation/ForestryCalculator.kt`
 | DataStore chiffrement | **Absent** | `UserPreferences.kt` |
 | Root detection | **Absent** | — |
 | Auth biométrique | **Absente** | — |
+| Authentification GSIE | **Client local + Google actif si configuré** | `data/remote/identity/`, `screens/account/` |
 | ProGuard logs | Partiel (v/d seulement) | `proguard-rules.pro:81-85` |
 
 **Bonnes pratiques en place** :

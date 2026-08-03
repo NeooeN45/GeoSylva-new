@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [Unreleased] — 2026-08-03
+
+### Added
+
+- **Compte Quintessences** — écrans Compose distincts pour la connexion, la
+  création de compte et la consultation de la session GSIE.
+- **Connexion locale et Google** — client Retrofit conforme au contrat
+  `DEC-000044`, découverte dynamique des fournisseurs et Google Credential
+  Manager avec nonce serveur.
+- **Session chiffrée** — jetons GSIE stockés dans un coffre
+  `EncryptedSharedPreferences`, séparé des préférences ordinaires.
+- **Options développeur** — activation persistante après huit pressions sur
+  la version, puis diagnostic en lecture seule de `/health`, `/ready`, des
+  fournisseurs d’identité, du build et de l’appareil.
+- **Cycle complet du compte** — profil modifiable, vérification d'adresse,
+  récupération de mot de passe et révocation des sessions antérieures.
+- **513 tests unitaires** — 513 passés, aucun échec ni test ignoré.
+- **Validation Android** — compilation Kotlin, assemblage de l’APK et lint
+  réussis ; 0 erreur lint et 576 avertissements non bloquants.
+- **Validation émulateur** — parcours compte, récupération et page développeur
+  reliée à l'API locale ; diagnostic `/health` et `/ready` fonctionnel.
+
+### Changed
+
+- Les fonctions forestières locales restent accessibles sans compte et en cas
+  d’indisponibilité de GSIE.
+- La documentation de confidentialité distingue désormais les données de
+  terrain locales du traitement d’identité optionnel.
+- Le retour de progression des huit pressions utilise un toast non tactile :
+  la ligne de version reste accessible pendant tout le déverrouillage.
+
 ## [2.4.0] — 2026-06-30
 
 ### Added

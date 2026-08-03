@@ -34,6 +34,10 @@ sealed class Screen(val route: String) {
         fun createRoute(groupId: String) = "group/$groupId/calculator"
     }
     object Settings : Screen("settings")
+    object Account : Screen("settings/account")
+    object Login : Screen("settings/account/login")
+    object PasswordRecovery : Screen("settings/account/password-recovery")
+    object DeveloperOptions : Screen("settings/developer")
     object PriceTablesEditor : Screen("settings/price_tables")
     object Parcelles : Screen("parcelles/{forestId}") {
         fun createRoute(forestId: String?) = "parcelles/${forestId ?: "none"}"

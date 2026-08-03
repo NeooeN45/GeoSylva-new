@@ -50,6 +50,27 @@ android {
             ?: ""
         buildConfigField("String", "MAPTILER_KEY", "\"$maptilerKey\"")
 
+        fun buildConfigString(value: String): String = value
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+
+        val gsieApiBaseUrl = localProps.getProperty("GSIE_API_BASE_URL")
+            ?: System.getenv("GSIE_API_BASE_URL")
+            ?: ""
+        val googleWebClientId = localProps.getProperty("GOOGLE_WEB_CLIENT_ID")
+            ?: System.getenv("GOOGLE_WEB_CLIENT_ID")
+            ?: ""
+        buildConfigField(
+            "String",
+            "GSIE_API_BASE_URL",
+            "\"${buildConfigString(gsieApiBaseUrl)}\""
+        )
+        buildConfigField(
+            "String",
+            "GOOGLE_WEB_CLIENT_ID",
+            "\"${buildConfigString(googleWebClientId)}\""
+        )
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -228,6 +249,13 @@ dependencies {
     implementation(libs.sqlcipher)
     // AndroidX Security for encrypted file storage
     implementation(libs.security.crypto)
+
+    // Identité Quintessences : contrat GSIE + connexion Google officielle
+    implementation(libs.retrofit.core)
+    implementation(libs.retrofit.kotlinx.serialization)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play.services.auth)
+    implementation(libs.googleid)
 
     // Testing
     testImplementation(libs.bundles.testing)
