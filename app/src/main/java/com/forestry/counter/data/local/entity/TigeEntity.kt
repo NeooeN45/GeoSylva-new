@@ -80,5 +80,11 @@ data class TigeEntity(
     val coefficientElancement: Double?,
     val houppierM: Double?,
     val houppierPct: Double?,
-    val isTigeHabitat: Boolean
+    val isTigeHabitat: Boolean,
+
+    // Metadata spec GeoSylva 3.0 (GEOSYLVA-003 §3.1)
+    val deletedAt: Long? = null,
+    val auteur: String? = null,
+    val source: String? = null,
+    val version: Int = 1
 )

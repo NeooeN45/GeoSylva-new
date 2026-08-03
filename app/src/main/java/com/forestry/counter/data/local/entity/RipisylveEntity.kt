@@ -57,7 +57,13 @@ data class RipisylveEntity(
     val invasivesCsv: String,
     val inadapteesMode: String,
     val stabilitePct: Double,
-    val globalNotes: String
+    val globalNotes: String,
+
+    // Metadata spec GeoSylva 3.0 (GEOSYLVA-003 §3.1)
+    val deletedAt: Long? = null,
+    val auteur: String? = null,
+    val source: String? = null,
+    val version: Int = 1
 ) {
     fun toDomain(): RipisylveObservation = RipisylveObservation(
         id = id,

@@ -483,6 +483,55 @@ object DatabaseMigrations {
         }
     }
 
+    /**
+     * Migration 33→34 — Contrat de données spec GeoSylva 3.0 (GEOSYLVA-003 §3.1).
+     *
+     * Ajoute les champs metadata normalisés sur les entités cœur métier :
+     *   - deletedAt   : soft delete (suppression logique traçable)
+     *   - auteur       : opérateur qui a créé/modifié la donnée
+     *   - source       : origine de la donnée (manual | import | sync | gps)
+     *   - version      : version de l'objet pour optimistic locking et historique
+     *
+     * Ces champs sont nullable pour préserver les données existantes
+     * (NULL = donnée pré-existing, non traçable mais non perdue).
+     * Les nouvelles écritures doivent les renseigner.
+     */
+    val MIGRATION_33_34 = object : Migration(33, 34) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // forets
+            addMetadataColumns(db, "forets")
+            // parcelles
+            addMetadataColumns(db, "parcelles")
+            // placettes
+            addMetadataColumns(db, "placettes")
+            // tiges
+            addMetadataColumns(db, "tiges")
+            // inventaire_sessions
+            addMetadataColumns(db, "inventaire_sessions")
+            // essences (référentiel — source utile)
+            addMetadataColumns(db, "essences")
+            // observations_flore
+            addMetadataColumns(db, "observations_flore")
+            // arbres_habitat
+            addMetadataColumns(db, "arbres_habitat")
+            // alertes_sanitaires
+            addMetadataColumns(db, "alertes_sanitaires")
+            // diagnostics_sylvicoles
+            addMetadataColumns(db, "diagnostics_sylvicoles")
+            // ripisylve_observation
+            addMetadataColumns(db, "ripisylve_observation")
+            // station_diagnostics
+            addMetadataColumns(db, "station_diagnostics")
+        }
+
+        private fun addMetadataColumns(db: SupportSQLiteDatabase, table: String) {
+            try { db.execSQL("ALTER TABLE $table ADD COLUMN deletedAt INTEGER") } catch (e: Throwable) { Log.w(TAG, "Migration ALTER TABLE ignorée (colonne déjà existante ?): ${e.message}") }
+            try { db.execSQL("ALTER TABLE $table ADD COLUMN auteur TEXT") } catch (e: Throwable) { Log.w(TAG, "Migration ALTER TABLE ignorée (colonne déjà existante ?): ${e.message}") }
+            try { db.execSQL("ALTER TABLE $table ADD COLUMN source TEXT") } catch (e: Throwable) { Log.w(TAG, "Migration ALTER TABLE ignorée (colonne déjà existante ?): ${e.message}") }
+            try { db.execSQL("ALTER TABLE $table ADD COLUMN version INTEGER NOT NULL DEFAULT 1") } catch (e: Throwable) { Log.w(TAG, "Migration ALTER TABLE ignorée (colonne déjà existante ?): ${e.message}") }
+        }
+    }
+
     val ALL = arrayOf(
         MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
         MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
@@ -494,5 +543,6 @@ object DatabaseMigrations {
         com.forestry.counter.data.local.migration.MIGRATION_30_31,
         com.forestry.counter.data.local.migration.MIGRATION_31_32,
         MIGRATION_32_33,
+        MIGRATION_33_34,
     )
 }

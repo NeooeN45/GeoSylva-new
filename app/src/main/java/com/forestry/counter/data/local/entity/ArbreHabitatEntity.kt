@@ -78,5 +78,11 @@ data class ArbreHabitatEntity(
     val isArbreVivant: Boolean,
     val isArbreRemarquable: Boolean,
     val remarques: String?,
-    val dateObservation: Long
+    val dateObservation: Long,
+
+    // Metadata spec GeoSylva 3.0 (GEOSYLVA-003 §3.1)
+    val deletedAt: Long? = null,
+    val auteur: String? = null,
+    val source: String? = null,
+    val version: Int = 1
 )

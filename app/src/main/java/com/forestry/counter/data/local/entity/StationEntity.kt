@@ -65,7 +65,13 @@ data class StationEntity(
     val especesMesophiles: Boolean,
     val especesHygrophiles: Boolean,
     
-    val notes: String
+    val notes: String,
+
+    // Metadata spec GeoSylva 3.0 (GEOSYLVA-003 §3.1)
+    val deletedAt: Long? = null,
+    val auteur: String? = null,
+    val source: String? = null,
+    val version: Int = 1
 ) {
     fun toDomain(): StationObservation {
         return StationObservation(

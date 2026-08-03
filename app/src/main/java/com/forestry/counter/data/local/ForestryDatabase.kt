@@ -97,7 +97,7 @@ import com.forestry.counter.data.local.entity.AdvancedCalculationEntity
         AdvancedCalculationEntity::class,
         ParcelSyncEntity::class
     ],
-    version = 33,
+    version = 34,
     exportSchema = true
 )
 @TypeConverters(EnumConverters::class)
