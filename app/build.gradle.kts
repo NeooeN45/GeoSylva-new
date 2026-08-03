@@ -150,6 +150,11 @@ android {
     // Asset Pack pour les tuiles DEM SRTM (offline elevation data)
     assetPacks += ":dem_pack"
 
+    // Expose les schemas JSON Room (app/schemas/) aux tests instrumentés
+    // afin que MigrationTestHelper puisse créer une DB à une version antérieure.
+    sourceSets {
+        getByName("androidTest").assets.srcDirs("$projectDir/schemas")
+    }
 }
 
 /*
@@ -260,6 +265,8 @@ dependencies {
     // Testing
     testImplementation(libs.bundles.testing)
     androidTestImplementation(libs.bundles.android.testing)
+    // MigrationTestHelper (tests de migration Room instrumentés)
+    androidTestImplementation(libs.room.testing)
     androidTestImplementation(composeBom)
     androidTestImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.tooling)
