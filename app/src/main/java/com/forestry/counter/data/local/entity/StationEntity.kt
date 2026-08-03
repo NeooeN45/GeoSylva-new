@@ -106,7 +106,11 @@ data class StationEntity(
             especesXerophiles = especesXerophiles,
             especesMesophiles = especesMesophiles,
             especesHygrophiles = especesHygrophiles,
-            notes = notes
+            notes = notes,
+            deletedAt = deletedAt,
+            auteur = auteur,
+            source = source,
+            version = version
         )
     }
 
@@ -144,7 +148,11 @@ data class StationEntity(
                 especesXerophiles = obs.especesXerophiles,
                 especesMesophiles = obs.especesMesophiles,
                 especesHygrophiles = obs.especesHygrophiles,
-                notes = obs.notes
+                notes = obs.notes,
+                deletedAt = obs.deletedAt,
+                auteur = obs.auteur,
+                source = obs.source,
+                version = obs.version
             )
         }
 

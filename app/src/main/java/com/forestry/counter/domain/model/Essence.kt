@@ -15,5 +15,14 @@ data class Essence(
     val hauteurMaxM: Double? = null,        // hauteur max typique (m)
     val diametreMaxCm: Double? = null,      // diamètre max typique (cm)
     val toleranceOmbre: String? = null,     // "Très tolérante", "Tolérante", "Intermédiaire", "Intolérante"
-    val remarques: String? = null           // particularités remarquables
-)
+    val remarques: String? = null,           // particularités remarquables
+
+    // Metadata spec GeoSylva 3.0 §3.1 — provenance et traçabilité
+    override val deletedAt: Long? = null,
+    override val auteur: String? = null,
+    override val source: String? = null,
+    override val version: Int = 1
+) : Metadatable<Essence> {
+    override fun withMetadata(auteur: String, source: String, version: Int): Essence =
+        copy(auteur = auteur, source = source, version = version)
+}

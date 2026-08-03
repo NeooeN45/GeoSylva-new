@@ -187,7 +187,11 @@ fun ParcelleEntity.toParcelle(): Parcelle {
         codeSer = codeSer,
         nomSer = nomSer,
         createdAt = createdAt,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+        auteur = auteur,
+        source = source,
+        version = version
     )
 }
 
@@ -222,7 +226,11 @@ fun Parcelle.toParcelleEntity(): ParcelleEntity {
         codeSer = codeSer,
         nomSer = nomSer,
         createdAt = createdAt,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+        auteur = auteur,
+        source = source,
+        version = version
     )
 }
 
@@ -237,7 +245,11 @@ fun PlacetteEntity.toPlacette(): Placette {
         surfaceM2 = surfaceM2,
         centerWkt = centerWkt,
         createdAt = createdAt,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+        auteur = auteur,
+        source = source,
+        version = version
     )
 }
 
@@ -255,7 +267,11 @@ fun Placette.toPlacetteEntity(): PlacetteEntity {
         referenceGpsWkt = null,
         azimutRef = null,
         createdAt = createdAt,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+        auteur = auteur,
+        source = source,
+        version = version
     )
 }
 
@@ -275,7 +291,11 @@ fun EssenceEntity.toEssence(): Essence {
         hauteurMaxM = hauteurMaxM,
         diametreMaxCm = diametreMaxCm,
         toleranceOmbre = toleranceOmbre,
-        remarques = remarques
+        remarques = remarques,
+        deletedAt = deletedAt,
+        auteur = auteur,
+        source = source,
+        version = version
     )
 }
 
@@ -294,7 +314,11 @@ fun Essence.toEssenceEntity(): EssenceEntity {
         hauteurMaxM = hauteurMaxM,
         diametreMaxCm = diametreMaxCm,
         toleranceOmbre = toleranceOmbre,
-        remarques = remarques
+        remarques = remarques,
+        deletedAt = deletedAt,
+        auteur = auteur,
+        source = source,
+        version = version
     )
 }
 
@@ -332,7 +356,11 @@ fun TigeEntity.toTige(): Tige {
         houppierM = houppierM,
         houppierPct = houppierPct,
         isTigeHabitat = isTigeHabitat,
-        sessionId = sessionId
+        sessionId = sessionId,
+        deletedAt = deletedAt,
+        auteur = auteur,
+        source = source,
+        version = version
     )
 }
 
@@ -369,7 +397,11 @@ fun Tige.toTigeEntity(): TigeEntity {
         coefficientElancement = coefficientElancement,
         houppierM = houppierM,
         houppierPct = houppierPct,
-        isTigeHabitat = isTigeHabitat
+        isTigeHabitat = isTigeHabitat,
+        deletedAt = deletedAt,
+        auteur = auteur,
+        source = source,
+        version = version
     )
 }
 

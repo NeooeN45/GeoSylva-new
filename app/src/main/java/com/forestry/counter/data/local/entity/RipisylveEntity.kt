@@ -101,7 +101,11 @@ data class RipisylveEntity(
         invasivesIdentifiees = if (invasivesCsv.isBlank()) emptyList() else invasivesCsv.split(","),
         inadapteesMode = InadapteesMode.entries.firstOrNull { it.name == inadapteesMode } ?: InadapteesMode.ABSENCE,
         stabilitePct = stabilitePct,
-        globalNotes = globalNotes
+        globalNotes = globalNotes,
+        deletedAt = deletedAt,
+        auteur = auteur,
+        source = source,
+        version = version
     )
 
     companion object {
@@ -142,7 +146,11 @@ data class RipisylveEntity(
             invasivesCsv = obs.invasivesIdentifiees.joinToString(","),
             inadapteesMode = obs.inadapteesMode.name,
             stabilitePct = obs.stabilitePct,
-            globalNotes = obs.globalNotes
+            globalNotes = obs.globalNotes,
+            deletedAt = obs.deletedAt,
+            auteur = obs.auteur,
+            source = obs.source,
+            version = obs.version
         )
     }
 }

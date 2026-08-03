@@ -34,5 +34,14 @@ data class Tige(
     val houppierM: Double? = null,
     val houppierPct: Double? = null,
     val isTigeHabitat: Boolean = false,
-    val sessionId: String? = null
-)
+    val sessionId: String? = null,
+
+    // Metadata spec GeoSylva 3.0 §3.1 — provenance et traçabilité
+    override val deletedAt: Long? = null,
+    override val auteur: String? = null,
+    override val source: String? = null,
+    override val version: Int = 1
+) : Metadatable<Tige> {
+    override fun withMetadata(auteur: String, source: String, version: Int): Tige =
+        copy(auteur = auteur, source = source, version = version)
+}

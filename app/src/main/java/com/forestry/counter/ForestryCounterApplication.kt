@@ -26,6 +26,7 @@ import com.forestry.counter.domain.repository.RipisylveRepository
 import com.forestry.counter.domain.repository.StationRepository
 import com.forestry.counter.domain.repository.IdentityRepository
 import com.forestry.counter.data.repository.IdentityRepositoryFactory
+import com.forestry.counter.data.service.MetadataService
 import com.forestry.counter.data.sync.ParcelSyncRepositoryFactory
 import com.forestry.counter.domain.calculator.FormulaParser
 import com.forestry.counter.domain.calculation.ForestryCalculator
@@ -121,6 +122,8 @@ class ForestryCounterApplication : Application() {
     // Services
     lateinit var localisationResolverService: LocalisationResolverService
         private set
+    lateinit var metadataService: MetadataService
+        private set
 
     // Preferences
     lateinit var userPreferences: UserPreferencesManager
@@ -176,6 +179,12 @@ class ForestryCounterApplication : Application() {
             identityRepository = identityRepository,
         )
 
+        // Service metadata — renseigne auteur/source/version à l'écriture (spec §3.1).
+        // Le accountProvider lit l'identité courante de façon synchrone via le StateFlow.
+        metadataService = MetadataService(
+            accountProvider = { identityRepository.session.value?.accountId }
+        )
+
         // Initialize calculator
         formulaParser = FormulaParser()
 
@@ -208,22 +217,23 @@ class ForestryCounterApplication : Application() {
         // Forestry repositories
         parcelleRepository = ParcelleRepositoryImpl(
             parcelleDao = database.parcelleDao(),
+            metadataService = metadataService,
             onUpsert = parcelleSyncRepository::enqueueUpsert,
             onDelete = parcelleSyncRepository::enqueueDelete,
         )
-        placetteRepository = PlacetteRepositoryImpl(database.placetteDao())
-        essenceRepository = EssenceRepositoryImpl(database.essenceDao())
-        tigeRepository = TigeRepositoryImpl(database.tigeDao())
+        placetteRepository = PlacetteRepositoryImpl(database.placetteDao(), metadataService)
+        essenceRepository = EssenceRepositoryImpl(database.essenceDao(), metadataService)
+        tigeRepository = TigeRepositoryImpl(database.tigeDao(), metadataService)
         parameterRepository = ParameterRepositoryImpl(database.parameterDao())
         ibpRepository = IbpRepositoryImpl(database.ibpEvaluationDao())
-        foretRepository = ForetRepositoryImpl(database.foretDao())
-        inventaireSessionRepository = InventaireSessionRepositoryImpl(database.inventaireSessionDao())
+        foretRepository = ForetRepositoryImpl(database.foretDao(), metadataService)
+        inventaireSessionRepository = InventaireSessionRepositoryImpl(database.inventaireSessionDao(), metadataService)
         stationEnvironnementaleRepository = StationEnvironnementaleRepositoryImpl(database.stationEnvironnementaleDao())
-        diagnosticSylvicoleRepository = DiagnosticSylvicoleRepositoryImpl(database.diagnosticSylvicoleDao())
-        observationFloreRepository = ObservationFloreRepositoryImpl(database.observationFloreDao())
+        diagnosticSylvicoleRepository = DiagnosticSylvicoleRepositoryImpl(database.diagnosticSylvicoleDao(), metadataService)
+        observationFloreRepository = ObservationFloreRepositoryImpl(database.observationFloreDao(), metadataService)
         valeurFonciereRepository = ValeurFonciereRepositoryImpl(database.valeurFonciereDao())
-        ripisylveRepository = RipisylveRepositoryImpl(database.ripisylveDao())
-        stationRepository = StationRepositoryImpl(database.stationDao())
+        ripisylveRepository = RipisylveRepositoryImpl(database.ripisylveDao(), metadataService)
+        stationRepository = StationRepositoryImpl(database.stationDao(), metadataService)
         localisationResolverService = LocalisationResolverService(parcelleRepository, stationEnvironnementaleRepository)
 
         // Initialize forestry calculator

@@ -3,13 +3,15 @@ package com.forestry.counter.data.repository
 import com.forestry.counter.data.local.dao.EssenceDao
 import com.forestry.counter.data.mapper.toEssence
 import com.forestry.counter.data.mapper.toEssenceEntity
+import com.forestry.counter.data.service.MetadataService
 import com.forestry.counter.domain.model.Essence
 import com.forestry.counter.domain.repository.EssenceRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 class EssenceRepositoryImpl(
-    private val essenceDao: EssenceDao
+    private val essenceDao: EssenceDao,
+    private val metadataService: MetadataService,
 ) : EssenceRepository {
 
     override fun getAllEssences(): Flow<List<Essence>> {
@@ -21,15 +23,18 @@ class EssenceRepositoryImpl(
     }
 
     override suspend fun insertEssence(essence: Essence) {
-        essenceDao.insertEssence(essence.toEssenceEntity())
+        val enriched = metadataService.enrichForCreate(essence)
+        essenceDao.insertEssence(enriched.toEssenceEntity())
     }
 
     override suspend fun insertEssences(essences: List<Essence>) {
-        essenceDao.insertEssences(essences.map { it.toEssenceEntity() })
+        val enriched = essences.map { metadataService.enrichForCreate(it) }
+        essenceDao.insertEssences(enriched.map { it.toEssenceEntity() })
     }
 
     override suspend fun updateEssence(essence: Essence) {
-        essenceDao.updateEssence(essence.toEssenceEntity())
+        val enriched = metadataService.enrichForUpdate(essence, baseVersion = essence.version)
+        essenceDao.updateEssence(enriched.toEssenceEntity())
     }
 
     override suspend fun deleteEssence(code: String) {

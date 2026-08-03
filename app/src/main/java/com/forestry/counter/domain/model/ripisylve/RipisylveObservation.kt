@@ -1,5 +1,6 @@
 package com.forestry.counter.domain.model.ripisylve
 
+import com.forestry.counter.domain.model.Metadatable
 import com.forestry.counter.domain.model.station.DiagnosticPhoto
 
 /**
@@ -72,8 +73,17 @@ data class RipisylveObservation(
     val stabilitePct: Double = 0.0,             // % arbres penchés ou affouillement
 
     // ── Champ libre ──
-    val globalNotes: String = ""
-)
+    val globalNotes: String = "",
+
+    // Metadata spec GeoSylva 3.0 §3.1 — provenance et traçabilité
+    override val deletedAt: Long? = null,
+    override val auteur: String? = null,
+    override val source: String? = null,
+    override val version: Int = 1
+) : Metadatable<RipisylveObservation> {
+    override fun withMetadata(auteur: String, source: String, version: Int): RipisylveObservation =
+        copy(auteur = auteur, source = source, version = version)
+}
 
 enum class LargeurMode(val label: String, val points: Int) {
     UNE_RANGEE("1 rangée (< 1.5 m)", 0),

@@ -24,5 +24,14 @@ data class Foret(
     val departement: String?,
     val remarques: String?,
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
-)
+    val updatedAt: Long = System.currentTimeMillis(),
+
+    // Metadata spec GeoSylva 3.0 §3.1 — provenance et traçabilité
+    override val deletedAt: Long? = null,
+    override val auteur: String? = null,
+    override val source: String? = null,
+    override val version: Int = 1
+) : Metadatable<Foret> {
+    override fun withMetadata(auteur: String, source: String, version: Int): Foret =
+        copy(auteur = auteur, source = source, version = version)
+}

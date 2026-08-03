@@ -175,7 +175,11 @@ fun DiagnosticSylvicoleEntity.toDomain(): DiagnosticSylvicole = DiagnosticSylvic
     algoVersion = algoVersion,
     dataSourcesJson = dataSourcesJson,
     remarques = remarques,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    deletedAt = deletedAt,
+    auteur = auteur,
+    source = source,
+    version = version
 )
 
 fun DiagnosticSylvicole.toEntity(): DiagnosticSylvicoleEntity = DiagnosticSylvicoleEntity(
@@ -212,7 +216,11 @@ fun DiagnosticSylvicole.toEntity(): DiagnosticSylvicoleEntity = DiagnosticSylvic
     algoVersion = algoVersion,
     dataSourcesJson = dataSourcesJson,
     remarques = remarques,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    deletedAt = deletedAt,
+    auteur = auteur,
+    source = source,
+    version = version
 )
 
 // ── ValeurFonciere ──────────────────────────────────────────────────────────
@@ -286,7 +294,11 @@ fun ObservationFloreEntity.toDomain(): ObservationFlore = ObservationFlore(
     isEspeceProtegee = isEspeceProtegee,
     isEspeceIndicatrice = isEspeceIndicatrice,
     dateSaisie = dateSaisie,
-    createdAt = createdAt
+    createdAt = createdAt,
+    deletedAt = deletedAt,
+    auteur = auteur,
+    source = source,
+    version = version
 )
 
 fun ObservationFlore.toEntity(): ObservationFloreEntity = ObservationFloreEntity(
@@ -308,7 +320,11 @@ fun ObservationFlore.toEntity(): ObservationFloreEntity = ObservationFloreEntity
     isEspeceProtegee = isEspeceProtegee,
     isEspeceIndicatrice = isEspeceIndicatrice,
     dateSaisie = dateSaisie,
-    createdAt = createdAt
+    createdAt = createdAt,
+    deletedAt = deletedAt,
+    auteur = auteur,
+    source = source,
+    version = version
 )
 
 // ── InventaireSession ───────────────────────────────────────────────────────
@@ -324,7 +340,11 @@ fun InventaireSessionEntity.toDomain(): InventaireSession = InventaireSession(
     intensiteEchantillonnagePct = intensiteEchantillonnagePct,
     objectifSession = objectifSession,
     remarques = remarques,
-    createdAt = createdAt
+    createdAt = createdAt,
+    deletedAt = deletedAt,
+    auteur = auteur,
+    source = source,
+    version = version
 )
 
 fun InventaireSession.toEntity(): InventaireSessionEntity = InventaireSessionEntity(
@@ -338,7 +358,11 @@ fun InventaireSession.toEntity(): InventaireSessionEntity = InventaireSessionEnt
     intensiteEchantillonnagePct = intensiteEchantillonnagePct,
     objectifSession = objectifSession,
     remarques = remarques,
-    createdAt = createdAt
+    createdAt = createdAt,
+    deletedAt = deletedAt,
+    auteur = auteur,
+    source = source,
+    version = version
 )
 
 // ── Foret ───────────────────────────────────────────────────────────────────
@@ -356,7 +380,11 @@ fun ForetEntity.toDomain(): Foret = Foret(
     departement = departement,
     remarques = remarques,
     createdAt = createdAt,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    deletedAt = deletedAt,
+    auteur = auteur,
+    source = source,
+    version = version
 )
 
 fun Foret.toEntity(): ForetEntity = ForetEntity(
@@ -372,7 +400,11 @@ fun Foret.toEntity(): ForetEntity = ForetEntity(
     departement = departement,
     remarques = remarques,
     createdAt = createdAt,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    deletedAt = deletedAt,
+    auteur = auteur,
+    source = source,
+    version = version
 )
 
 // ── FloraFts ────────────────────────────────────────────────────────────────
