@@ -190,6 +190,7 @@
     <string name="settings_no_tracking_desc">No analytics or tracking</string>
     <string name="view_privacy_policy">View privacy policy</string>
     <string name="view_privacy_policy_desc">Read the full privacy policy</string>
+    <string name="proprietaire_email_helper">Optional — used only to contact the owner for management reports. Not shared with any third party.</string>
     <string name="settings_crash_logs_title">Crash logs</string>
     <string name="settings_crash_logs_desc">Write crashes to local logs (for debugging)</string>
     <string name="settings_view_latest_crash_log">View latest crash log</string>

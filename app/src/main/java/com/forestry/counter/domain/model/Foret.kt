@@ -8,6 +8,13 @@ data class Foret(
     val foretId: String,
     val nom: String,
     val proprietaireNom: String,
+    /**
+     * Email du propriétaire forestier.
+     *
+     * Finalité RGPD (Art. 5§1.b) : utilisé uniquement pour contacter le
+     * propriétaire pour les rapports de gestion. Optionnel — non transmis
+     * à aucun tiers. Voir PRIVACY_POLICY.md §1.1.
+     */
     val proprietaireEmail: String?,
     val gestionnaireNom: String?,
     val typeForet: String?,

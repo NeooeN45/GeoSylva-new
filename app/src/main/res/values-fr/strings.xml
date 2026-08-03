@@ -192,6 +192,7 @@
     <string name="settings_no_tracking_desc">Aucune analyse ni suivi</string>
     <string name="view_privacy_policy">Politique de confidentialité</string>
     <string name="view_privacy_policy_desc">Consulter la politique de confidentialité complète</string>
+    <string name="proprietaire_email_helper">Optionnel — utilisé uniquement pour contacter le propriétaire pour les rapports de gestion. Non transmis à aucun tiers.</string>
     <string name="settings_crash_logs_title">Journaux de crash</string>
     <string name="settings_crash_logs_desc">Enregistrer les crashes dans des logs locaux (debug)</string>
     <string name="settings_view_latest_crash_log">Voir le dernier crash</string>
