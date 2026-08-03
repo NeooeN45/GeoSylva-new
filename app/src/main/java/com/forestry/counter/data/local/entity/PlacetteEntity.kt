@@ -47,5 +47,6 @@ data class PlacetteEntity(
     val deletedAt: Long? = null,
     val auteur: String? = null,
     val source: String? = null,
+    @ColumnInfo(name = "version", defaultValue = "1")
     val version: Int = 1
 )

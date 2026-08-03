@@ -1,5 +1,6 @@
 package com.forestry.counter.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -49,5 +50,6 @@ data class AlerteSanitaireEntity(
     val deletedAt: Long? = null,
     val auteur: String? = null,
     val source: String? = null,
+    @ColumnInfo(name = "version", defaultValue = "1")
     val version: Int = 1
 )

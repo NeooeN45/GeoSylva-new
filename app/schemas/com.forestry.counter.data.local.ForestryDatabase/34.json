@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 34,
-    "identityHash": "abf2cf5dcc4ad7968f8379794210fbe1",
+    "identityHash": "d277986eaea862c5958a64b75c61f66c",
     "entities": [
       {
         "tableName": "groups",
@@ -429,7 +429,7 @@
       },
       {
         "tableName": "parcelles",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`parcelleId` TEXT NOT NULL, `forestOwnerId` TEXT, `foretId` TEXT, `name` TEXT NOT NULL, `surfaceHa` REAL, `shape` TEXT, `slopePct` REAL, `aspect` TEXT, `access` TEXT, `altitudeM` REAL, `objectifType` TEXT, `objectifVal` REAL, `tolerancePct` REAL, `samplingMode` TEXT, `sampleAreaM2` REAL, `targetSpeciesCsv` TEXT, `srid` INTEGER, `remarks` TEXT, `codeInseeCommune` TEXT, `nomCommune` TEXT, `sectionCadastrale` TEXT, `numeroCadastral` TEXT, `contenanceCadastraleHa` REAL, `geometrieIgnWkt` TEXT, `natureCadastraleCode` TEXT, `localisationMode` TEXT, `codeSer` TEXT, `nomSer` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL, PRIMARY KEY(`parcelleId`), FOREIGN KEY(`foretId`) REFERENCES `forets`(`foretId`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`parcelleId` TEXT NOT NULL, `forestOwnerId` TEXT, `foretId` TEXT, `name` TEXT NOT NULL, `surfaceHa` REAL, `shape` TEXT, `slopePct` REAL, `aspect` TEXT, `access` TEXT, `altitudeM` REAL, `objectifType` TEXT, `objectifVal` REAL, `tolerancePct` REAL, `samplingMode` TEXT, `sampleAreaM2` REAL, `targetSpeciesCsv` TEXT, `srid` INTEGER, `remarks` TEXT, `codeInseeCommune` TEXT, `nomCommune` TEXT, `sectionCadastrale` TEXT, `numeroCadastral` TEXT, `contenanceCadastraleHa` REAL, `geometrieIgnWkt` TEXT, `natureCadastraleCode` TEXT, `localisationMode` TEXT, `codeSer` TEXT, `nomSer` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(`parcelleId`), FOREIGN KEY(`foretId`) REFERENCES `forets`(`foretId`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "parcelleId",
@@ -633,7 +633,8 @@
             "fieldPath": "version",
             "columnName": "version",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "1"
           }
         ],
         "primaryKey": {
@@ -696,7 +697,7 @@
       },
       {
         "tableName": "placettes",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`placetteId` TEXT NOT NULL, `parcelleOwnerId` TEXT NOT NULL, `name` TEXT, `type` TEXT, `rayonM` REAL, `surfaceM2` REAL, `centerWkt` TEXT, `sessionId` TEXT, `typeReleve` TEXT, `referenceGpsWkt` TEXT, `azimutRef` REAL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL, PRIMARY KEY(`placetteId`), FOREIGN KEY(`parcelleOwnerId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`sessionId`) REFERENCES `inventaire_sessions`(`sessionId`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`placetteId` TEXT NOT NULL, `parcelleOwnerId` TEXT NOT NULL, `name` TEXT, `type` TEXT, `rayonM` REAL, `surfaceM2` REAL, `centerWkt` TEXT, `sessionId` TEXT, `typeReleve` TEXT, `referenceGpsWkt` TEXT, `azimutRef` REAL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(`placetteId`), FOREIGN KEY(`parcelleOwnerId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`sessionId`) REFERENCES `inventaire_sessions`(`sessionId`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "placetteId",
@@ -798,7 +799,8 @@
             "fieldPath": "version",
             "columnName": "version",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "1"
           }
         ],
         "primaryKey": {
@@ -854,7 +856,7 @@
       },
       {
         "tableName": "essences",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` TEXT NOT NULL, `name` TEXT NOT NULL, `categorie` TEXT, `densiteBoite` REAL, `colorHex` TEXT, `densiteBois` REAL, `qualiteTypique` TEXT, `typeCoupePreferee` TEXT, `usageBois` TEXT, `vitesseCroissance` TEXT, `hauteurMaxM` REAL, `diametreMaxCm` REAL, `toleranceOmbre` TEXT, `remarques` TEXT, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL, PRIMARY KEY(`code`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`code` TEXT NOT NULL, `name` TEXT NOT NULL, `categorie` TEXT, `densiteBoite` REAL, `colorHex` TEXT, `densiteBois` REAL, `qualiteTypique` TEXT, `typeCoupePreferee` TEXT, `usageBois` TEXT, `vitesseCroissance` TEXT, `hauteurMaxM` REAL, `diametreMaxCm` REAL, `toleranceOmbre` TEXT, `remarques` TEXT, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(`code`))",
         "fields": [
           {
             "fieldPath": "code",
@@ -962,7 +964,8 @@
             "fieldPath": "version",
             "columnName": "version",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "1"
           }
         ],
         "primaryKey": {
@@ -976,7 +979,7 @@
       },
       {
         "tableName": "tiges",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`tigeId` TEXT NOT NULL, `parcelleOwnerId` TEXT NOT NULL, `placetteOwnerId` TEXT, `sessionId` TEXT, `essenceCode` TEXT NOT NULL, `diamCm` REAL NOT NULL, `hauteurM` REAL, `gpsWkt` TEXT, `precisionM` REAL, `altitudeM` REAL, `timestamp` INTEGER NOT NULL, `note` TEXT, `produit` TEXT, `fCoef` REAL, `valueEur` REAL, `numero` INTEGER, `categorie` TEXT, `qualite` INTEGER, `defauts` TEXT, `photoUri` TEXT, `qualiteDetail` TEXT, `classeKraft` INTEGER, `etatSanitaire` TEXT, `vigueur` TEXT, `origine` TEXT, `typeCoupe` TEXT, `biomasseFusTonnes` REAL, `carboneFusTonnes` REAL, `coefficientElancement` REAL, `houppierM` REAL, `houppierPct` REAL, `isTigeHabitat` INTEGER NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL, PRIMARY KEY(`tigeId`), FOREIGN KEY(`parcelleOwnerId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`placetteOwnerId`) REFERENCES `placettes`(`placetteId`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`essenceCode`) REFERENCES `essences`(`code`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`sessionId`) REFERENCES `inventaire_sessions`(`sessionId`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`tigeId` TEXT NOT NULL, `parcelleOwnerId` TEXT NOT NULL, `placetteOwnerId` TEXT, `sessionId` TEXT, `essenceCode` TEXT NOT NULL, `diamCm` REAL NOT NULL, `hauteurM` REAL, `gpsWkt` TEXT, `precisionM` REAL, `altitudeM` REAL, `timestamp` INTEGER NOT NULL, `note` TEXT, `produit` TEXT, `fCoef` REAL, `valueEur` REAL, `numero` INTEGER, `categorie` TEXT, `qualite` INTEGER, `defauts` TEXT, `photoUri` TEXT, `qualiteDetail` TEXT, `classeKraft` INTEGER, `etatSanitaire` TEXT, `vigueur` TEXT, `origine` TEXT, `typeCoupe` TEXT, `biomasseFusTonnes` REAL, `carboneFusTonnes` REAL, `coefficientElancement` REAL, `houppierM` REAL, `houppierPct` REAL, `isTigeHabitat` INTEGER NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(`tigeId`), FOREIGN KEY(`parcelleOwnerId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`placetteOwnerId`) REFERENCES `placettes`(`placetteId`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`essenceCode`) REFERENCES `essences`(`code`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`sessionId`) REFERENCES `inventaire_sessions`(`sessionId`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "tigeId",
@@ -1192,7 +1195,8 @@
             "fieldPath": "version",
             "columnName": "version",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "1"
           }
         ],
         "primaryKey": {
@@ -1463,7 +1467,7 @@
       },
       {
         "tableName": "forets",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`foretId` TEXT NOT NULL, `nom` TEXT NOT NULL, `proprietaireNom` TEXT NOT NULL, `proprietaireEmail` TEXT, `gestionnaireNom` TEXT, `typeForet` TEXT, `objectifGestion` TEXT, `psgNumero` TEXT, `psgDateExpiration` INTEGER, `departement` TEXT, `remarques` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL, PRIMARY KEY(`foretId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`foretId` TEXT NOT NULL, `nom` TEXT NOT NULL, `proprietaireNom` TEXT NOT NULL, `proprietaireEmail` TEXT, `gestionnaireNom` TEXT, `typeForet` TEXT, `objectifGestion` TEXT, `psgNumero` TEXT, `psgDateExpiration` INTEGER, `departement` TEXT, `remarques` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(`foretId`))",
         "fields": [
           {
             "fieldPath": "foretId",
@@ -1565,7 +1569,8 @@
             "fieldPath": "version",
             "columnName": "version",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "1"
           }
         ],
         "primaryKey": {
@@ -1589,7 +1594,7 @@
       },
       {
         "tableName": "inventaire_sessions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sessionId` TEXT NOT NULL, `parcelleId` TEXT NOT NULL, `typeSession` TEXT NOT NULL, `dateDebut` INTEGER NOT NULL, `dateFin` INTEGER, `operateurNom` TEXT, `methode` TEXT, `intensiteEchantillonnagePct` REAL, `objectifSession` TEXT, `remarques` TEXT, `createdAt` INTEGER NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL, PRIMARY KEY(`sessionId`), FOREIGN KEY(`parcelleId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sessionId` TEXT NOT NULL, `parcelleId` TEXT NOT NULL, `typeSession` TEXT NOT NULL, `dateDebut` INTEGER NOT NULL, `dateFin` INTEGER, `operateurNom` TEXT, `methode` TEXT, `intensiteEchantillonnagePct` REAL, `objectifSession` TEXT, `remarques` TEXT, `createdAt` INTEGER NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(`sessionId`), FOREIGN KEY(`parcelleId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "sessionId",
@@ -1679,7 +1684,8 @@
             "fieldPath": "version",
             "columnName": "version",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "1"
           }
         ],
         "primaryKey": {
@@ -2102,7 +2108,7 @@
       },
       {
         "tableName": "diagnostics_sylvicoles",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`diagnosticId` TEXT NOT NULL, `parcelleId` TEXT NOT NULL, `sessionId` TEXT, `dateCreation` INTEGER NOT NULL, `operateurNom` TEXT, `scoreStation` INTEGER, `scorePeuplement` INTEGER, `scoreBiodiversite` INTEGER, `scoreRisque` INTEGER, `scoreGlobal` INTEGER, `gHa` REAL, `nHa` INTEGER, `vHa` REAL, `hoM` REAL, `hgM` REAL, `dgCm` REAL, `siteIndex` REAL, `accroissementIg` REAL, `accroissementIv` REAL, `biomasseTotalTonnes` REAL, `carboneTotalTonnes` REAL, `essencesRecommandeesJson` TEXT, `essencesDeconseillees` TEXT, `essencesVigilanceJson` TEXT, `risquesDetectesJson` TEXT, `recommandationsSylvicolesJson` TEXT, `typeSylviculturePreco` TEXT, `volumeEclairciePreco` REAL, `delaiInterventionAns` INTEGER, `syntheseTextuelle` TEXT, `algoVersion` TEXT NOT NULL, `dataSourcesJson` TEXT, `remarques` TEXT, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL, PRIMARY KEY(`diagnosticId`), FOREIGN KEY(`parcelleId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`sessionId`) REFERENCES `inventaire_sessions`(`sessionId`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`diagnosticId` TEXT NOT NULL, `parcelleId` TEXT NOT NULL, `sessionId` TEXT, `dateCreation` INTEGER NOT NULL, `operateurNom` TEXT, `scoreStation` INTEGER, `scorePeuplement` INTEGER, `scoreBiodiversite` INTEGER, `scoreRisque` INTEGER, `scoreGlobal` INTEGER, `gHa` REAL, `nHa` INTEGER, `vHa` REAL, `hoM` REAL, `hgM` REAL, `dgCm` REAL, `siteIndex` REAL, `accroissementIg` REAL, `accroissementIv` REAL, `biomasseTotalTonnes` REAL, `carboneTotalTonnes` REAL, `essencesRecommandeesJson` TEXT, `essencesDeconseillees` TEXT, `essencesVigilanceJson` TEXT, `risquesDetectesJson` TEXT, `recommandationsSylvicolesJson` TEXT, `typeSylviculturePreco` TEXT, `volumeEclairciePreco` REAL, `delaiInterventionAns` INTEGER, `syntheseTextuelle` TEXT, `algoVersion` TEXT NOT NULL, `dataSourcesJson` TEXT, `remarques` TEXT, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(`diagnosticId`), FOREIGN KEY(`parcelleId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`sessionId`) REFERENCES `inventaire_sessions`(`sessionId`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "diagnosticId",
@@ -2330,7 +2336,8 @@
             "fieldPath": "version",
             "columnName": "version",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "1"
           }
         ],
         "primaryKey": {
@@ -2386,7 +2393,7 @@
       },
       {
         "tableName": "observations_flore",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`observationId` TEXT NOT NULL, `parcelleId` TEXT NOT NULL, `placetteId` TEXT, `sessionId` TEXT, `codeEspece` TEXT NOT NULL, `nomScientifique` TEXT NOT NULL, `nomCommun` TEXT, `abundanceDominance` TEXT NOT NULL, `strate` TEXT NOT NULL, `sociabilite` INTEGER, `indicateurEllenbergL` INTEGER, `indicateurEllenbergT` INTEGER, `indicateurEllenbergR` INTEGER, `indicateurEllenbergF` INTEGER, `indicateurEllenbergN` INTEGER, `isEspeceProtegee` INTEGER NOT NULL, `isEspeceIndicatrice` INTEGER NOT NULL, `dateSaisie` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL, PRIMARY KEY(`observationId`), FOREIGN KEY(`parcelleId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`placetteId`) REFERENCES `placettes`(`placetteId`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`sessionId`) REFERENCES `inventaire_sessions`(`sessionId`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`codeEspece`) REFERENCES `essences`(`code`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`observationId` TEXT NOT NULL, `parcelleId` TEXT NOT NULL, `placetteId` TEXT, `sessionId` TEXT, `codeEspece` TEXT NOT NULL, `nomScientifique` TEXT NOT NULL, `nomCommun` TEXT, `abundanceDominance` TEXT NOT NULL, `strate` TEXT NOT NULL, `sociabilite` INTEGER, `indicateurEllenbergL` INTEGER, `indicateurEllenbergT` INTEGER, `indicateurEllenbergR` INTEGER, `indicateurEllenbergF` INTEGER, `indicateurEllenbergN` INTEGER, `isEspeceProtegee` INTEGER NOT NULL, `isEspeceIndicatrice` INTEGER NOT NULL, `dateSaisie` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(`observationId`), FOREIGN KEY(`parcelleId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`placetteId`) REFERENCES `placettes`(`placetteId`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`sessionId`) REFERENCES `inventaire_sessions`(`sessionId`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`codeEspece`) REFERENCES `essences`(`code`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
         "fields": [
           {
             "fieldPath": "observationId",
@@ -2524,7 +2531,8 @@
             "fieldPath": "version",
             "columnName": "version",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "1"
           }
         ],
         "primaryKey": {
@@ -2620,7 +2628,7 @@
       },
       {
         "tableName": "arbres_habitat",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`arbreHabitatId` TEXT NOT NULL, `parcelleId` TEXT NOT NULL, `placetteId` TEXT, `sessionId` TEXT, `tigeId` TEXT, `essenceCode` TEXT NOT NULL, `diamCm` REAL NOT NULL, `hauteurM` REAL, `gpsWkt` TEXT, `cavitesBranches` INTEGER NOT NULL, `cavitesTronc` INTEGER NOT NULL, `logenBois` INTEGER NOT NULL, `ecorceDecolleeM2` REAL, `epiphytesM2` REAL, `bioticBoss` INTEGER NOT NULL, `dendrothelme` INTEGER NOT NULL, `lianes` INTEGER NOT NULL, `fissures` INTEGER NOT NULL, `boisMortSurPied` INTEGER NOT NULL, `boisMortSolM3` REAL, `treemScore` INTEGER, `classeDiamHabitat` TEXT, `isArbreVivant` INTEGER NOT NULL, `isArbreRemarquable` INTEGER NOT NULL, `remarques` TEXT, `dateObservation` INTEGER NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL, PRIMARY KEY(`arbreHabitatId`), FOREIGN KEY(`parcelleId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`placetteId`) REFERENCES `placettes`(`placetteId`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`sessionId`) REFERENCES `inventaire_sessions`(`sessionId`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`tigeId`) REFERENCES `tiges`(`tigeId`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`essenceCode`) REFERENCES `essences`(`code`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`arbreHabitatId` TEXT NOT NULL, `parcelleId` TEXT NOT NULL, `placetteId` TEXT, `sessionId` TEXT, `tigeId` TEXT, `essenceCode` TEXT NOT NULL, `diamCm` REAL NOT NULL, `hauteurM` REAL, `gpsWkt` TEXT, `cavitesBranches` INTEGER NOT NULL, `cavitesTronc` INTEGER NOT NULL, `logenBois` INTEGER NOT NULL, `ecorceDecolleeM2` REAL, `epiphytesM2` REAL, `bioticBoss` INTEGER NOT NULL, `dendrothelme` INTEGER NOT NULL, `lianes` INTEGER NOT NULL, `fissures` INTEGER NOT NULL, `boisMortSurPied` INTEGER NOT NULL, `boisMortSolM3` REAL, `treemScore` INTEGER, `classeDiamHabitat` TEXT, `isArbreVivant` INTEGER NOT NULL, `isArbreRemarquable` INTEGER NOT NULL, `remarques` TEXT, `dateObservation` INTEGER NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(`arbreHabitatId`), FOREIGN KEY(`parcelleId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`placetteId`) REFERENCES `placettes`(`placetteId`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`sessionId`) REFERENCES `inventaire_sessions`(`sessionId`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`tigeId`) REFERENCES `tiges`(`tigeId`) ON UPDATE NO ACTION ON DELETE SET NULL , FOREIGN KEY(`essenceCode`) REFERENCES `essences`(`code`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
         "fields": [
           {
             "fieldPath": "arbreHabitatId",
@@ -2800,7 +2808,8 @@
             "fieldPath": "version",
             "columnName": "version",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "1"
           }
         ],
         "primaryKey": {
@@ -3078,7 +3087,7 @@
       },
       {
         "tableName": "alertes_sanitaires",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`alerteId` TEXT NOT NULL, `parcelleId` TEXT NOT NULL, `sessionId` TEXT, `codePathogene` TEXT NOT NULL, `nomPathogene` TEXT NOT NULL, `niveauRisque` TEXT NOT NULL, `nbTigesAtteintes` INTEGER, `pctTigesAtteintes` REAL, `essencesCiblesJson` TEXT, `symptomesObservesJson` TEXT, `recommandationsJson` TEXT, `isOrganismeReglemente` INTEGER NOT NULL, `dateDetection` INTEGER NOT NULL, `isAlerteDsf` INTEGER NOT NULL, `remarques` TEXT, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL, PRIMARY KEY(`alerteId`), FOREIGN KEY(`parcelleId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`sessionId`) REFERENCES `inventaire_sessions`(`sessionId`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`alerteId` TEXT NOT NULL, `parcelleId` TEXT NOT NULL, `sessionId` TEXT, `codePathogene` TEXT NOT NULL, `nomPathogene` TEXT NOT NULL, `niveauRisque` TEXT NOT NULL, `nbTigesAtteintes` INTEGER, `pctTigesAtteintes` REAL, `essencesCiblesJson` TEXT, `symptomesObservesJson` TEXT, `recommandationsJson` TEXT, `isOrganismeReglemente` INTEGER NOT NULL, `dateDetection` INTEGER NOT NULL, `isAlerteDsf` INTEGER NOT NULL, `remarques` TEXT, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(`alerteId`), FOREIGN KEY(`parcelleId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`sessionId`) REFERENCES `inventaire_sessions`(`sessionId`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "alerteId",
@@ -3192,7 +3201,8 @@
             "fieldPath": "version",
             "columnName": "version",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "1"
           }
         ],
         "primaryKey": {
@@ -3584,7 +3594,7 @@
       },
       {
         "tableName": "ripisylve_observation",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `parcelleId` TEXT NOT NULL, `observerName` TEXT NOT NULL, `observationDate` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `isDraft` INTEGER NOT NULL, `photosJson` TEXT NOT NULL, `latitude` REAL, `longitude` REAL, `altitudeM` REAL, `sectionLengthM` REAL NOT NULL, `sectionNotes` TEXT NOT NULL, `continuitePct` REAL NOT NULL, `largeurMode` TEXT NOT NULL, `strateHerbacee` INTEGER NOT NULL, `strateArbustive` INTEGER NOT NULL, `strateArborescente` INTEGER NOT NULL, `nbEspecesObservees` INTEGER NOT NULL, `especesObserveesCsv` TEXT NOT NULL, `diamAutoFromDendro` INTEGER NOT NULL, `hasTresPetitBois` INTEGER NOT NULL, `hasPetitBois` INTEGER NOT NULL, `hasMoyenBois` INTEGER NOT NULL, `hasGrosBois` INTEGER NOT NULL, `microhabitatCavites` INTEGER NOT NULL, `microhabitatFissures` INTEGER NOT NULL, `microhabitatDecollementEcorce` INTEGER NOT NULL, `microhabitatChampignons` INTEGER NOT NULL, `microhabitatBoisMort` INTEGER NOT NULL, `microhabitatTresGrosBois` INTEGER NOT NULL, `sanitairePct` REAL NOT NULL, `invasivesPct` REAL NOT NULL, `invasivesCsv` TEXT NOT NULL, `inadapteesMode` TEXT NOT NULL, `stabilitePct` REAL NOT NULL, `globalNotes` TEXT NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`parcelleId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `parcelleId` TEXT NOT NULL, `observerName` TEXT NOT NULL, `observationDate` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `isDraft` INTEGER NOT NULL, `photosJson` TEXT NOT NULL, `latitude` REAL, `longitude` REAL, `altitudeM` REAL, `sectionLengthM` REAL NOT NULL, `sectionNotes` TEXT NOT NULL, `continuitePct` REAL NOT NULL, `largeurMode` TEXT NOT NULL, `strateHerbacee` INTEGER NOT NULL, `strateArbustive` INTEGER NOT NULL, `strateArborescente` INTEGER NOT NULL, `nbEspecesObservees` INTEGER NOT NULL, `especesObserveesCsv` TEXT NOT NULL, `diamAutoFromDendro` INTEGER NOT NULL, `hasTresPetitBois` INTEGER NOT NULL, `hasPetitBois` INTEGER NOT NULL, `hasMoyenBois` INTEGER NOT NULL, `hasGrosBois` INTEGER NOT NULL, `microhabitatCavites` INTEGER NOT NULL, `microhabitatFissures` INTEGER NOT NULL, `microhabitatDecollementEcorce` INTEGER NOT NULL, `microhabitatChampignons` INTEGER NOT NULL, `microhabitatBoisMort` INTEGER NOT NULL, `microhabitatTresGrosBois` INTEGER NOT NULL, `sanitairePct` REAL NOT NULL, `invasivesPct` REAL NOT NULL, `invasivesCsv` TEXT NOT NULL, `inadapteesMode` TEXT NOT NULL, `stabilitePct` REAL NOT NULL, `globalNotes` TEXT NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(`id`), FOREIGN KEY(`parcelleId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -3830,7 +3840,8 @@
             "fieldPath": "version",
             "columnName": "version",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "1"
           }
         ],
         "primaryKey": {
@@ -3866,7 +3877,7 @@
       },
       {
         "tableName": "station_diagnostics",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `parcelleId` TEXT NOT NULL, `observerName` TEXT NOT NULL, `observationDate` INTEGER NOT NULL, `isDraft` INTEGER NOT NULL, `photosJson` TEXT NOT NULL, `latitude` REAL, `longitude` REAL, `altitudeM` REAL, `commune` TEXT NOT NULL, `pentePct` REAL, `exposition` TEXT NOT NULL, `positionTopo` TEXT NOT NULL, `distanceCourseauM` REAL, `profondeurSolCm` INTEGER, `texture` TEXT NOT NULL, `pierrosite` TEXT NOT NULL, `hydromorphieProfondeurCm` INTEGER, `humus` TEXT NOT NULL, `phEstime` REAL, `testHcl` TEXT NOT NULL, `drainage` TEXT NOT NULL, `rocheMere` TEXT NOT NULL, `gradientHydrique` INTEGER NOT NULL, `gradientTrophique` INTEGER NOT NULL, `gradientLumineux` INTEGER NOT NULL, `gradientHumique` INTEGER NOT NULL, `especesIndicatricesJson` TEXT NOT NULL, `especesXerophiles` INTEGER NOT NULL, `especesMesophiles` INTEGER NOT NULL, `especesHygrophiles` INTEGER NOT NULL, `notes` TEXT NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`parcelleId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `parcelleId` TEXT NOT NULL, `observerName` TEXT NOT NULL, `observationDate` INTEGER NOT NULL, `isDraft` INTEGER NOT NULL, `photosJson` TEXT NOT NULL, `latitude` REAL, `longitude` REAL, `altitudeM` REAL, `commune` TEXT NOT NULL, `pentePct` REAL, `exposition` TEXT NOT NULL, `positionTopo` TEXT NOT NULL, `distanceCourseauM` REAL, `profondeurSolCm` INTEGER, `texture` TEXT NOT NULL, `pierrosite` TEXT NOT NULL, `hydromorphieProfondeurCm` INTEGER, `humus` TEXT NOT NULL, `phEstime` REAL, `testHcl` TEXT NOT NULL, `drainage` TEXT NOT NULL, `rocheMere` TEXT NOT NULL, `gradientHydrique` INTEGER NOT NULL, `gradientTrophique` INTEGER NOT NULL, `gradientLumineux` INTEGER NOT NULL, `gradientHumique` INTEGER NOT NULL, `especesIndicatricesJson` TEXT NOT NULL, `especesXerophiles` INTEGER NOT NULL, `especesMesophiles` INTEGER NOT NULL, `especesHygrophiles` INTEGER NOT NULL, `notes` TEXT NOT NULL, `deletedAt` INTEGER, `auteur` TEXT, `source` TEXT, `version` INTEGER NOT NULL DEFAULT 1, PRIMARY KEY(`id`), FOREIGN KEY(`parcelleId`) REFERENCES `parcelles`(`parcelleId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -4082,7 +4093,8 @@
             "fieldPath": "version",
             "columnName": "version",
             "affinity": "INTEGER",
-            "notNull": true
+            "notNull": true,
+            "defaultValue": "1"
           }
         ],
         "primaryKey": {
@@ -4917,7 +4929,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'abf2cf5dcc4ad7968f8379794210fbe1')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd277986eaea862c5958a64b75c61f66c')"
     ]
   }
 }
