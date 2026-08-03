@@ -37,6 +37,9 @@ tags: [context, project-state]
 - aucune fonction forestière locale bloquée en l’absence de compte.
 - 513 tests unitaires verts, Lint sans erreur bloquante et APK vérifié sur
   émulateur contre l'API locale.
+- protocole public préparé : HTTPS + JWT GSIE derrière Cloudflare Tunnel ;
+- aucun token Cloudflare Access, certificat mTLS ou token de tunnel dans
+  l'APK ; activation réelle en attente du domaine et du secret externe.
 
 ## État des audits (2026-06-29)
 
@@ -74,7 +77,7 @@ tags: [context, project-state]
 
 **Phase d’intégration GSIE, sans abandon de l’offline-first** : le cycle
 d’identité mobile local est livré. Les prochaines tranches sont la
-configuration OAuth/SMTP publique, le centre de comptes web, puis la
+activation Cloudflare/OAuth/SMTP publique, le centre de comptes web, puis la
 synchronisation métier versionnée avec reprise réseau.
 
 ## Financement

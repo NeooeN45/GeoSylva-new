@@ -117,8 +117,8 @@ Conformément à l'Article 30 du RGPD (UE 2016/679), ce document constitue le re
 | **Base légale** | Exécution du service demandé (Art. 6§1.b) et intérêt légitime de sécurité (Art. 6§1.f) |
 | **Catégories de données** | E-mail normalisé, nom affiché facultatif, identifiant canonique, fournisseur, identifiant Google facultatif, rôles, horodatages et empreintes temporaires de codes d'action |
 | **Catégories de personnes** | Utilisateurs choisissant de créer ou connecter un compte |
-| **Destinataires** | Opérateur et hébergeur GSIE ; Google uniquement si ce fournisseur est choisi |
-| **Transferts hors UE** | À déterminer et documenter avant ouverture publique selon l’hébergeur et le flux Google retenus |
+| **Destinataires** | Opérateur et hébergeur GSIE ; Cloudflare comme bordure prévue ; Google uniquement si ce fournisseur est choisi |
+| **Transferts hors UE** | À déterminer et documenter avant ouverture publique selon Cloudflare, l’hébergeur et le flux Google retenus |
 | **Durée de conservation** | Compte jusqu’à effacement ou politique d’inactivité ; empreintes des codes 15 minutes maximum ou consommation antérieure |
 | **Mesures de sécurité** | HTTPS, Argon2id serveur, codes à usage unique, anti-énumération, révocation de session, JWT RS256, refresh rotatif, coffre Android chiffré, aucun secret dans les logs |
 | **Limite de la tranche** | Aucune donnée forestière synchronisée ; compte facultatif et application utilisable hors ligne |
@@ -137,6 +137,7 @@ Conformément à l'Article 30 du RGPD (UE 2016/679), ce document constitue le re
 | Esri | T-03 Tuiles carto | USA | SCC adoptées (Décision 2021/914), Privacy Shield invalidé |
 | Hébergeur GSIE | T-09 Identité Quintessences | À sélectionner | Contrat, localisation et garanties à finaliser avant ouverture publique |
 | Google | T-09 Connexion Google facultative | International | Garanties et configuration de marque à finaliser avant ouverture publique |
+| Cloudflare | T-09 Bordure de sécurité GSIE | Réseau mondial | DPA, localisation des journaux et garanties à finaliser avant ouverture publique |
 
 **Note sur les transferts hors UE (Art. 46 RGPD)** : Les transferts vers MapLibre,
 CartoCDN et Esri (USA) sont couverts par les Standard Contractual Clauses (SCC)

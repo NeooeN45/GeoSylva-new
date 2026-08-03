@@ -858,6 +858,7 @@ Voir `CONTRIBUTING.md` et `global_rules.md` :
 | 2026-07-17 | Programme DENDRO-EXCELLENCE ajouté au plan | GeoSylva évolue vers un moteur de mesure forestière traçable : protocole configurable, jumeau temporel de parcelle, contrôle qualité actif, mesure à valeur d'information maximale, IA outillée, GSIE Serveur/PC et laboratoire de validation. |
 | 2026-08-03 | Première tranche cliente d’identité Quintessences | Écrans connexion/compte, local + Google Credential Manager, session chiffrée, diagnostic GSIE et mode développeur après huit pressions ; cœur terrain toujours hors ligne. |
 | 2026-08-03 | Cycle du compte Quintessences complété | Profil, vérification e-mail et récupération livrés ; révocation des anciennes sessions ; 513 tests, Lint sans erreur et APK validé sur émulateur. |
+| 2026-08-03 | Protocole de bordure Cloudflare validé | GeoSylva rejoint GSIE par HTTPS + JWT derrière Cloudflare Tunnel ; aucun secret Access, mTLS ou tunnel dans l'APK ; activation externe en attente du domaine et du token du Fondateur. |
 
 ---
 

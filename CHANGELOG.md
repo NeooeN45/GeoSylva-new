@@ -33,6 +33,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com).
   terrain locales du traitement d’identité optionnel.
 - Le retour de progression des huit pressions utilise un toast non tactile :
   la ligne de version reste accessible pendant tout le déverrouillage.
+- Le protocole de production prévoit Cloudflare Tunnel devant GSIE sans
+  embarquer de secret Cloudflare ou de certificat mTLS partagé dans l'APK.
 
 ## [2.4.0] — 2026-06-30
 

@@ -172,6 +172,7 @@ GeoSylva remplace le carnet de terrain et les tableurs Excel par une **applicati
 - **Profil et vérification** — modification du nom affiché et confirmation de l'adresse par code
 - **Récupération** — nouveau mot de passe par code à usage unique, avec fermeture des anciennes sessions
 - **Options développeur** — huit pressions sur la version ouvrent un diagnostic GSIE en lecture seule
+- **Transport protégé** — en production, HTTPS vers la bordure Cloudflare puis tunnel privé vers GSIE ; les JWT et rôles GSIE restent obligatoires
 
 ---
 
@@ -317,6 +318,11 @@ Le client Google n’est
 activé que si le serveur le publie comme disponible **et** si
 `GOOGLE_WEB_CLIENT_ID` est renseigné. Le client ID OAuth n’est pas un secret ;
 aucun secret OAuth ne doit être intégré dans l’application.
+
+GeoSylva n'embarque ni token Cloudflare Access ni certificat mTLS partagé.
+Ces secrets sont réservés aux services de confiance : un secret placé dans un
+APK serait extractible. Le mobile s'authentifie toujours avec son compte et
+ses jetons GSIE.
 
 ## 🧪 Tests
 

@@ -159,6 +159,7 @@ coordonnées nécessaires à leur fonctionnement.
 | Service | Usage | Données envoyées | Hébergement | Transfert hors UE |
 |---------|-------|------------------|-------------|-------------------|
 | **API GSIE / Quintessences** | Compte, session et découverte des fournisseurs | Données décrites au §1.7 | À documenter avant ouverture publique | À déterminer selon l’hébergement retenu |
+| **Cloudflare** (bordure GSIE prévue) | Protection DDoS/WAF et tunnel vers l'API | Adresse IP et métadonnées techniques HTTP | Réseau mondial ; garanties à valider | DPA, localisation des journaux et transferts à finaliser avant activation publique |
 | **Google Identity** (facultatif) | Connexion Google via Credential Manager | Nonce, client OAuth et données du compte Google choisies | Google | Potentiellement oui — à finaliser avant ouverture publique |
 | **IGN Géoportail** (`data.geopf.fr`) | Tuiles cartographiques WMTS | Coordonnées bbox (zone visible) | France (UE) | Non |
 | **IGN Géocodage reverse** (`data.geopf.fr/geocodage/reverse`) | Reverse géocodage parcelle (lat/lon → commune, section cadastrale) | Latitude, longitude | France (UE) | Non |
@@ -211,6 +212,7 @@ L'Application utilise les services tiers suivants :
 |---------------|---------|------------------|--------------|------------------|
 | Hébergeur GSIE | Identité Quintessences | E-mail, nom affiché, identifiants, rôles et horodatages | À sélectionner | À documenter avant ouverture publique |
 | Google | Connexion Google facultative | Identité Google choisie par l’utilisateur | International | Conditions et garanties à finaliser avant ouverture publique |
+| Cloudflare | Bordure de sécurité de l'API GSIE | IP et métadonnées techniques | International | DPA et garanties de transfert à finaliser avant ouverture publique |
 | IGN | Géoportail WMS/WMTS + géocodage reverse | Coordonnées bbox, lat/lon | France (UE) | — |
 | API Géo (gouv.fr) | Reverse géocodage commune | Latitude, longitude | France (UE) | — |
 | OpenStreetMap Foundation | Tuiles OSM | Coordonnées bbox | Royaume-Uni (UE) | — |
@@ -324,6 +326,7 @@ Pour toute question relative à cette politique de confidentialité :
 | 2026-07-01 | 1.1 | Audit factuel vs code : ajout de 6 services réseau manquants (API Géo, IGN géocodage, Open-Meteo, OpenTopoData, INRAE, Cerema), ajout `operateurNom`/`psgNumero`/champs libres, correction « Effacer toutes mes données » (non implémenté), correction purge auto cache GPS (non appelée), ajout §2.3 BackupWorker (ZIP non chiffré), ajout §3.2 PriceSyncWorker (pas de cert pinning), contact RGPD renseigné (contact@geosylva.fr) |
 | 2026-08-03 | 1.2 | Ajout transparent du compte Quintessences facultatif, du stockage chiffré de session et des flux GSIE/Google ; aucune synchronisation de donnée forestière dans cette tranche. |
 | 2026-08-03 | 1.3 | Ajout du profil, de la vérification e-mail, de la récupération et de la conservation maximale de 15 minutes des empreintes de codes. |
+| 2026-08-03 | 1.4 | Transparence sur la bordure Cloudflare prévue et ses métadonnées techniques ; aucun secret Cloudflare embarqué dans l'application. |
 
 ---
 

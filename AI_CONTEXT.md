@@ -29,6 +29,11 @@ session chiffré, espace compte et diagnostic développeur). 513 tests passent
 et Lint ne relève aucune erreur bloquante. La synchronisation des données
 forestières reste à construire.
 
+**Bordure GSIE** : DEC-000047 prépare Cloudflare Tunnel et Zero Trust côté
+serveur. GeoSylva reste un client public HTTPS + JWT GSIE : aucun token
+Cloudflare Access, certificat mTLS ou token de tunnel ne doit être embarqué
+dans l'APK. L'activation publique attend le domaine et le tunnel du Fondateur.
+
 ---
 
 ## 2) Stack technique
