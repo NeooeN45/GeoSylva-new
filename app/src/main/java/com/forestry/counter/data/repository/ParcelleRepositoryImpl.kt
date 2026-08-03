@@ -41,13 +41,13 @@ class ParcelleRepositoryImpl(
     }
 
     override suspend fun deleteParcelle(parcelleId: String) {
-        parcelleDao.deleteParcelleById(parcelleId)
+        parcelleDao.deleteParcelleById(parcelleId, System.currentTimeMillis())
         runCatching { onDelete(parcelleId) }
     }
 
     override suspend fun deleteAllParcelles() {
         val ids = parcelleDao.getAllParcellesNow().map { it.parcelleId }
-        parcelleDao.deleteAllParcelles()
+        parcelleDao.deleteAllParcelles(System.currentTimeMillis())
         ids.forEach { id -> runCatching { onDelete(id) } }
     }
 }

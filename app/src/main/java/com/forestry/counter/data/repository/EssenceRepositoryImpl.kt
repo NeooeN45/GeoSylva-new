@@ -38,10 +38,10 @@ class EssenceRepositoryImpl(
     }
 
     override suspend fun deleteEssence(code: String) {
-        essenceDao.deleteEssenceByCode(code)
+        essenceDao.deleteEssenceByCode(code, System.currentTimeMillis())
     }
 
     override suspend fun deleteAllEssences() {
-        essenceDao.deleteAllEssences()
+        essenceDao.deleteAllEssences(System.currentTimeMillis())
     }
 }

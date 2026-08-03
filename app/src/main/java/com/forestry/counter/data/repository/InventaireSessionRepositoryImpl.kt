@@ -23,5 +23,5 @@ class InventaireSessionRepositoryImpl(
         dao.insert(metadataService.enrichForCreate(session).toEntity())
     override suspend fun update(session: InventaireSession) =
         dao.update(metadataService.enrichForUpdate(session, baseVersion = session.version).toEntity())
-    override suspend fun deleteById(id: String) = dao.deleteById(id)
+    override suspend fun deleteById(id: String) = dao.deleteById(id, System.currentTimeMillis())
 }

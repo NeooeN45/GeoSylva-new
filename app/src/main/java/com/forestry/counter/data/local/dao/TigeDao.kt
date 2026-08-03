@@ -6,27 +6,29 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TigeDao {
-    @Query("SELECT * FROM tiges ORDER BY timestamp ASC")
+    @Query("SELECT * FROM tiges WHERE deletedAt IS NULL ORDER BY timestamp ASC")
     fun getAllTiges(): Flow<List<TigeEntity>>
-    @Query("SELECT * FROM tiges WHERE parcelleOwnerId = :parcelleId ORDER BY timestamp ASC")
+
+    @Query("SELECT * FROM tiges WHERE parcelleOwnerId = :parcelleId AND deletedAt IS NULL ORDER BY timestamp ASC")
     fun getTigesByParcelle(parcelleId: String): Flow<List<TigeEntity>>
 
-    @Query("SELECT * FROM tiges WHERE placetteOwnerId = :placetteId ORDER BY timestamp ASC")
+    @Query("SELECT * FROM tiges WHERE placetteOwnerId = :placetteId AND deletedAt IS NULL ORDER BY timestamp ASC")
     fun getTigesByPlacette(placetteId: String): Flow<List<TigeEntity>>
 
-    @Query("SELECT * FROM tiges WHERE tigeId = :id")
+    @Query("SELECT * FROM tiges WHERE tigeId = :id AND deletedAt IS NULL")
     fun getTigeByIdFlow(id: String): Flow<TigeEntity?>
 
-    @Query("SELECT * FROM tiges WHERE tigeId = :id")
+    @Query("SELECT * FROM tiges WHERE tigeId = :id AND deletedAt IS NULL")
     suspend fun getTigeById(id: String): TigeEntity?
 
     @Query("""
-        SELECT * FROM tiges 
-        WHERE parcelleOwnerId = :parcelleId 
+        SELECT * FROM tiges
+        WHERE parcelleOwnerId = :parcelleId
           AND ((:placetteId IS NULL AND placetteOwnerId IS NULL) OR placetteOwnerId = :placetteId)
-          AND essenceCode = :essenceCode 
-          AND diamCm = :diamCm 
-        ORDER BY timestamp DESC 
+          AND essenceCode = :essenceCode
+          AND diamCm = :diamCm
+          AND deletedAt IS NULL
+        ORDER BY timestamp DESC
         LIMIT 1
     """)
     suspend fun getLatestMatching(
@@ -45,23 +47,38 @@ interface TigeDao {
     @Update
     suspend fun updateTige(entity: TigeEntity)
 
-    @Delete
-    suspend fun deleteTige(entity: TigeEntity)
+    // --- Soft delete (Vague C) : suppression logique via deletedAt ---
 
-    @Query("DELETE FROM tiges WHERE tigeId = :id")
-    suspend fun deleteTigeById(id: String)
+    /** Soft delete d'une tige par son identifiant. */
+    @Query("UPDATE tiges SET deletedAt = :timestamp WHERE tigeId = :id")
+    suspend fun deleteTige(id: String, timestamp: Long)
 
-    @Query("DELETE FROM tiges WHERE parcelleOwnerId = :parcelleId")
-    suspend fun deleteTigesByParcelle(parcelleId: String)
+    /** Soft delete d'une tige par son identifiant (alias sémantique). */
+    @Query("UPDATE tiges SET deletedAt = :timestamp WHERE tigeId = :id")
+    suspend fun deleteTigeById(id: String, timestamp: Long)
 
-    @Query("DELETE FROM tiges WHERE placetteOwnerId = :placetteId")
-    suspend fun deleteTigesByPlacette(placetteId: String)
+    /** Soft delete massif des tiges rattachées à une parcelle. */
+    @Query("UPDATE tiges SET deletedAt = :timestamp WHERE parcelleOwnerId = :parcelleId AND deletedAt IS NULL")
+    suspend fun deleteTigesByParcelle(parcelleId: String, timestamp: Long)
 
-    @Query("DELETE FROM tiges WHERE placetteOwnerId = :placetteId AND essenceCode = :essenceCode")
-    suspend fun deleteTigesByPlacetteAndEssence(placetteId: String, essenceCode: String)
+    /** Soft delete massif des tiges rattachées à une placette. */
+    @Query("UPDATE tiges SET deletedAt = :timestamp WHERE placetteOwnerId = :placetteId AND deletedAt IS NULL")
+    suspend fun deleteTigesByPlacette(placetteId: String, timestamp: Long)
 
+    /** Soft delete massif des tiges d'une placette pour une essence donnée. */
+    @Query("UPDATE tiges SET deletedAt = :timestamp WHERE placetteOwnerId = :placetteId AND essenceCode = :essenceCode AND deletedAt IS NULL")
+    suspend fun deleteTigesByPlacetteAndEssence(placetteId: String, essenceCode: String, timestamp: Long)
+
+    /** Soft delete massif des tiges non encore supprimées. */
+    @Query("UPDATE tiges SET deletedAt = :timestamp WHERE deletedAt IS NULL")
+    suspend fun deleteAll(timestamp: Long)
+
+    /**
+     * Suppression physique de toutes les tiges (droit à l'effacement RGPD).
+     * À n'utiliser que depuis [DeleteAllUserDataUseCase].
+     */
     @Query("DELETE FROM tiges")
-    suspend fun deleteAll()
+    suspend fun hardDeleteAll()
 
     @Query("""
         UPDATE tiges

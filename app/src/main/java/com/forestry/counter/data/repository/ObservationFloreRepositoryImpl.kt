@@ -28,6 +28,8 @@ class ObservationFloreRepositoryImpl(
         dao.insertAll(observations.map { metadataService.enrichForCreate(it).toEntity() })
     override suspend fun update(observation: ObservationFlore) =
         dao.update(metadataService.enrichForUpdate(observation, baseVersion = observation.version).toEntity())
-    override suspend fun delete(observation: ObservationFlore) = dao.delete(observation.toEntity())
-    override suspend fun deleteByParcelle(parcelleId: String) = dao.deleteByParcelle(parcelleId)
+    override suspend fun delete(observation: ObservationFlore) =
+        dao.delete(observation.observationId, System.currentTimeMillis())
+    override suspend fun deleteByParcelle(parcelleId: String) =
+        dao.deleteByParcelle(parcelleId, System.currentTimeMillis())
 }

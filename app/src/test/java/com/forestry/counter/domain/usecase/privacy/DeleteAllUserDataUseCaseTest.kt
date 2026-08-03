@@ -61,23 +61,25 @@ class DeleteAllUserDataUseCaseTest {
     )
 
     @Test
-    fun should_appeler_deleteAll_sur_tous_les_daos_pii() = runTest {
+    fun should_appeler_hardDeleteAll_sur_tous_les_daos_pii() = runTest {
         every { context.getExternalFilesDir(null) } returns createTempDir()
 
         useCase.execute()
 
-        coVerify(exactly = 1) { foretDao.deleteAll() }
-        coVerify(exactly = 1) { parcelleDao.deleteAllParcelles() }
-        coVerify(exactly = 1) { tigeDao.deleteAll() }
-        coVerify(exactly = 1) { placetteDao.deleteAll() }
-        coVerify(exactly = 1) { inventaireSessionDao.deleteAll() }
-        coVerify(exactly = 1) { stationDao.deleteAll() }
-        coVerify(exactly = 1) { ripisylveDao.deleteAll() }
+        // Les 11 entités cœur métier (Vague C) : suppression physique via hardDeleteAll.
+        coVerify(exactly = 1) { foretDao.hardDeleteAll() }
+        coVerify(exactly = 1) { parcelleDao.hardDeleteAll() }
+        coVerify(exactly = 1) { tigeDao.hardDeleteAll() }
+        coVerify(exactly = 1) { placetteDao.hardDeleteAll() }
+        coVerify(exactly = 1) { inventaireSessionDao.hardDeleteAll() }
+        coVerify(exactly = 1) { stationDao.hardDeleteAll() }
+        coVerify(exactly = 1) { ripisylveDao.hardDeleteAll() }
+        coVerify(exactly = 1) { arbreHabitatDao.hardDeleteAll() }
+        coVerify(exactly = 1) { diagnosticSylvicoleDao.hardDeleteAll() }
+        coVerify(exactly = 1) { alerteSanitaireDao.hardDeleteAll() }
+        coVerify(exactly = 1) { observationFloreDao.hardDeleteAll() }
+        // IbpEvaluation : pas de colonne deletedAt (hors Vague C), deleteAll reste physique.
         coVerify(exactly = 1) { ibpEvaluationDao.deleteAll() }
-        coVerify(exactly = 1) { arbreHabitatDao.deleteAll() }
-        coVerify(exactly = 1) { diagnosticSylvicoleDao.deleteAll() }
-        coVerify(exactly = 1) { alerteSanitaireDao.deleteAll() }
-        coVerify(exactly = 1) { observationFloreDao.deleteAll() }
     }
 
     @Test

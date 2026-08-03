@@ -33,10 +33,10 @@ class PlacetteRepositoryImpl(
     }
 
     override suspend fun deletePlacette(placetteId: String) {
-        placetteDao.deletePlacetteById(placetteId)
+        placetteDao.deletePlacetteById(placetteId, System.currentTimeMillis())
     }
 
     override suspend fun deletePlacettesByParcelle(parcelleId: String) {
-        placetteDao.deletePlacettesByParcelle(parcelleId)
+        placetteDao.deletePlacettesByParcelle(parcelleId, System.currentTimeMillis())
     }
 }

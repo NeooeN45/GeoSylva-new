@@ -35,10 +35,10 @@ class StationRepositoryImpl(
     }
 
     override suspend fun delete(obs: StationObservation) {
-        dao.deleteById(obs.id)
+        dao.deleteById(obs.id, System.currentTimeMillis())
     }
 
     override suspend fun deleteById(id: String) {
-        dao.deleteById(id)
+        dao.deleteById(id, System.currentTimeMillis())
     }
 }

@@ -46,19 +46,19 @@ class TigeRepositoryImpl(
     }
 
     override suspend fun deleteTige(tigeId: String) {
-        tigeDao.deleteTigeById(tigeId)
+        tigeDao.deleteTigeById(tigeId, System.currentTimeMillis())
     }
 
     override suspend fun deleteTigesByParcelle(parcelleId: String) {
-        tigeDao.deleteTigesByParcelle(parcelleId)
+        tigeDao.deleteTigesByParcelle(parcelleId, System.currentTimeMillis())
     }
 
     override suspend fun deleteTigesByPlacette(placetteId: String) {
-        tigeDao.deleteTigesByPlacette(placetteId)
+        tigeDao.deleteTigesByPlacette(placetteId, System.currentTimeMillis())
     }
 
     override suspend fun deleteTigesByPlacetteAndEssence(placetteId: String, essenceCode: String) {
-        tigeDao.deleteTigesByPlacetteAndEssence(placetteId, essenceCode)
+        tigeDao.deleteTigesByPlacetteAndEssence(placetteId, essenceCode, System.currentTimeMillis())
     }
 
     override suspend fun deleteLatest(
@@ -68,7 +68,7 @@ class TigeRepositoryImpl(
         diamCm: Double
     ): Boolean {
         val latest = tigeDao.getLatestMatching(parcelleId, placetteId, essenceCode, diamCm) ?: return false
-        tigeDao.deleteTigeById(latest.tigeId)
+        tigeDao.deleteTigeById(latest.tigeId, System.currentTimeMillis())
         return true
     }
 

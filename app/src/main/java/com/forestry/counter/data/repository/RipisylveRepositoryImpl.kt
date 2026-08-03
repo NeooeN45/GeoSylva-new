@@ -27,7 +27,7 @@ class RipisylveRepositoryImpl(
     }
 
     override suspend fun delete(id: String) =
-        dao.deleteById(id)
+        dao.deleteById(id, System.currentTimeMillis())
 
     override suspend fun getById(id: String): RipisylveObservation? =
         dao.getById(id)?.toDomain()

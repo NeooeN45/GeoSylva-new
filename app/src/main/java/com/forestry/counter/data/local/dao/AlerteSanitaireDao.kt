@@ -1,7 +1,6 @@
 package com.forestry.counter.data.local.dao
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -17,24 +16,38 @@ interface AlerteSanitaireDao {
     @Update
     suspend fun update(alerte: AlerteSanitaireEntity)
 
-    @Delete
-    suspend fun delete(alerte: AlerteSanitaireEntity)
+    // --- Soft delete (Vague C) : suppression logique via deletedAt ---
 
-    @Query("SELECT * FROM alertes_sanitaires WHERE parcelleId = :parcelleId ORDER BY dateDetection DESC")
+    /** Soft delete d'une alerte sanitaire par son identifiant. */
+    @Query("UPDATE alertes_sanitaires SET deletedAt = :timestamp WHERE alerteId = :id")
+    suspend fun delete(id: String, timestamp: Long)
+
+    /** Soft delete d'une alerte sanitaire par son identifiant (alias sémantique). */
+    @Query("UPDATE alertes_sanitaires SET deletedAt = :timestamp WHERE alerteId = :id")
+    suspend fun deleteById(id: String, timestamp: Long)
+
+    /** Soft delete massif des alertes sanitaires non encore supprimées. */
+    @Query("UPDATE alertes_sanitaires SET deletedAt = :timestamp WHERE deletedAt IS NULL")
+    suspend fun deleteAll(timestamp: Long)
+
+    /**
+     * Suppression physique de toutes les alertes sanitaires (droit à l'effacement RGPD).
+     * À n'utiliser que depuis [DeleteAllUserDataUseCase].
+     */
+    @Query("DELETE FROM alertes_sanitaires")
+    suspend fun hardDeleteAll()
+
+    // --- Lectures : les lignes soft-deleted sont filtrées ---
+
+    @Query("SELECT * FROM alertes_sanitaires WHERE parcelleId = :parcelleId AND deletedAt IS NULL ORDER BY dateDetection DESC")
     fun getByParcelle(parcelleId: String): Flow<List<AlerteSanitaireEntity>>
 
-    @Query("SELECT * FROM alertes_sanitaires WHERE parcelleId = :parcelleId AND niveauRisque IN ('ELEVE', 'CRITIQUE') ORDER BY dateDetection DESC")
+    @Query("SELECT * FROM alertes_sanitaires WHERE parcelleId = :parcelleId AND niveauRisque IN ('ELEVE', 'CRITIQUE') AND deletedAt IS NULL ORDER BY dateDetection DESC")
     fun getCriticalByParcelle(parcelleId: String): Flow<List<AlerteSanitaireEntity>>
 
-    @Query("SELECT * FROM alertes_sanitaires WHERE isOrganismeReglemente = 1 AND isAlerteDsf = 0")
+    @Query("SELECT * FROM alertes_sanitaires WHERE isOrganismeReglemente = 1 AND isAlerteDsf = 0 AND deletedAt IS NULL")
     suspend fun getPendingDsfAlerts(): List<AlerteSanitaireEntity>
 
-    @Query("SELECT COUNT(*) FROM alertes_sanitaires WHERE parcelleId = :parcelleId AND niveauRisque IN ('ELEVE', 'CRITIQUE')")
+    @Query("SELECT COUNT(*) FROM alertes_sanitaires WHERE parcelleId = :parcelleId AND niveauRisque IN ('ELEVE', 'CRITIQUE') AND deletedAt IS NULL")
     suspend fun countCriticalByParcelle(parcelleId: String): Int
-
-    @Query("DELETE FROM alertes_sanitaires WHERE alerteId = :id")
-    suspend fun deleteById(id: String)
-
-    @Query("DELETE FROM alertes_sanitaires")
-    suspend fun deleteAll()
 }

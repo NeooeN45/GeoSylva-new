@@ -49,20 +49,29 @@ class DeleteAllUserDataUseCase(
      * Supprime toutes les données utilisateur de la base et les photos
      * associées. Retourne le nombre total d'opérations de suppression
      * effectuées (utile pour les tests et le logging).
+     *
+     * Les 11 entités cœur métier disposent désormais du soft delete
+     * (Vague C) : leur méthode `deleteAll` ne fait qu'un marquage logique
+     * (`deletedAt`). Pour le droit à l'effacement RGPD — qui exige une
+     * suppression physique — on appelle donc `hardDeleteAll`.
+     *
+     * `IbpEvaluationDao` n'a pas de colonne `deletedAt` (hors périmètre
+     * Vague C) : son `deleteAll` reste une suppression physique `DELETE FROM`,
+     * il n'y a donc pas de `hardDeleteAll` à appeler.
      */
     suspend fun execute(): Int = withContext(Dispatchers.IO) {
-        foretDao.deleteAll()
-        parcelleDao.deleteAllParcelles()
-        tigeDao.deleteAll()
-        placetteDao.deleteAll()
-        inventaireSessionDao.deleteAll()
-        stationDao.deleteAll()
-        ripisylveDao.deleteAll()
+        foretDao.hardDeleteAll()
+        parcelleDao.hardDeleteAll()
+        tigeDao.hardDeleteAll()
+        placetteDao.hardDeleteAll()
+        inventaireSessionDao.hardDeleteAll()
+        stationDao.hardDeleteAll()
+        ripisylveDao.hardDeleteAll()
         ibpEvaluationDao.deleteAll()
-        arbreHabitatDao.deleteAll()
-        diagnosticSylvicoleDao.deleteAll()
-        alerteSanitaireDao.deleteAll()
-        observationFloreDao.deleteAll()
+        arbreHabitatDao.hardDeleteAll()
+        diagnosticSylvicoleDao.hardDeleteAll()
+        alerteSanitaireDao.hardDeleteAll()
+        observationFloreDao.hardDeleteAll()
         deleteAllPhotos()
         DAO_COUNT
     }

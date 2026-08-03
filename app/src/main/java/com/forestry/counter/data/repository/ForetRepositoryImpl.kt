@@ -21,5 +21,5 @@ class ForetRepositoryImpl(
         dao.insert(metadataService.enrichForCreate(foret).toEntity())
     override suspend fun update(foret: Foret) =
         dao.update(metadataService.enrichForUpdate(foret, baseVersion = foret.version).toEntity())
-    override suspend fun deleteById(id: String) = dao.deleteById(id)
+    override suspend fun deleteById(id: String) = dao.deleteById(id, System.currentTimeMillis())
 }

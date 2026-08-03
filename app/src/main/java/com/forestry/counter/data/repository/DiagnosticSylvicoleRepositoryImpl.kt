@@ -23,5 +23,5 @@ class DiagnosticSylvicoleRepositoryImpl(
         dao.insert(metadataService.enrichForCreate(diagnostic).toEntity())
     override suspend fun update(diagnostic: DiagnosticSylvicole) =
         dao.update(metadataService.enrichForUpdate(diagnostic, baseVersion = diagnostic.version).toEntity())
-    override suspend fun deleteById(id: String) = dao.deleteById(id)
+    override suspend fun deleteById(id: String) = dao.deleteById(id, System.currentTimeMillis())
 }
