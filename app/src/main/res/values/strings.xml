@@ -188,6 +188,8 @@
     <string name="settings_section_privacy">Privacy</string>
     <string name="settings_no_ads_desc">This app has no advertisements</string>
     <string name="settings_no_tracking_desc">No analytics or tracking</string>
+    <string name="view_privacy_policy">View privacy policy</string>
+    <string name="view_privacy_policy_desc">Read the full privacy policy</string>
     <string name="settings_crash_logs_title">Crash logs</string>
     <string name="settings_crash_logs_desc">Write crashes to local logs (for debugging)</string>
     <string name="settings_view_latest_crash_log">View latest crash log</string>

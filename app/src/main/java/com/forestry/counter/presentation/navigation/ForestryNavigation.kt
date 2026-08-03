@@ -108,6 +108,7 @@ sealed class Screen(val route: String) {
         fun createRoute(parcelleId: String) = "stand/classification/$parcelleId"
     }
     object TarifDocs : Screen("settings/tarif_docs")
+    object PrivacyPolicy : Screen("settings/privacy_policy")
     object PackManager : Screen("packs")
     object SuperCorrelateur : Screen("super_correlateur/{parcelleId}") {
         fun createRoute(parcelleId: String) = "super_correlateur/$parcelleId"

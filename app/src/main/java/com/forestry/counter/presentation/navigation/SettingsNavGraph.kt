@@ -14,6 +14,7 @@ import com.forestry.counter.presentation.screens.groups.GroupsScreen
 import com.forestry.counter.presentation.screens.packs.PackManagerScreen
 import com.forestry.counter.presentation.screens.settings.PriceTablesEditorScreen
 import com.forestry.counter.presentation.screens.settings.SettingsScreen
+import com.forestry.counter.presentation.screens.settings.PrivacyPolicyScreen
 import com.forestry.counter.presentation.screens.account.AccountScreen
 import com.forestry.counter.presentation.screens.account.DeveloperOptionsScreen
 import com.forestry.counter.presentation.screens.account.LoginScreen
@@ -134,6 +135,9 @@ fun NavGraphBuilder.settingsNavGraph(
             onNavigateToDeveloperOptions = {
                 navController.navigate(Screen.DeveloperOptions.route)
             },
+            onNavigateToPrivacyPolicy = {
+                navController.navigate(Screen.PrivacyPolicy.route)
+            },
             onNavigateBack = { navController.popBackStack() }
         )
     }
@@ -217,6 +221,18 @@ fun NavGraphBuilder.settingsNavGraph(
         popExitTransition = transitions.popExit,
     ) {
         TarifDocumentationScreen(
+            onNavigateBack = { navController.popBackStack() }
+        )
+    }
+
+    composable(
+        route = Screen.PrivacyPolicy.route,
+        enterTransition = transitions.enter,
+        exitTransition = transitions.exit,
+        popEnterTransition = transitions.popEnter,
+        popExitTransition = transitions.popExit,
+    ) {
+        PrivacyPolicyScreen(
             onNavigateBack = { navController.popBackStack() }
         )
     }

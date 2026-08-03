@@ -94,6 +94,7 @@ fun SettingsScreen(
     onNavigateToPriceTablesEditor: () -> Unit = {},
     onNavigateToAccount: () -> Unit = {},
     onNavigateToDeveloperOptions: () -> Unit = {},
+    onNavigateToPrivacyPolicy: () -> Unit = {},
     onNavigateBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -1501,6 +1502,16 @@ fun SettingsScreen(
                         val ts = java.text.SimpleDateFormat("yyyyMMdd-HHmm").format(java.util.Date())
                         exportAllLauncher.launch("crash-logs-${ts}.zip")
                     }
+                )
+
+                // Lien vers la politique de confidentialité complète (#10)
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.view_privacy_policy)) },
+                    supportingContent = { Text(stringResource(R.string.view_privacy_policy_desc)) },
+                    leadingContent = {
+                        Icon(Icons.Default.PrivacyTip, contentDescription = null)
+                    },
+                    modifier = Modifier.clickable(onClick = onNavigateToPrivacyPolicy),
                 )
             }
 
