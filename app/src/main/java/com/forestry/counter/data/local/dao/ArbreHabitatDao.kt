@@ -37,4 +37,7 @@ interface ArbreHabitatDao {
 
     @Query("DELETE FROM arbres_habitat WHERE arbreHabitatId = :id")
     suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM arbres_habitat")
+    suspend fun deleteAll()
 }

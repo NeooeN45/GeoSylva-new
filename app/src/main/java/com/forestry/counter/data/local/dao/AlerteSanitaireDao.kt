@@ -34,4 +34,7 @@ interface AlerteSanitaireDao {
 
     @Query("DELETE FROM alertes_sanitaires WHERE alerteId = :id")
     suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM alertes_sanitaires")
+    suspend fun deleteAll()
 }

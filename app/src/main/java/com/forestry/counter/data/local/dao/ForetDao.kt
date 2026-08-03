@@ -31,4 +31,7 @@ interface ForetDao {
 
     @Query("DELETE FROM forets WHERE foretId = :id")
     suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM forets")
+    suspend fun deleteAll()
 }

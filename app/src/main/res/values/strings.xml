@@ -191,6 +191,12 @@
     <string name="view_privacy_policy">View privacy policy</string>
     <string name="view_privacy_policy_desc">Read the full privacy policy</string>
     <string name="proprietaire_email_helper">Optional — used only to contact the owner for management reports. Not shared with any third party.</string>
+    <string name="delete_all_data">Delete all my data</string>
+    <string name="delete_all_data_desc">Permanently deletes all forestry data and photos on this device</string>
+    <string name="delete_all_data_warning">This action is irreversible. All forests, plots, trees, observations and photos will be permanently deleted.</string>
+    <string name="delete_all_data_confirm">Delete all</string>
+    <string name="delete_all_data_cancel">Cancel</string>
+    <string name="delete_all_data_success">All data has been deleted</string>
     <string name="settings_crash_logs_title">Crash logs</string>
     <string name="settings_crash_logs_desc">Write crashes to local logs (for debugging)</string>
     <string name="settings_view_latest_crash_log">View latest crash log</string>

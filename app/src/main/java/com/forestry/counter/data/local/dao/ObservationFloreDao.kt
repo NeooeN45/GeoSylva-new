@@ -40,4 +40,7 @@ interface ObservationFloreDao {
 
     @Query("DELETE FROM observations_flore WHERE parcelleId = :parcelleId")
     suspend fun deleteByParcelle(parcelleId: String)
+
+    @Query("DELETE FROM observations_flore")
+    suspend fun deleteAll()
 }

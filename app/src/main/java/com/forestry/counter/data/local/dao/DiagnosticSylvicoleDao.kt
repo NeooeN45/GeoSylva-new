@@ -37,4 +37,7 @@ interface DiagnosticSylvicoleDao {
 
     @Query("DELETE FROM diagnostics_sylvicoles WHERE diagnosticId = :id")
     suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM diagnostics_sylvicoles")
+    suspend fun deleteAll()
 }

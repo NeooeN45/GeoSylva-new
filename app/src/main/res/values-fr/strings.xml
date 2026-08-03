@@ -193,6 +193,12 @@
     <string name="view_privacy_policy">Politique de confidentialité</string>
     <string name="view_privacy_policy_desc">Consulter la politique de confidentialité complète</string>
     <string name="proprietaire_email_helper">Optionnel — utilisé uniquement pour contacter le propriétaire pour les rapports de gestion. Non transmis à aucun tiers.</string>
+    <string name="delete_all_data">Effacer toutes mes données</string>
+    <string name="delete_all_data_desc">Supprime définitivement toutes les données forestières et photos de cet appareil</string>
+    <string name="delete_all_data_warning">Cette action est irréversible. Toutes les forêts, parcelles, tiges, observations et photos seront supprimées définitivement.</string>
+    <string name="delete_all_data_confirm">Tout effacer</string>
+    <string name="delete_all_data_cancel">Annuler</string>
+    <string name="delete_all_data_success">Toutes les données ont été supprimées</string>
     <string name="settings_crash_logs_title">Journaux de crash</string>
     <string name="settings_crash_logs_desc">Enregistrer les crashes dans des logs locaux (debug)</string>
     <string name="settings_view_latest_crash_log">Voir le dernier crash</string>

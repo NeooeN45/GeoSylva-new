@@ -32,4 +32,7 @@ interface PlacetteDao {
 
     @Query("DELETE FROM placettes WHERE parcelleOwnerId = :parcelleId")
     suspend fun deletePlacettesByParcelle(parcelleId: String)
+
+    @Query("DELETE FROM placettes")
+    suspend fun deleteAll()
 }

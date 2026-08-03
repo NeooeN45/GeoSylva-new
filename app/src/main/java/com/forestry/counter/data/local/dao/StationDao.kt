@@ -23,4 +23,7 @@ interface StationDao {
 
     @Query("DELETE FROM station_diagnostics WHERE id = :id")
     suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM station_diagnostics")
+    suspend fun deleteAll()
 }

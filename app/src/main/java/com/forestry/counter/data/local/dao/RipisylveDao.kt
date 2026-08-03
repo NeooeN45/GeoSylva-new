@@ -23,4 +23,7 @@ interface RipisylveDao {
 
     @Query("DELETE FROM ripisylve_observation WHERE id = :id")
     suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM ripisylve_observation")
+    suspend fun deleteAll()
 }

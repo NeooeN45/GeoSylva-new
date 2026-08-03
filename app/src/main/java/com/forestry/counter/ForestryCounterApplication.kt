@@ -131,6 +131,8 @@ class ForestryCounterApplication : Application() {
         private set
     lateinit var importDataUseCase: ImportDataUseCase
         private set
+    lateinit var deleteAllUserDataUseCase: com.forestry.counter.domain.usecase.privacy.DeleteAllUserDataUseCase
+        private set
 
     // Calculator
     lateinit var formulaParser: FormulaParser
@@ -247,6 +249,23 @@ class ForestryCounterApplication : Application() {
             groupRepository,
             counterRepository,
             formulaRepository
+        )
+
+        // Use case RGPD — droit à l'effacement (Art. 17)
+        deleteAllUserDataUseCase = com.forestry.counter.domain.usecase.privacy.DeleteAllUserDataUseCase(
+            foretDao = database.foretDao(),
+            parcelleDao = database.parcelleDao(),
+            tigeDao = database.tigeDao(),
+            placetteDao = database.placetteDao(),
+            inventaireSessionDao = database.inventaireSessionDao(),
+            stationDao = database.stationDao(),
+            ripisylveDao = database.ripisylveDao(),
+            ibpEvaluationDao = database.ibpEvaluationDao(),
+            arbreHabitatDao = database.arbreHabitatDao(),
+            diagnosticSylvicoleDao = database.diagnosticSylvicoleDao(),
+            alerteSanitaireDao = database.alerteSanitaireDao(),
+            observationFloreDao = database.observationFloreDao(),
+            context = applicationContext,
         )
 
         applicationScope.launch { seedSylvicultureData() }

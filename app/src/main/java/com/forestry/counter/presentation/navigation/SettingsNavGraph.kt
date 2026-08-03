@@ -130,6 +130,7 @@ fun NavGraphBuilder.settingsNavGraph(
             placetteRepository = app.placetteRepository,
             offlineTileManager = app.offlineTileManager,
             identityRepository = app.identityRepository,
+            deleteAllUserDataUseCase = app.deleteAllUserDataUseCase,
             onNavigateToPriceTablesEditor = { navController.navigate(Screen.PriceTablesEditor.route) },
             onNavigateToAccount = { navController.navigate(Screen.Account.route) },
             onNavigateToDeveloperOptions = {

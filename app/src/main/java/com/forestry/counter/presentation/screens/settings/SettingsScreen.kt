@@ -91,6 +91,7 @@ fun SettingsScreen(
     placetteRepository: PlacetteRepository? = null,
     offlineTileManager: com.forestry.counter.domain.location.OfflineTileManager? = null,
     identityRepository: IdentityRepository,
+    deleteAllUserDataUseCase: com.forestry.counter.domain.usecase.privacy.DeleteAllUserDataUseCase? = null,
     onNavigateToPriceTablesEditor: () -> Unit = {},
     onNavigateToAccount: () -> Unit = {},
     onNavigateToDeveloperOptions: () -> Unit = {},
@@ -1513,6 +1514,59 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.clickable(onClick = onNavigateToPrivacyPolicy),
                 )
+
+                // Droit à l'effacement RGPD — Art. 17 (#16)
+                var showDeleteAllDialog by remember { mutableStateOf(false) }
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.delete_all_data)) },
+                    supportingContent = { Text(stringResource(R.string.delete_all_data_desc)) },
+                    leadingContent = {
+                        Icon(
+                            Icons.Default.DeleteForever,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    },
+                    modifier = Modifier.clickable { showDeleteAllDialog = true },
+                )
+
+                if (showDeleteAllDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showDeleteAllDialog = false },
+                        title = { Text(stringResource(R.string.delete_all_data)) },
+                        text = {
+                            Text(
+                                text = stringResource(R.string.delete_all_data_warning),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    showDeleteAllDialog = false
+                                    deleteAllUserDataUseCase?.let { useCase ->
+                                        scope.launch {
+                                            useCase.execute()
+                                            snackbarHostState.showSnackbar(
+                                                context.getString(R.string.delete_all_data_success)
+                                            )
+                                        }
+                                    }
+                                }
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.delete_all_data_confirm),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDeleteAllDialog = false }) {
+                                Text(stringResource(R.string.delete_all_data_cancel))
+                            }
+                        },
+                    )
+                }
             }
 
             HorizontalDivider()
