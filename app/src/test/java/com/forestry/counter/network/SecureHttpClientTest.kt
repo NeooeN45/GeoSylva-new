@@ -4,6 +4,7 @@ import android.content.Context
 import com.forestry.counter.BuildConfig
 import io.mockk.mockk
 import okhttp3.Dns
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -14,7 +15,8 @@ import org.junit.Test
 
 /**
  * Tests pour SecureHttpClient - Couverture des fonctionnalités de réseau sécurisé.
- * Vérifie HTTPS, la résolution DNS publique et le refus des cibles SSRF.
+ * Vérifie HTTPS, la résolution DNS publique, le refus des cibles SSRF et
+ * l'épinglage de clés (certificate pinning) des domaines autorisés.
  */
 class SecureHttpClientTest {
 
@@ -224,5 +226,72 @@ class SecureHttpClientTest {
         val client = SecureHttpClient.createSecureClient(context, allowLocalDebug = true)
 
         assertTrue(client.dns === Dns.SYSTEM)
+    }
+
+    @Test
+    fun `buildCertificatePinner should pin every secure carto domain`() {
+        val pinner = SecureHttpClient.buildCertificatePinner()
+
+        SecureHttpClient.SECURE_DOMAINS.forEach { domain ->
+            val pins = pinner.findMatchingPins(domain)
+            assertTrue(
+                "Le domaine carto devrait avoir au moins un pin : $domain",
+                pins.isNotEmpty()
+            )
+        }
+    }
+
+    @Test
+    fun `buildCertificatePinner should provide a backup pin per domain`() {
+        val pinner = SecureHttpClient.buildCertificatePinner()
+
+        SecureHttpClient.SECURE_DOMAINS.forEach { domain ->
+            val pins = pinner.findMatchingPins(domain)
+            assertTrue(
+                "Chaque domaine devrait avoir un pin primaire + un pin de secours : $domain",
+                pins.size >= 2
+            )
+        }
+    }
+
+    @Test
+    fun `buildCertificatePinner should pin the GSIE API host when configured`() {
+        val gsieHost = BuildConfig.GSIE_API_BASE_URL.trim()
+            .takeIf { it.isNotEmpty() && SecureHttpClient.isSafeRemoteHttpsUrl(it) }
+            ?.toHttpUrlOrNull()?.host
+
+        val pinner = SecureHttpClient.buildCertificatePinner()
+
+        if (gsieHost != null) {
+            val pins = pinner.findMatchingPins(gsieHost)
+            assertTrue(
+                "Le domaine GSIE configuré devrait être pinné : $gsieHost",
+                pins.isNotEmpty()
+            )
+        } else {
+            // Pas de domaine GSIE distant configuré : le pinning carto reste actif.
+            SecureHttpClient.SECURE_DOMAINS.forEach { domain ->
+                assertTrue(pinner.findMatchingPins(domain).isNotEmpty())
+            }
+        }
+    }
+
+    @Test
+    fun `createSecureClient should enable certificate pinning`() {
+        val client = SecureHttpClient.createSecureClient(context, enableLogging = false)
+
+        // Le client doit porter un CertificatePinner non vide : au moins les
+        // domaines carto doivent avoir des pins déclarés.
+        val hasPinnedDomain = SecureHttpClient.SECURE_DOMAINS.any { domain ->
+            client.certificatePinner.findMatchingPins(domain).isNotEmpty()
+        }
+        assertTrue("Le client devrait avoir le certificate pinning activé", hasPinnedDomain)
+    }
+
+    @Test
+    fun `getSecurityStats should report certificate pinning enabled`() {
+        val stats = SecureTileService(context).getSecurityStats()
+
+        assertTrue("certificatePinningEnabled devrait être true", stats.certificatePinningEnabled)
     }
 }
