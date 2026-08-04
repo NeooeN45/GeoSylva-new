@@ -6,6 +6,7 @@ import com.forestry.counter.domain.model.Tige
 import com.forestry.counter.domain.repository.ParameterRepository
 import com.forestry.counter.domain.usecase.sylviculture.SylvicultureDatabase
 import kotlinx.coroutines.flow.first
+import java.util.logging.Logger
 import kotlin.math.*
 
 /**
@@ -20,11 +21,11 @@ import kotlin.math.*
  * Les stations 1/2/3 correspondent aux classes de fertilité I/II/III de ces tables.
  *
  * ### Indice de station (IS)
- * Méthode officielle : IS = hauteur dominante (Hdom) à l'âge de référence
+ * Méthode officielle ONF : IS = Hdom ramenée à l'âge de référence
  * (100 ans pour chêne, 80 ans pour hêtre, 50 ans pour résineux).
- * ⚠ Approximation: IS ≈ Hdom en l'absence de l'âge de référence. L'IS officiel ONF
- * nécessite Hdom à âge de référence. La classification par classes (I–VII) est
- * conservée et reste basée sur Hdom.
+ * Si âgeActuel < âgeRéf : IS = Hdom × (âgeRéf / âgeActuel) (extrapolation).
+ * Si âgeActuel >= âgeRéf : IS = Hdom. Si âge <= 0 : IS = null.
+ * La classification par classes (I–VII) est conservée et reste basée sur l'IS.
  * ⚠ Plage de validité IS : 5–30. En dehors → valeurs bornées par coerceIn.
  *
  * ### Modèle de Richards (croissance en diamètre)
@@ -137,40 +138,67 @@ class ExpertForestryCalculator(
     }
 
     /**
-     * Calcule l'indice de station ONF (0-30) selon la méthode officielle
+     * Calcule l'Indice de Station (IS) officiel ONF.
      *
-     * Approximation: IS ≈ Hdom en l'absence de l'âge de référence. L'IS officiel ONF
-     * nécessite Hdom à âge de référence (100 ans chêne, 80 ans hêtre, 50 ans résineux).
+     * L'IS est la hauteur dominante (Hdom) ramenée à l'âge de référence de
+     * l'essence : 100 ans pour les chênes, 80 ans pour le hêtre, 50 ans pour
+     * les résineux (sapin, épicéa, pins, etc.).
+     *
+     * Formule :
+     * - Si âgeActuel >= âgeRéf : IS = Hdom (le peuplement a dépassé l'âge réf).
+     * - Si 0 < âgeActuel < âgeRéf : IS = Hdom × (âgeRéf / âgeActuel)
+     *   (extrapolation de la hauteur dominante à l'âge de référence).
+     * - Si âgeActuel <= 0 : retourne null (peuplement non établi / âge inconnu).
+     *
+     * Pour une essence non reconnue, l'IS par défaut (15.0) est retourné et un
+     * avertissement est loggé. L'IS est toujours coercé entre 5.0 et 30.0.
+     *
+     * @param essenceCode code essence (ex. "QUPE", "FASY", "ABAL")
+     * @param age âge actuel du peuplement en années
+     * @param hdom hauteur dominante (m) — moyenne des 100 plus gros arbres/ha
+     * @param diametreMoyen diamètre moyen (cm) — réservé pour extensions futures
+     * @return IS coercé entre 5.0 et 30.0, ou null si âge <= 0
      */
     fun calculateIndiceDeStation(
         essenceCode: String,
         age: Int,
         hdom: Double,
-        diametreMoyen: Double
-    ): Double {
-        // Approximation: IS ≈ Hdom en l'absence de l'âge de référence.
-        // L'IS officiel ONF nécessite Hdom à âge de référence
-        // (100 ans chêne, 80 ans hêtre, 50 ans résineux).
-        // La classification par classes (I–VII) est conservée et reste basée sur Hdom.
-        @Suppress("UNUSED_PARAMETER")
-        val ignoredAge: Int = age
-        @Suppress("UNUSED_PARAMETER")
-        val ignoredDiam: Double = diametreMoyen
+        @Suppress("UNUSED_PARAMETER") diametreMoyen: Double
+    ): Double? {
+        if (age <= 0) return null
+        val ageReference = ageReferenceForEssence(essenceCode)
+        if (ageReference == null) {
+            logger.warning(
+                "Essence non reconnue pour l'IS : '$essenceCode' — repli sur IS=$IS_DEFAULT_UNKNOWN"
+            )
+            return IS_DEFAULT_UNKNOWN
+        }
+        val isBrut = if (age >= ageReference) {
+            hdom
+        } else {
+            hdom * (ageReference.toDouble() / age.toDouble())
+        }
+        return isBrut.coerceIn(IS_MIN, IS_MAX)
+    }
+
+    /**
+     * Âge de référence ONF par groupe d'essences, ou null si non reconnu.
+     *
+     * Chênes : 100 ans — Hêtre : 80 ans — Résineux (sapin, épicéa, pins) : 50 ans.
+     */
+    private fun ageReferenceForEssence(essenceCode: String): Int? {
         return when (essenceCode.uppercase()) {
+            // Chênes — âge de référence 100 ans (Décourt & Pardé 1980).
             "QUPE", "QUPES", "QUPU", "QUIL", "QURU",
-            "CHENE", "CH_SESSILE", "CH_PEDONCULE" -> {
-                // IS chêne : proxy = Hdom. Plage IS : 5–25 (tables Décourt & Pardé 1980).
-                hdom.coerceIn(5.0, 30.0)
-            }
-            "FASY", "HETRE", "HETRE_COMMUN" -> {
-                // IS hêtre : proxy = Hdom. t_ref = 80 ans (Pardé & Bouchon 1988).
-                hdom.coerceIn(5.0, 30.0)
-            }
-            "ABAL", "SAPIN", "SAPIN_PECTINE" -> {
-                // IS sapin : proxy = Hdom. t_ref = 80 ans (guide ONF Timbal et al. 1990).
-                hdom.coerceIn(5.0, 30.0)
-            }
-            else -> 15.0 // Valeur par défaut quand essence non reconnue
+            "CHENE", "CH_SESSILE", "CH_PEDONCULE" -> AGE_REF_CHENE
+            // Hêtre — âge de référence 80 ans (Pardé & Bouchon 1988).
+            "FASY", "HETRE", "HETRE_COMMUN" -> AGE_REF_HETRE
+            // Résineux — âge de référence 50 ans (guide ONF Timbal et al. 1990).
+            "ABAL", "SAPIN", "SAPIN_PECTINE", "PCAB",
+            "EPAICEA", "EPICEA", "EPICEA_COMMUN",
+            "PIN", "PIN_SYLVESTRE", "PIN_MARITIME", "PIN_LARICIO",
+            "PIN_NOIR", "PIN_CORB", "LARI", "MEL", "PSME", "TSUHE" -> AGE_REF_RESINEUX
+            else -> null
         }
     }
     
@@ -581,6 +609,16 @@ class ExpertForestryCalculator(
             5 -> 18
             else -> 25
         }
+    }
+
+    companion object {
+        private val logger = Logger.getLogger("ExpertForestryCalculator")
+        private const val IS_MIN = 5.0
+        private const val IS_MAX = 30.0
+        private const val IS_DEFAULT_UNKNOWN = 15.0
+        private const val AGE_REF_CHENE = 100
+        private const val AGE_REF_HETRE = 80
+        private const val AGE_REF_RESINEUX = 50
     }
 }
 

@@ -74,7 +74,7 @@ class EnhancedForestryCalculator(
             age = ageEstime,
             hdom = hdom,
             diametreMoyen = diametreMoyen
-        )
+        ) ?: 15.0
         
         val classeStation = expertCalculator.getClasseStation(indiceStation, essenceCode)
         val fertilité = expertCalculator.evaluateFertilityClass(indiceStation, essenceCode)
@@ -121,7 +121,8 @@ class EnhancedForestryCalculator(
         surfaceHa: Double
     ): PlantingParameters {
         val fertilité = expertCalculator.evaluateFertilityClass(
-            expertCalculator.calculateIndiceDeStation(essenceCode, 0, 20.0, 15.0),
+            expertCalculator.calculateIndiceDeStation(essenceCode, 0, 20.0, 15.0)
+                ?: 15.0,
             essenceCode
         )
         

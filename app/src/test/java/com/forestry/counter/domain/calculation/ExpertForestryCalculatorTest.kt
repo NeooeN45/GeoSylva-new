@@ -48,6 +48,15 @@ class ExpertForestryCalculatorTest {
         return ExpertForestryCalculator(base, fakeRepo)
     }
 
+    /**
+     * Compare un IS nullable à une valeur attendue non-null.
+     * Échoue explicitement si l'IS est null au lieu d'une erreur de typage.
+     */
+    private fun assertIsEquals(expected: Double, actual: Double?, delta: Double) {
+        val value = actual ?: error("Expected non-null IS=$expected, got null")
+        assertEquals(expected, value, delta)
+    }
+
     // endregion
 
     // =====================================================================
@@ -59,8 +68,10 @@ class ExpertForestryCalculatorTest {
         val calc = buildCalculator()
         val indiceStation = calc.calculateIndiceDeStation("QUPE", 80, 20.0, 35.0)
 
-        assertTrue("IS should be >= 5", indiceStation >= 5.0)
-        assertTrue("IS should be <= 30", indiceStation <= 30.0)
+        assertNotNull(indiceStation)
+        val isValue = indiceStation ?: error("IS should not be null")
+        assertTrue("IS should be >= 5", isValue >= 5.0)
+        assertTrue("IS should be <= 30", isValue <= 30.0)
     }
 
     @Test
@@ -68,8 +79,10 @@ class ExpertForestryCalculatorTest {
         val calc = buildCalculator()
         val indiceStation = calc.calculateIndiceDeStation("FASY", 80, 22.0, 30.0)
 
-        assertTrue("IS should be >= 10", indiceStation >= 10.0)
-        assertTrue("IS should be <= 28", indiceStation <= 28.0)
+        assertNotNull(indiceStation)
+        val isValue = indiceStation ?: error("IS should not be null")
+        assertTrue("IS should be >= 10", isValue >= 10.0)
+        assertTrue("IS should be <= 28", isValue <= 28.0)
     }
 
     @Test
@@ -77,36 +90,156 @@ class ExpertForestryCalculatorTest {
         val calc = buildCalculator()
         val indiceStation = calc.calculateIndiceDeStation("UNKNOWN_SPECIES", 60, 18.0, 25.0)
 
-        assertEquals(15.0, indiceStation, 0.001)
+        assertIsEquals(15.0, indiceStation, 0.001)
     }
 
     @Test
     fun `should_cap_is_at_30_when_extreme_values`() {
         val calc = buildCalculator()
-        // Very large height and diameter should be capped by coerceAtMost(30.0)
+        // QUPE à âge réf (100) avec Hdom = 100 -> IS = Hdom = 100 -> borné à 30.
         val indiceStation = calc.calculateIndiceDeStation("QUPE", 100, 100.0, 200.0)
 
-        assertTrue("IS should not exceed 30", indiceStation <= 30.0)
+        assertNotNull(indiceStation)
+        val isValue = indiceStation ?: error("IS should not be null")
+        assertTrue("IS should not exceed 30", isValue <= 30.0)
+    }
+
+    @Test
+    fun `should_extrapolate_is_when_age_below_reference_chene`() {
+        val calc = buildCalculator()
+        // QUPE : âge réf = 100 ans. Âge actuel = 50 (< réf).
+        // IS = Hdom × (100 / 50) = 12.0 × 2 = 24.0.
+        val indiceStation = calc.calculateIndiceDeStation("QUPE", 50, 12.0, 20.0)
+
+        assertIsEquals(24.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_return_hdom_when_age_equals_reference_chene`() {
+        val calc = buildCalculator()
+        // QUPE : âge réf = 100 ans. Âge actuel = 100 (== réf) -> IS = Hdom.
+        val indiceStation = calc.calculateIndiceDeStation("QUPE", 100, 20.0, 35.0)
+
+        assertIsEquals(20.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_return_hdom_when_age_above_reference_chene`() {
+        val calc = buildCalculator()
+        // QUPE : âge réf = 100 ans. Âge actuel = 120 (> réf) -> IS = Hdom.
+        val indiceStation = calc.calculateIndiceDeStation("QUPE", 120, 22.0, 40.0)
+
+        assertIsEquals(22.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_extrapolate_is_when_age_below_reference_hetre`() {
+        val calc = buildCalculator()
+        // FASY : âge réf = 80 ans. Âge actuel = 40 (< réf).
+        // IS = Hdom × (80 / 40) = 15.0 × 2 = 30.0 -> borné à 30.0.
+        val indiceStation = calc.calculateIndiceDeStation("FASY", 40, 15.0, 25.0)
+
+        assertIsEquals(30.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_return_hdom_when_age_equals_reference_hetre`() {
+        val calc = buildCalculator()
+        // FASY : âge réf = 80 ans. Âge actuel = 80 (== réf) -> IS = Hdom.
+        val indiceStation = calc.calculateIndiceDeStation("FASY", 80, 22.0, 30.0)
+
+        assertIsEquals(22.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_return_hdom_when_age_above_reference_hetre`() {
+        val calc = buildCalculator()
+        // FASY : âge réf = 80 ans. Âge actuel = 100 (> réf) -> IS = Hdom.
+        val indiceStation = calc.calculateIndiceDeStation("FASY", 100, 24.0, 35.0)
+
+        assertIsEquals(24.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_extrapolate_is_when_age_below_reference_resineux`() {
+        val calc = buildCalculator()
+        // ABAL (sapin) : âge réf = 50 ans. Âge actuel = 25 (< réf).
+        // IS = Hdom × (50 / 25) = 10.0 × 2 = 20.0.
+        val indiceStation = calc.calculateIndiceDeStation("ABAL", 25, 10.0, 18.0)
+
+        assertIsEquals(20.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_return_hdom_when_age_equals_reference_resineux`() {
+        val calc = buildCalculator()
+        // ABAL : âge réf = 50 ans. Âge actuel = 50 (== réf) -> IS = Hdom.
+        val indiceStation = calc.calculateIndiceDeStation("ABAL", 50, 18.0, 28.0)
+
+        assertIsEquals(18.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_return_hdom_when_age_above_reference_resineux`() {
+        val calc = buildCalculator()
+        // EPAICEA : âge réf = 50 ans. Âge actuel = 70 (> réf) -> IS = Hdom.
+        val indiceStation = calc.calculateIndiceDeStation("EPAICEA", 70, 20.0, 30.0)
+
+        assertIsEquals(20.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_return_null_when_age_is_zero`() {
+        val calc = buildCalculator()
+        val indiceStation = calc.calculateIndiceDeStation("QUPE", 0, 20.0, 35.0)
+
+        assertEquals(null, indiceStation)
+    }
+
+    @Test
+    fun `should_return_null_when_age_is_negative`() {
+        val calc = buildCalculator()
+        val indiceStation = calc.calculateIndiceDeStation("FASY", -5, 20.0, 30.0)
+
+        assertEquals(null, indiceStation)
+    }
+
+    @Test
+    fun `should_return_default_is_when_unknown_essence_with_valid_age`() {
+        val calc = buildCalculator()
+        // Essence inconnue : repli sur IS = 15.0 quelque soit l'âge.
+        val indiceStation = calc.calculateIndiceDeStation("ESSENCE_INCONNUE", 60, 18.0, 25.0)
+
+        assertIsEquals(15.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_floor_is_at_5_when_extrapolation_below_minimum`() {
+        val calc = buildCalculator()
+        // QUPE : âge réf = 100. Âge = 90, Hdom = 4.0.
+        // IS = 4.0 × (100/90) = 4.44 -> borné à 5.0.
+        val indiceStation = calc.calculateIndiceDeStation("QUPE", 90, 4.0, 10.0)
+
+        assertIsEquals(5.0, indiceStation, 0.001)
     }
 
     @Test
     fun `should_compute_chene_is_with_known_formula`() {
         val calc = buildCalculator()
-        // C-CALC-2 : IS ≈ Hdom (proxy en l'absence de l'âge de référence).
-        // QUPE avec Hdom = 20.0 m -> IS = 20.0 (borné 5–30).
+        // IS officiel ONF : QUPE (âge réf = 100), âge = 80 (< réf).
+        // IS = Hdom × (100 / 80) = 20.0 × 1.25 = 25.0 (borné 5–30).
         val indiceStation = calc.calculateIndiceDeStation("QUPE", 80, 20.0, 35.0)
 
-        assertEquals(20.0, indiceStation, 0.001)
+        assertIsEquals(25.0, indiceStation, 0.001)
     }
 
     @Test
     fun `should_compute_hetre_is_with_known_formula`() {
         val calc = buildCalculator()
-        // C-CALC-2 : IS ≈ Hdom (proxy en l'absence de l'âge de référence).
-        // FASY avec Hdom = 22.0 m -> IS = 22.0 (borné 5–30).
+        // IS officiel ONF : FASY (âge réf = 80), âge = 80 (== réf) -> IS = Hdom = 22.0.
         val indiceStation = calc.calculateIndiceDeStation("FASY", 80, 22.0, 30.0)
 
-        assertEquals(22.0, indiceStation, 0.001)
+        assertIsEquals(22.0, indiceStation, 0.001)
     }
 
     // =====================================================================

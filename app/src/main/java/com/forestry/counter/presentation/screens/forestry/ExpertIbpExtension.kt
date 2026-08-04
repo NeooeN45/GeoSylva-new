@@ -54,7 +54,7 @@ fun ExpertIbpAnalysisSection(
                 age = ageEstime,
                 hdom = hdom,
                 diametreMoyen = diametreMoyen
-            )
+            ) ?: 15.0
             
             val classeStation = expertCalculator.getClasseStation(indiceStation, essenceCode)
             val fertilité = expertCalculator.evaluateFertilityClass(indiceStation, essenceCode)
