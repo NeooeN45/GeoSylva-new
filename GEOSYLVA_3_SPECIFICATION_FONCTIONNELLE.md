@@ -4,8 +4,8 @@
 |---|---|
 | Identifiant | GEOSYLVA-003 |
 | Statut | Draft |
-| Version | 0.1.0 |
-| Date | 2026-08-03 |
+| Version | 0.4.0 |
+| Date | 2026-08-04 |
 | Auteur | Quintessences — spécification issue du brainstorming Fondateur/Codex |
 | Périmètre | Application mobile GeoSylva et ses échanges avec GSIE |
 
@@ -497,6 +497,39 @@ Cette roadmap consolide sans les réinventer les visions existantes :
 - `GEO-001` à `GEO-004` (exigences fonctionnelles existantes)
 - `MASTER_PLAN.md` (programme DENDRO-EXCELLENCE, promesse produit)
 
+### 12.8 Vision long terme (Dev Pack)
+
+Le Dev Pack (`21_EXPERIMENTS/GEOSYLVA_DEV_PACK_2026-08-04/`,
+`10_ROADMAP_IMPLEMENTATION.md`) propose une vision long terme en 10 phases
+(0-9) qui s'étend au-delà de la roadmap GeoSylva 3.0 (§12.4, P0-P7). Ces
+phases couvrent la transformation de GeoSylva en poste de travail numérique
+complet du technicien forestier. Elles sont **complémentaires** de la roadmap
+existante — les phases P0-P7 de §12.4 restent le plan d'exécution immédiat.
+
+| Phase Dev Pack | Objet | Correspondance GeoSylva 3.0 |
+|---|---|---|
+| **Phase 0** — Audit du dépôt | Cartographier modules, tables, calculs, dettes | P0 (partiel) |
+| **Phase 1** — Fondations communes | UUID globaux, distinction entité/observation/mesure, registre de méthodes | P0-P3 |
+| **Phase 2** — Refonte du moteur forestier | VolumeEquationDefinition, MethodResolver, incertitude, valorisation | P3 |
+| **Phase 3** — Mission et Protocol Engine | Métiers, capabilities, protocoles déclaratifs, formulaires contextuels | §17 (nouveau) |
+| **Phase 4** — Identité et organisations | Keycloak, Google, passkeys, OIDC PKCE, workspaces | §20 (nouveau) |
+| **Phase 5** — Synchronisation GSIE | Event journal, API idempotente, résolution conflits, parité | P4-P6 |
+| **Phase 6** — QPIS | Manifeste, catalogue, delta, rollback, packs départementaux | §16 (nouveau) |
+| **Phase 7** — Geo Engine | PMTiles, GeoPackage, R-Tree, QGIS/QField, PostGIS, Martin | §19.4 (nouveau) |
+| **Phase 8** — TreeVision prototype | Diamètre semi-auto, scan multi-angle, GNSS stabilisé, banc | §18 (nouveau) |
+| **Phase 9** — Moteurs serveur | Télédétection, STAC, Orfeo ToolBox, LiDAR, IA régionale | P4 (canal 1) |
+
+**Stratégie de livraison** (Dev Pack) : chaque phase suit RFC → ADR → tests
+de contrat → implémentation par petits lots → migration → instrumentation →
+documentation → validation terrain → rollback possible.
+
+**Priorité immédiate** (Dev Pack) : commencer par l'audit du dépôt et le RFC
+du moteur de cubage et de valorisation. Ne pas lancer simultanément
+l'identité, les packs, le SIG et TreeVision sans fondations partagées.
+
+Voir aussi : §16 (QPIS), §17 (Mission/Protocol Engine), §18 (TreeVision),
+§19 (Métiers et architecture modulaire), §20 (Identité fédérée).
+
 ## 14. Connexion GSIE Serveur — contrats détaillés
 
 ### 14.1 Principe
@@ -893,9 +926,520 @@ données** (§9), pas via le Play Store :
 le Reasoning Engine doit être spécifié avant changement d'inférence. Le
 T3 utilise Mistral 7B servé en attendant.
 
-## 16. Références
+## 16. QPIS — Quintessences Pack Intelligence System
 
-### 16.1 Documents GeoSylva
+QPIS est le système de packs de données qui généralise et étend le mécanisme
+déjà présent en §9. Le serveur GSIE collecte, normalise, contrôle, découpe,
+compresse, signe et distribue les données sous forme de packs versionnés.
+L'application ne contacte pas directement des dizaines d'API publiques : elle
+consomme des packs préparés. Le gestionnaire local sélectionne les packs selon
+le compte, l'abonnement, le workspace, le métier, la mission, le territoire,
+l'appareil, la connexion, la batterie, le stockage et la fraîcheur des données.
+
+### 16.1 Finalité
+
+Le serveur prépare les packs (collecte → validation → normalisation →
+reprojection → déduplication → enrichissement → découpage territorial →
+indexation → compression → signature → publication → surveillance).
+L'application les consomme : catalogue, téléchargement, vérification
+d'intégrité, installation atomique, mise à jour différentielle, rollback.
+
+### 16.2 Types de packs
+
+| Type | Contenu | Exemples |
+|---|---|---|
+| **Système** | Taxonomie, unités, méthodes, équations, règles, classifications, protocoles de base, traductions, documentation | Référentiel TAXREF, unités dendrométriques |
+| **Fonctionnels** | Inventaire avancé, martelage pro, valorisation, santé, travaux, DFCI, SIG avancé, IA locale, collaboration | Module martelage pro |
+| **Géographiques** | Hiérarchie France → région → département → territoire → forêt → mission | Découpage départemental |
+| **Cartographiques** | PMTiles, MBTiles, orthophotos, fond topographique, cadastre, DFCI, relief, couches forestières, MNT | Orthophoto IGN départementale |
+| **Scientifiques** | Tarifs de cubage, équations, allométrie, biomasse, carbone, station, santé, sylviculture, produits | Tarifs ONF, équations Vallet et al. |
+| **Organisationnels** | Protocoles privés, tarifs internes, couches privées, nomenclatures, modèles de rapports, paramètres, missions | Protocole de martelage ONF |
+| **IA** | Reconnaissance d'essences, TreeVision, voix, OCR, assistant local, modèle sanitaire | Modèle TFLite PureForest |
+
+### 16.3 Manifeste de pack
+
+Chaque pack expose un manifeste contenant : ID, version sémantique, type,
+taille compressée, espace installé, dépendances, compatibilité application,
+niveau d'abonnement, territoire, date de publication, expiration, source,
+licence, hash, signature, stratégie de mise à jour, criticité et politiques
+de suppression.
+
+### 16.4 États
+
+| État | Signification |
+|---|---|
+| `REQUIRED` | Pack obligatoire, l'app ne fonctionne pas sans lui |
+| `RECOMMENDED` | Fortement conseillé pour le métier/mission courant |
+| `OPTIONAL` | Disponible au choix de l'utilisateur |
+| `DEPRECATED` | Remplacé, maintenu temporairement |
+| `REVOKED` | Retiré (sécurité, licence, obsolescence) |
+| `ARCHIVED` | Conservé en lecture seule pour historique |
+
+### 16.5 Téléchargement intelligent
+
+Politique adaptative selon la taille et le contexte :
+
+- petits correctifs : téléchargement mobile autorisé ;
+- packs moyens : confirmation utilisateur ;
+- gros packs : Wi-Fi recommandé ;
+- LiDAR/orthophoto : Wi-Fi par défaut ;
+- téléchargement différé si batterie faible ;
+- préchargement avant mission (§17 Mission Engine) ;
+- reprise sur coupure, vérification par blocs.
+
+### 16.6 Storage Budget Manager
+
+Priorité de conservation (du plus critique au moins critique) :
+
+1. données non synchronisées ;
+2. mission active ;
+3. référentiels essentiels ;
+4. cartes de mission ;
+5. packs favoris ;
+6. archives synchronisées ;
+7. orthophotos ;
+8. caches reproductibles.
+
+Calcul avant installation : `espace_pack + espace_temporaire + espace_rollback
++ marge - espace_libéré`. Si le budget est insuffisant, l'utilisateur est
+invité à libérer de l'espace selon la priorité.
+
+### 16.7 Mise à jour différentielle
+
+- découpage en blocs adressés par hash ;
+- réutilisation des blocs identiques (seules les différences sont téléchargées) ;
+- installation atomique (le pack n'est actif qu'une fois complet et vérifié) ;
+- retour arrière (rollback) en cas d'échec ;
+- collecte des anciennes versions après validation.
+
+### 16.8 Lien avec l'existant GeoSylva
+
+Le §9 « Packs de données et départements » actuel est un **sous-ensemble de
+QPIS** : il couvre la sélection de départements, l'exposition version/date/
+source/licence/empreinte/signature et les mises à jour en Wi-Fi. QPIS ajoute :
+la typologie en 7 familles, les manifestes riches, les états de pack, le
+téléchargement intelligent adaptatif, le Storage Budget Manager, la mise à
+jour différentielle par blocs et l'installation atomique avec rollback.
+
+**Dépendances** : RFC-0004 (QPIS Pack Format, §22 RFC prioritaires du Dev
+Pack). ADR : packs signés, Room/SQLCipher conservé comme base locale métier.
+
+---
+
+## 17. Mission Engine et Protocol Engine
+
+Le Dev Pack introduit deux moteurs qui transforment GeoSylva d'une app
+d'inventaire/martelage vers un poste de travail structuré par métier et par
+mission. Le **Mission Engine** décrit une mission de terrain (objectif,
+territoire, protocole, participants, packs nécessaires). Le **Protocol
+Engine** décrit les formulaires et règles de collecte de façon déclarative et
+versionnée, inspiré d'ODK Collect et Open Foris.
+
+### 17.1 Trois dimensions
+
+Ne pas confondre :
+
+- **métier** : fonction habituelle de l'utilisateur (technicien, expert, etc.) ;
+- **mission** : tâche actuelle assignée (inventaire, martelage, travaux) ;
+- **contexte** : organisme, territoire, protocole, contraintes matérielles.
+
+L'interface s'adapte à l'intersection de ces trois dimensions.
+
+### 17.2 Métiers initiaux
+
+12 métiers sont identifiés pour la première version :
+
+| # | Métier | Focus |
+|---|---|---|
+| 1 | Technicien forestier territorial | Gestion multi-usage, martelage, travaux |
+| 2 | Gestionnaire privé | Propriété, rentabilité, simplifié |
+| 3 | Expert forestier | Diagnostic, valorisation, expertise |
+| 4 | Technicien travaux | Prescription, réception, suivi |
+| 5 | Technicien exploitation | Coupe, débardage, transport |
+| 6 | Technicien SIG | Couches, topologie, import/export |
+| 7 | Technicien DFCI | Risque feu, accès, points d'eau |
+| 8 | Chargé biodiversité | Habitats, espèces protégées |
+| 9 | Propriétaire | Suivi simplifié de sa forêt |
+| 10 | Étudiant | Apprentissage guidé, exercices |
+| 11 | Formateur | Distribution de missions, correction |
+| 12 | Administrateur | Configuration, sécurité, audit |
+
+### 17.3 Capabilities
+
+Les droits et l'interface sont basés sur des **capacités précises**
+(capability-based), pas sur des rôles monolithiques. Exemples :
+
+- `forest.inventory.read` / `forest.inventory.create` / `forest.inventory.validate`
+- `forest.marking.execute`
+- `forest.valuation.read` / `forest.valuation.modify`
+- `forest.protocol.manage`
+- `geo.layer.publish` / `geo.export.sensitive`
+- `organization.members.manage`
+
+Les capabilities sont résolues localement (cache hors ligne, §20.6) et
+rafraîchies à la connexion. L'interface n'affiche que les actions permises.
+
+### 17.4 Mission Engine
+
+Une mission contient : type, objectif, responsable, participants, territoire,
+parcelles, protocole, date, couches, matériel, formulaires, règles,
+livrables, politique de synchronisation et packs nécessaires. La mission
+précharge les packs QPIS requis (§16.5) et configure l'interface selon le
+protocole et le métier.
+
+### 17.5 Protocol Engine
+
+Inspiré d'ODK et Open Foris, le protocole est **déclaratif, versionné et
+signé**. Il décrit : sections, champs, types, unités, valeurs, obligations,
+conditions, répétitions, calculs, contrôles, pièces jointes, géométrie,
+règles de validation et rapport attendu. Le protocole est distribué par pack
+QPIS (type système ou organisationnel).
+
+### 17.6 Formulaires contextuels
+
+Les champs s'affichent conditionnellement selon le contexte. Exemple : si
+l'état sanitaire est « dépérissant », le formulaire affiche déficit foliaire,
+branches mortes, symptômes, cause suspectée, photo et indice de confiance. Le
+technicien ne voit que les champs nécessaires au moment utile — réduction de
+la charge cognitive et de la saisie.
+
+### 17.7 Workflows de validation
+
+```text
+Brouillon → Terminé → Contrôlé (auto) → À corriger → Validé
+  → Contrôlé par responsable → Verrouillé
+```
+
+Chaque transition est tracée (auteur, date, décision). Le verrouillage
+empêche toute modification ultérieure sans déverrouillage explicite et tracé.
+
+### 17.8 Tableaux de bord par métier
+
+Chaque métier dispose d'un tableau de bord adapté :
+
+- **Territorial** : tournée, martelage, travaux, échéances, santé, documents, alertes.
+- **Travaux** : prescription, entreprise, quantités, risques, avancement, non-conformités, réception, réserves.
+- **Exploitation** : lot, produits, qualité, accès, débardage, dépôt, transport, estimation, réception réelle.
+- **SIG** : projections, géométries, topologie, couches, relations, import, synchronisation, métadonnées.
+- **Étudiant** : explications, protocoles guidés, exercices, comparaison manuel/automatique, contrôle pédagogique.
+- **Formateur** : distribution de missions, récupération, correction, annotation, comparaison de groupes, export.
+
+**Lien avec l'existant** : la spec v0.3.0 ne distingue pas les métiers —
+l'interface est uniforme. Le Mission/Protocol Engine est **nouveau** et
+représente un changement d'approche : l'app s'adapte au profil au lieu
+d'exposer toutes les fonctions à tous les utilisateurs.
+
+**Dépendances** : RFC-0005 (Protocol and Form Engine), RFC-0002 (Global
+Identity and Workspaces). ADR : règles déclaratives hors UI.
+
+---
+
+## 18. TreeVision — mesure multimodale des arbres
+
+TreeVision est le module de mesure assistée par capteurs qui combine caméra,
+profondeur (AR Depth), IMU, GNSS, visées humaines et instruments forestiers
+connectés pour produire une observation complète, traçable et assortie d'une
+incertitude. Il s'agit de l'évolution du `docs/VOLUME_CALCULATION_NEXT_GEN.md`
+vers une chaîne de mesure intégrée et non plus seulement un moteur de calcul.
+
+### 18.1 Vision
+
+TreeVision fusionne plusieurs sources capteurs pour estimer automatiquement
+les paramètres dendrométriques d'un arbre, tout en conservant la mesure
+instrumentale humaine comme référence et la correction humaine comme
+garde-fou (human-in-the-loop).
+
+### 18.2 Données estimées
+
+- diamètre à 1,30 m ;
+- hauteur totale et hauteur marchande ;
+- inclinaison et rectitude ;
+- diamètre à plusieurs hauteurs ;
+- défauts visibles ;
+- position ;
+- volume ;
+- qualité de mesure (indice de confiance).
+
+### 18.3 Hiérarchie des sources
+
+```text
+Mesure instrumentale directe validée
+  > instrument connecté (compas Bluetooth, télémètre)
+  > vision multi-angle fiable
+  > vision simple
+  > estimation algorithmique
+  > valeur par défaut
+```
+
+Le moteur ne fait **pas une moyenne naïve** : il fusionne selon l'incertitude
+de chaque source et conserve toutes les valeurs sources pour traçabilité.
+
+### 18.4 Workflow un arbre
+
+16 étapes : vérification du matériel → viser la base → estimation du sol →
+placement du plan 1,30 m → scan en arc → segmentation → ajustement
+cercle/ellipse/cylindre → visée de la cime → zoom optique si nécessaire →
+position → cohérence → incertitude → confirmation → création de
+l'observation → cubage → synchronisation.
+
+### 18.5 Correction humaine
+
+Le technicien peut : modifier le diamètre, déplacer la ligne 1,30 m, corriger
+les bords, sélectionner la bonne cime, saisir le compas, indiquer un
+obstacle, refaire le scan. **La valeur automatique est conservée** avec la
+correction et le motif — la correction n'écrase jamais la mesure initiale
+(§3.2 observation contre calcul, principe human-in-the-loop du Dev Pack).
+
+### 18.6 Position améliorée
+
+Lorsque l'utilisateur est immobile : accumulation GNSS, moyenne pondérée,
+rejet d'outliers, filtre de Kalman, stabilité IMU, estimation de dispersion.
+La position de l'arbre est dérivée de la position du téléphone, de l'azimut
+et de la distance. Deux points d'observation permettent une triangulation
+relative. Toujours distinguer précision absolue (nationale) et précision
+relative (locale à la placette).
+
+### 18.7 Indice de confiance
+
+Facteurs : distance, visibilité, lumière, mouvement, couverture angulaire,
+profondeur, cohérence, GNSS, nombre de visées, présence d'obstacles, mesure
+de référence. L'indice est affiché au technicien et conservé avec la mesure.
+
+### 18.8 Banc de validation
+
+Pour chaque arbre de référence : diamètre réel, circonférence, hauteur de
+référence, position de référence, essence, écorce, pente, lumière, distance,
+téléphone, vidéo, profondeur, résultat automatique, correction humaine. Le
+banc permet de mesurer la précision du système sur des arbres connus.
+
+### 18.9 Boucle GSIE
+
+```text
+Mesure automatique → correction humaine → sync consentie
+  → analyse GSIE → amélioration du modèle → nouveau pack TreeVision
+```
+
+Les données client restent privées sauf consentement explicite et cadre
+défini (consentement et amélioration des modèles, Dev Pack §09).
+
+**Lien avec l'existant** : `VOLUME_CALCULATION_NEXT_GEN.md` décrit déjà la
+vision LiDAR et photogrammétrie comme perspectives. TreeVision est
+l'**intégration opérationnelle** de cette vision en module de mesure
+multimodale. La §15.6 (identification essence on-device) est un sous-ensemble
+des capacités TreeVision (volet reconnaissance, pas encore volet mesure).
+
+**Dépendances** : RFC-0007 (TreeVision Measurement Pipeline). Phase 8 du Dev
+Pack (prototype). ADR : human-in-the-loop, conservation des valeurs sources.
+
+---
+
+## 19. Métiers, capabilities et adaptation contextuelle
+
+Cette section synthétise le volet « adaptation contextuelle » du Dev Pack
+(`06_METIERS_MISSIONS_PROTOCOLS.md`) et l'architecture écosystème
+(`02_ARCHITECTURE_GSIE_GEOSYLVA.md`). Elle décrit comment GeoSylva s'insère
+dans l'écosystème Quintessences en partageant des objets communs, en
+s'adaptant au métier de l'utilisateur et en interagissant avec les autres
+applications.
+
+### 19.1 Objets communs Quintessences
+
+Les applications de l'écosystème ne doivent pas dupliquer les objets
+fondamentaux. Entités communes recommandées (20) :
+
+```text
+Identity, Organization, Workspace, Team, Project, Mission,
+Location, Geometry, Territory, Property, ManagementUnit,
+Taxon, Habitat, Observation, Measurement, Evidence,
+Protocol, Method, Calculation, Document, Asset, Event
+```
+
+Les extensions spécialisées (peuplement, tige, martelage, etc.) sont
+rattachées à ces objets communs. GeoSylva utilise `ManagementUnit` comme
+unité de référence forestière, `Observation`/`Measurement`/`Evidence` pour
+les saisies terrain, `Protocol`/`Method`/`Calculation` pour les calculs
+(§7 doctrine scientifique).
+
+### 19.2 Unité territoriale partagée
+
+Une même unité de gestion peut être enrichie par plusieurs modules :
+
+| Module | Apport sur l'unité de gestion |
+|---|---|
+| **GeoSylva** | Peuplements, inventaires, martelages, travaux |
+| **Ignis** | Combustibilité, accès DFCI, points d'eau, scénarios |
+| **Artemis** | Dégâts de gibier, passages, pression cynégétique |
+| **Flora** | Taxons, habitats, espèces protégées |
+| **Terra** | Sol, réserve utile, hydromorphie |
+| **Atmos** | Climat, sécheresse, prévisions |
+| **Hydro** | Ruissellement, cours d'eau, zones humides |
+
+### 19.3 Deep links interapplications
+
+Navigation entre apps Quintessences via schéma d'URI partagé :
+
+- `quintessences://geosylva/management-unit/{uuid}`
+- `quintessences://flora/taxon/{uuid}`
+- `quintessences://ignis/risk-zone/{uuid}`
+- `quintessences://artemis/observation/{uuid}`
+
+### 19.4 Architecture modulaire recommandée
+
+```text
+platform/          — identity, authorization, subscription, packs, sync, audit
+forest-core/       — taxonomy, measurement, dendrometry, volume, assortment,
+                     valuation, silviculture, health, biodiversity
+mission-engine/    — professions, capabilities, protocols, workflows, forms
+geo-engine/        — rendering, geometry, offline, geopackage, pmtiles, qgis-interop
+treevision/        — capture, detection, geometry, positioning, uncertainty
+```
+
+Cette modularité sépare les préoccupations transverses (platform), le cœur
+forestier (forest-core), la logique mission/protocole (mission-engine), le
+moteur géospatial (geo-engine) et la mesure assistée (treevision).
+
+### 19.5 Moteurs locaux vs serveur vs hybrides
+
+| Type | Moteurs | Rôle |
+|---|---|---|
+| **Locaux** | Surface terrière, statistiques dendrométriques, cubage courant, contrôles de cohérence, valorisation simple, simulation de prélèvement, rapport terrain | Fonctionnement hors ligne (§3.3) |
+| **Serveur** | Télédétection, LiDAR, analyse nationale, comparaison grands volumes, modèles climatiques, IA lourde, génération massive de tuiles, agrégations organisationnelles | Capacité étendue (canal 1, §14) |
+| **Hybrides** | Volume, biomasse, carbone, valorisation, règles de qualité, scénarios sylvicoles | Partagent définitions, paramètres et tests |
+
+**Règle de parité** : un calcul effectué localement et le même calcul exécuté
+sur le serveur avec la même méthode et les mêmes entrées doivent produire le
+même résultat dans la tolérance définie. Les moteurs hybrides partagent les
+mêmes définitions, paramètres et jeux de tests.
+
+### 19.6 Distance de débardage sur graphe
+
+La distance de débardage est calculée sur un **graphe de desserte**, pas en
+distance euclidienne. Entrées : réseau, portance, pente, obstacles, périodes,
+sens de circulation, place de dépôt. Sorties : itinéraire, distance,
+difficulté, coût estimé, incertitude. Cette logique alimente le Valuation
+Engine (§7) pour estimer les coûts d'exploitation.
+
+**Lien avec l'existant** : la spec v0.3.0 décrit une app autonome sans
+référence aux autres modules Quintessences. Cette section introduit la
+**dimension écosystème** — objets partagés, deep links, architecture
+modulaire et parité des calculs. La distance de débardage sur graphe est
+nouvelle (la spec actuelle ne couvre que la valorisation par tarif, pas
+l'accessibilité).
+
+**Dépendances** : RFC-0006 (Geo Engine and QField Interoperability),
+RFC-0009 (Scientific Method Registry), RFC-0010 (Data Provenance and
+Evidence). ADR : UUID global, calculs hybrides avec parité.
+
+---
+
+## 20. Identité fédérée et organisations
+
+Le Dev Pack introduit un modèle d'identité fédérée qui dépasse la connexion
+Google + compte GeoSylva classique décrite en §4.2. L'objectif est d'avoir
+**une seule identité interne Quintessences** utilisée par toutes les
+applications, avec Google, les passkeys et les systèmes d'entreprise comme
+moyens de connexion fédérés, pas comme des comptes indépendants.
+
+### 20.1 Décision d'architecture
+
+Une seule identité interne Quintessences. Google, passkeys/WebAuthn et
+systèmes d'entreprise (Microsoft Entra ID, Google Workspace, Okta, Keycloak
+tiers, SAML) sont des moyens fédérés. Le compte personnel reste unique ; les
+entreprises, établissements et partenaires sont des organisations ou
+workspaces. Un même utilisateur peut être propriétaire dans son entreprise,
+intervenant dans un lycée, prestataire dans une collectivité et technicien
+dans une organisation cliente.
+
+### 20.2 Composants
+
+- **Keycloak** comme autorité centrale d'identité ;
+- **PostgreSQL** pour la persistance ;
+- **OpenID Connect** et **OAuth 2.0** ;
+- **Authorization Code Flow avec PKCE S256** sur Android ;
+- **passkeys/WebAuthn** comme méthode Quintessences principale ;
+- **Google** comme fournisseur externe ;
+- Microsoft Entra ID, Google Workspace, Okta, Keycloak tiers ou SAML pour
+  les entreprises ;
+- service d'autorisation métier GSIE séparé.
+
+### 20.3 Identifiant interne
+
+Chaque utilisateur possède un **UUID Quintessences immuable**. Ne jamais
+utiliser comme clé principale : l'adresse électronique, le nom, le Google
+`sub` ou l'identifiant Microsoft. Les identités externes sont liées à
+l'identité Quintessences (table `ExternalIdentity`).
+
+### 20.4 Modèle
+
+```text
+QuintessencesUser    — id UUID, status, createdAt
+ExternalIdentity     — provider, providerSubject, verifiedEmail, linkedAt
+Organization         — entité juridique (entreprise, établissement, partenaire)
+Workspace            — espace de travail dans une organisation
+Membership           — lien User ↔ Workspace avec rôle
+Role                 — rôle général (admin, membre, gestionnaire)
+Capability           — capacité précise (forest.inventory.create, etc.)
+Device               — appareil enregistré (fingerprint, Keystore)
+Session              — session authentifiée avec expiration
+Subscription         — abonnement et droits associés
+```
+
+### 20.5 Flux Android
+
+- client public (aucun secret dans l'APK) ;
+- Authorization Code + PKCE (S256) ;
+- navigateur système ou Custom Tab (pas de WebView embarquée) ;
+- App Link vérifié pour le callback ;
+- access token court, rotation des refresh tokens ;
+- stockage protégé par Android Keystore ;
+- réauthentification pour les opérations sensibles.
+
+Le flux Google : GeoSylva ouvre l'URL Keycloak dans le navigateur système →
+l'utilisateur choisit Google → Google authentifie → Keycloak crée ou
+retrouve l'identité Quintessences → GeoSylva reçoit des jetons Quintessences
+(jamais un jeton Google utilisé directement contre GSIE).
+
+### 20.6 Hors ligne
+
+GeoSylva met en cache : identité minimale, workspace actif, capacités,
+missions, droits essentiels et expiration de la politique hors ligne. La
+durée hors ligne dépend de l'abonnement, de la sensibilité, de la politique
+de l'organisation et du rôle. **L'expiration ne supprime pas les données** —
+elle peut limiter la création de nouvelles opérations sensibles jusqu'à
+reconnexion.
+
+### 20.7 Séparation identité / autorisation métier
+
+| Domaine | Géré par |
+|---|---|
+| Identité, sessions, fournisseurs, MFA, rôles généraux | **Keycloak** |
+| Accès à une forêt, modification d'une mission, validation d'un inventaire, accès aux tarifs, export sensible, publication d'un pack | **GSIE** |
+
+Cette séparation garantit que l'authentification (Keycloak) et l'autorisation
+métier (GSIE) restent indépendantes et évolutives.
+
+### 20.8 Liaison de comptes
+
+**Ne jamais fusionner automatiquement** deux identités sur la seule base d'une
+adresse électronique. Procédure : identité externe nouvelle détectée →
+adresse déjà connue → demande de reconnexion avec un moyen déjà lié →
+confirmation explicite → création de la liaison → journal d'audit.
+
+**Lien avec l'existant** : la §4.2 décrit une connexion Google + compte
+GeoSylva classique avec les comptes entreprise « en développement ». Cette
+section formalise le modèle cible : Keycloak comme broker, OIDC PKCE, passkeys
+comme méthode principale, organisations/workspaces, capabilities. Les comptes
+entreprise passent de « en développement » à une architecture définie.
+
+**Dépendances** : RFC-0002 (Global Identity and Workspaces), RFC-0008
+(Subscription and Entitlements). ADR : Keycloak comme broker d'identité, UUID
+global. Tension potentielle avec §4.2 : la spec actuelle mentionne « compte
+GeoSylva classique » — à terme, ce compte devient un compte Quintessences
+géré par Keycloak, pas une base d'utilisateurs GeoSylva indépendante.
+
+## 21. Références
+
+### 21.1 Documents GeoSylva
 
 - [MASTER_PLAN] `MASTER_PLAN.md`, vision, programme DENDRO-EXCELLENCE et plan
   technique GeoSylva.
@@ -915,8 +1459,9 @@ T3 utilise Mistral 7B servé en attendant.
 - [CODE-ESSENCES] `app/src/main/java/com/forestry/counter/presentation/screens/EssenceDiamScreen.kt`.
 - [CODE-MARTELAGE] `app/src/main/java/com/forestry/counter/presentation/screens/MartelageScreen.kt`.
 - [CALCULS] `app/src/main/java/com/forestry/counter/domain/calculation/MartelageModels.kt`.
+- [DEV-PACK] `21_EXPERIMENTS/GEOSYLVA_DEV_PACK_2026-08-04/`, brainstorming ChatGPT (13 documents + DOCX maître), vision produit long terme GeoSylva-Quintessences.
 
-### 16.2 Documents GSIE
+### 21.2 Documents GSIE
 
 - [RFC-0003] `02_RFC/RFC-0003.md`, architecture distribuée GSIE-Net,
   offline-first, intelligence distribuée, synchronisation orientée données.
@@ -944,7 +1489,7 @@ T3 utilise Mistral 7B servé en attendant.
 - [GEO-004] `05_SPECIFICATIONS/GEOSYLVA/GEO_004_IDENTIFICATION_BOTANIQUE_PLANTNET.md`,
   spécification identification botanique assistée.
 
-### 16.3 Référentiels externes
+### 21.3 Référentiels externes
 
 - [ONF] Office national des forêts, référentiels et méthodes sylvicoles :
   <https://www.onf.fr/>.
@@ -952,11 +1497,12 @@ T3 utilise Mistral 7B servé en attendant.
   <https://geoservices.ign.fr/documentation/services/api-et-services-ogc/api-carto-rest>.
 - [IGN-BDFORET] IGN, BD Forêt : <https://foret.ign.fr/IGD/fr/ressources>.
 
-## 17. Historique
+## 22. Historique
 
 | Version | Date | Modification |
 |---|---|---|
 | 0.1.0 | 2026-08-03 | Création de la liste fonctionnelle et de la doctrine scientifique issue du brainstorming validé. |
 | 0.2.0 | 2026-08-03 | Roadmap structurée (§12) : architecture cible, cascade LLM multi-tier, connexion GSIE Serveur (moteurs et contrats), 8 phases, décisions/RFC requises, critères de sortie. Sources consolidées (§16). |
 | 0.3.0 | 2026-08-03 | §14 Connexion GSIE Serveur détaillée (enveloppes communes, moteurs, chaîne d'appel, cache, pull/conflits, SDK Kotlin, garde-fous). §15 LLM on-device et multi-tier (architecture 3 tiers, cascade, LoRA, RAG, identification on-device, assistant vocal, distribution, évaluation). |
+| 0.4.0 | 2026-08-04 | Intégration du Dev Pack (brainstorming ChatGPT) : §16 QPIS, §17 Mission/Protocol Engine, §18 TreeVision, §19 Métiers/objets communs/architecture modulaire, §20 Identité fédérée Keycloak/OIDC. Vision long terme GeoSylva comme poste de travail numérique complet du technicien forestier. |
 
