@@ -4,7 +4,7 @@
 |---|---|
 | Identifiant | GEOSYLVA-003 |
 | Statut | Draft |
-| Version | 0.8.0 |
+| Version | 0.9.0 |
 | Date | 2026-08-04 |
 | Auteur | Quintessences — spécification issue du brainstorming Fondateur/Codex |
 | Périmètre | Application mobile GeoSylva et ses échanges avec GSIE |
@@ -750,7 +750,7 @@ en Review. Lot 7 (Geo Engine) peut progresser en parallèle de Lot 5.
 | P4 — Connexion GSIE Serveur | SDK Kotlin, contrats API moteurs, cache, conflits | **Remplacé par Lot 5** |
 | P5 — LLM on-device et multi-tier | Modèle T1, RAG, cascade, assistant vocal | **Remplacé par Lot 9 (décalé)** |
 | P6 — Synchronisation terrain | Bluetooth, QR, Meshtastic | **Remplacé par Lot 10 (décalé)** |
-| P7 — Refonte visuelle | Onboarding, animation, optimisations | **Reporté (après fondations)** |
+| P7 — Refonte visuelle | Onboarding, animation, optimisations | **Obsolète — la refonte UI est désormais transversale à tous les lots (§29.35)** |
 
 ### 12.5 Décisions et RFC à produire
 
@@ -1487,7 +1487,14 @@ L'interface s'adapte à l'intersection de ces trois dimensions.
 
 ### 17.2 Métiers initiaux
 
-12 métiers sont identifiés pour la première version :
+> **Correction v0.9.0** : douze profils métier sont identifiés pour la
+> **cible longue durée**. La **première implémentation complète** prend
+> en charge le **technicien forestier** (métier 1). Les autres profils
+> sont activés **progressivement** sur la même architecture de
+> capabilities et de protocoles. Ne pas construire douze interfaces
+> métier distinctes dès la v1.
+
+12 profils métier sont identifiés pour la cible longue durée :
 
 | # | Métier | Focus |
 |---|---|---|
@@ -1973,16 +1980,38 @@ les saisies terrain, `Protocol`/`Method`/`Calculation` pour les calculs
 | **SamplingUnit** | Unité d'échantillonnage (regroupe plusieurs placettes pour un protocole statistique) | Protocole (§17) |
 | **Plot** | Placette (surface exacte inventoriée sur le terrain, circulaire ou rectangulaire) | Inventaire (§6) |
 
-**Relations** :
+**Relations** — la base centrale est un **graphe relationnel
+territorial**, pas un arbre rigide. Les entités utilisent des relations
+**plusieurs-à-plusieurs** lorsque le métier l'exige :
 
 ```text
-Property ⊇ Forest ⊇ CadastralParcel
-ManagementUnit ⊇ ForestParcel ⊇ Stand
-SamplingUnit ⊇ Plot
+Property
+└── possède → CadastralParcel
+
+Forest
+└── intersecte → CadastralParcel (tout ou partie)
+
+ManagementUnit
+├── couvre → tout ou partie de CadastralParcel
+└── organise → ForestParcel
+
+Stand
+└── intersecte → une ou plusieurs ForestParcel
+
+SamplingUnit
+└── contient → Plot
+
+Plot
+└── observe → Stand / ForestParcel / ManagementUnit
 ```
 
-Un `Stand` peut chevaucher plusieurs `ForestParcel`. Une `Plot` est
-rattachée à un `Stand` pour l'analyse sylvicole.
+> **Avertissement** : une forêt peut couvrir tout ou partie de plusieurs
+> propriétés et parcelles cadastrales. Elle n'est donc pas nécessairement
+> contenue dans une propriété, et une parcelle cadastrale n'est pas
+> nécessairement contenue entièrement dans une forêt. De même, un
+> peuplement peut chevaucher plusieurs parcelles forestières. Le modèle
+> de données doit refléter ces relations N-N — seul le cadastre est
+> strictement hiérarchique (Property → CadastralParcel).
 
 ### 19.2 Unité territoriale partagée
 
@@ -2767,6 +2796,7 @@ alimenter la communauté et la recherche.
 | 0.6.0 | 2026-08-04 | Intégration complète de la conversation ChatGPT source : 23 recommandations. §7 enrichi (7 sous-sections : qualité données, campagnes multiannuelles, architecture moteurs, règles déclaratives, valorisation, versionnement, IA vs déterministe). §16 enrichi (usine packs, Pack Store commun, intelligence locale). §17 enrichi (exemple protocole ODK YAML). §18 enrichi (8 sous-sections : philosophie coopérative, méthodes A/B RANSAC, modèle confiance, contrôles cohérence, GNSS immobilisation, constellations, SpatialEvidence, calibration). §19 enrichi (services techniques, technologies open source, Meshtastic détaillé, décisions MapLibre/Room). §20 enrichi (capacités, alternatives rejetées, SCIM, 4 phases déploiement, architecture finale). Nouvelles sections : §21 Diagnostic de station, §22 Scénarios sylvicoles, §23 Travaux forestiers, §24 Documents de gestion durable, §25 Références locales de marché. |
 | 0.7.0 | 2026-08-04 | **Cadrage** suite à la revue critique du Fondateur. 10 corrections critiques : (1) avertissement monolithique + §28 RFC à extraire, (2) modèles IA remplacés par profils T1-MICRO/STANDARD/T2-EDGE/T3-SERVER + RFC renouvelable, (3) PureForest TFLite reformulé (modèle à entraîner + audit dataset), (4) TreeVision précision remplacée par statut initial + seuils de passage, (5) GNSS exemples → objectifs (covariance, poids dynamiques), (6) migration Google→Keycloak 3 cas + UUID indépendant, (7) identifiant appareil UUID + Keystore, (8) jetons stockage chiffré + clé Keystore, (9) séparation Entitlement / Feature module / Pack QPIS, (10) tableau licences enrichi (8 colonnes). Roadmap refondue : 11 lots (0-10). Structure territoriale définie (8 entités). Corrections de forme. |
 | 0.8.0 | 2026-08-04 | **Section §29 — Architecture des écrans, navigation et refonte UI/UX**. Audit des 27 écrans existants (5 NavGraphs) : classification en 3 catégories (conservés/enrichis, transformés, nouveaux). Décisions de cadrage : bottom nav 5 entrées remplace démarrage direct sur Forets, écran Martelage devient SynthèseMartelage (saisie dans nouvel écran terrain), Carte refonte complète (3ème entrée bottom nav), Settings supprimé (tout dans Compte 16 sections), diagnostics (stationnel/ripisylve/IBP) déplacés en onglets fiche parcelle + protocoles Mission Engine. 31 sous-sections : navigation, splash, onboarding, connexion, workspace, accueil, projets, forêt, parcelle, placette, saisie tige, martelage/synthèse, carte, missions, données, compte, QPIS, sync, conflits, centre scientifique, analyse GSIE, diagnostics, TreeVision, travaux, documents, design system, audit préalable, roadmap UI transversale, critères acceptation. Roadmap §12.4 enrichie : colonne « Pages UI » par lot + Quality Pass final. |
+| 0.9.0 | 2026-08-04 | **Candidate for Review** — 11 corrections structurantes du Fondateur. (1) Hiérarchie territoriale : ⊇ remplacés par relations nommées (graphe relationnel N-N, pas arbre rigide). (2) Navigation contextuelle : clarifiée comme vue utilisateur, pas propriété des données. (3) Surcharge d'onglets : fiche parcelle 13 onglets → 5 groupes (Aperçu/Terrain/Interventions/Analyse/Plus) avec sous-navigation ; fiche placette 11 onglets → 5 groupes. (4) Bottom nav : « Données » → « Explorer » (variante B) + variantes A/B à tester. (5) Compte : 16 sections regroupées en 4 groupes visuels (Identité/Offre/Application/Confidentialité). (6) Permissions onboarding : pas toutes dès le départ, au premier usage de chaque fonction. (7) Fond vidéo connexion : ressource APK légère par défaut + pack signé facultatif. (8) Splash : séparation bloquant/non-bloquant, démarrage rapide. (9) Contradiction roadmap : ancien P7 « Reporté » → « Obsolète, refonte UI transversale ». (10) Contradiction 12 métiers : « 12 métiers v1 » → « 12 profils cible longue, 1 métier v1 ». (11) Diagnostics : onglets fixes → cartes conditionnelles (protocoles installés, territoire, métier, abonnement, mission, données). |
 
 ## 28. Annexe — RFC à extraire
 
@@ -2819,8 +2849,19 @@ GeoSylva utilise une navigation principale stable contenant cinq
 destinations :
 
 ```text
-Accueil    Missions    Carte    Données    Compte
+Accueil    Missions    Carte    Explorer    Compte
 ```
+
+> **Hypothèse à tester** : la 4ème entrée s'appelle « Explorer » plutôt
+> que « Données », car elle contient des objets métier (projets, forêts,
+> arbres, missions, travaux, calculs, packs, méthodes) et pas seulement
+> des tables. Deux variantes doivent être testées avec des techniciens,
+> étudiants et gestionnaires avant fixation définitive :
+>
+> - **Variante A** : Accueil / Missions / Carte / Données / Compte
+> - **Variante B** : Accueil / Missions / Carte / Explorer / Compte
+>
+> La variante B est privilégiée par défaut dans cette spécification.
 
 Ces cinq entrées sont disponibles dans une **barre de navigation
 inférieure** sur téléphone. Sur tablette ou grand écran, elles sont
@@ -2828,7 +2869,7 @@ affichées dans un **panneau latéral**.
 
 La destination active est conservée lorsque l'utilisateur revient dans
 l'application. L'ancien démarrage direct sur `Forets` est supprimé :
-`Forets` devient une sous-page accessible depuis `Accueil` et `Données`.
+`Forets` devient une sous-page accessible depuis `Accueil` et `Explorer`.
 
 ### 29.3 Navigation contextuelle
 
@@ -2836,7 +2877,7 @@ Lorsqu'un utilisateur ouvre un projet, une forêt, une parcelle, une
 placette ou une mission, une navigation contextuelle remplace
 temporairement certaines actions générales.
 
-Hiérarchie canonique :
+Hiérarchie canonique de **navigation** (vue utilisateur) :
 
 ```text
 Accueil
@@ -2851,6 +2892,24 @@ Accueil
                 ├── Chantier
                 └── Document de gestion
 ```
+
+> **Distinction fondamentale** : cette hiérarchie est une **vue
+> contextuelle** destinée à l'utilisateur pour la navigation. Elle **ne
+> définit pas la propriété exclusive des entités** dans le modèle de
+> données. Dans le modèle réel :
+>
+> - une forêt peut apparaître dans plusieurs projets ;
+> - une mission peut concerner plusieurs forêts ;
+> - un chantier peut couvrir plusieurs parcelles ;
+> - une placette est parfois rattachée à une unité d'échantillonnage
+>   plutôt qu'à une seule parcelle ;
+> - un document de gestion concerne souvent une unité de gestion
+>   entière ;
+> - un peuplement peut traverser plusieurs limites de parcelles.
+>
+> Les entités utilisent des **relations plusieurs-à-plusieurs**
+> lorsque le métier l'exige (§19.1.1). La hiérarchie de navigation est
+> une simplification ergonomique de ce graphe relationnel.
 
 La navigation contextuelle affiche toujours : le workspace actif, le
 projet actif, l'objet actuellement ouvert, l'état de synchronisation, le
@@ -2927,7 +2986,7 @@ territoriales distinctes).
 | Saisie martelage terrain | Placette > Martelage > Saisie | Lot 3 |
 | Liste missions + dashboard mission | Bottom nav 2ème entrée | Lot 3 |
 | Carte globale (refonte) | Bottom nav 3ème entrée | Lot 7 |
-| Données (navigateur global) | Bottom nav 4ème entrée | Lot 1 |
+| Explorer (navigateur global) | Bottom nav 4ème entrée | Lot 1 |
 | Compte (16 sections) | Bottom nav 5ème entrée | Lot 4 |
 | Centre synchronisation | Compte > Synchronisation | Lot 5 |
 | Résolution conflits | Centre sync > Conflits | Lot 5 |
@@ -2948,9 +3007,24 @@ territoriales distinctes).
 **Emplacement** : avant toute navigation principale. Nouvel écran.
 
 **Contenu** : logo GeoSylva, identité visuelle Quintessences, animation
-courte, vérification de la base locale, vérification des migrations,
-chargement de la session, vérification des packs essentiels, détection
-d'une reprise après incident.
+courte, vérifications de démarrage.
+
+> **Correction v0.9.0** : le splash ne doit pas bloquer sur toutes les
+> vérifications. Séparer **bloquant** et **non-bloquant** :
+
+**Vérifications bloquantes** (avant affichage de l'accueil) :
+- ouverture de la base ;
+- migration indispensable ;
+- intégrité minimale ;
+- restauration critique de session.
+
+**Vérifications non-bloquantes** (reportées après affichage de l'accueil,
+en arrière-plan) :
+- recherche de nouveaux packs ;
+- synchronisation ;
+- actualisation de session (si la politique hors ligne reste valide) ;
+- contrôles analytiques ;
+- téléchargements.
 
 **États** : démarrage normal, migration en cours, restauration de
 session, pack système manquant, base endommagée, mode hors ligne, mise
@@ -2959,7 +3033,9 @@ session, pack système manquant, base endommagée, mode hors ligne, mise
 **Règles** : ne jamais afficher un écran blanc prolongé ; ne jamais
 lancer une synchronisation lourde avant d'avoir ouvert l'application ;
 permettre l'ouverture locale même si GSIE est inaccessible ; afficher une
-progression compréhensible pour les migrations longues.
+progression compréhensible pour les migrations longues. **Le démarrage
+doit rester extrêmement rapide** — seules les vérifications bloquantes
+sont au splash, le reste est asynchrone.
 
 ### 29.7 Onboarding
 
@@ -2974,12 +3050,32 @@ le didacticiel`.
 2. **Profil** — métier principal, niveau de connaissance, usage
    personnel/professionnel/pédagogique, préférence interface simple ou
    complète.
-3. **Permissions** — localisation, caméra, microphone, Bluetooth,
-   notifications, fichiers. Chaque permission expliquée avant demande.
+3. **Capacités** — présentation des capacités de l'app (localisation,
+   caméra, microphone, Bluetooth, notifications, fichiers) avec
+   explication de leur usage. **Les permissions ne sont pas demandées
+   ici** — elles sont demandées **au premier usage** de chaque fonction
+   (voir ci-dessous).
 4. **Démonstration** — création d'un projet fictif (forêt, parcelle,
    placette, arbres, mini martelage, synthèse).
 5. **Packs** — présentation du fonctionnement des packs (système,
    territoire, cartes, modèles, protocoles).
+
+> **Correction v0.9.0** : demander toutes les permissions pendant
+> l'onboarding nuit à la confiance et au taux d'acceptation. Les
+> permissions sont demandées **juste au moment où elles deviennent
+> utiles** :
+>
+> | Permission | Moment de demande |
+> |---|---|
+> | Localisation | Premier usage de la carte ou d'une mission |
+> | Caméra | Premier scan, ajout de photo ou TreeVision |
+> | Microphone | Activation du mode vocal |
+> | Bluetooth | Connexion d'un instrument (compas, etc.) |
+> | Notifications | Quand une utilité réelle est présentée |
+> | Fichiers | Lors d'un import/export précis |
+>
+> L'onboarding **présente** les capacités, mais ne **demande** pas les
+> permissions.
 
 ### 29.8 Connexion Quintessences
 
@@ -2990,9 +3086,21 @@ valide n'existe. Refonte de l'écran `Login` actuel.
 Quintessences, Se connecter avec mon organisation, Créer un compte, Mode
 découverte, Utiliser l'application hors ligne avec une session existante.
 
-**Organisation visuelle** : fond vidéo ou image forestière locale
-provenant d'un pack signé. Panneau inférieur contenant les actions de
-connexion.
+**Organisation visuelle** : fond vidéo ou image forestière. Panneau
+inférieur contenant les actions de connexion.
+
+> **Correction v0.9.0** : avant la première connexion et avant
+> l'installation des packs, le pack visuel signé peut ne pas exister.
+> Prévoir :
+>
+> 1. **Ressource légère intégrée à l'APK** → utilisée au premier
+>    lancement (image statique, pas de vidéo).
+> 2. **Pack visuel signé facultatif** → remplace la ressource après
+>    installation.
+>
+> Contraintes : économie de batterie, réduction des animations, support
+> des appareils modestes, accessibilité, possibilité de désactiver la
+> vidéo.
 
 **Après connexion** : l'utilisateur arrive sur la sélection du workspace
 s'il appartient à plusieurs espaces. Sinon, il arrive directement sur
@@ -3084,18 +3192,51 @@ packs, créer mission, ouvrir fiche).
 **Emplacement** : `Forêt > Parcelles > Fiche parcelle` ou sélection
 carte. Écran `Parcelles` existant conservé, fiche parcelle enrichie.
 
-**Onglets** : Résumé, Peuplement, Placettes, Inventaires, Martelages,
-Travaux, **Diagnostic stationnel** (refonte, §29.29), **Ripisylve**
-(déplacé, §29.29), **Biodiversité/IBP** (déplacé, §29.29), Santé,
-Carte, Documents, Historique.
+> **Correction v0.9.0** : la fiche parcelle avait 13 onglets en v0.8.0,
+> ce qui est inexploitable sur smartphone. La navigation locale est
+> désormais organisée en **5 groupes** avec sous-navigation :
 
-- **Résumé** : surface, géométrie, références cadastrales, peuplement
-  principal, dernier inventaire, dernier martelage, travaux prévus,
-  alertes.
+**Navigation principale locale** :
+
+```text
+Aperçu    Terrain    Interventions    Analyse    Plus
+```
+
+**Aperçu** : surface, géométrie, références cadastrales, peuplement
+principal, dernier inventaire, dernier martelage, travaux prévus,
+alertes, indicateurs.
+
+**Terrain** (sous-navigation) :
 - **Peuplement** : structure, essences, classes de diamètre, densité,
   surface terrière, volume, qualité, état sanitaire, habitat. (Ancien
   `StandClassification` devient cet onglet.)
 - **Placettes** : type, surface, protocole, date, état, nombre de tiges.
+- **Inventaires** : campagnes successives et comparaisons.
+- **Carte** : vue cartographique de la parcelle (ancien Map conservé).
+
+**Interventions** (sous-navigation) :
+- **Martelages** : sessions, objectifs, prélèvements, synthèses.
+- **Travaux / Chantier** : chantiers et prescriptions (§29.31).
+- **Historique** : évolution des limites, inventaires, travaux,
+  interventions.
+
+**Analyse** (sous-navigation, **cartes conditionnelles** — voir §29.29) :
+- **Diagnostic stationnel** (si protocole installé et territoire pertinent).
+- **Santé** (si observations disponibles).
+- **Biodiversité / IBP** (si protocole IBP installé).
+- **Ripisylve** (uniquement si la parcelle est concernée — zone
+  ripicole — ou si le protocole est installé).
+- **Analyse GSIE** (si connexion serveur disponible, §29.28).
+
+> Les analyses apparaissent sous forme de **cartes conditionnelles**,
+> pas d'onglets fixes. Elles dépendent des protocoles installés, du type
+> de territoire, du métier, de l'abonnement, de la mission et des
+> données disponibles (§29.29).
+
+**Plus** (sous-navigation) :
+- **Documents** : PSG, aménagement, programme de coupes, cartes (§29.32).
+- **Provenance** : traçabilité des sources de données.
+- **Paramètres** : préférences locales de la parcelle.
 
 ### 29.15 Création de parcelle (guidée)
 
@@ -3114,20 +3255,44 @@ séparément) → validation (résumé complet et provenance).
 mission d'inventaire. Écran `PlacetteDetail` existant conservé et
 enrichi.
 
-**Onglets** : Résumé, Tiges, Essences, Martelage, Évolution, Santé,
-Biodiversité, Calculs, Carte, Pièces jointes, Historique.
+> **Correction v0.9.0** : la fiche placette avait 11 onglets en v0.8.0.
+> Même logique que la fiche parcelle : 5 groupes avec sous-navigation.
 
-- **Résumé** : type, protocole, surface, rayon, forme, date, opérateurs,
-  nombre de tiges, état de validation, synchronisation.
-- **Tiges** : liste filtrable (numéro, essence, diamètre, hauteur, état,
-  catégorie martelage, qualité, confiance).
+**Navigation principale locale** :
+
+```text
+Aperçu    Tiges    Martelage    Analyse    Plus
+```
+
+**Aperçu** : type, protocole, surface, rayon, forme, date, opérateurs,
+nombre de tiges, état de validation, synchronisation.
+
+**Tiges** (sous-navigation) :
+- **Liste des tiges** : filtrable (numéro, essence, diamètre, hauteur,
+  état, catégorie martelage, qualité, confiance).
 - **Essences** : cartes par essence (ancien `EssenceDiam` enrichi —
   recherche, tri, agrégations, provenance, comparaison, accessibilité).
 - **Évolution** : comparaison entre campagnes (ancien `PlacetteEvolution`
   enrichi — croissance, mortalité, recrutement, changements, évolution
   sanitaire).
+- **Carte** : vue cartographique de la placette.
+
+**Martelage** (sous-navigation) :
+- **Sessions** : liste des sessions de martelage, synthèses.
+- **Saisie** : écran de saisie terrain (§29.19).
+
+**Analyse** (sous-navigation, **cartes conditionnelles** — §29.29) :
 - **Calculs** : surface terrière, densité, volume, incertitude, méthode,
   comparaison des méthodes, provenance (ancien `Dashboard` enrichi).
+- **Santé** (si observations disponibles).
+- **Biodiversité / IBP** (si protocole IBP installé — ancien
+  `IbpEvaluation` déplacé).
+- **Analyse GSIE** (si connexion serveur disponible, §29.28).
+
+**Plus** (sous-navigation) :
+- **Pièces jointes** : photos, documents.
+- **Provenance** : traçabilité des sources.
+- **Historique** : modifications, sync.
 
 ### 29.17 Création de placette (guidée)
 
@@ -3252,10 +3417,11 @@ Carte, Équipe, Matériel, Livrables, Synchronisation, Historique.
 > accessibles comme **missions** de type diagnostic (protocoles du
 > Mission Engine, §17).
 
-### 29.22 Données (navigateur global)
+### 29.22 Explorer (navigateur global)
 
 **Emplacement** : quatrième entrée de la navigation principale. Nouvel
-écran.
+écran. Le terme « Explorer » est privilégié sur « Données » (variante B,
+§29.2 — à tester avec utilisateurs).
 
 **Catégories** : Projets, Forêts, Parcelles, Peuplements, Placettes,
 Tiges, Observations, Missions, Travaux, Documents, Calculs, Packs,
@@ -3270,28 +3436,47 @@ détection de doublons, synchronisation, contrôle de qualité.
 complète — l'ancien écran `Settings` est **supprimé**, tout passe dans
 Compte.
 
-**Sections (16)** :
+> **Correction v0.9.0** : les 16 sections ne doivent pas être présentées
+> comme 16 lignes plates sans hiérarchie. Elles sont regroupées en
+> **4 groupes visuels** :
 
+**Groupe 1 — Identité** :
 ```text
-Profil          Workspace       Organisations   Abonnement
-Sécurité        Appareils       Synchronisation Packs
-Terrain         Cartes          IA              Confidentialité
-Accessibilité   Aide            Développeur     À propos
+Identité
+├── Profil (avatar, nom, métier, préférences — ancien Account refondu)
+├── Organisations
+├── Workspace
+├── Sécurité (passkeys, Google, entreprise, sessions, TOTP, récupération)
+└── Appareils
 ```
 
-- **Profil** : avatar, nom, métier, préférences (ancien `Account`
-  refondu).
-- **Sécurité** : passkeys, Google, compte entreprise, sessions, appareils,
-  TOTP, récupération (anciens `Login`/`PasswordRecovery` refondus).
-- **Abonnement** : offre actuelle, fonctions incluses, packs disponibles,
-  stockage, organisation facturée, historique.
-- **Terrain** : mode pluie, gants, gaucher, haptique, saisie rapide,
-  comportement écran.
-- **Cartes** : fonds, caches, téléchargements, QPIS cartographique.
-- **IA** : modèles installés, packs IA, préférences assistant vocal.
-- **Développeur** : base, migrations, packs, sync, méthodes, logs non
-  sensibles, GPS, performances (ancien `DeveloperOptions` enrichi).
-- **Packs** : gestionnaire QPIS (§29.24).
+**Groupe 2 — Offre Quintessences** :
+```text
+Offre Quintessences
+├── Abonnement (offre, fonctions, stockage, facturation, historique)
+├── Packs (gestionnaire QPIS, §29.24)
+└── Stockage
+```
+
+**Groupe 3 — Application** :
+```text
+Application
+├── Terrain (pluie, gants, gaucher, haptique, saisie rapide, écran)
+├── Cartes (fonds, caches, téléchargements, QPIS cartographique)
+├── IA (modèles installés, packs IA, assistant vocal)
+├── Synchronisation (→ Centre sync, §29.25)
+└── Accessibilité
+```
+
+**Groupe 4 — Confidentialité et assistance** :
+```text
+Confidentialité et assistance
+├── Confidentialité (RGPD, consentement — ancien PrivacyPolicy)
+├── Aide (→ Onboarding, §29.7)
+├── Développeur (base, migrations, packs, sync, méthodes, logs, GPS,
+│   performances — ancien DeveloperOptions enrichi)
+└── À propos
+```
 
 ### 29.24 Gestionnaire QPIS (refonte)
 
@@ -3366,38 +3551,69 @@ Recommandations, Scénarios, Sources.
 ### 29.29 Diagnostics — nouvelle organisation
 
 > **Refonte profonde** : les diagnostics (stationnel, ripisylve, IBP)
-> ne sont plus des NavGraphs séparés. Ils deviennent des **onglets** des
-> fiches parcelle/forêt ET des **protocoles** du Mission Engine (§17).
+> ne sont plus des NavGraphs séparés. Ils deviennent des **cartes
+> conditionnelles** dans la section « Analyse » des fiches parcelle et
+> placette (§29.14, §29.16) ET des **protocoles** du Mission Engine (§17).
+
+> **Correction v0.9.0** : les diagnostics ne doivent **pas** devenir des
+> onglets fixes sur toutes les parcelles. La surcharge visuelle serait
+> trop importante. La bonne logique est une section « Analyse » avec des
+> **cartes conditionnelles** qui apparaissent selon :
+>
+> - les **protocoles installés** (QPIS) ;
+> - le **type de territoire** (ripicole, montagne, plaine) ;
+> - le **métier** de l'utilisateur (capabilities) ;
+> - l'**abonnement** (entitlements) ;
+> - la **mission** en cours ;
+> - les **données disponibles**.
+>
+> C'est exactement l'intérêt du Mission/Protocol Engine.
+
+#### Cartes conditionnelles d'analyse
+
+| Carte | Condition d'affichage |
+|---|---|
+| Diagnostic stationnel | Protocole station installé + territoire pertinent |
+| IBP | Protocole IBP installé |
+| Ripisylve | Parcelle en zone ripicole **ou** protocole ripisylve installé |
+| Diagnostic sanitaire | Observations sanitaires disponibles |
+| Analyse climatique | Pack climat installé + données disponibles |
+| Analyse GSIE | Connexion serveur disponible (§29.28) |
+
+> La ripisylve ne doit **pas** apparaître comme onglet permanent pour
+> toutes les parcelles. L'IBP et les diagnostics spécialisés suivent la
+> même logique.
 
 #### Diagnostic stationnel (refonte)
 
-**Nouvelle position** : `Fiche parcelle > Diagnostic stationnel` (onglet)
-et `Missions > Diagnostic stationnel` (mission).
+**Nouvelle position** : `Fiche parcelle > Analyse > Diagnostic stationnel`
+(carte conditionnelle) et `Missions > Diagnostic stationnel` (mission).
 
 Anciens écrans `DiagnosticMenu` et `DiagnosticResult` → refondus en
-onglet de la fiche parcelle avec sous-onglets (saisie, résultat,
-synthèse). La synthèse automatique (§21.2) et l'explicabilité (§21.3)
-sont intégrées.
+carte d'analyse avec sous-onglets (saisie, résultat, synthèse). La
+synthèse automatique (§21.2) et l'explicabilité (§21.3) sont intégrées.
 
 #### Ripisylve (déplacé)
 
-**Nouvelle position** : `Fiche parcelle > Ripisylve` (onglet) et
+**Nouvelle position** : `Fiche parcelle > Analyse > Ripisylve` (carte
+conditionnelle — uniquement si zone ripicole ou protocole installé) et
 `Missions > Diagnostic ripisylve` (mission).
 
 Anciens écrans `RipisylveDiagnostic` et `RipisylveDiagnosticStandalone`
-→ refondus en onglet de la fiche parcelle. Le mode standalone devient
-une mission de type diagnostic ripisylve.
+→ refondus en carte d'analyse. Le mode standalone devient une mission
+de type diagnostic ripisylve.
 
 #### IBP (déplacé)
 
-**Nouvelle position** : `Fiche parcelle > Biodiversité` (onglet) et
+**Nouvelle position** : `Fiche parcelle > Analyse > Biodiversité/IBP`
+(carte conditionnelle — uniquement si protocole IBP installé) et
 `Missions > IBP` (mission).
 
 Anciens écrans IBP (7 routes) → refondus :
 - `IbpProjects`/`IbpStandalone` → liste de missions IBP.
-- `IbpHistory`/`IbpDiagnostic`/`IbpCompare` → onglets Biodiversité de la
+- `IbpHistory`/`IbpDiagnostic`/`IbpCompare` → cartes d'analyse de la
   fiche parcelle.
-- `IbpEvaluation` → sous-onglet IBP de la fiche placette.
+- `IbpEvaluation` → carte d'analyse de la fiche placette.
 - `IbpReference` → page de référence dans le Centre scientifique
   (§29.27).
 
