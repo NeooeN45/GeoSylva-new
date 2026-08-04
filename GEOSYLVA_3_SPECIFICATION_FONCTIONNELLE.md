@@ -4,7 +4,7 @@
 |---|---|
 | Identifiant | GEOSYLVA-003 |
 | Statut | Draft |
-| Version | 0.5.0 |
+| Version | 0.6.0 |
 | Date | 2026-08-04 |
 | Auteur | Quintessences — spécification issue du brainstorming Fondateur/Codex |
 | Périmètre | Application mobile GeoSylva et ses échanges avec GSIE |
@@ -272,6 +272,232 @@ Les moteurs doivent donc :
 - demander confirmation humaine pour une identification ou une extrapolation
   sanitaire incertaine.
 
+### 7.5 Système de qualité des données
+
+Inspiré d'Open Foris Collect (licence MIT), GeoSylva gère plusieurs états
+de qualité par donnée :
+
+```text
+Brouillon terrain
+→ Saisie terminée
+→ Contrôle automatique
+→ À corriger
+→ Validé par le technicien
+→ Contrôlé par un responsable
+→ Verrouillé
+```
+
+Chaque donnée reçoit un **niveau de qualité** :
+
+| Niveau | Signification |
+|---|---|
+| `VALIDÉE` | Donnée cohérente et confirmée |
+| `PROBABLE` | Donnée plausible, à confirmer |
+| `INCOMPLÈTE` | Donnée manquante ou partielle |
+| `INCOHÉRENTE` | Donnée en contradiction avec d'autres |
+| `HORS_PLAGE` | Donnée en dehors du domaine de validité |
+| `À_VÉRIFIER` | Donnée atypique nécessitant confirmation |
+
+**Exemples de contrôles de cohérence** :
+
+- Diamètre de 165 cm pour un charme : valeur possible, mais atypique.
+- Hauteur de 6 m pour un douglas de 75 cm de diamètre : incohérence
+  probable.
+- Volume calculé avec une équation employée hors de sa plage de
+  calibration.
+
+Le système ne doit pas bloquer automatiquement une observation rare, mais
+demander une confirmation.
+
+### 7.6 Moteur de campagnes multiannuelles
+
+Inspiré d'Open Foris Arena (licence MIT, PostgreSQL/PostGIS, intégration
+RStudio), ce moteur gère les placettes permanentes sur plusieurs cycles :
+
+```text
+Campagne 2026
+├── placette 001
+├── placette 002
+└── placette 003
+
+Campagne 2031
+├── nouvelle observation des mêmes arbres
+├── recrues
+├── arbres morts
+├── arbres exploités
+└── arbres introuvables
+```
+
+**Calculs possibles** : accroissement diamétrique, accroissement en surface
+terrière, accroissement en volume, mortalité, recrutement, évolution
+sanitaire, évolution de la composition, évolution du carbone, effet des
+interventions.
+
+**Distinction fondamentale des entités** :
+
+```text
+Arbre permanent
+≠ Observation de l'arbre
+≠ Mesure
+≠ Résultat calculé
+```
+
+Un arbre permanent est identifié une fois (UUID). Chaque campagne produit
+une nouvelle observation. Chaque observation contient des mesures. Chaque
+mesure peut déclencher des résultats calculés. Aucun niveau n'écrase un
+autre — tout est conservé pour traçabilité temporelle.
+
+### 7.7 Architecture en moteurs spécialisés
+
+Le noyau scientifique est organisé en 9 domaines, chacun contenant des
+moteurs à responsabilité unique :
+
+```text
+domain/
+├── taxonomy/          SpeciesResolver, SpeciesGroupResolver, TraitResolver
+├── measurement/       MeasurementNormalizer, UnitConverter, MeasurementValidator
+├── dendrometry/       BasalAreaEngine, DiameterEngine, HeightEngine,
+│                      DensityEngine, SamplingStatisticsEngine
+├── volume/            VolumeEquationRegistry, VolumeMethodResolver,
+│                      VolumeCalculationEngine, VolumeUncertaintyEngine
+├── assortment/        StemSegmentationEngine, ProductClassifier, YieldLossEngine
+├── valuation/         PriceCatalogResolver, QualityAdjustmentEngine,
+│                      HarvestCostEngine, TransportCostEngine, NetValueEngine
+├── silviculture/      StandDiagnosisEngine, ThinningSimulationEngine,
+│                      ScenarioComparisonEngine
+├── rules/             RuleEngine, RuleRegistry, RuleEvaluator, ExplanationBuilder
+└── audit/             ProvenanceRecorder, CalculationTrace, MethodVersionRegistry
+```
+
+**Propriétés de chaque moteur** :
+
+- indépendant de Compose (pas de dépendance UI) ;
+- indépendant de Room (pas de dépendance persistance) ;
+- testable avec des objets Kotlin simples ;
+- déterministe (même entrée → même sortie) ;
+- versionné ;
+- documenté ;
+- utilisable par l'application, le serveur et éventuellement d'autres
+  modules GSIE.
+
+### 7.8 Moteur de règles déclaratives
+
+Les règles métier évoluent plus vite que l'application. Il faut éviter les
+chaînes de `if/else` dispersées dans les ViewModels. Les règles sont
+**déclaratives, versionnées et testables**, inspirées de JSON Logic.
+
+**Exemple de règle JSON** :
+
+```json
+{
+  "ruleId": "WOOD_VALUE_OAK_A_50",
+  "version": "2026.1",
+  "conditions": {
+    "all": [
+      { "field": "speciesGroup", "operator": "equals", "value": "OAK" },
+      { "field": "diameterCm", "operator": "greaterOrEqual", "value": 50 },
+      { "field": "quality", "operator": "equals", "value": "A" }
+    ]
+  },
+  "effects": [
+    { "type": "PRICE_MULTIPLIER", "value": 2.5 }
+  ]
+}
+```
+
+**Décision d'implémentation** : développer un **moteur Kotlin dédié et
+limité**, inspiré de JSON Logic, plutôt que d'intégrer directement un
+moteur JavaScript. Avantages : fonctionnement hors ligne, typage fort,
+performance, auditabilité, contrôle des opérateurs autorisés, tests
+unitaires déterministes.
+
+### 7.9 Chaîne de valorisation économique
+
+Le chiffrage final est présenté comme une **chaîne transparente** :
+
+```text
+Volume brut
+− pertes techniques
+= volume commercialisable
+
+Volume commercialisable
+× répartition par produits
+× prix unitaire
+× coefficient de qualité
+= valeur brute
+
+Valeur brute
+− exploitation
+− débardage
+− transport
+− tri
+− stockage
+− frais commerciaux
+− risques
+= valeur nette estimée
+```
+
+**Exemple de résultat** (pas un simple nombre) :
+
+```text
+Valeur nette estimée : 18 450 €
+Fourchette probable : 16 800 à 20 300 €
+Confiance : moyenne
+
+Principaux facteurs :
++ qualité élevée des grumes
+− débardage long
+− pente de 22 %
+− faible volume de bois d'industrie
+```
+
+Le moteur expose les contributions principales et l'incertitude. La
+**distance de débardage sur graphe** (§19.6) alimente les coûts
+d'exploitation.
+
+### 7.10 Versionnement des méthodes scientifiques
+
+Le serveur GSIE publie les référentiels via un **Method Registry** :
+
+```text
+Method Registry
+├── méthodes de cubage
+├── équations
+├── tarifs
+├── coefficients
+├── densités
+├── facteurs carbone
+├── règles sylvicoles
+├── protocoles
+└── domaines de validité
+```
+
+GeoSylva télécharge les versions validées. **Scénario de migration** :
+
+```text
+Méthode locale installée : VOLUME-OAK-FR-002@1.2.0
+Nouvelle méthode serveur : VOLUME-OAK-FR-002@1.3.0
+```
+
+L'utilisateur peut : consulter les différences, conserver l'ancienne
+méthode pour les dossiers existants, appliquer la nouvelle méthode aux
+nouveaux calculs, recalculer un scénario sans écraser l'historique.
+
+### 7.11 IA et moteurs déterministes
+
+**L'IA peut** : proposer l'essence probable, transformer une dictée en
+données structurées, détecter une incohérence, expliquer un résultat,
+produire un compte rendu, suggérer les méthodes compatibles, identifier
+des informations manquantes.
+
+**L'IA ne doit pas** : inventer une équation de cubage, un coefficient,
+une valeur économique, une règle réglementaire, ou un diagnostic présenté
+comme certain.
+
+**Principe fondamental** : le calcul final doit toujours venir de moteurs
+déterministes et audités (§7.7). L'IA assiste, explique et structure ;
+elle ne remplace pas.
+
 ## 8. Architecture de données et synchronisation
 
 Les entités Projet, Forêt, Parcelle, Placette, Session de martelage, Essence,
@@ -306,6 +532,22 @@ Le mode développeur s’active par huit appuis sur le numéro de version. Il af
 état de la base, migrations, file de synchronisation, packs, API, GPS, batterie,
 versions de méthodes et journaux non sensibles. Les diagnostics sensibles exigent
 un second niveau de confirmation et ne sont jamais envoyés automatiquement.
+
+### 10.1 Catégories de consentement des données
+
+Le système distingue cinq catégories de données pour l'amélioration des
+modèles et le partage :
+
+| Catégorie | Description | Partage |
+|---|---|---|
+| **Données privées du client** | Données confidentielles du propriétaire | Jamais sans consentement explicite |
+| **Données utilisables pour améliorer les modèles** | Données d'entraînement consenties | Anonymisées, avec consentement |
+| **Données scientifiques validées** | Données vérifiées pour la recherche | Partage recherche avec traçabilité |
+| **Données pédagogiques** | Données utilisables pour l'enseignement | Anonymisées, avec consentement |
+| **Données anonymisées** | Données totalement anonymisées | Partage communautaire possible |
+
+Cette granularité alimente la boucle GSIE (§18.9) : les données client
+restent privées sauf consentement explicite et cadre défini.
 
 ## 11. Vérification, validation et critères d’acceptation
 
@@ -1029,8 +1271,9 @@ la typologie en 7 familles, les manifestes riches, les états de pack, le
 téléchargement intelligent adaptatif, le Storage Budget Manager, la mise à
 jour différentielle par blocs et l'installation atomique avec rollback.
 
-**Dépendances** : RFC-0004 (QPIS Pack Format, §22 RFC prioritaires du Dev
-Pack). ADR : packs signés, Room/SQLCipher conservé comme base locale métier.
+**Dépendances** : RFC-0004 (QPIS Pack Format, RFC prioritaires du Dev
+Pack `12_MODELES_RFC_ADR.md`). ADR : packs signés, Room/SQLCipher conservé
+comme base locale métier.
 
 ### 16.9 Droits et abonnements
 
@@ -1064,6 +1307,60 @@ traitements serveur étendus. Un délai de grâce hors ligne permet de continuer
 
 **Dépendances** : RFC-0008 (Subscription and Entitlements). Lien avec §20.4
 (Subscription), §20.6 (hors ligne), §17.3 (capabilities).
+
+### 16.10 GSIE comme usine de packs
+
+Le serveur GSIE opère une **chaîne de fabrication** des packs :
+
+```text
+Ingestion → validation → harmonisation → transformation
+→ découpage territorial → simplification par niveau de zoom
+→ génération d'index → compression → signature → publication
+→ surveillance
+```
+
+Au lieu que GeoSylva appelle directement les services externes (IGN,
+cadastre, INPN, BRGM, Copernicus, services météo, services DFCI), GSIE
+appelle ces services côté serveur, respecte leurs quotas et leurs
+licences, puis produit des packs territoriaux (ex :
+`pack-vienne-forestier-2026-08`).
+
+L'application ne contacte principalement que : `api.quintessences`,
+`packs.quintessences`, `tiles.quintessences`, `sync.quintessences`.
+
+### 16.11 Quintessences Pack Store commun
+
+À terme, un **Quintessences Pack Store commun** est prévu, plutôt qu'un
+stockage indépendant par application. Un pack peut être partagé entre
+plusieurs apps :
+
+- Pack taxonomique France → GeoSylva, Flora, Artemis
+- Pack relief Vienne → GeoSylva, Ignis, Hydro, Terra
+- Pack météorologique régional → GeoSylva, Ignis, Atmos
+
+### 16.12 Intelligence locale de recommandation
+
+GeoSylva propose des recommandations contextuelles de gestion de packs :
+
+**Exemple 1 — Mise à jour recommandée** :
+
+```text
+Une mission est prévue demain dans la forêt de Chizé.
+Le pack cartographique local n'est plus à jour.
+Mise à jour disponible : 74 Mo.
+Téléchargement recommandé ce soir en Wi-Fi.
+```
+
+**Exemple 2 — Gestion de l'espace** :
+
+```text
+Il reste 2,1 Go sur l'appareil.
+Le pack LiDAR demande 4,8 Go.
+Options proposées :
+- version allégée de 850 Mo
+- traitement uniquement sur le serveur
+- suppression de deux anciennes orthophotographies
+```
 
 ---
 
@@ -1197,6 +1494,52 @@ l'application.
 **Dépendances** : RFC-0005 (Protocol and Form Engine). Lien avec §16 (QPIS),
 §17.5 (distribué par pack).
 
+### 17.10 Exemple de protocole déclaratif (format YAML)
+
+Inspiré d'ODK Collect (application Android open source pour relevés
+complexes hors connexion), un protocole est défini dans un format
+déclaratif :
+
+```yaml
+protocol:
+  id: diagnostic_sanitaire_v1
+  title: Diagnostic sanitaire
+
+sections:
+  - id: identification
+    fields:
+      - id: species
+        type: taxon
+        required: true
+      - id: health_status
+        type: choice
+        values:
+          - sain
+          - affaibli
+          - dépérissant
+          - mort
+
+  - id: decline
+    visible_if:
+      field: health_status
+      in:
+        - affaibli
+        - dépérissant
+    fields:
+      - id: crown_deficit
+        type: percentage
+      - id: dead_branches
+        type: percentage
+      - id: symptom_photo
+        type: photo
+        required: true
+```
+
+Ce format permet de créer sans modifier le code : un inventaire
+dendrométrique, un diagnostic sanitaire, une réception de plantation, un
+relevé IBP, un contrôle DFCI, un suivi de régénération, un relevé de
+dégâts de gibier, un protocole pédagogique.
+
 ---
 
 ## 18. TreeVision — mesure multimodale des arbres
@@ -1316,6 +1659,141 @@ traçabilité.
 **Dépendances** : RFC-0007 (TreeVision Measurement Pipeline). Lien avec
 §18.7 (indice de confiance), §17.6 (formulaires contextuels).
 
+### 18.11 Philosophie : mesure multimodale coopérative
+
+TreeVision propose une mesure **coopérative** : GeoSylva mesure
+automatiquement ce qu'il peut, demande au technicien de viser ou mesurer
+ce qui reste ambigu, accepte les instruments forestiers comme références,
+détecte les incohérences, améliore la position par immobilisation et
+triangulation, puis fusionne toutes les sources avec un niveau
+d'incertitude explicite.
+
+C'est bien plus solide qu'une promesse de « mesurer un arbre avec une
+photo ». L'expertise du technicien et les capteurs du téléphone
+**travaillent ensemble**, au lieu de se concurrencer.
+
+### 18.12 Méthodes de mesure du diamètre
+
+**Méthode A — Profondeur ARCore et largeur apparente** : GeoSylva détecte
+les deux bords du tronc à 1,30 m, obtient leur profondeur et reconstruit
+leur distance réelle.
+
+```text
+Bord gauche 3D → Bord droit 3D → Distance → Diamètre apparent
+```
+
+Sensibilités : irrégularités de l'écorce, branches, plantes devant le
+tronc, erreurs de profondeur sur les contours, angle de prise de vue.
+
+**Méthode B — Ajustement d'un cylindre (RANSAC)** : reconstruction de
+plusieurs points du tronc autour de 1,30 m et ajustement mathématique
+d'un cercle, ellipse ou cylindre vertical.
+
+```text
+Nuage de points → Suppression aberrants → Coupe 1,30 m → RANSAC
+```
+
+La méthode B est plus robuste que la A mais nécessite un scan multi-angle.
+
+### 18.13 Modèle de confiance par mesure
+
+Pour chaque mesure, le système enregistre :
+
+- valeur retenue, valeur automatique, valeur manuelle ;
+- méthode, incertitude, niveau de confiance ;
+- motif de correction, preuves associées.
+
+**Exemple 1 — Diamètre** :
+
+```text
+Diamètre retenu : 47,0 cm
+Source : compas forestier
+Estimation caméra : 46,4 cm
+Écart : 0,6 cm
+Confiance globale : très élevée
+```
+
+**Exemple 2 — Hauteur** :
+
+```text
+Hauteur retenue : 27,8 m
+Source : visée base/cime
+Détection automatique de cime : rejetée
+Motif : chevauchement de houppiers
+Confiance : moyenne
+```
+
+### 18.14 Contrôles de cohérence
+
+Le système détecte les incohérences et demande confirmation **sans bloquer
+automatiquement** :
+
+- 18 cm de diamètre et 44 m de hauteur : combinaison très improbable.
+- Diamètre passé de 42 à 67 cm en trois ans : erreur de mesure, mauvais
+  arbre ou unité incorrecte probable.
+- Largeur apparente du tronc varie de 18 % entre deux angles de prise de
+  vue : incohérence géométrique.
+
+### 18.15 Amélioration GNSS par immobilisation
+
+Lorsque l'utilisateur reste immobile, GeoSylva accumule plusieurs
+positions GNSS :
+
+```text
+Lecture 1 : ±5,2 m → Lecture 2 : ±4,7 m → ... → Lecture 20 : ±2,4 m
+```
+
+Méthodes : moyenne pondérée, rejet des aberrantes, médiane spatiale,
+filtre de Kalman, analyse de stabilité, durée minimale, contrôle IMU.
+
+**Interface** :
+
+```text
+Affinage de la position…
+Précision initiale : ±5,8 m
+Précision actuelle : ±2,6 m
+Stabilité : 92 %
+```
+
+### 18.16 Analyse des constellations GNSS
+
+GeoSylva exploite simultanément : GPS, Galileo, GLONASS, BeiDou,
+QZSS/SBAS (selon appareil). Paramètres analysés : nombre de satellites,
+élévation, azimut, rapport signal/bruit, fréquence, dispersion,
+géométrie satellitaire. En France, Galileo est particulièrement
+intéressant avec GPS sur les téléphones multifréquences.
+
+### 18.17 Fusion de position (SpatialEvidence)
+
+Structure de données de fusion :
+
+```kotlin
+data class SpatialEvidence(
+    val source: SpatialSource,
+    val coordinates: Coordinates,
+    val horizontalUncertaintyM: Double,
+    val timestamp: Instant,
+    val confidence: Double
+)
+```
+
+**Exemple de résultat** :
+
+```text
+Position fusionnée : ±1,9 m absolu, ±0,4 m relatif
+Sources :
+- Galileo/GPS : 45 %
+- trajectoire AR : 30 %
+- triangulation visuelle : 20 %
+- contrainte parcellaire : 5 %
+```
+
+### 18.18 Capture de calibration
+
+Pour améliorer l'algorithme, le mode calibration collecte : diamètre réel
+au compas, hauteur instrumentale, distance réelle, photos multi-angles,
+position RTK éventuelle, description des conditions.
+
 ---
 
 ## 19. Métiers, capabilities et adaptation contextuelle
@@ -1414,6 +1892,74 @@ l'accessibilité).
 **Dépendances** : RFC-0006 (Geo Engine and QField Interoperability),
 RFC-0009 (Scientific Method Registry), RFC-0010 (Data Provenance and
 Evidence). ADR : UUID global, calculs hybrides avec parité.
+
+### 19.7 Services techniques GSIE
+
+Le serveur GSIE expose les services techniques suivants :
+synchronisation, API, stockage, recherche, génération de rapports,
+notifications, sauvegardes, audit, partage, administration.
+
+### 19.8 Technologies open source étudiées
+
+| Technologie | Rôle | Licence |
+|---|---|---|
+| **Open Foris Collect** | Définition d'inventaires, collecte structurée, formats d'échange | MIT |
+| **Open Foris Arena** | Collecte forestière hors connexion, campagnes multiannuelles, validation, analyse statistique (PostgreSQL/PostGIS, RStudio) | MIT |
+| **ODK Collect** | Application Android de relevés complexes hors connexion, formulaires conditionnels | Apache 2.0 |
+| **QField** | Compatible workflows QGIS/QField sur Android | GPL |
+| **SpatiaLite** | Extension géospatiale SQLite (OGC) — à étudier avec prudence sur Android (wrappers anciens) | MPL |
+| **GeoPackage** | Format d'échange géospatial (OGC) | OGC |
+| **DuckDB Spatial** | Moteur analytique secondaire pour volumes importants (Parquet/GeoParquet) — ne remplace pas Room | MIT |
+| **Orfeo ToolBox** | Télédétection serveur (Phase 9 Dev Pack) | Apache 2.0 |
+| **STAC** | Catalogue d'images satellites | Apache 2.0 |
+| **Martin** | Tuiles vectorielles PMTiles | MIT |
+| **pg_featureserv** | OGC API Features | MIT |
+| **JSON Logic** | Inspiration moteur de règles déclaratives | MIT |
+| **ZEN** | Alternative au moteur de règles (inspiration) | — |
+| **Meshtastic** | Canal mesh LoRa pour événements courts (§19.9) | MIT |
+
+### 19.9 Meshtastic — canal Mesh détaillé
+
+Pour des événements courts et prioritaires, GeoSylva utilise la couche
+Mesh GSIE :
+
+```text
+GeoSylva → Meshtastic/LoRa → relais terrain → passerelle connectée → GSIE Server
+```
+
+**Données transmises** : position d'équipe, statut de sécurité, alerte
+incendie, accident, besoin d'assistance, observation critique, progression
+de mission, météo locale, petite télémétrie.
+
+**Données non transmises** : orthophotographies, bases complètes, longues
+vidéos, modèles d'intelligence artificielle.
+
+### 19.10 Décision : moteur cartographique
+
+GeoSylva utilise **MapLibre** comme moteur de rendu mobile rapide,
+développe son propre moteur SIG forestier et devient nativement
+compatible avec les workflows QGIS/QField, GeoPackage et PostGIS.
+
+**Justification** : plus robuste qu'une dépendance à Mapbox, plus léger
+qu'intégrer entièrement QGIS dans Android, et surtout beaucoup plus
+adapté à la construction d'un produit forestier professionnel.
+
+### 19.11 Décision : base de données spatiale
+
+**Mise en garde sur SpatiaLite** : son intégration Android mérite une
+étude technique prudente (certains wrappers Android sont anciens).
+
+**Approche recommandée** :
+
+- Room/SQLCipher pour les données métier ;
+- géométries stockées en WKB ou GeoJSON normalisé ;
+- index spatial R-Tree SQLite ;
+- bibliothèque géométrique Kotlin/Java pour les opérations locales ;
+- GeoPackage comme format d'échange professionnel ;
+- PostGIS côté serveur.
+
+Ne pas remplacer immédiatement Room par SpatiaLite sans prototype de
+performances, de chiffrement, de migrations et de compatibilité Android.
 
 ---
 
@@ -1639,7 +2185,312 @@ GSIE vérifie systématiquement : la signature, l'émetteur (`iss`), l'audience
 (`aud`), l'expiration (`exp`), l'identifiant de session, les rôles ou
 permissions, et l'organisation active.
 
-## 21. Références
+### 20.13 Droits basés sur les capacités
+
+Le système ne se limite pas à « administrateur » et « utilisateur ». Il
+gère des **capacités précises** :
+
+| Capacité | Description |
+|---|---|
+| `forest.inventory.read` | Lecture des inventaires |
+| `forest.inventory.create` | Création d'inventaires |
+| `forest.inventory.validate` | Validation d'inventaires |
+| `forest.marking.execute` | Exécution du martelage |
+| `forest.valuation.read` | Lecture des valorisations |
+| `forest.valuation.modify` | Modification des valorisations |
+| `forest.protocol.manage` | Gestion des protocoles |
+| `geo.layer.publish` | Publication de couches |
+| `geo.export.sensitive` | Export de données sensibles |
+| `organization.members.manage` | Gestion des membres |
+
+Un technicien peut réaliser une saisie sans forcément modifier le tarif
+de cubage, changer les prix, supprimer une campagne, publier des données
+ou accéder à toutes les propriétés. Cette granularité est indispensable
+pour les organismes professionnels.
+
+### 20.14 Alternatives d'identité rejetées
+
+**Firebase Authentication** : très simple au départ, mais moins naturel
+pour les organisations complexes, le SAML/OIDC par client, la souveraineté,
+le hors-ligne professionnel et la maîtrise de l'ensemble Quintessences.
+Pourrait convenir pour un prototype, mais pas comme fondation définitive.
+
+**Auth0, Clerk et services similaires** : très rapides à intégrer, mais le
+coût augmente avec les utilisateurs actifs, le SSO d'entreprise, les
+organisations, le MFA et les connexions personnalisées. Pratiques mais
+moins cohérents avec l'objectif de maîtrise, d'auto-hébergement et de
+réduction des coûts.
+
+### 20.15 SCIM — Provisionnement automatique
+
+Le provisionnement automatique via SCIM (System for Cross-domain Identity
+Management) sera adopté lorsque le support Keycloak et les besoins seront
+suffisamment mûrs (Phase 3 — Entreprises). SCIM permet la synchronisation
+automatique des utilisateurs depuis les systèmes d'entreprise (Microsoft
+Entra ID, Google Workspace) vers Keycloak.
+
+### 20.16 Déploiement progressif — 4 phases
+
+| Phase | Objet | Fonctionnalités |
+|---|---|---|
+| **1 — Lancement économique** | Démarrage à coût minimal | Keycloak, PostgreSQL, Google OIDC, passkeys, compte Quintessences, espaces personnels et organisations, rôles simples, Authorization Code + PKCE |
+| **2 — Professionnels** | Équipes professionnelles | Invitations, équipes, abonnement par organisation, MFA obligatoire pour les responsables, politique hors ligne, journal des connexions, révocation des appareils |
+| **3 — Entreprises** | Intégration SSO d'entreprise | Microsoft Entra ID, Google Workspace, SAML/OIDC par organisation, détection du domaine, administration déléguée, provisionnement automatique, SCIM |
+| **4 — Institutions sensibles** | Sécurité renforcée | Clés matérielles, authentification renforcée, appareil géré, restrictions d'export, audit complet, haute disponibilité du service d'identité |
+
+### 20.17 Architecture d'identité recommandée
+
+```text
+auth.quintessences.fr
+        │
+        ▼
+Keycloak
+├── Google OIDC
+├── Passkeys Quintessences
+├── TOTP et récupération
+├── Microsoft Entra ID
+├── Google Workspace
+├── SAML entreprise
+└── OIDC entreprise
+        │
+        ▼
+Identité Quintessences unique
+├── espace personnel
+├── organisations
+├── équipes
+├── rôles généraux
+└── abonnements
+        │
+        ▼
+GSIE Authorization Service
+├── capacités métier
+├── accès aux territoires
+├── missions
+├── packs
+├── licences
+└── politiques hors ligne
+        │
+        ▼
+GeoSylva · Ignis · Artemis · Flora · Terra · Hydro · Atmos
+```
+
+**Justification du choix Keycloak** : la combinaison la plus efficace,
+sécurisée et économique pour Quintessences. Elle permet de commencer à
+faible coût sans enfermer GeoSylva dans une solution limitée, tout en
+étant déjà compatible avec les futurs besoins des collectivités,
+établissements forestiers et grandes organisations.
+
+---
+
+## 21. Diagnostic de station
+
+GeoSylva doit couvrir le diagnostic de station forestière — un domaine
+absent de la spec v0.3.0 mais essentiel au raisonnement sylvicole. Cette
+section synthétise le domaine 2 de la conversation ChatGPT (Dev Pack).
+
+### 21.1 Sous-thèmes à couvrir
+
+- géologie ;
+- pédologie ;
+- profondeur et réserve utile du sol ;
+- hydromorphie ;
+- texture ;
+- humus ;
+- topographie ;
+- exposition ;
+- pente ;
+- climat ;
+- indices bioclimatiques ;
+- végétation indicatrice ;
+- habitats ;
+- stations forestières ;
+- contraintes d'exploitation ;
+- sensibilité aux sécheresses et au tassement.
+
+### 21.2 Synthèse automatique
+
+L'application produit une synthèse automatique de la station, par exemple :
+
+> Station à réserve utile moyenne, exposition sud-ouest, forte sensibilité
+> au déficit hydrique, adaptation future du hêtre incertaine,
+> diversification recommandée.
+
+### 21.3 Principe d'explicabilité
+
+La synthèse reste **explicable** : données utilisées, niveau de confiance,
+date et origine des références. Le technicien peut consulter le détail des
+sources et contester la conclusion.
+
+**Lien avec l'existant** : §7.4 (pathogènes et parcelles voisines) traite
+déjà le contexte de risque géographique. Le diagnostic de station
+généralise cette approche à l'ensemble du contexte stationnel. Les
+données pédologiques et climatiques proviennent des moteurs GSIE Pedology
+et Climate (§14 canal 1).
+
+**Dépendances** : RFC-0009 (Scientific Method Registry), moteurs GSIE
+Pedology et Climate. Lien avec §22 (scénarios sylvicoles — l'adéquation
+essence/station est un critère de comparaison).
+
+---
+
+## 22. Scénarios sylvicoles
+
+GeoSylva doit pouvoir comparer plusieurs scénarios sylvicoles pour aider
+le technicien à raisonner les actions de gestion dans l'espace et dans le
+temps. Cette section synthétise le domaine 4 de la conversation ChatGPT.
+
+### 22.1 Analyse du peuplement
+
+L'application aide à comprendre :
+
+- la structure du peuplement ;
+- son stade de développement ;
+- sa stabilité ;
+- son niveau de concurrence ;
+- sa capacité de régénération ;
+- la qualité des tiges ;
+- les défauts ;
+- la présence d'arbres habitats ;
+- les risques sanitaires ;
+- l'adéquation entre essence et station (§21) ;
+- les trajectoires sylvicoles possibles.
+
+### 22.2 Scénarios comparables
+
+| Scénario | Description |
+|---|---|
+| **Aucune intervention** | Laisser évoluer sans action |
+| **Éclaircie faible** | Prélèvement modéré pour réduire la concurrence |
+| **Éclaircie forte** | Prélèvement marqué pour favoriser les arbres objectifs |
+| **Conversion vers l'irrégulier** | Transformation progressive vers une structure irrégulière |
+| **Renouvellement progressif** | Régénération par coupes progressives |
+| **Plantation** | Reconstitution par plantation |
+| **Enrichissement** | Introduction d'essences complémentaires |
+| **Diversification** | Introduction d'essences adaptées au changement climatique |
+| **Mise en libre évolution** | Conservation sans intervention active |
+
+### 22.3 Comparaison
+
+Chaque scénario est évalué sur trois dimensions : **économique**
+(valorisation §7.9), **sylvicole** (structure, stabilité, régénération)
+et **écologique** (biodiversité, adaptation climatique, adéquation
+station §21). Le moteur `ScenarioComparisonEngine` (§7.7) produit un
+tableau comparatif et un compte rendu explicable.
+
+**Dépendances** : RFC-0001 (Forestry Scientific Core). Lien avec §7.7
+(moteurs silviculture/), §21 (diagnostic de station).
+
+---
+
+## 23. Organisation des travaux forestiers
+
+GeoSylva doit couvrir l'organisation et le suivi des travaux forestiers.
+Cette section synthétise le domaine 7 de la conversation ChatGPT.
+
+### 23.1 Types de travaux couverts
+
+- plantation ;
+- préparation du sol ;
+- dégagement ;
+- dépressage ;
+- nettoiement ;
+- taille ;
+- élagage ;
+- protection contre le gibier ;
+- entretien des cloisonnements ;
+- entretien des dessertes ;
+- restauration des milieux ;
+- travaux de prévention incendie.
+
+### 23.2 Gestion de chantier
+
+Pour chaque chantier, GeoSylva gère :
+
+| Étape | Données |
+|---|---|
+| **Prescription** | type de travail, localisation, quantités, coût prévisionnel |
+| **Organisation** | entreprise, calendrier, risques, consignes |
+| **Suivi** | photos avant et après, avancement |
+| **Contrôle** | contrôle de conformité, réception, réserves |
+| **Clôture** | facture, historique |
+
+Le conducteur de travaux forestiers pilote les chantiers depuis leur
+planification jusqu'à leur réalisation et leur livraison. GeoSylva assure
+la **continuité entre le technicien qui prescrit et les personnes qui
+exécutent**.
+
+**Dépendances** : RFC-0005 (Protocol and Form Engine). Lien avec §17
+(Mission Engine — un chantier est une mission), §16 (QPIS — protocoles
+organisationnels).
+
+---
+
+## 24. Documents de gestion durable
+
+GeoSylva doit aider à élaborer et suivre les documents de gestion
+durable. Cette section synthétise le domaine 8 de la conversation ChatGPT.
+
+### 24.1 Types de documents
+
+- plans simples de gestion (PSG) ;
+- règlements types de gestion (RTG) ;
+- codes de bonnes pratiques ;
+- aménagements forestiers ;
+- programmes de coupes ;
+- programmes de travaux ;
+- bilans périodiques ;
+- avenants ;
+- cartes réglementaires.
+
+### 24.2 Contrôles automatiques
+
+GeoSylva contrôle automatiquement :
+
+- les interventions en retard ;
+- les coupes non réalisées ;
+- les écarts par rapport au document ;
+- les parcelles sans diagnostic récent ;
+- les incompatibilités entre programme et contraintes environnementales ;
+- les conséquences d'un changement de scénario (§22).
+
+### 24.3 Rédaction
+
+La rédaction d'un document de gestion implique un diagnostic (§21), des
+objectifs, des choix sylvicoles (§22) et une programmation pluriannuelle.
+Les gestionnaires privés peuvent également assurer martelage, vente,
+suivi de coupe, maîtrise d'œuvre, diagnostic et rédaction des documents
+de gestion.
+
+**Dépendances** : Lien avec §21 (diagnostic de station), §22 (scénarios
+sylvicoles), §23 (travaux forestiers), §7.9 (valorisation économique).
+
+---
+
+## 25. Références locales de marché
+
+GeoSylva archive les **prix réellement obtenus** lors des ventes de bois
+afin de constituer progressivement des **références locales de marché**.
+
+### 25.1 Principe
+
+Chaque vente conclue (sur pied ou bord de route) enregistre : essence,
+qualité, produit, volume, prix unitaire, date, lieu, conditions de vente,
+acheteur (anonymisé). Ces données alimentent le `PriceCatalogResolver`
+(§7.7) pour affiner les estimations futures.
+
+### 25.2 Confidentialité
+
+Les prix individuels sont **privés** (données du client, §20.13). Les
+références agrégées (prix moyen par essence/qualité/territoire/mois)
+peuvent être partagées anonymisées (catégorie de consentement §10) pour
+alimenter la communauté et la recherche.
+
+**Dépendances** : Lien avec §7.9 (chaîne de valorisation),
+§7.7 (`PriceCatalogResolver`), §10 (confidentialité).
+
+---
+
+## 26. Références
 
 ### 21.1 Documents GeoSylva
 
@@ -1699,7 +2550,7 @@ permissions, et l'organisation active.
   <https://geoservices.ign.fr/documentation/services/api-et-services-ogc/api-carto-rest>.
 - [IGN-BDFORET] IGN, BD Forêt : <https://foret.ign.fr/IGD/fr/ressources>.
 
-## 22. Historique
+## 27. Historique
 
 | Version | Date | Modification |
 |---|---|---|
@@ -1708,4 +2559,5 @@ permissions, et l'organisation active.
 | 0.3.0 | 2026-08-03 | §14 Connexion GSIE Serveur détaillée (enveloppes communes, moteurs, chaîne d'appel, cache, pull/conflits, SDK Kotlin, garde-fous). §15 LLM on-device et multi-tier (architecture 3 tiers, cascade, LoRA, RAG, identification on-device, assistant vocal, distribution, évaluation). |
 | 0.4.0 | 2026-08-04 | Intégration du Dev Pack (brainstorming ChatGPT) : §16 QPIS, §17 Mission/Protocol Engine, §18 TreeVision, §19 Métiers/objets communs/architecture modulaire, §20 Identité fédérée Keycloak/OIDC. Vision long terme GeoSylva comme poste de travail numérique complet du technicien forestier. |
 | 0.5.0 | 2026-08-04 | Vérification et complétion de l'intégration Dev Pack : §4.2 amendé (pointe vers §20 cible), §16.9 Droits et abonnements (Subscription ↔ QPIS), §17.9 Catalogue de protocoles, §18.10 Modes TreeVision, §20.2.1 Méthodes connexion Quintessences (passkey/TOTP/mot de passe compatibilité), §20.5 Interdictions Android, §20.9 Migration comptes existants, §20.10 Connexion entreprise (petite/grande structure), §20.11 Sécurité administrative, §20.12 Gestion des jetons. |
+| 0.6.0 | 2026-08-04 | Intégration complète de la conversation ChatGPT source : 23 recommandations. §7 enrichi (7 sous-sections : qualité données, campagnes multiannuelles, architecture moteurs, règles déclaratives, valorisation, versionnement, IA vs déterministe). §16 enrichi (usine packs, Pack Store commun, intelligence locale). §17 enrichi (exemple protocole ODK YAML). §18 enrichi (8 sous-sections : philosophie coopérative, méthodes A/B RANSAC, modèle confiance, contrôles cohérence, GNSS immobilisation, constellations, SpatialEvidence, calibration). §19 enrichi (services techniques, technologies open source, Meshtastic détaillé, décisions MapLibre/Room). §20 enrichi (capacités, alternatives rejetées, SCIM, 4 phases déploiement, architecture finale). Nouvelles sections : §21 Diagnostic de station, §22 Scénarios sylvicoles, §23 Travaux forestiers, §24 Documents de gestion durable, §25 Références locales de marché. |
 
