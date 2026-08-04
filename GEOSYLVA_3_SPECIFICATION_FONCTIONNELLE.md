@@ -4,7 +4,7 @@
 |---|---|
 | Identifiant | GEOSYLVA-003 |
 | Statut | Draft |
-| Version | 0.6.0 |
+| Version | 0.7.0 |
 | Date | 2026-08-04 |
 | Auteur | Quintessences — spécification issue du brainstorming Fondateur/Codex |
 | Périmètre | Application mobile GeoSylva et ses échanges avec GSIE |
@@ -46,6 +46,15 @@ Le produit cible comprend :
 - la gestion de compte, des paramètres, de la confidentialité et du mode développeur.
 
 ## 3. Principes non négociables
+
+> **Cadrage v0.7.0** : ce document est la **spécification produit
+> maîtresse** de GeoSylva-003. Il contient la vision, l'UX, les exigences
+> fonctionnelles et les décisions techniques de haut niveau. Les modèles
+> précis, endpoints, tables et bibliothèques ne doivent **plus** être
+> décidés ici — ils font l'objet de **RFC indépendantes** (voir §28
+> Annexe — RFC à extraire). Les sections §14 (contrats détaillés) et §15
+> (architecture IA) sont des **visions de cadrage**, pas des contrats
+> définitifs.
 
 ### 3.1 Donnée et base locale
 
@@ -582,14 +591,14 @@ code et dans la base :
 ┌─────────────────────────────────────────────────────────────┐
 │  Téléphone (offline-first, cœur forestier autonome)         │
 │  ├─ Calculs déterministes sourcés (tarifs, IBP, Shannon)     │
-│  ├─ LLM on-device léger (SmolLM3 3B / Phi-3-mini)           │
+│  ├─ LLM on-device léger (profil T1, §15.2)                  │
 │  │   → assistance vocale, explication, jamais calcul        │
 │  └─ Cache local : packs, référentiels, connaissances GSIE   │
 ├─────────────────────────────────────────────────────────────┤
 │  Canal 1 — GSIE Serveur (Wi-Fi/4G stable)                    │
 │  ├─ Moteurs lourds : Correlation, Reasoning, Diagnostic,    │
 │  │   Recommendation, Forest Dynamics, Simulation            │
-│  ├─ LLM serveur (Mistral 7B / Phi-4-reasoning via vLLM)     │
+│  ├─ LLM serveur (profil T3-SERVER, §15.2)                   │
 │  │   → RAG scientifique, raisonnement profond              │
 │  └─ Knowledge Engine : coefficients sourcés, autécologie    │
 ├─────────────────────────────────────────────────────────────┤
@@ -624,16 +633,19 @@ La vision multi-tier (VOLUME_CALCULATION_NEXT_GEN §10, RESEARCH_OPPORTUNITIES
 §3) est consolidée ici sans pseudocode ni implémentation — uniquement
 l'architecture cible et les garanties.
 
-| Tier | Modèle cible | Rôle | Réseau | Latence cible |
+| Tier | Profil cible | Rôle | Réseau | Objectif |
 |---|---|---|---|---|
-| **T1 — Mobile** | SmolLM3 3B (quantifié INT4) ou Phi-3-mini 4B | Assistance vocale, explication des calculs locaux, saisie contextuelle, identification essence (TFLite) | Aucun | < 500 ms |
-| **T2 — Edge** | Mistral 7B (NVIDIA NIM dev / Jetson) | RAG sur documentation forestière, raisonnement intermédiaire, cascade si T1 insuffisant | Wi-Fi local | < 3 s |
-| **T3 — Serveur** | Phi-4-reasoning 14B (vLLM) ou Mistral 7B servé | Raisonnement profond via moteurs GSIE, diagnostic, recommandation, simulation | 4G/Wi-Fi | < 10 s |
+| **T1 — Mobile** | T1-MICRO ou T1-STANDARD (§15.2) | Assistance vocale, explication des calculs locaux, saisie contextuelle, identification essence | Aucun | P50 < 500 ms |
+| **T2 — Edge** | T2-EDGE (§15.2) | RAG sur documentation forestière, raisonnement intermédiaire, cascade si T1 insuffisant | Wi-Fi local | P50 < 3 s |
+| **T3 — Serveur** | T3-SERVER (§15.2) | Raisonnement profond via moteurs GSIE, diagnostic, recommandation, simulation | 4G/Wi-Fi | P50 < 10 s |
+
+> Les noms de modèles précis seront choisis par la RFC renouvelable
+> `RFC-IA-MODEL-SELECTION-YYYY-MM` au moment de l'implémentation.
 
 **Règles de cascade** :
 
 - T1 répond seul tant que la question reste dans le périmètre des calculs
-  locaux et des connaissances cachées. Aucune donnée n'est envoyée au serveur
+  locaux et des connaissances disponibles localement. Aucune donnée n'est envoyée au serveur
   pour une question que le téléphone peut traiter.
 - T1 délègue à T2/T3 uniquement pour le raisonnement profond (diagnostic
   stationnel, projection de croissance, recommandation sylvicole). La
@@ -672,8 +684,10 @@ documentés (`GSIE/ENGINES/*/`, `ENGINE_INTERFACE_CONTRACTS.md`).
 **Contrats d'interface GeoSylva → GSIE** (à spécifier par moteur dans une RFC
 dédiée — voir §12.5) :
 
-- Chaque appel expose : `requete_id`, `session_id`, `auteur`, `device_id`,
-  `source` (manual | sync | gps), `version` des données envoyées.
+- Chaque appel expose : `requete_id`, `session_id`, `auteur` (UUID
+  Quintessences), `device_id` (UUID d'installation), `entry_mode`
+  (provenance de saisie), `transport` (moyen de transport), `version`
+  des données envoyées.
 - Chaque réponse expose : `resultat_id`, `moteur_version`, `source_reference`,
   `evidence_level`, `incertitude`, `chaîne_inference` (Reasoning/Diagnostic).
 - Les réponses sont mises en cache local (SQLCipher) avec leur `version` pour
@@ -687,26 +701,50 @@ dédiée — voir §12.5) :
 Identity et Sync parcelles sont consommés directement via Retrofit (pattern
 Factory existant). Le SDK Kotlin est un livrable de la Phase 4 (§12.4).
 
-### 12.4 Phases de réalisation
+### 12.4 Ordre de développement — 11 lots
 
-Chaque phase produit ses tests, preuves et décision de validation (DEC).
-L'ordre respecte les dépendances : une phase ne démarre que si la précédente
-est au minimum en Review.
+> **Revue critique v0.7.0** : l'ordre précédent (P0-P7) mettait trop tôt
+> en avant le LLM on-device, Bluetooth, QR, Meshtastic et la refonte
+> visuelle, alors que les fondations (QPIS, identité, Mission Engine,
+> moteur géospatial, TreeVision) étaient reléguées en vision long terme.
+> Le Fondateur a demandé de **refondre l'ordre** pour construire les
+> fondations avant la toiture. L'ancien ordre P0-P7 est conservé en
+> référence en fin de section.
 
-| Phase | Livrables | Dépendances | Décisions requises |
-|---|---|---|---|
-| **P0 — Fondations** | Corrections audits bloquants (Hdom, indice station, SQLCipher, certificate pinning, RGPD) + contrat de données (métadonnées §3.1, migration v34 amorcée) + tests de restauration | — | DEC corrections audits |
-| **P1 — Création guidée** | Forêt/parcelle/placette avec questionnaires (§5), contrôles de surface, provenance du choix, recherche tolérante | P0 | — |
-| **P2 — Martelage persistant** | Session de martelage (§6.3) complète, modes classique/vocal/hybride, métriques de session, instantané immuable post-martelage | P1 | DEC format session |
-| **P3 — Moteurs scientifiques locaux** | Fiches méthodes versionnées (§7.2), qualité bois, pathogènes, incertitudes, séparation observation/calcul, tests de référence | P2 | RFC fiches méthodes |
-| **P4 — Connexion GSIE Serveur** | SDK Kotlin, contrats API moteurs (Correlation, Reasoning, Diagnostic, Recommendation, Forest Dynamics), cache local, pull serveur→mobile, résolution conflits, analyse GSIE approfondie | P3 | RFC contrats GeoSylva ↔ moteurs |
-| **P5 — LLM on-device et multi-tier** | Modèle T1 embarqué (SmolLM3/Phi-3), RAG local, cascade T1→T2→T3, assistant vocal, identification essence on-device, garde-fous ADR-009 | P4 | RFC IA forestière on-device |
-| **P6 — Synchronisation terrain** | Bluetooth (canal 2), QR code team key, Meshtastic (canal 3), paquets signés, journal de fusion, reprise après interruption | P4 | RFC sync terrain |
-| **P7 — Refonte visuelle** | Onboarding, animation, packs hors ligne, optimisations batterie/accessibilité, mode économie, mode pluie | P1-P6 | — |
+Chaque lot produit ses tests, preuves et décision de validation (DEC).
+Un lot ne démarre que si le précédent est au minimum en Review.
 
-**Phases parallélisables** : P7 (refonte visuelle) peut démarrer dès P1
-terminé et progresser en parallèle de P2-P6. Les autres phases sont
-séquentielles.
+| Lot | Objet | Livrables | Dépendances | RFC/DEC |
+|---|---|---|---|---|
+| **Lot 0 — Audit et sécurisation de l'existant** | Stabiliser la base avant d'ajouter | Erreurs scientifiques connues, migrations, sauvegarde/restauration, chiffrement, tests de non-régression | — | DEC corrections audits |
+| **Lot 1 — Contrat universel de données** | Fondation du modèle de données | UUID globaux, Observation, Measurement, Evidence, CalculationRun, provenance, unités, événements, distinction arbre/observation/mesure/résultat (§7.6) | Lot 0 | RFC-0001 amorcé |
+| **Lot 2 — Noyau scientifique forestier** | Cœur métier déterministe | Cubage, surface terrière, hauteur, agrégations par essence, Method Registry (§7.10), incertitude, comparaison de méthodes, valorisation (§7.9), architecture moteurs spécialisés (§7.7), règles déclaratives (§7.8) | Lot 1 | RFC-0001 |
+| **Lot 3 — Mission et Protocol Engine minimal** | Un seul métier, trois protocoles | Métier initial : technicien forestier. Trois protocoles pilotes : inventaire, martelage, diagnostic sanitaire. **Pas douze interfaces métier dès la v1.** | Lot 2 | RFC-0005 |
+| **Lot 4 — Identité et workspaces** | Authentification fédérée | Keycloak, Google, passkey, espace personnel, une organisation, droits simples (§20.13), politique hors ligne, migration 3 cas (§20.9) | Lot 1 | RFC-0002 |
+| **Lot 5 — Synchronisation GSIE** | Sync serveur normale | Journal d'événements, push/pull, idempotence, conflits, audit, pièces jointes | Lot 4 | RFC-0003 |
+| **Lot 6 — QPIS minimal** | Packs de base | Pack système, pack scientifique, pack départemental, manifeste, signature, installation atomique, stockage. **La mise à jour différentielle par blocs peut venir ensuite.** | Lot 5 | RFC-0004 |
+| **Lot 7 — Geo Engine** | Moteur cartographique | MapLibre, PMTiles, GeoPackage, opérations de base, interopérabilité QGIS/QField | Lot 6 | RFC-0006 |
+| **Lot 8 — TreeVision R&D** | Mesure assistée (expérimental) | Visée base/cime, diamètre semi-automatique, saisie au compas comme référence, banc de validation. **Pas encore de placette entièrement automatique.** Statut initial « à valider » (§18.10). | Lot 2 | RFC-0007 |
+| **Lot 9 — IA locale et vocale** | LLM on-device (après les moteurs) | Le LLM vient **après** les moteurs qu'il doit expliquer et appeler. Profils T1-MICRO/STANDARD/T2-EDGE/T3-SERVER (§15.2), RFC renouvelable. | Lot 2, Lot 3 | RFC-IA-MODEL-SELECTION |
+| **Lot 10 — Meshtastic et sync de proximité** | Canal mesh (après sync normale) | Bluetooth (canal 2), QR code team key, Meshtastic (canal 3). **Très intéressant, mais après la synchronisation GSIE normale.** | Lot 5 | RFC sync terrain |
+
+**Lots parallélisables** : Lot 4 (identité) peut démarrer en parallèle de
+Lot 2 (noyau scientifique) car il ne dépend que de Lot 1. Lot 8
+(TreeVision R&D) peut démarrer en parallèle de Lot 3 dès que Lot 2 est
+en Review. Lot 7 (Geo Engine) peut progresser en parallèle de Lot 5.
+
+**Ancien ordre P0-P7 (référence, remplacé par les 11 lots ci-dessus)** :
+
+| Phase | Livrables | Statut |
+|---|---|---|
+| P0 — Fondations | Corrections audits, contrat données, tests restauration | **Remplacé par Lot 0-1** |
+| P1 — Création guidée | Forêt/parcelle/placette, questionnaires | **Intégré dans Lot 1-3** |
+| P2 — Martelage persistant | Session martelage, modes classique/vocal/hybride | **Intégré dans Lot 3** |
+| P3 — Moteurs scientifiques locaux | Fiches méthodes, qualité, pathogènes, incertitudes | **Remplacé par Lot 2** |
+| P4 — Connexion GSIE Serveur | SDK Kotlin, contrats API moteurs, cache, conflits | **Remplacé par Lot 5** |
+| P5 — LLM on-device et multi-tier | Modèle T1, RAG, cascade, assistant vocal | **Remplacé par Lot 9 (décalé)** |
+| P6 — Synchronisation terrain | Bluetooth, QR, Meshtastic | **Remplacé par Lot 10 (décalé)** |
+| P7 — Refonte visuelle | Onboarding, animation, optimisations | **Reporté (après fondations)** |
 
 ### 12.5 Décisions et RFC à produire
 
@@ -729,7 +767,7 @@ Repris et étendus depuis §11 :
 - Parcours terrain complet démontré sur les profils d'appareils supportés.
 - Le cœur forestier fonctionne sans réseau (canal 1 absent).
 - Toute sortie LLM cite le moteur ou la source qu'elle invoque (ADR-009).
-- Le forestier peut contournée toute recommandation et tracer sa décision
+- Le forestier peut contourner toute recommandation et tracer sa décision
   (GSIE-CON-001, GSIE-CON-004).
 
 ### 12.7 Sources consolidées
@@ -800,10 +838,12 @@ traçabilité (ADR-009, GSIE-CON-005) :
 ```text
 GeoSylvaRequest = {
   requete_id     : UUID          — généré côté mobile, idempotence
-  session_id     : UUID          — session de martelage courante (§6.3)
-  auteur         : texte         — identifiant compte Quintessences
-  device_id      : texte         — identifiant appareil (Android ID hashé)
-  source         : enum { manual, sync, gps }
+  session_id     : UUID?         — session de martelage courante (§6.3, optionnel : pas obligatoire pour tous les appels GSIE)
+  auteur         : UUID          — identifiant Quintessences (UUID, pas texte)
+  device_id      : UUID          — UUID d'installation (pas Android ID hashé)
+  source         : enum { manual, sync, gps, bluetooth, lora }
+  entry_mode     : enum { manual, voice, photo, sensor }  — provenance de saisie
+  transport      : enum { local, sync, bluetooth, lora }  — moyen de transport
   version        : entier        — version des données envoyées (optimistic locking)
   moteur_cible   : enum { correlation, reasoning, diagnostic,
                           recommendation, forest_dynamics, simulation,
@@ -981,48 +1021,71 @@ banc d'évaluation) fait l'objet de la **RFC-0034** (§12.5, Phase P5).
 
 ### 15.2 Architecture multi-tier
 
+> **Avertissement** : les noms de modèles précis ne sont **pas** figés
+> dans cette spécification. Les modèles IA évoluent rapidement et seront
+> probablement obsolètes avant la phase d'implémentation. Cette section
+> définit des **profils** (taille, rôle, contraintes), pas des choix
+> définitifs. La sélection concrète fait l'objet d'une **RFC renouvelable**
+> `RFC-IA-MODEL-SELECTION-YYYY-MM` qui comparera les modèles disponibles
+> au moment réel du développement. Les latences ci-dessous sont des
+> **objectifs à mesurer** (P50, P95, temps de premier token, tokens/s,
+> RAM maximale, chauffe, consommation, qualité métier), pas des
+> promesses.
+
 ```text
 ┌──────────────────────────────────────────────────────────────┐
 │  Tier 1 — Mobile (on-device, offline)                        │
-│  Modèle    : SmolLM3 3B (quantifié INT4) ou Phi-3-mini 4B     │
+│  Profil    : T1-MICRO (0,3 à 1,5 B) ou T1-STANDARD (1,5 à 4 B)│
 │  Runtime   : ONNX Runtime / llama.cpp Android                 │
-│  Mémoire   : < 2 GB stockage, < 1.5 GB RAM au runtime         │
+│  Mémoire   : à valider par benchmark (un modèle 3B en INT4    │
+│              représente ~1,5 GB de poids bruts seuls, avant   │
+│              métadonnées, contexte et mémoire d'exécution)    │
 │  Rôle      : assistance vocale, explication des calculs      │
 │              locaux, saisie contextuelle, identification     │
-│              essence (TFLite + PureForest)                    │
+│              essence (modèle à entraîner/adapter, §15.6)      │
 │  Réseau    : aucun                                            │
-│  Latence   : < 500 ms (génération courte)                     │
+│  Objectif  : P50 < 500 ms, P95 < 2 s (génération courte)     │
 │  Garde-fou : n'invoque jamais un moteur GSIE (pas de réseau) │
 │              → explique les résultats locaux, ne calcule pas │
 ├──────────────────────────────────────────────────────────────┤
 │  Tier 2 — Edge (Wi-Fi local, Jetson / NIM dev)                │
-│  Modèle    : Mistral 7B (quantifié AWQ 4-bit)                │
+│  Profil    : T2-EDGE (4 à 12 B, quantifié)                   │
 │  Runtime   : vLLM ou NIM sur Jetson Orin / poste GSIE PC      │
 │  Rôle      : RAG sur documentation forestière locale,        │
 │              raisonnement intermédiaire, cascade si T1        │
 │              insuffisant                                      │
 │  Réseau    : Wi-Fi local (terrain, base vie)                 │
-│  Latence   : < 3 s                                            │
+│  Objectif  : P50 < 3 s, P95 < 8 s                            │
 │  Garde-fou : peut invoquer les moteurs GSIE locaux (cache)   │
 │              → cite le moteur, ne calcule pas de mémoire      │
 ├──────────────────────────────────────────────────────────────┤
 │  Tier 3 — Serveur (4G/Wi-Fi, gsie-ai-gateway RFC-0019)        │
-│  Modèle    : Phi-4-reasoning 14B (vLLM) ou Mistral 7B servé   │
+│  Profil    : T3-SERVER (modèle choisi par benchmark)         │
 │  Runtime   : vLLM sur GPU serveur (RFC-0019)                  │
 │  Rôle      : raisonnement profond via moteurs GSIE,          │
 │              diagnostic, recommandation, simulation,         │
 │              RAG scientifique (pgvector, /ai/research)        │
 │  Réseau    : 4G/Wi-Fi stable                                  │
-│  Latence   : < 10 s                                           │
+│  Objectif  : P50 < 10 s, P95 < 30 s                          │
 │  Garde-fou : invoque toujours un moteur pour toute valeur     │
 │              numérique forestière (ADR-009)                  │
 └──────────────────────────────────────────────────────────────┘
 ```
 
+**Profils de référence** (les noms concrets seront choisis par la RFC
+renouvelable au moment de l'implémentation) :
+
+| Profil | Taille | Rôle | Contrainte |
+|---|---|---|---|
+| `T1-MICRO` | 0,3 à 1,5 B | Assistance vocale, saisie contextuelle | < 1 GB RAM |
+| `T1-STANDARD` | 1,5 à 4 B | Explication calculs, identification essence | < 2 GB RAM |
+| `T2-EDGE` | 4 à 12 B | RAG local, raisonnement intermédiaire | Jetson / PC |
+| `T3-SERVER` | choisi par benchmark | Raisonnement profond, diagnostic | GPU serveur |
+
 ### 15.3 Règles de cascade
 
 1. **T1 répond seul** tant que la question reste dans le périmètre des
-   calculs locaux et des connaissances cachées. Aucune donnée n'est
+   calculs locaux et des connaissances disponibles localement. Aucune donnée n'est
    envoyée au serveur pour une question que le téléphone peut traiter.
 2. **T1 délègue à T2/T3** uniquement pour le raisonnement profond
    (diagnostic stationnel, projection de croissance, recommandation
@@ -1099,10 +1162,22 @@ L'identification d'essence par photo (RFC-0018, GEO-004) suit deux volets :
 
 **Volet hors ligne** (à l'étude, RFC-0018 § volet hors-ligne) :
 
-- Modèle TFLite/ONNX embarqué, entraîné sur PureForest dataset IGN
-- Classification des essences françaises les plus courantes (~50 espences
+- Modèle de reconnaissance à **entraîner ou adapter** à partir de jeux
+  de données dont la licence, la couverture taxonomique et la qualité
+  devront être **auditées**. Un jeu de données et un modèle Android
+  opérationnel sont deux choses différentes — le modèle n'existe pas
+  encore comme produit intégrable.
+- **Étape obligatoire avant intégration** :
+  1. Audit dataset (licence, couverture, qualité, biais)
+  2. Audit licence (compatibilité commerciale/AGPL)
+  3. Nettoyage taxonomique
+  4. Découpage entraînement/validation/test
+  5. Benchmark (précision, rappel, F1 par essence)
+  6. Conversion mobile (TFLite/ONNX, quantification INT8)
+  7. Validation terrain (essences, écorces, appareils, luminosités)
+- Classification des essences françaises les plus courantes (~50 espèces
   en première tranche)
-- Quantification INT8 pour Android (taille < 50 MB)
+- Quantification INT8 pour Android
 - Dégradation gracieuse : si le modèle on-device n'est pas confiant
   (score < seuil), proposer l'envoi à Pl@ntNet au retour du réseau
 - L'identification on-device reste une `SUGGESTION_IA`, jamais une
@@ -1137,8 +1212,12 @@ L'assistant vocal (T1 on-device) couvre trois cas d'usage :
 Les modèles LLM et les index RAG sont distribués via les **packs de
 données** (§9), pas via le Play Store :
 
-- Pack « Assistant terrain FR » : SmolLM3 3B INT4 + index RAG local +
-  modèle TFLite identification essences (~500 MB total)
+- Pack « Assistant terrain FR » : modèle T1 (profil à définir par RFC
+  renouvelable) + index RAG local + modèle d'identification essences.
+  **La taille exacte sera mesurée après sélection du modèle** — un
+  modèle 3B en INT4 représente ~1,5 GB de poids bruts seuls, avant
+  métadonnées et contexte. L'objectif initial de ~500 MB est
+  probablement irréaliste pour un modèle 3B et devra être réévalué.
 - Pack « Documentation ONF/CNPF » : index RAG complémentaire (~200 MB)
 - Chaque pack expose version, date, source, licence, empreinte et
   signature (§9)
@@ -1161,20 +1240,25 @@ données** (§9), pas via le Play Store :
   explicite. L'audio brut est supprimé après transcription sauf accord
   spécifique (§6.2, `docs/RGPD_AUDIT_REPORT.md`).
 
-### 15.10 Choix de modèles — synthèse
+### 15.10 Profils de modèles — synthèse
 
-| Modèle | Taille | Licence | Tier | Cas d'usage | Statut |
-|---|---|---|---|---|---|
-| SmolLM3 3B | 3B | Apache 2.0 | T1 | Assistant terrain offline | Cible P5 |
-| Phi-3-mini 4B | 3.8B | MIT | T1 (alternative) | Assistant léger | Cible P5 |
-| Llama 3.2 3B | 3B | Llama 3.2 Community | T1 (alternative) | Assistant terrain offline | Étude |
-| Mistral 7B | 7B | Apache 2.0 | T2 | RAG edge, raisonnement intermédiaire | Cible P5 |
-| Phi-4-reasoning 14B | 14B | MIT | T3 | Raisonnement profond serveur | Différé (RFC-0031) |
-| TFLite (PureForest) | < 50 MB | — | T1 | Identification essence on-device | Étude (RFC-0018) |
+> Les noms de modèles précis (SmolLM3, Phi-3-mini, Mistral 7B,
+> Phi-4-reasoning, etc.) ne sont **pas** des décisions définitives. Ils
+> sont étudiés comme candidats potentiels mais seront obsolètes avant
+> l'implémentation. La sélection concrète fait l'objet d'une **RFC
+> renouvelable** `RFC-IA-MODEL-SELECTION-YYYY-MM` qui comparera les
+> modèles disponibles au moment réel du développement.
 
-**Note** : vLLM + Phi-4-reasoning est explicitement différé (RFC-0031) car
-le Reasoning Engine doit être spécifié avant changement d'inférence. Le
-T3 utilise Mistral 7B servé en attendant.
+| Profil | Taille | Tier | Cas d'usage | Statut |
+|---|---|---|---|---|
+| `T1-MICRO` | 0,3 à 1,5 B | T1 | Assistant terrain offline léger | Cible P5 (RFC renouvelable) |
+| `T1-STANDARD` | 1,5 à 4 B | T1 | Assistant terrain offline | Cible P5 (RFC renouvelable) |
+| `T2-EDGE` | 4 à 12 B | T2 | RAG edge, raisonnement intermédiaire | Cible P5 (RFC renouvelable) |
+| `T3-SERVER` | choisi par benchmark | T3 | Raisonnement profond serveur | Différé (RFC-0031) |
+| Modèle identification essence | à entraîner | T1 | Identification on-device | Étude (RFC-0018, audit dataset requis) |
+
+**Métriques à mesurer** (pas des promesses) : P50, P95, temps de premier
+token, tokens/s, RAM maximale, chauffe, consommation, qualité métier.
 
 ## 16. QPIS — Quintessences Pack Intelligence System
 
@@ -1199,12 +1283,24 @@ d'intégrité, installation atomique, mise à jour différentielle, rollback.
 | Type | Contenu | Exemples |
 |---|---|---|
 | **Système** | Taxonomie, unités, méthodes, équations, règles, classifications, protocoles de base, traductions, documentation | Référentiel TAXREF, unités dendrométriques |
-| **Fonctionnels** | Inventaire avancé, martelage pro, valorisation, santé, travaux, DFCI, SIG avancé, IA locale, collaboration | Module martelage pro |
 | **Géographiques** | Hiérarchie France → région → département → territoire → forêt → mission | Découpage départemental |
 | **Cartographiques** | PMTiles, MBTiles, orthophotos, fond topographique, cadastre, DFCI, relief, couches forestières, MNT | Orthophoto IGN départementale |
 | **Scientifiques** | Tarifs de cubage, équations, allométrie, biomasse, carbone, station, santé, sylviculture, produits | Tarifs ONF, équations Vallet et al. |
 | **Organisationnels** | Protocoles privés, tarifs internes, couches privées, nomenclatures, modèles de rapports, paramètres, missions | Protocole de martelage ONF |
-| **IA** | Reconnaissance d'essences, TreeVision, voix, OCR, assistant local, modèle sanitaire | Modèle TFLite PureForest |
+| **IA** | Reconnaissance d'essences, TreeVision, voix, OCR, assistant local, modèle sanitaire | Modèle à entraîner (§15.6) |
+
+> **Distinction critique — packs vs code exécutable** : un pack QPIS
+> contient des **données, modèles, règles, protocoles, styles et
+> ressources**. Il ne doit **jamais** injecter du code exécutable non
+> signé. Trois concepts distincts :
+>
+> - **Entitlement** : autorise une fonction **déjà présente** dans
+>   l'application (ex : « martelage pro » débloqué par abonnement).
+> - **Feature module signé** : code livré par le **canal officiel** de
+>   l'application (Play Feature Delivery ou équivalent), signé,
+>   versionné.
+> - **Pack QPIS** : données, modèles, règles, protocoles — jamais de
+>   code Kotlin ou natif arbitraire.
 
 ### 16.3 Manifeste de pack
 
@@ -1643,18 +1739,35 @@ Pack (prototype). ADR : human-in-the-loop, conservation des valeurs sources.
 
 TreeVision propose quatre modes adaptés au contexte terrain :
 
-| Mode | Usage | Précision | Vitesse |
+| Mode | Usage | Statut initial | Vitesse |
 |---|---|---|---|
-| **Rapide** | Inventaire de reconnaissance, estimation préliminaire | Faible (vision simple) | Élevée |
-| **Précis** | Inventaire officiel, martelage, données contractuelles | Élevée (scan multi-angle + instruments) | Modérée |
-| **Calibration** | Étalonnage de l'appareil sur un arbre de référence connu | Référence | Lente |
-| **Placette semi-automatique** | Scan d'une placette entière avec détection automatique des tiges | Modérée à élevée | Variable |
+| **Rapide** | Inventaire de reconnaissance, estimation préliminaire | Estimation indicative | Élevée |
+| **Précis** | Inventaire assisté, martelage | Mesure assistée **à valider** | Modérée |
+| **Calibration** | Étalonnage de l'appareil sur un arbre de référence connu | Production de références | Lente |
+| **Placette semi-automatique** | Scan d'une placette entière avec détection automatique des tiges | **R&D expérimentale** | Variable |
 
-Le mode détermine le nombre de visées requises, le niveau de détail du scan,
-la tolérance d'incertitude acceptée et les champs du formulaire de saisie
-(§17.6 formulaires contextuels). Le technicien peut changer de mode en cours
-de mission, mais le mode utilisé est **conservé avec chaque mesure** pour
-traçabilité.
+> **Avertissement** : tant que TreeVision n'a pas été validé sur
+> différentes essences, écorces, appareils, couverts, luminosités,
+> terrains plats et pentus, feuillus et résineux, arbres isolés et
+> peuplements denses, le mode **Précis** reste une mesure **assistée à
+> valider**, pas une mesure professionnelle certifiée. Le mode
+> **Placette** reste **expérimental**.
+
+**Seuils de passage** (à valider empiriquement) :
+
+```text
+Prototype → expérimental → assistance opérationnelle → mesure professionnelle validée
+```
+
+Aucun mode ne peut être utilisé pour des inventaires officiels ou des
+données contractuelles tant qu'il n'a pas atteint le statut **mesure
+professionnelle validée**.
+
+Le mode détermine le nombre de visées requises, le niveau de détail du
+scan, la tolérance d'incertitude acceptée et les champs du formulaire de
+saisie (§17.6 formulaires contextuels). Le technicien peut changer de mode
+en cours de mission, mais le mode utilisé est **conservé avec chaque
+mesure** pour traçabilité.
 
 **Dépendances** : RFC-0007 (TreeVision Measurement Pipeline). Lien avec
 §18.7 (indice de confiance), §17.6 (formulaires contextuels).
@@ -1736,6 +1849,10 @@ automatiquement** :
 
 ### 18.15 Amélioration GNSS par immobilisation
 
+> Les valeurs ci-dessous sont des **exemples pédagogiques**, pas des
+> garanties. La précision réelle dépend de l'appareil, des conditions
+> de réception et de la géométrie satellitaire.
+
 Lorsque l'utilisateur reste immobile, GeoSylva accumule plusieurs
 positions GNSS :
 
@@ -1777,7 +1894,15 @@ data class SpatialEvidence(
 )
 ```
 
-**Exemple de résultat** :
+> **Avertissement** : les valeurs ci-dessous sont des **exemples
+> pédagogiques**, pas des capacités garanties. Le moteur doit travailler
+> avec des **matrices de covariance**, des **résidus**, la **qualité du
+> signal**, une **calibration** et une **validation empirique**. Les
+> poids des sources (GNSS, AR, triangulation, contrainte parcellaire)
+> doivent être **calculés dynamiquement** ou appris sur des données de
+> référence, jamais inscrits comme constantes métier.
+
+**Exemple pédagogique de résultat** (les valeurs réelles seront mesurées) :
 
 ```text
 Position fusionnée : ±1,9 m absolu, ±0,4 m relatif
@@ -1822,6 +1947,36 @@ rattachées à ces objets communs. GeoSylva utilise `ManagementUnit` comme
 unité de référence forestière, `Observation`/`Measurement`/`Evidence` pour
 les saisies terrain, `Protocol`/`Method`/`Calculation` pour les calculs
 (§7 doctrine scientifique).
+
+### 19.1.1 Hiérarchie territoriale — 8 entités distinctes
+
+> **Correction v0.7.0** : la navigation canonique (Projet → Forêt →
+> Parcelle → Placette) et le modèle central (`ManagementUnit`) doivent
+> être précisés. Une parcelle cadastrale, une parcelle forestière, un
+> peuplement et une placette ne doivent **jamais** être fusionnés sous
+> un même concept.
+
+| Entité | Définition | Source |
+|---|---|---|
+| **Property** | Propriété foncière (ensemble de parcelles cadastrales appartenant à un même propriétaire) | Cadastre |
+| **Forest** | Forêt (ensemble cohérent sur le plan écologique ou sylvicole, peut chevaucher plusieurs propriétés) | IGN BD Forêt |
+| **CadastralParcel** | Parcelle cadastrale (unité juridique de propriété) | Cadastre |
+| **ManagementUnit** | Unité de gestion (ensemble de parcelles forestières gérées ensemble sous un même document de gestion, §24) | PSG/RTG |
+| **ForestParcel** | Parcelle forestière (subdivision de la management unit pour la gestion opérationnelle) | Gestionnaire |
+| **Stand** | Peuplement (unité sylvicole homogène : essence dominante, structure, âge, station) | Diagnostic sylvicole (§22) |
+| **SamplingUnit** | Unité d'échantillonnage (regroupe plusieurs placettes pour un protocole statistique) | Protocole (§17) |
+| **Plot** | Placette (surface exacte inventoriée sur le terrain, circulaire ou rectangulaire) | Inventaire (§6) |
+
+**Relations** :
+
+```text
+Property ⊇ Forest ⊇ CadastralParcel
+ManagementUnit ⊇ ForestParcel ⊇ Stand
+SamplingUnit ⊇ Plot
+```
+
+Un `Stand` peut chevaucher plusieurs `ForestParcel`. Une `Plot` est
+rattachée à un `Stand` pour l'analyse sylvicole.
 
 ### 19.2 Unité territoriale partagée
 
@@ -1901,22 +2056,36 @@ notifications, sauvegardes, audit, partage, administration.
 
 ### 19.8 Technologies open source étudiées
 
-| Technologie | Rôle | Licence |
-|---|---|---|
-| **Open Foris Collect** | Définition d'inventaires, collecte structurée, formats d'échange | MIT |
-| **Open Foris Arena** | Collecte forestière hors connexion, campagnes multiannuelles, validation, analyse statistique (PostgreSQL/PostGIS, RStudio) | MIT |
-| **ODK Collect** | Application Android de relevés complexes hors connexion, formulaires conditionnels | Apache 2.0 |
-| **QField** | Compatible workflows QGIS/QField sur Android | GPL |
-| **SpatiaLite** | Extension géospatiale SQLite (OGC) — à étudier avec prudence sur Android (wrappers anciens) | MPL |
-| **GeoPackage** | Format d'échange géospatial (OGC) | OGC |
-| **DuckDB Spatial** | Moteur analytique secondaire pour volumes importants (Parquet/GeoParquet) — ne remplace pas Room | MIT |
-| **Orfeo ToolBox** | Télédétection serveur (Phase 9 Dev Pack) | Apache 2.0 |
-| **STAC** | Catalogue d'images satellites | Apache 2.0 |
-| **Martin** | Tuiles vectorielles PMTiles | MIT |
-| **pg_featureserv** | OGC API Features | MIT |
-| **JSON Logic** | Inspiration moteur de règles déclaratives | MIT |
-| **ZEN** | Alternative au moteur de règles (inspiration) | — |
-| **Meshtastic** | Canal mesh LoRa pour événements courts (§19.9) | MIT |
+> **Avertissement** : ce tableau est une **étude préliminaire**. Chaque
+> brique doit faire l'objet d'un **audit juridique** avant intégration,
+> notamment pour les licences de données (distinctes des licences
+> logicielles), les obligations de redistribution, la compatibilité
+> AGPL/commerciale, et les conditions réelles de réutilisation des
+> données institutionnelles. Les colonnes « licence logiciel » et
+> « licence données » ci-dessous sont **à vérifier** (date de
+> vérification à compléter).
+
+| Technologie | Rôle | Licence logiciel | Licence données | Obligations redistribution | Compat AGPL/com. | Usage prévu | Décision juridique | Date vérification |
+|---|---|---|---|---|---|---|---|---|
+| **Open Foris Collect** | Définition d'inventaires, collecte structurée | MIT | — | Inclure licence | Oui | Inspiration workflow qualité | À auditer | À compléter |
+| **Open Foris Arena** | Collecte forestière, campagnes multiannuelles | MIT | — | Inclure licence | Oui | Inspiration campagnes | À auditer | À compléter |
+| **ODK Collect** | Relevés complexes hors connexion | Apache 2.0 | — | Inclure NOTICE | Oui | Inspiration protocoles déclaratifs | À auditer | À compléter |
+| **QField** | Workflows QGIS sur Android | GPL | — | Source disponible | À étudier (GPL) | Interopérabilité | À auditer | À compléter |
+| **SpatiaLite** | Extension géospatiale SQLite (OGC) | MPL | — | Inclure licence | À étudier | Étude (prudence wrappers Android) | À auditer | À compléter |
+| **GeoPackage** | Format d'échange géospatial (OGC) | OGC | — | Standard ouvert | Oui | Format d'échange | À auditer | À compléter |
+| **DuckDB Spatial** | Moteur analytique secondaire | MIT | — | Inclure licence | Oui | Étude (ne remplace pas Room) | À auditer | À compléter |
+| **Orfeo ToolBox** | Télédétection serveur | Apache 2.0 | — | Inclure NOTICE | Oui | Phase 9 (télédétection) | À auditer | À compléter |
+| **STAC** | Catalogue d'images satellites | Apache 2.0 | — | Inclure NOTICE | Oui | Catalogue serveur | À auditer | À compléter |
+| **Martin** | Tuiles vectorielles PMTiles | MIT | — | Inclure licence | Oui | Serveur de tuiles | À auditer | À compléter |
+| **pg_featureserv** | OGC API Features | MIT | — | Inclure licence | Oui | API Features | À auditer | À compléter |
+| **JSON Logic** | Inspiration moteur de règles | MIT | — | Inclure licence | Oui | Inspiration (moteur Kotlin dédié) | À auditer | À compléter |
+| **ZEN** | Alternative moteur de règles | **À vérifier** | — | **À vérifier** | **À vérifier** | Étude | **À auditer** | À compléter |
+| **Meshtastic** | Canal mesh LoRa | MIT | — | Inclure licence | Oui | Canal Mesh (§19.9) | À auditer | À compléter |
+| **Données IGN** | BD Forêt, orthophotos, cadastre | — | **À vérifier** (Licence Ouverte v2 ?) | **À vérifier** | **À vérifier** | Packs cartographiques | **À auditer** | À compléter |
+| **Données INPN** | Biodiversité | — | **À vérifier** | **À vérifier** | **À vérifier** | Packs naturalistes | **À auditer** | À compléter |
+| **Données BRGM** | Géologie | — | **À vérifier** | **À vérifier** | **À vérifier** | Packs pédologiques | **À auditer** | À compléter |
+| **Données Copernicus** | Satellite | — | **À vérifier** | **À vérifier** | **À vérifier** | Packs télédétection | **À auditer** | À compléter |
+| **Datasets IA (PureForest etc.)** | Entraînement reconnaissance | — | **À vérifier** | **À vérifier** | **À vérifier** | Modèle identification (§15.6) | **À auditer** | À compléter |
 
 ### 19.9 Meshtastic — canal Mesh détaillé
 
@@ -2053,7 +2222,14 @@ Subscription         — abonnement et droits associés
 - navigateur système ou Custom Tab (pas de WebView embarquée) ;
 - App Link vérifié pour le callback ;
 - access token court, rotation des refresh tokens ;
-- stockage protégé par Android Keystore ;
+- **jetons stockés dans un stockage chiffré** ; la clé de chiffrement non
+  exportable est protégée par Android Keystore (Keystore stocke des clés
+  cryptographiques, pas les jetons eux-mêmes) ;
+- **identité d'appareil** : UUID d'installation + paire de clés générée
+  dans Android Keystore + clé publique enregistrée côté GSIE (pas
+  d'Android ID hashé, qui n'est pas une identité durable). L'identité
+  technique de l'appareil devient cryptographiquement démontrable.
+  Éventuellement, attestation d'intégrité séparée ;
 - réauthentification pour les opérations sensibles.
 
 **Interdictions** (sécurité Android) :
@@ -2115,23 +2291,46 @@ architecture cible (transition §20.9).
 ### 20.9 Migration des comptes existants
 
 Les utilisateurs GeoSylva actuels se connectent avec Google directement. La
-migration vers Keycloak suit la procédure suivante :
+migration vers Keycloak doit traiter **trois cas** selon l'état de l'identité
+existante :
+
+> **Avertissement** : l'UUID Quintessences doit être **généré
+> indépendamment**, puis **associé** à Google. Il ne doit **pas** être
+> dérivé de Google. Avant la migration, il faut vérifier que : le `sub`
+Google est réellement stocké, son audience/client Google est la même, il
+est récupérable, une migration serveur existe, et l'utilisateur peut être
+rapproché sans fusion dangereuse.
+
+**Cas 1 — `sub` Google existant et vérifié** : migration automatique
+contrôlée. Keycloak reconnaît le `sub` Google déjà enregistré dans
+`ExternalIdentity` → retrouve ou crée l'identité Quintessences (UUID
+indépendant) → associe le `sub` Google à l'UUID → l'utilisateur est
+connecté sans action supplémentaire.
+
+**Cas 2 — Adresse vérifiée mais pas de `sub` exploitable** :
+reconnexion Google + confirmation. L'utilisateur doit se reconnecter via
+Google (à travers Keycloak) pour établir le lien. Une confirmation
+explicite est demandée avant l'association.
+
+**Cas 3 — Identité ambiguë** : liaison manuelle sécurisée. L'utilisateur
+doit prouver la propriété du compte (email de confirmation, passkey
+existante, ou validation administrative) avant que la liaison soit
+effectuée. Aucune fusion automatique n'a lieu en cas de doute.
+
+**Procédure post-migration** (quel que soit le cas) :
 
 1. **Premier login post-migration** : l'utilisateur ouvre GeoSylva mise à
    jour → l'app redirige vers Keycloak au lieu de Google directement.
-2. **Liaison automatique** : Keycloak reconnaît le `sub` Google (déjà
-   enregistré dans `ExternalIdentity`) → crée ou retrouve l'identité
-   Quintessences → l'utilisateur est connecté sans action supplémentaire.
-3. **Invitation passkey** : après migration, l'utilisateur est invité à
+2. **Invitation passkey** : après migration, l'utilisateur est invité à
    enregistrer une passkey comme méthode principale (§20.2.1).
-4. **Période de transition** : Google reste disponible comme fournisseur
+3. **Période de transition** : Google reste disponible comme fournisseur
    fédéré pendant toute la période de transition — l'authentification Google
    via Keycloak est transparente pour l'utilisateur.
-5. **Fallback** : si l'utilisateur refuse la passkey, le mot de passe de
+4. **Fallback** : si l'utilisateur refuse la passkey, le mot de passe de
    compatibilité (§20.2.1) reste disponible.
 
-Aucune donnée utilisateur n'est perdue : l'UUID Quintessences est créé à
-partir de l'identité Google existante, et toutes les données GeoSylva
+Aucune donnée utilisateur n'est perdue : l'UUID Quintessences est généré
+indépendamment, associé à l'identité Google, et toutes les données GeoSylva
 (forêts, inventaires, martelages) sont associées via l'UUID.
 
 ### 20.10 Connexion entreprise
@@ -2180,7 +2379,7 @@ Pour les administrateurs Quintessences :
 | Session normale | Jours ou semaines selon le risque | — |
 | Session administrateur | Plus courte, réauthentification renforcée | — |
 
-Les jetons sont stockés dans un espace protégé par Android Keystore. L'API
+Les jetons sont stockés dans un **stockage chiffré** ; la clé de chifflement non exportable est protégée par Android Keystore. L'API
 GSIE vérifie systématiquement : la signature, l'émetteur (`iss`), l'audience
 (`aud`), l'expiration (`exp`), l'identifiant de session, les rôles ou
 permissions, et l'organisation active.
@@ -2560,4 +2759,27 @@ alimenter la communauté et la recherche.
 | 0.4.0 | 2026-08-04 | Intégration du Dev Pack (brainstorming ChatGPT) : §16 QPIS, §17 Mission/Protocol Engine, §18 TreeVision, §19 Métiers/objets communs/architecture modulaire, §20 Identité fédérée Keycloak/OIDC. Vision long terme GeoSylva comme poste de travail numérique complet du technicien forestier. |
 | 0.5.0 | 2026-08-04 | Vérification et complétion de l'intégration Dev Pack : §4.2 amendé (pointe vers §20 cible), §16.9 Droits et abonnements (Subscription ↔ QPIS), §17.9 Catalogue de protocoles, §18.10 Modes TreeVision, §20.2.1 Méthodes connexion Quintessences (passkey/TOTP/mot de passe compatibilité), §20.5 Interdictions Android, §20.9 Migration comptes existants, §20.10 Connexion entreprise (petite/grande structure), §20.11 Sécurité administrative, §20.12 Gestion des jetons. |
 | 0.6.0 | 2026-08-04 | Intégration complète de la conversation ChatGPT source : 23 recommandations. §7 enrichi (7 sous-sections : qualité données, campagnes multiannuelles, architecture moteurs, règles déclaratives, valorisation, versionnement, IA vs déterministe). §16 enrichi (usine packs, Pack Store commun, intelligence locale). §17 enrichi (exemple protocole ODK YAML). §18 enrichi (8 sous-sections : philosophie coopérative, méthodes A/B RANSAC, modèle confiance, contrôles cohérence, GNSS immobilisation, constellations, SpatialEvidence, calibration). §19 enrichi (services techniques, technologies open source, Meshtastic détaillé, décisions MapLibre/Room). §20 enrichi (capacités, alternatives rejetées, SCIM, 4 phases déploiement, architecture finale). Nouvelles sections : §21 Diagnostic de station, §22 Scénarios sylvicoles, §23 Travaux forestiers, §24 Documents de gestion durable, §25 Références locales de marché. |
+| 0.7.0 | 2026-08-04 | **Cadrage** suite à la revue critique du Fondateur. 10 corrections critiques : (1) avertissement monolithique + §28 RFC à extraire, (2) modèles IA remplacés par profils T1-MICRO/STANDARD/T2-EDGE/T3-SERVER + RFC renouvelable, (3) PureForest TFLite reformulé (modèle à entraîner + audit dataset), (4) TreeVision précision remplacée par statut initial + seuils de passage, (5) GNSS exemples → objectifs (covariance, poids dynamiques), (6) migration Google→Keycloak 3 cas + UUID indépendant, (7) identifiant appareil UUID + Keystore, (8) jetons stockage chiffré + clé Keystore, (9) séparation Entitlement / Feature module / Pack QPIS, (10) tableau licences enrichi (8 colonnes). Roadmap refondue : 11 lots (0-10). Structure territoriale définie (8 entités). Corrections de forme. |
+
+## 28. Annexe — RFC à extraire
+
+> Le document GeoSylva-003 v0.7.0 est la **spécification produit
+> maîtresse**. Les détails techniques (modèles de données précis,
+> endpoints API, schémas SQL, bibliothèques) doivent être extraits vers
+> des **RFC indépendantes**. Cette annexe liste les RFC à créer ou
+> enrichir.
+
+| RFC | Objet | Section source |
+|---|---|---|
+| **RFC-0001** | Scientific Forest Core (cubage, dendrométrie, Method Registry) | §7, §7.7-§7.11 |
+| **RFC-0002** | Identity and Organizations (Keycloak, OIDC, capacités) | §20 |
+| **RFC-0003** | Synchronization Protocol (journal, push/pull, conflits) | §8, §14 |
+| **RFC-0004** | QPIS Pack Format (manifeste, signature, installation atomique) | §9, §16 |
+| **RFC-0005** | Mission and Protocol Engine (protocoles déclaratifs, métiers) | §17 |
+| **RFC-0006** | Geo Engine (MapLibre, PMTiles, GeoPackage, QGIS/QField) | §19.10-§19.11 |
+| **RFC-0007** | TreeVision Measurement Pipeline | §18 |
+| **RFC-0008** | Subscription and Entitlements (abonnements, entitlements) | §16.9 |
+| **RFC-IA-MODEL-SELECTION-YYYY-MM** | Sélection modèles IA (renouvelable) | §15 |
+| **RFC-0018** | Identification essence on-device (audit dataset, entraînement) | §15.6 |
+| **RFC-0019** | gsie-ai-gateway serveur | §15, §14 |
 
