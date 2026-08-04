@@ -153,7 +153,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     PREP_MARTEL["Écran préparation martelage<br/>(nouveau)"]:::new
-    SAISIE_MARTEL["Écran saisie terrain<br/>(nouveau — gros boutons, une main, gants)"]:::new
+    SAISIE_MARTEL["Écran saisie terrain<br/>(PlacetteDetailScreen adapté)"]:::kept
     PAUSE["Pause<br/>(session active, saisie suspendue)"]:::new
     FIN_MARTEL["Fin — double validation<br/>(arrêter + confirmer)"]:::new
     SNAP["Instantané immuable"]:::new

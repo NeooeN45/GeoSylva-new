@@ -3318,7 +3318,10 @@ nombre de tiges, état de validation, synchronisation.
 
 **Martelage** (sous-navigation) :
 - **Sessions** : liste des sessions de martelage, synthèses.
-- **Saisie** : écran de saisie terrain (§29.19).
+- **Saisie** : écran de saisie terrain — **écran actuel
+  `PlacetteDetailScreen` (titre « Placette essences ») conservé et
+  adapté** avec ajouts (indicateurs session, prélèvement, TreeVision,
+  actions session), §29.19.
 - **TreeVision** : mesure caméra d'une tige pendant le martelage
   (§29.30).
 
@@ -3382,14 +3385,39 @@ correction immédiate, fonctionnement avec gants, mode pluie.
 `Mission > Démarrer le martelage`.
 
 > **Transformation clé** : l'ancien écran `Martelage` devient
-> **SynthèseMartelage**. La saisie se fait dans un nouvel écran de saisie
-> terrain (§29.18). La synthèse s'ouvre **automatiquement** après la fin
-> du martelage.
+> **SynthèseMartelage**. La saisie se fait dans l'**écran actuel
+> `PlacetteDetailScreen`** (titre « Placette essences ») — **pas un
+> nouvel écran créé de zéro**. Cet écran existant est **conservé et
+> adapté** avec quelques modifications et ajouts pour devenir l'écran
+> de saisie martelage. La synthèse s'ouvre **automatiquement** après la
+> fin du martelage.
 
-**Écran de préparation** : objectif, protocole, participants, surface,
-peuplement, seuils, catégories, packs, batterie, GPS, matériel connecté.
+> **Écran conservé et adapté** (`PlacetteDetailScreen` → écran de
+> saisie martelage) :
+>
+> L'écran actuel affiche déjà les essences d'une placette avec blocs
+> par essence, compte de tiges, recherche, réordonnancement, onglets
+> Essences/Évolution, navigation vers diamètres/martelage/IBP. Il
+> devient l'écran de saisie martelage avec les **modifications et ajouts
+> suivants** :
+>
+> - indicateur de session active (durée, tiges enregistrées) ;
+> - indicateurs de prélèvement (G avant/après, taux, volume prélevé) ;
+> - catégorie martelage dans la saisie (prélevé / conservé / avenir) ;
+> - bouton TreeVision (mesure caméra, §29.30) ;
+> - actions session (pause, annuler dernière, terminer) ;
+> - mode vocal (si activé) ;
+> - intégration compas Bluetooth (si connecté).
+>
+> L'essence de l'écran (blocs par essence, liste des tiges, réordonnancement,
+> recherche, onglets) **reste identique** — ce sont les fonctionnalités
+> session martelage qui s'ajoutent par-dessus.
 
-**Écran de saisie actif** :
+**Écran de préparation** (nouveau, avant la saisie) : objectif,
+protocole, participants, surface, peuplement, seuils, catégories, packs,
+batterie, GPS, matériel connecté.
+
+**Écran de saisie actif** (`PlacetteDetailScreen` adapté) :
 - **En-tête permanent** : durée active, durée totale, tiges enregistrées,
   synchronisation, batterie, GPS.
 - **Indicateurs** : nombre prélevé, nombre conservé, G avant, G prélevée,
