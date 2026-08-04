@@ -138,8 +138,8 @@ flowchart TD
     FICHE_PLACETTE --> PL_HIST["Historique"]:::new
 
     PL_TIGES -->|ajouter| SAISIE_TIGE["Saisie d'une tige<br/>(nouveau)"]:::new
-    PL_TIGES --> TREEVISION["TreeVision caméra<br/>(nouveau)"]:::new
     PL_MARTEL -->|démarrer| PREP_MARTEL
+    PL_MARTEL -->|mesurer caméra| TREEVISION["TreeVision caméra<br/>(nouveau)"]:::new
 
     classDef new fill:#2d6a4f,color:#fff,stroke:#1b4332,stroke-width:2px
     classDef kept fill:#52b788,color:#fff,stroke:#2d6a4f,stroke-width:2px
@@ -430,12 +430,15 @@ flowchart TD
 
 ```mermaid
 flowchart TD
+    PREP_MARTEL["Préparation martelage"]:::new
+    SAISIE_MARTEL["Saisie martelage"]:::new
     TREEVISION["TreeVision caméra<br/>(nouveau — expérimental)"]:::new
     TV_RESULT["Page résultat TreeVision<br/>(diamètre, hauteur, incertitude, confiance)"]:::new
 
+    PREP_MARTEL --> SAISIE_MARTEL
+    SAISIE_MARTEL -->|mesurer caméra| TREEVISION
     TREEVISION -->|valider| TV_RESULT
-    TV_RESULT -->|corriger| SAISIE_TIGE
-    SAISIE_TIGE -->|mesurer caméra| TREEVISION
+    TV_RESULT -->|corriger| SAISIE_MARTEL
 
     PA_TRAVAUX["Chantier travaux<br/>(nouveau)"]:::new
     PA_TRAVAUX --> T_PRESC["Prescription"]:::new
@@ -505,9 +508,9 @@ flowchart TD
 
     %% Placette → tige → martelage
     FICHE_PLACETTE --> SAISIE_TIGE["Saisie tige"]:::new
-    FICHE_PLACETTE --> TREEVISION["TreeVision"]:::new
     FICHE_PLACETTE --> PREP_MARTEL["Préparation martelage"]:::new
     PREP_MARTEL --> SAISIE_MARTEL["Saisie martelage"]:::new
+    SAISIE_MARTEL -->|mesurer caméra| TREEVISION["TreeVision"]:::new
     SAISIE_MARTEL -->|⇢ auto| SYNTHESE["SynthèseMartelage"]:::transformed
     SYNTHESE --> ANALYSE_GSIE["Analyse GSIE"]:::transformed
 

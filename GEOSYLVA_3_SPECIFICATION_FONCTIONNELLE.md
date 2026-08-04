@@ -3024,7 +3024,7 @@ territoriales distinctes).
 | Gestionnaire QPIS (refonte) | Compte > Packs | Lot 6 |
 | Centre scientifique | Compte > Documentation | Lot 2 |
 | Analyse GSIE | Fiche parcelle > Analyse | Lot 5 |
-| TreeVision caméra | Tige > Mesurer caméra | Lot 8 |
+| TreeVision caméra | Martelage > TreeVision | Lot 8 |
 | Chantier travaux | Parcelle > Travaux | Lot 3 |
 | Documents de gestion | Forêt > Documents | Lot 3 |
 | Fiche projet | Accueil > Projets > Fiche | Lot 1 |
@@ -3298,19 +3298,29 @@ Aperçu    Tiges    Martelage    Analyse    Plus
 **Aperçu** : type, protocole, surface, rayon, forme, date, opérateurs,
 nombre de tiges, état de validation, synchronisation.
 
-**Tiges** (sous-navigation) :
+**Tiges** (sous-navigation) — visualisation et consultation :
 - **Liste des tiges** : filtrable (numéro, essence, diamètre, hauteur,
-  état, catégorie martelage, qualité, confiance).
+  état, catégorie martelage, qualité, confiance). Chaque tige affiche
+  son emplacement, ses informations détaillées (essence, dimensions,
+  état sanitaire, photos, provenance).
+- **Carte des tiges** : vue cartographique de la placette avec
+  positionnement de chaque tige, sélection interactive, affichage des
+  infos au tap.
 - **Essences** : cartes par essence (ancien `EssenceDiam` enrichi —
   recherche, tri, agrégations, provenance, comparaison, accessibilité).
 - **Évolution** : comparaison entre campagnes (ancien `PlacetteEvolution`
   enrichi — croissance, mortalité, recrutement, changements, évolution
   sanitaire).
-- **Carte** : vue cartographique de la placette.
+
+> **Correction v0.9.1** : TreeVision ne se trouve **pas** dans Tiges.
+> Tiges est dédié à la **visualisation** (liste + carte + infos par
+> tige). La mesure par caméra se fait depuis **Martelage**.
 
 **Martelage** (sous-navigation) :
 - **Sessions** : liste des sessions de martelage, synthèses.
 - **Saisie** : écran de saisie terrain (§29.19).
+- **TreeVision** : mesure caméra d'une tige pendant le martelage
+  (§29.30).
 
 **Analyse** (sous-navigation, **cartes conditionnelles** — §29.29) :
 - **Calculs** : surface terrière, densité, volume, incertitude, méthode,
@@ -3650,9 +3660,13 @@ Anciens écrans IBP (7 routes) → refondus :
 
 ### 29.30 TreeVision
 
-**Emplacement** : `Tige > Mesurer avec la caméra`,
-`Martelage > TreeVision`, `Placette > Scanner`, `Carte > Ajouter un
-arbre`. Nouvel écran.
+**Emplacement** : `Placette > Martelage > TreeVision`,
+`Mission martelage > TreeVision`. Nouvel écran.
+
+> **Correction v0.9.1** : TreeVision est accessible depuis le
+> **martelage**, pas depuis Tiges. Tiges est dédié à la visualisation
+> (liste, carte, infos par tige). La mesure caméra se fait pendant la
+> saisie d'un martelage.
 
 **Écran caméra** :
 - **Haut** : arbre actif, mode (rapide/précis/calibration), stabilité,
