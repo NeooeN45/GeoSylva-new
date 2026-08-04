@@ -4,7 +4,7 @@
 |---|---|
 | Identifiant | GEOSYLVA-003 |
 | Statut | Draft |
-| Version | 0.4.0 |
+| Version | 0.5.0 |
 | Date | 2026-08-04 |
 | Auteur | Quintessences — spécification issue du brainstorming Fondateur/Codex |
 | Périmètre | Application mobile GeoSylva et ses échanges avec GSIE |
@@ -107,6 +107,14 @@ exigent une confirmation explicite.
 - Mode découverte clairement marqué, avec données fictives non synchronisables.
 - Les comptes entreprise et partenaires restent signalés « en développement »
   tant que leur contrat d’identité et leurs droits ne sont pas définis.
+
+> **Évolution cible (§20)** : l'état actuel (connexion Google directe + compte
+> GeoSylva classique) est **transitoire**. L'architecture cible — Keycloak
+> comme broker d'identité, OIDC PKCE S256, passkeys/WebAuthn, organisations et
+> workspaces, UUID Quintessences immuable — est décrite en §20. La migration
+> des comptes existants est spécifiée en §20.9. Les comptes entreprise
+> passent de « en développement » à une architecture définie (§20.10). Voir
+> aussi RFC-0002 (Global Identity and Workspaces).
 
 ### 4.3 Accueil et projets
 
@@ -1024,6 +1032,39 @@ jour différentielle par blocs et l'installation atomique avec rollback.
 **Dépendances** : RFC-0004 (QPIS Pack Format, §22 RFC prioritaires du Dev
 Pack). ADR : packs signés, Room/SQLCipher conservé comme base locale métier.
 
+### 16.9 Droits et abonnements
+
+La résolution des droits de packs QPIS s'appuie sur le modèle d'abonnement
+décrit en §20.4 (Subscription). Le serveur GSIE expose un
+**EntitlementResolver** qui consomme l'abonnement utilisateur, les
+appartenances organisationnelles (§20.1) et les politiques de l'organisation
+pour déterminer :
+
+- les packs accessibles (par type, territoire, niveau d'abonnement) ;
+- les packs `REQUIRED` vs `RECOMMENDED` vs `OPTIONAL` selon le métier (§17.2) ;
+- les restrictions d'expiration (délai de grâce hors ligne, §20.6) ;
+- les packs organisationnels privés (protocoles, tarifs internes).
+
+**Chaîne logique** :
+
+```text
+Subscription (§20.4) + Membership (§20.4) + Organization policy
+        ↓
+EntitlementResolver (serveur GSIE)
+        ↓
+Droits de packs QPIS → manifeste accessible au client
+        ↓
+Cache local GeoSylva (hors ligne, §20.6)
+```
+
+L'expiration d'un abonnement **ne supprime pas les données** (§20.6) — elle
+peut bloquer le téléchargement de nouveaux packs premium et limiter les
+traitements serveur étendus. Un délai de grâce hors ligne permet de continuer
+à travailler sur le terrain après une expiration, jusqu'à la reconnexion.
+
+**Dépendances** : RFC-0008 (Subscription and Entitlements). Lien avec §20.4
+(Subscription), §20.6 (hors ligne), §17.3 (capabilities).
+
 ---
 
 ## 17. Mission Engine et Protocol Engine
@@ -1132,6 +1173,30 @@ d'exposer toutes les fonctions à tous les utilisateurs.
 **Dépendances** : RFC-0005 (Protocol and Form Engine), RFC-0002 (Global
 Identity and Workspaces). ADR : règles déclaratives hors UI.
 
+### 17.9 Catalogue de protocoles
+
+Les protocoles proviennent de quatre sources distinctes :
+
+| Source | Description | Exemple |
+|---|---|---|
+| **Officiels** | Protocoles nationaux ou institutionnels validés | Protocole IGN inventaire forestier national |
+| **Organisationnels** | Protocoles privés d'une organisation (pack QPIS type organisationnel) | Protocole de martelage ONF |
+| **Pédagogiques** | Protocoles d'apprentissage pour étudiants et formateurs | Exercice d'inventaire lycée forestier |
+| **Communautaires validés** | Protocoles soumis par la communauté, revus et validés | Protocole de suivi sanitaire associatif |
+
+Chaque protocole du catalogue expose les métadonnées suivantes : auteur,
+organisme, version, licence, territoire, date, compatibilité (version app
+minimale), champs, règles, tests de validation et livrables attendus.
+
+Le catalogue est consultable depuis l'app (recherche par métier, territoire,
+type de mission) et les protocoles sont installés via QPIS (§16, type système
+ou organisationnel). Un protocole ne peut être utilisé en mission qu'après
+vérification de sa signature et de sa compatibilité avec la version de
+l'application.
+
+**Dépendances** : RFC-0005 (Protocol and Form Engine). Lien avec §16 (QPIS),
+§17.5 (distribué par pack).
+
 ---
 
 ## 18. TreeVision — mesure multimodale des arbres
@@ -1230,6 +1295,26 @@ des capacités TreeVision (volet reconnaissance, pas encore volet mesure).
 
 **Dépendances** : RFC-0007 (TreeVision Measurement Pipeline). Phase 8 du Dev
 Pack (prototype). ADR : human-in-the-loop, conservation des valeurs sources.
+
+### 18.10 Modes de mesure
+
+TreeVision propose quatre modes adaptés au contexte terrain :
+
+| Mode | Usage | Précision | Vitesse |
+|---|---|---|---|
+| **Rapide** | Inventaire de reconnaissance, estimation préliminaire | Faible (vision simple) | Élevée |
+| **Précis** | Inventaire officiel, martelage, données contractuelles | Élevée (scan multi-angle + instruments) | Modérée |
+| **Calibration** | Étalonnage de l'appareil sur un arbre de référence connu | Référence | Lente |
+| **Placette semi-automatique** | Scan d'une placette entière avec détection automatique des tiges | Modérée à élevée | Variable |
+
+Le mode détermine le nombre de visées requises, le niveau de détail du scan,
+la tolérance d'incertitude acceptée et les champs du formulaire de saisie
+(§17.6 formulaires contextuels). Le technicien peut changer de mode en cours
+de mission, mais le mode utilisé est **conservé avec chaque mesure** pour
+traçabilité.
+
+**Dépendances** : RFC-0007 (TreeVision Measurement Pipeline). Lien avec
+§18.7 (indice de confiance), §17.6 (formulaires contextuels).
 
 ---
 
@@ -1352,7 +1437,7 @@ dans une organisation cliente.
 
 ### 20.2 Composants
 
-- **Keycloak** comme autorité centrale d'identité ;
+- **Keycloak** (auto-hébergé) comme autorité centrale d'identité ;
 - **PostgreSQL** pour la persistance ;
 - **OpenID Connect** et **OAuth 2.0** ;
 - **Authorization Code Flow avec PKCE S256** sur Android ;
@@ -1361,6 +1446,37 @@ dans une organisation cliente.
 - Microsoft Entra ID, Google Workspace, Okta, Keycloak tiers ou SAML pour
   les entreprises ;
 - service d'autorisation métier GSIE séparé.
+
+Keycloak est choisi pour les raisons suivantes : open source, sans coût par
+utilisateur, compatible OIDC/OAuth 2.0/SAML, compatible Google comme
+fournisseur externe, adapté aux applications Android/web/serveur, prise en
+charge des passkeys et WebAuthn, gestion des organisations, rôles et
+autorisations, et aucune dépendance durable à Firebase, Auth0 ou Microsoft.
+Le coût se limite à l'hébergement, les sauvegardes, le nom de domaine et
+éventuellement le service d'envoi des courriels. Pour un démarrage modeste,
+Keycloak peut tourner avec PostgreSQL sur un petit serveur — la
+responsabilité de maintenir les correctifs de sécurité et les sauvegardes
+reste toutefois non négligeable.
+
+### 20.2.1 Méthodes de connexion Quintessences
+
+**Méthode principale** : passkey (WebAuthn). L'utilisateur se connecte avec
+empreinte digitale, reconnaissance faciale sécurisée, code de verrouillage
+de l'appareil ou clé physique de sécurité. La clé privée reste protégée sur
+l'appareil ; le serveur ne conserve pas un secret réutilisable comme un mot
+de passe.
+
+**Méthodes secondaires** (récupération) : code temporaire par application
+TOTP, seconde passkey, clé de sécurité physique, codes de récupération,
+courriel de récupération vérifié.
+
+**Mot de passe** : conservé comme solution de compatibilité pour certains
+utilisateurs, mais **non privilégié** — la stratégie par défaut est
+passwordless (passkey + récupération).
+
+**Administrateurs** : minimum deux moyens d'authentification enregistrés
+(passkey ou clé physique + TOTP ou seconde clé + codes de récupération hors
+ligne). Voir §20.11 Sécurité administrative.
 
 ### 20.3 Identifiant interne
 
@@ -1393,6 +1509,20 @@ Subscription         — abonnement et droits associés
 - access token court, rotation des refresh tokens ;
 - stockage protégé par Android Keystore ;
 - réauthentification pour les opérations sensibles.
+
+**Interdictions** (sécurité Android) :
+
+- ne pas intégrer le formulaire de connexion dans une WebView ;
+- ne pas enregistrer de secret client dans l'APK (client public) ;
+- ne pas transmettre le mot de passe à GeoSylva ;
+- ne pas utiliser le flux implicite ;
+- ne pas utiliser le flux « mot de passe direct » (Resource Owner Password
+  Credentials) ;
+- ne pas stocker les jetons en clair.
+
+PKCE empêche qu'un code d'autorisation intercepté soit transformé en jetons
+par une autre application. Keycloak permet d'imposer S256 pour le client
+mobile.
 
 Le flux Google : GeoSylva ouvre l'URL Keycloak dans le navigateur système →
 l'utilisateur choisit Google → Google authentifie → Keycloak crée ou
@@ -1433,9 +1563,81 @@ entreprise passent de « en développement » à une architecture définie.
 
 **Dépendances** : RFC-0002 (Global Identity and Workspaces), RFC-0008
 (Subscription and Entitlements). ADR : Keycloak comme broker d'identité, UUID
-global. Tension potentielle avec §4.2 : la spec actuelle mentionne « compte
-GeoSylva classique » — à terme, ce compte devient un compte Quintessences
-géré par Keycloak, pas une base d'utilisateurs GeoSylva indépendante.
+global. La §4.2 est désormais amendée pour pointer vers cette section comme
+architecture cible (transition §20.9).
+
+### 20.9 Migration des comptes existants
+
+Les utilisateurs GeoSylva actuels se connectent avec Google directement. La
+migration vers Keycloak suit la procédure suivante :
+
+1. **Premier login post-migration** : l'utilisateur ouvre GeoSylva mise à
+   jour → l'app redirige vers Keycloak au lieu de Google directement.
+2. **Liaison automatique** : Keycloak reconnaît le `sub` Google (déjà
+   enregistré dans `ExternalIdentity`) → crée ou retrouve l'identité
+   Quintessences → l'utilisateur est connecté sans action supplémentaire.
+3. **Invitation passkey** : après migration, l'utilisateur est invité à
+   enregistrer une passkey comme méthode principale (§20.2.1).
+4. **Période de transition** : Google reste disponible comme fournisseur
+   fédéré pendant toute la période de transition — l'authentification Google
+   via Keycloak est transparente pour l'utilisateur.
+5. **Fallback** : si l'utilisateur refuse la passkey, le mot de passe de
+   compatibilité (§20.2.1) reste disponible.
+
+Aucune donnée utilisateur n'est perdue : l'UUID Quintessences est créé à
+partir de l'identité Google existante, et toutes les données GeoSylva
+(forêts, inventaires, martelages) sont associées via l'UUID.
+
+### 20.10 Connexion entreprise
+
+Le « compte entreprise » n'est pas un nouveau compte personnel — c'est une
+**organisation** à laquelle l'utilisateur appartient (§20.1). Un même
+utilisateur peut appartenir à plusieurs organisations avec des rôles
+différents (propriétaire dans son entreprise, intervenant dans un lycée,
+prestataire dans une collectivité).
+
+**Petite entreprise sans SSO** : les utilisateurs se connectent avec Google,
+une passkey Quintessences ou leur adresse professionnelle. Le responsable
+les invite dans l'organisation.
+
+**Grande entreprise avec système d'identité** : l'utilisateur choisit « Se
+connecter avec mon organisation », saisit son adresse professionnelle
+(`prenom.nom@entreprise.fr`). Le système détecte le domaine et redirige
+automatiquement vers le fournisseur de l'entreprise (Microsoft Entra ID,
+Google Workspace, Okta, Keycloak tiers, SAML). L'authentification et la MFA
+de l'entreprise sont respectées. Keycloak agit comme courtier d'identité et
+délivre ensuite une identité uniforme Quintessences.
+
+Une organisation contient : ses membres, ses équipes, ses licences, ses
+abonnements, ses données, ses packs, ses protocoles, ses rôles et ses
+politiques de sécurité.
+
+### 20.11 Sécurité administrative
+
+Pour les administrateurs Quintessences :
+
+- passkey ou clé physique de sécurité **obligatoire** ;
+- second facteur de secours (TOTP ou seconde clé) ;
+- codes de récupération conservés hors ligne ;
+- durée de session **réduite** par rapport à un utilisateur standard ;
+- journal de connexion (toutes les connexions administrateur tracées) ;
+- révocation des appareils à distance ;
+- validation renforcée pour les actions critiques (suppression de données,
+  modification des droits, publication de packs).
+
+### 20.12 Gestion des jetons
+
+| Jeton | Durée | Rotation |
+|---|---|---|
+| Access token | 5 à 10 minutes | Court, à rotation fréquente |
+| Refresh token | Plusieurs jours/semaines selon le risque | Rotation à chaque utilisation |
+| Session normale | Jours ou semaines selon le risque | — |
+| Session administrateur | Plus courte, réauthentification renforcée | — |
+
+Les jetons sont stockés dans un espace protégé par Android Keystore. L'API
+GSIE vérifie systématiquement : la signature, l'émetteur (`iss`), l'audience
+(`aud`), l'expiration (`exp`), l'identifiant de session, les rôles ou
+permissions, et l'organisation active.
 
 ## 21. Références
 
@@ -1505,4 +1707,5 @@ géré par Keycloak, pas une base d'utilisateurs GeoSylva indépendante.
 | 0.2.0 | 2026-08-03 | Roadmap structurée (§12) : architecture cible, cascade LLM multi-tier, connexion GSIE Serveur (moteurs et contrats), 8 phases, décisions/RFC requises, critères de sortie. Sources consolidées (§16). |
 | 0.3.0 | 2026-08-03 | §14 Connexion GSIE Serveur détaillée (enveloppes communes, moteurs, chaîne d'appel, cache, pull/conflits, SDK Kotlin, garde-fous). §15 LLM on-device et multi-tier (architecture 3 tiers, cascade, LoRA, RAG, identification on-device, assistant vocal, distribution, évaluation). |
 | 0.4.0 | 2026-08-04 | Intégration du Dev Pack (brainstorming ChatGPT) : §16 QPIS, §17 Mission/Protocol Engine, §18 TreeVision, §19 Métiers/objets communs/architecture modulaire, §20 Identité fédérée Keycloak/OIDC. Vision long terme GeoSylva comme poste de travail numérique complet du technicien forestier. |
+| 0.5.0 | 2026-08-04 | Vérification et complétion de l'intégration Dev Pack : §4.2 amendé (pointe vers §20 cible), §16.9 Droits et abonnements (Subscription ↔ QPIS), §17.9 Catalogue de protocoles, §18.10 Modes TreeVision, §20.2.1 Méthodes connexion Quintessences (passkey/TOTP/mot de passe compatibilité), §20.5 Interdictions Android, §20.9 Migration comptes existants, §20.10 Connexion entreprise (petite/grande structure), §20.11 Sécurité administrative, §20.12 Gestion des jetons. |
 
