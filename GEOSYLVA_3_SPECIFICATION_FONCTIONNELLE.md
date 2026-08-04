@@ -4,7 +4,7 @@
 |---|---|
 | Identifiant | GEOSYLVA-003 |
 | Statut | Draft |
-| Version | 0.9.0 |
+| Version | 0.9.1 |
 | Date | 2026-08-04 |
 | Auteur | Quintessences — spécification issue du brainstorming Fondateur/Codex |
 | Périmètre | Application mobile GeoSylva et ses échanges avec GSIE |
@@ -62,8 +62,13 @@ GeoSylva est un client de saisie et de consultation d’une base locale, pas une
 collection d’écrans qui recalculent leur propre état. Toutes les écritures passent
 par un domaine de données transactionnel et versionné. Chaque objet doit avoir :
 
-- un identifiant stable et son parent (projet, forêt, parcelle, placette,
-  martelage ou tige) ;
+- un identifiant global stable (UUID) ;
+- ses **relations structurelles et contextuelles** (pas un `parentId`
+  unique — une mission peut concerner plusieurs forêts, un peuplement
+  plusieurs parcelles, une placette plusieurs rattachements) ;
+- son workspace ;
+- ses éventuels rattachements principaux pour la navigation (vue
+  utilisateur, §29.3) ;
 - une date de création, de modification et, si pertinent, de suppression logique ;
 - l’auteur, l’appareil et la session de saisie ;
 - la source, la méthode, l’unité, la précision et le niveau de confiance ;
@@ -722,10 +727,10 @@ Un lot ne démarre que si le précédent est au minimum en Review.
 | Lot | Objet | Livrables | Dépendances | Pages UI (§29) | RFC/DEC |
 |---|---|---|---|---|---|
 | **Lot 0 — Audit et sécurisation de l'existant** | Stabiliser la base avant d'ajouter | Erreurs scientifiques connues, migrations, sauvegarde/restauration, chiffrement, tests de non-régression, audit UI (§29.34) | — | Splash, états globaux, erreurs, provenance, navigation | DEC corrections audits |
-| **Lot 1 — Contrat universel de données** | Fondation du modèle de données | UUID globaux, Observation, Measurement, Evidence, CalculationRun, provenance, unités, événements, distinction arbre/observation/mesure/résultat (§7.6) | Lot 0 | Accueil, Données, Fiche projet, Fiche forêt (refonte), Création forêt/parcelle/placette guidée, Parcelles/Placettes enrichis | RFC-0001 amorcé |
+| **Lot 1 — Contrat universel de données** | Fondation du modèle de données | UUID globaux, Observation, Measurement, Evidence, CalculationRun, provenance, unités, événements, distinction arbre/observation/mesure/résultat (§7.6) | Lot 0 | Accueil, Explorer, Fiche projet, Fiche forêt (refonte), Création forêt/parcelle/placette guidée, Parcelles/Placettes enrichis | RFC-0001 amorcé |
 | **Lot 2 — Noyau scientifique forestier** | Cœur métier déterministe | Cubage, surface terrière, hauteur, agrégations par essence, Method Registry (§7.10), incertitude, comparaison de méthodes, valorisation (§7.9), architecture moteurs spécialisés (§7.7), règles déclaratives (§7.8) | Lot 1 | Fiche placette (Calculs, Essences enrichis), Centre scientifique, Dashboard enrichi | RFC-0001 |
 | **Lot 3 — Mission et Protocol Engine minimal** | Un seul métier, trois protocoles | Métier initial : technicien forestier. Trois protocoles pilotes : inventaire, martelage, diagnostic sanitaire. **Pas douze interfaces métier dès la v1.** | Lot 2 | Liste missions, dashboard mission, Saisie martelage terrain, SynthèseMartelage, Chantier travaux, Documents gestion, Diagnostics (stationnel/ripisylve/IBP déplacés) | RFC-0005 |
-| **Lot 4 — Identité et workspaces** | Authentification fédérée | Keycloak, Google, passkey, espace personnel, une organisation, droits simples (§20.13), politique hors ligne, migration 3 cas (§20.9) | Lot 1 | Connexion Quintessences (refonte Login), Sélection workspace, Compte (16 sections, refonte Settings/Account), Appareils | RFC-0002 |
+| **Lot 4 — Identité et workspaces** | Authentification fédérée | Keycloak, Google, passkey, espace personnel, une organisation, droits simples (§20.13), politique hors ligne, migration 3 cas (§20.9) | Lot 1 | Connexion Quintessences (refonte Login), Sélection workspace, Compte (4 domaines, 16 destinations secondaires, refonte Settings/Account), Appareils | RFC-0002 |
 | **Lot 5 — Synchronisation GSIE** | Sync serveur normale | Journal d'événements, push/pull, idempotence, conflits, audit, pièces jointes | Lot 4 | Centre synchronisation, Résolution conflits, Analyse GSIE (refonte SuperCorrelateur) | RFC-0003 |
 | **Lot 6 — QPIS minimal** | Packs de base | Pack système, pack scientifique, pack départemental, manifeste, signature, installation atomique, stockage. **La mise à jour différentielle par blocs peut venir ensuite.** | Lot 5 | Gestionnaire QPIS (refonte PackManager) | RFC-0004 |
 | **Lot 7 — Geo Engine** | Moteur cartographique | MapLibre, PMTiles, GeoPackage, opérations de base, interopérabilité QGIS/QField | Lot 6 | Carte principale (refonte complète), fiches cartographiques | RFC-0006 |
@@ -756,12 +761,12 @@ en Review. Lot 7 (Geo Engine) peut progresser en parallèle de Lot 5.
 
 | # | Document | Objet | Phase déclencheuse |
 |---|---|---|---|
-| 1 | DEC — corrections audits | Hdom, indice station, SQLCipher, certificate pinning, RGPD | P0 |
-| 2 | DEC — format session martelage | Structure session, événements, instantané immuable | P2 |
-| 3 | RFC — fiches méthodes versionnées | Format fiche méthode (§7.2), registre, versionnement | P3 |
-| 4 | RFC — contrats GeoSylva ↔ moteurs GSIE | Contrats d'interface par moteur, cache, résolution conflits, pull | P4 |
-| 5 | RFC — IA forestière on-device | Architecture multi-tier, choix modèles, RAG, cascade, garde-fous | P5 |
-| 6 | RFC — synchronisation terrain | Bluetooth, QR, Meshtastic, paquets signés, journal de fusion | P6 |
+| 1 | DEC — corrections audits | Hdom, indice station, SQLCipher, certificate pinning, RGPD | Lot 0 |
+| 2 | DEC — format session martelage | Structure session, événements, instantané immuable | Lot 3 |
+| 3 | RFC — fiches méthodes versionnées | Format fiche méthode (§7.2), registre, versionnement | Lot 2 |
+| 4 | RFC — contrats GeoSylva ↔ moteurs GSIE | Contrats d'interface par moteur, cache, résolution conflits, pull | Lot 5 |
+| 5 | RFC — IA forestière on-device | Architecture multi-tier, choix modèles, RAG, cascade, garde-fous | Lot 9 |
+| 6 | RFC — synchronisation terrain | Bluetooth, QR, Meshtastic, paquets signés, journal de fusion | Lot 10 |
 
 ### 12.6 Critères de sortie GeoSylva 3.0
 
@@ -793,12 +798,16 @@ Cette roadmap consolide sans les réinventer les visions existantes :
 
 ### 12.8 Vision long terme (Dev Pack)
 
+> **Correction v0.9.1** : les lots 0 à 10 de §12.4 constituent le **plan
+> d'exécution actuel**. La roadmap Dev Pack ci-dessous donne la **vision
+> longue durée**. Les anciennes phases P0-P7 sont **archivées
+> uniquement pour traçabilité** (§12.4, tableau de référence).
+
 Le Dev Pack (`21_EXPERIMENTS/GEOSYLVA_DEV_PACK_2026-08-04/`,
 `10_ROADMAP_IMPLEMENTATION.md`) propose une vision long terme en 10 phases
-(0-9) qui s'étend au-delà de la roadmap GeoSylva 3.0 (§12.4, P0-P7). Ces
+(0-9) qui s'étend au-delà de la roadmap GeoSylva 3.0 (§12.4, lots 0-10). Ces
 phases couvrent la transformation de GeoSylva en poste de travail numérique
-complet du technicien forestier. Elles sont **complémentaires** de la roadmap
-existante — les phases P0-P7 de §12.4 restent le plan d'exécution immédiat.
+complet du technicien forestier.
 
 | Phase Dev Pack | Objet | Correspondance GeoSylva 3.0 |
 |---|---|---|
@@ -826,13 +835,20 @@ Voir aussi : §16 (QPIS), §17 (Mission/Protocol Engine), §18 (TreeVision),
 
 ## 14. Connexion GSIE Serveur — contrats détaillés
 
+> **Avertissement v0.9.1 — NON NORMATIF** : cette section contient des
+> exemples de cadrage (endpoints, tables, structures JSON, délais
+> WorkManager, enveloppes). Ces éléments sont **non normatifs** — ils
+> seront définis précisément dans **RFC-0003** (Synchronization Protocol)
+> et **RFC-0033** (contrats GeoSylva ↔ moteurs GSIE). Devin ne doit pas
+> implémenter ces exemples avant validation des RFC correspondantes.
+
 ### 14.1 Principe
 
 GeoSylva 3.0 ne réimplémente pas la science forestière côté serveur. Elle
 délègue aux moteurs GSIE via le **canal 1** (Wi-Fi/4G stable) et consomme
 leurs contrats documentés (`GSIE/ENGINES/*/`, `ENGINE_INTERFACE_CONTRACTS.md`).
 La spécification détaillée des contrats d'interface fait l'objet de la
-**RFC-0033** (§12.5, Phase P4). Cette section pose le cadre et les formats
+**RFC-0033** (§12.5, Lot 5). Cette section pose le cadre et les formats
 communs ; la RFC détaillera les endpoints REST, les codes d'erreur et les
 schémas JSON complets.
 
@@ -1014,6 +1030,13 @@ livrable de la Phase P4.
   non citée est un défaut bloquant (ADR-009).
 
 ## 15. LLM on-device et multi-tier — architecture détaillée
+
+> **Avertissement v0.9.1 — NON NORMATIF** : cette section contient une
+> vision de cadrage (profils T1/T2/T3, cascade, RAG, LoRA). Les choix
+> précis de modèles, formats de prompts, schémas RAG et stratégies de
+> quantification seront définis dans **RFC-IA-MODEL-SELECTION-YYYY-MM**
+> (renouvelable) et **RFC-0019** (gsie-ai-gateway). Devin ne doit pas
+> implémenter ces exemples avant validation des RFC correspondantes.
 
 ### 15.1 Vision consolidée
 
@@ -2797,6 +2820,7 @@ alimenter la communauté et la recherche.
 | 0.7.0 | 2026-08-04 | **Cadrage** suite à la revue critique du Fondateur. 10 corrections critiques : (1) avertissement monolithique + §28 RFC à extraire, (2) modèles IA remplacés par profils T1-MICRO/STANDARD/T2-EDGE/T3-SERVER + RFC renouvelable, (3) PureForest TFLite reformulé (modèle à entraîner + audit dataset), (4) TreeVision précision remplacée par statut initial + seuils de passage, (5) GNSS exemples → objectifs (covariance, poids dynamiques), (6) migration Google→Keycloak 3 cas + UUID indépendant, (7) identifiant appareil UUID + Keystore, (8) jetons stockage chiffré + clé Keystore, (9) séparation Entitlement / Feature module / Pack QPIS, (10) tableau licences enrichi (8 colonnes). Roadmap refondue : 11 lots (0-10). Structure territoriale définie (8 entités). Corrections de forme. |
 | 0.8.0 | 2026-08-04 | **Section §29 — Architecture des écrans, navigation et refonte UI/UX**. Audit des 27 écrans existants (5 NavGraphs) : classification en 3 catégories (conservés/enrichis, transformés, nouveaux). Décisions de cadrage : bottom nav 5 entrées remplace démarrage direct sur Forets, écran Martelage devient SynthèseMartelage (saisie dans nouvel écran terrain), Carte refonte complète (3ème entrée bottom nav), Settings supprimé (tout dans Compte 16 sections), diagnostics (stationnel/ripisylve/IBP) déplacés en onglets fiche parcelle + protocoles Mission Engine. 31 sous-sections : navigation, splash, onboarding, connexion, workspace, accueil, projets, forêt, parcelle, placette, saisie tige, martelage/synthèse, carte, missions, données, compte, QPIS, sync, conflits, centre scientifique, analyse GSIE, diagnostics, TreeVision, travaux, documents, design system, audit préalable, roadmap UI transversale, critères acceptation. Roadmap §12.4 enrichie : colonne « Pages UI » par lot + Quality Pass final. |
 | 0.9.0 | 2026-08-04 | **Candidate for Review** — 11 corrections structurantes du Fondateur. (1) Hiérarchie territoriale : ⊇ remplacés par relations nommées (graphe relationnel N-N, pas arbre rigide). (2) Navigation contextuelle : clarifiée comme vue utilisateur, pas propriété des données. (3) Surcharge d'onglets : fiche parcelle 13 onglets → 5 groupes (Aperçu/Terrain/Interventions/Analyse/Plus) avec sous-navigation ; fiche placette 11 onglets → 5 groupes. (4) Bottom nav : « Données » → « Explorer » (variante B) + variantes A/B à tester. (5) Compte : 16 sections regroupées en 4 groupes visuels (Identité/Offre/Application/Confidentialité). (6) Permissions onboarding : pas toutes dès le départ, au premier usage de chaque fonction. (7) Fond vidéo connexion : ressource APK légère par défaut + pack signé facultatif. (8) Splash : séparation bloquant/non-bloquant, démarrage rapide. (9) Contradiction roadmap : ancien P7 « Reporté » → « Obsolète, refonte UI transversale ». (10) Contradiction 12 métiers : « 12 métiers v1 » → « 12 profils cible longue, 1 métier v1 ». (11) Diagnostics : onglets fixes → cartes conditionnelles (protocoles installés, territoire, métier, abonnement, mission, données). |
+| 0.9.1 | 2026-08-04 | **Nettoyage** — 8 corrections résiduelles. (1) §3.1 : « parent » unique → relations structurelles/contextuelles/workspace (pas de parentId universel). (2) Mentions résiduelles « Données » → « Explorer » (8 occurrences). (3) §29.1 tableau cadrage actualisé (Explorer, cartes conditionnelles). (4) « 16 sections » → « 4 domaines, 16 destinations secondaires ». (5) §12.8 : P0-P7 « plan d'exécution immédiat » → « archivées pour traçabilité, lots 0-10 = plan actuel ». (6) §12.5 déclencheurs P0/P2/P3/P4/P5/P6 → Lot 0/3/2/5/9/10. (7) Avertissement routes altérées (Devin doit relire le code). (8) §14 et §15 marqués NON NORMATIF (endpoints, tables, JSON, WorkManager = exemples de cadrage, pas contrats). |
 
 ## 28. Annexe — RFC à extraire
 
@@ -2834,14 +2858,14 @@ alimenter la communauté et la recherche.
 
 | Décision | Choix | Justification |
 |---|---|---|
-| Navigation principale | **Bottom nav 5 entrées** (Accueil, Missions, Carte, Données, Compte) remplace le démarrage direct sur Forets | Le démarrage actuel sur Forets est trop limité pour un produit multi-métier |
+| Navigation principale | **Bottom nav 5 entrées** (Accueil, Missions, Carte, Explorer, Compte) remplace le démarrage direct sur Forets. Nom « Explorer » à confirmer par tests utilisateurs (variante A : Données, variante B : Explorer, §29.2) | Le démarrage actuel sur Forets est trop limité pour un produit multi-métier |
 | Écrans existants | **Conservés** (enrichis avec features) sauf exceptions ci-dessous | La base existante est solide |
 | Écran Martelage actuel | **Transformé en SynthèseMartelage** — s'ouvre automatiquement après le martelage, plus écran de saisie | La saisie passe dans un nouvel écran terrain ergonomique |
 | Carte | **Refonte complète** — devient 3ème entrée bottom nav (carte globale workspace) + ancien Map par parcelle conservé depuis les fiches | La carte est un outil transversal, pas lié à une parcelle |
-| Paramètres | **Refonte complète** — écran Settings supprimé, tout passe dans Compte (16 sections) | Regroupe identité, organisation, application, terrain |
-| Diagnostic stationnel | **Refonte profonde** — devient onglet de la fiche parcelle/forêt + protocole Mission Engine | Plus de navigation séparée |
-| Ripisylve | **Bouge** — devient onglet de la fiche parcelle + protocole Mission Engine | Diagnostic spécialisé intégré au flux |
-| IBP | **Bouge** — devient onglets de la fiche parcelle + protocole Mission Engine | Module biodiversité intégré, plus de navGraph séparé |
+| Paramètres | **Refonte complète** — écran Settings supprimé, tout passe dans Compte organisé en **4 domaines** contenant 16 destinations secondaires (§29.23) | Regroupe identité, organisation, application, terrain |
+| Diagnostic stationnel | **Refonte profonde** — devient **carte conditionnelle** dans la section Analyse de la fiche parcelle + protocole Mission Engine | Plus de navigation séparée ; affichage selon protocoles installés, territoire, métier |
+| Ripisylve | **Bouge** — devient **carte conditionnelle** (uniquement si zone ripicole ou protocole installé) + protocole Mission Engine | Diagnostic spécialisé intégré au flux, pas permanent |
+| IBP | **Bouge** — devient **carte conditionnelle** (uniquement si protocole IBP installé) + protocole Mission Engine | Module biodiversité intégré, plus de navGraph séparé |
 
 ### 29.2 Navigation principale
 
@@ -2930,11 +2954,18 @@ territoriales distinctes).
 > préliminaire** basée sur l'analyse du code existant (27 routes, 5
 > NavGraphs).
 
+> **Avertissement v0.9.1** : les routes listées dans les tableaux
+> ci-dessous peuvent être **altérées** par le rendu Markdown (points
+> remplacés, paramètres tronqués). Devin doit **relire les routes
+> directement dans le code source**
+> (`app/src/main/java/com/forestry/counter/presentation/navigation/`)
+> et ne pas considérer les chaînes affichées ici comme exactes.
+
 #### Écrans conservés (enrichis)
 
 | Écran existant | Route actuelle | Nouvelle position | Enrichissements |
 |---|---|---|---|
-| `Forets` (GroupsScreen) | `forets` | Sous-page Accueil > Forêts + Données > Forêts | Filtres, provenance, sync, états hors ligne |
+| `Forets` (GroupsScreen) | `forets` | Sous-page Accueil > Forêts + Explorer > Forêts | Filtres, provenance, sync, états hors ligne |
 | `Parcelles` | `parcelles/{forestId}` | Forêt > Parcelles (onglet) | Provenance surfaces, sync, alertes |
 | `Placettes` | `placettes/{parcelleId}` | Parcelle > Placettes (onglet) | Protocole, état validation, sync |
 | `PlacetteDetail` | `placette/{parcelleId}/{placetteId}` | Parcelle > Placettes > Fiche placette | Onglets évolution, santé, biodiversité, calculs |
@@ -2942,9 +2973,9 @@ territoriales distinctes).
 | `EssenceDiam` | `placette/.../essence/{essenceCode}` | Fiche placette > Essences (onglet) | Recherche, tri, agrégations, provenance |
 | `Dashboard` | `dashboard/{parcelleId}` | Fiche parcelle > Calculs (onglet) | Méthodes, comparaison, incertitude |
 | `Map` (par parcelle) | `map/{parcelleId}?...` | Fiche parcelle/forêt > Carte (onglet) | Conservé, accessible depuis fiches |
-| `GroupDetail` | `group/{groupId}` | Données > Groupes > Fiche groupe | Sync, export |
-| `Formulas` | `group/{groupId}/formulas` | Données > Groupes > Formules | Method Registry (§7.10) |
-| `Calculator` | `group/{groupId}/calculator` | Données > Groupes > Calculateur | Versionnement méthodes |
+| `GroupDetail` | `group/{groupId}` | Explorer > Groupes > Fiche groupe | Sync, export |
+| `Formulas` | `group/{groupId}/formulas` | Explorer > Groupes > Formules | Method Registry (§7.10) |
+| `Calculator` | `group/{groupId}/calculator` | Explorer > Groupes > Calculateur | Versionnement méthodes |
 | `PriceTablesEditor` | `settings/price_tables` | Compte > Tarifs | Abonnement, organisation |
 | `TarifDocs` | `settings/tarif_docs` | Compte > Documentation scientifique (§29.26) | Method Registry |
 | `PrivacyPolicy` | `settings/privacy_policy` | Compte > Confidentialité | RGPD, consentement (§10.1) |
@@ -2958,7 +2989,7 @@ territoriales distinctes).
 | Écran existant | Route actuelle | Transformation | Nouvelle position |
 |---|---|---|---|
 | `Martelage` | `martelage/{scope}/...` | **Devient SynthèseMartelage** — écran de synthèse qui s'ouvre automatiquement après le martelage. Plus écran de saisie. | Placette > Martelages > Synthèse session |
-| `Settings` | `settings` | **Supprimé** — tout passe dans Compte (16 sections, §29.23) | Compte (bottom nav) |
+| `Settings` | `settings` | **Supprimé** — tout passe dans Compte (4 domaines, 16 destinations secondaires, §29.23) | Compte (bottom nav) |
 | `Account` | `settings/account` | **Refondu** dans Compte > Profil | Compte > Profil |
 | `Login` | `settings/account/login` | **Refondu** en Connexion Quintessences (§29.9) | Avant Accueil, après Onboarding |
 | `PasswordRecovery` | `settings/account/password-recovery` | **Refondu** dans Compte > Sécurité | Compte > Sécurité |
@@ -2987,7 +3018,7 @@ territoriales distinctes).
 | Liste missions + dashboard mission | Bottom nav 2ème entrée | Lot 3 |
 | Carte globale (refonte) | Bottom nav 3ème entrée | Lot 7 |
 | Explorer (navigateur global) | Bottom nav 4ème entrée | Lot 1 |
-| Compte (16 sections) | Bottom nav 5ème entrée | Lot 4 |
+| Compte (4 domaines, 16 destinations) | Bottom nav 5ème entrée | Lot 4 |
 | Centre synchronisation | Compte > Synchronisation | Lot 5 |
 | Résolution conflits | Centre sync > Conflits | Lot 5 |
 | Gestionnaire QPIS (refonte) | Compte > Packs | Lot 6 |
@@ -3144,7 +3175,7 @@ projets, données, protocoles, packs, abonnements, capacités et
 
 ### 29.11 Projets et dossiers
 
-**Emplacement** : `Accueil > Tous les projets` et `Données > Projets`.
+**Emplacement** : `Accueil > Tous les projets` et `Explorer > Projets`.
 Nouvel écran.
 
 **Liste** : filtres (récents, favoris, organisation, territoire, statut,
@@ -3481,7 +3512,7 @@ Confidentialité et assistance
 ### 29.24 Gestionnaire QPIS (refonte)
 
 **Emplacement** : `Compte > Packs`, `Carte > Télécharger`,
-`Mission > Packs requis`, `Données > Packs`. Refonte de l'ancien
+`Mission > Packs requis`, `Explorer > Packs`. Refonte de l'ancien
 `PackManager`.
 
 **Onglets** : Recommandés, Installés, Territoires, Scientifiques, IA,
@@ -3524,7 +3555,7 @@ dans l'audit.
 
 ### 29.27 Centre scientifique
 
-**Emplacement** : `Données > Méthodes`, `Compte > Documentation
+**Emplacement** : `Explorer > Méthodes`, `Compte > Documentation
 scientifique`, `Calcul > Voir la méthode`. Nouvel écran (ancien
 `TarifDocs` enrichi).
 
@@ -3648,7 +3679,7 @@ Exécution, Contrôle, Réception, Documents, Historique.
 ### 29.32 Documents de gestion
 
 **Emplacement** : `Forêt > Documents`, `Projet > Documents`,
-`Données > Documents`. Nouvel écran.
+`Explorer > Documents`. Nouvel écran.
 
 **Catégories** : PSG, aménagement, programme de coupes, programme de
 travaux, cartes, bilans, avenants.
@@ -3702,10 +3733,10 @@ ne sert qu'à harmoniser et optimiser ce qui a déjà été refondu.
 | Lot | Pages à traiter |
 |---|---|
 | **Lot 0 — Audit existant** | Splash, états globaux, erreurs, provenance, navigation |
-| **Lot 1 — Contrat données** | Accueil, Données, Fiche projet, Fiche forêt (refonte), Création forêt/parcelle/placette guidée, Parcelles/Placettes enrichis |
+| **Lot 1 — Contrat données** | Accueil, Explorer, Fiche projet, Fiche forêt (refonte), Création forêt/parcelle/placette guidée, Parcelles/Placettes enrichis |
 | **Lot 2 — Noyau scientifique** | Fiche placette (Calculs, Essences enrichis), Centre scientifique, Dashboard enrichi |
 | **Lot 3 — Mission Engine** | Liste missions, dashboard mission, Saisie martelage terrain, SynthèseMartelage, Chantier travaux, Documents gestion, Diagnostics (stationnel/ripisylve/IBP déplacés) |
-| **Lot 4 — Identité** | Connexion Quintessences (refonte Login), Sélection workspace, Compte (16 sections, refonte Settings/Account), Appareils |
+| **Lot 4 — Identité** | Connexion Quintessences (refonte Login), Sélection workspace, Compte (4 domaines, 16 destinations, refonte Settings/Account), Appareils |
 | **Lot 5 — Synchronisation** | Centre synchronisation, Résolution conflits, Analyse GSIE (refonte SuperCorrelateur) |
 | **Lot 6 — QPIS** | Gestionnaire QPIS (refonte PackManager) |
 | **Lot 7 — Geo Engine** | Carte principale (refonte complète), fiches cartographiques |
