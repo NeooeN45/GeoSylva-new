@@ -28,13 +28,17 @@
   th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #dee2e6; }
   th { background: #f8f9fa; font-weight: 600; }
   footer { text-align: center; padding: 24px; color: #6c757d; font-size: 12px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 8px; }
+  .badge-new { background: #2d6a4f; color: #fff; }
+  .badge-kept { background: #52b788; color: #fff; }
+  .badge-trans { background: #e76f51; color: #fff; }
 </style>
 </head>
 <body>
 
 <header>
   <h1>GeoSylva 3.0 — Carte de navigation</h1>
-  <p>49 pages actives · 18 conservées · 10 transformées · 21 nouvelles · v0.8.0</p>
+  <p>49 pages actives · 18 conservées · 10 transformées · 21 nouvelles · v0.9.1 — Candidate for Review</p>
 </header>
 
 <nav>
@@ -44,8 +48,8 @@
   <a href="#d4">4. Martelage</a>
   <a href="#d5">5. Missions</a>
   <a href="#d6">6. Carte</a>
-  <a href="#d7">7. Données</a>
-  <a href="#d8">8. Compte</a>
+  <a href="#d7">7. Explorer</a>
+  <a href="#d8">8. Compte (4 domaines)</a>
   <a href="#d9">9. Sync/QPIS/Science</a>
   <a href="#d10">10. Diagnostics</a>
   <a href="#d11">11. TreeVision/Travaux</a>
@@ -62,20 +66,21 @@
   <div class="legend-item"><div class="legend-swatch sw-del"></div>Supprimé (référence)</div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <section id="d1">
   <h2>1. Vue d'ensemble — démarrage + bottom nav</h2>
-  <p class="desc">Flux de démarrage : Splash → Onboarding → Connexion → Workspace → Accueil. Bottom nav 5 entrées remplace le démarrage direct sur Forets.</p>
+  <p class="desc">Flux de démarrage : Splash (bloquant minimal) → Onboarding (présente capacités, ne demande pas permissions) → Connexion → Workspace → Accueil. Bottom nav 5 entrées. « Explorer » est variante B à tester (variante A : « Données »).</p>
   <div class="mermaid">
 flowchart TD
-    SPLASH["Splash<br/>(nouveau)"]:::new
-    ONBOARD["Onboarding<br/>(conservé)"]:::kept
-    LOGIN["Connexion Quintessences<br/>(refonte Login)"]:::transformed
-    WORKSPACE["Sélection workspace<br/>(nouveau)"]:::new
+    SPLASH["Splash<br/>(bloquant minimal : base + migration)"]:::new
+    ONBOARD["Onboarding<br/>(présente capacités, ne demande pas permissions)"]:::kept
+    LOGIN["Connexion Quintessences<br/>(refonte Login + fond APK léger)"]:::transformed
+    WORKSPACE["Sélection workspace"]:::new
     ACCUEIL["Accueil"]:::new
     MISSIONS["Missions"]:::new
     CARTE["Carte"]:::transformed
-    DONNEES["Données"]:::new
-    COMPTE["Compte"]:::transformed
+    EXPLORER["Explorer<br/>(variante B — à tester)"]:::new
+    COMPTE["Compte<br/>(4 domaines)"]:::transformed
 
     SPLASH -->|premier démarrage| ONBOARD
     SPLASH -->|session valide| ACCUEIL
@@ -86,8 +91,8 @@ flowchart TD
 
     ACCUEIL --- MISSIONS
     MISSIONS --- CARTE
-    CARTE --- DONNEES
-    DONNEES --- COMPTE
+    CARTE --- EXPLORER
+    EXPLORER --- COMPTE
 
     classDef new fill:#2d6a4f,color:#fff,stroke:#1b4332,stroke-width:2px
     classDef kept fill:#52b788,color:#fff,stroke:#2d6a4f,stroke-width:2px
@@ -95,6 +100,7 @@ flowchart TD
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <section id="d2">
   <h2>2. Accueil — tableau de bord et descendants</h2>
   <p class="desc">L'accueil donne une vision immédiate du travail actuel. Bouton « Créer ou démarrer » pour toutes les créations rapides.</p>
@@ -103,8 +109,8 @@ flowchart TD
     ACCUEIL["Accueil"]:::new
     CREER["Créer ou démarrer"]:::new
     PROJETS["Tous les projets"]:::new
-    REPRISE["Reprendre"]:::new
-    AUJ["Aujourd'hui"]:::new
+    REPRISE["Reprendre<br/>(dernière mission/placette/martelage)"]:::new
+    AUJ["Aujourd'hui<br/>(missions, alertes, sync)"]:::new
 
     ACCUEIL --> CREER
     ACCUEIL --> PROJETS
@@ -135,52 +141,89 @@ flowchart TD
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <section id="d3">
   <h2>3. Chaîne canonique — Forêt → Parcelle → Placette → Tige</h2>
-  <p class="desc">La hiérarchie principale avec tous les onglets. Les diagnostics (stationnel, ripisylve, IBP) sont désormais des onglets de la fiche parcelle.</p>
+  <p class="desc"><strong>v0.9.0+</strong> : la fiche parcelle passe de 13 onglets à <strong>5 groupes</strong> (Aperçu / Terrain / Interventions / Analyse / Plus). La fiche placette passe de 11 onglets à 5 groupes. Les diagnostics sont des <strong>cartes conditionnelles</strong> dans Analyse, pas des onglets fixes.</p>
   <div class="mermaid">
 flowchart TD
-    FICHE_FORET["Fiche forêt<br/>(refonte)"]:::transformed
+    FICHE_FORET["Fiche forêt<br/>(refonte Forets/Groups)"]:::transformed
+
     FICHE_FORET --> F_RESUME["Résumé"]:::new
     FICHE_FORET --> F_PARCELLES["Parcelles"]:::kept
     FICHE_FORET --> F_PEUP["Peuplements"]:::new
     FICHE_FORET --> F_MISSIONS["Missions"]:::new
     FICHE_FORET --> F_CARTE["Carte"]:::kept
-    FICHE_FORET --> F_DOCS["Documents"]:::new
+    FICHE_FORET --> F_DOCS["Documents de gestion"]:::new
     FICHE_FORET --> F_HIST["Historique"]:::new
 
-    F_PARCELLES --> CREATE_PARCELLE["Création parcelle"]:::new
-    F_PARCELLES --> FICHE_PARCELLE["Fiche parcelle"]:::kept
-    CREATE_PARCELLE --> FICHE_PARCELLE
+    F_PARCELLES --> CREATE_PARC["Création parcelle guidée"]:::new
+    F_PARCELLES --> FICHE_PARC["Fiche parcelle<br/>(5 groupes)"]:::kept
+    CREATE_PARC --> FICHE_PARC
 
-    FICHE_PARCELLE --> PA_RESUME["Résumé"]:::kept
-    FICHE_PARCELLE --> PA_PEUP["Peuplement"]:::transformed
-    FICHE_PARCELLE --> PA_PLAC["Placettes"]:::kept
-    FICHE_PARCELLE --> PA_INV["Inventaires"]:::new
-    FICHE_PARCELLE --> PA_MART["Martelages"]:::new
-    FICHE_PARCELLE --> PA_TRAV["Travaux"]:::new
-    FICHE_PARCELLE --> PA_DIAG["Diagnostic stationnel"]:::transformed
-    FICHE_PARCELLE --> PA_RIP["Ripisylve"]:::transformed
-    FICHE_PARCELLE --> PA_IBP["Biodiversité/IBP"]:::transformed
-    FICHE_PARCELLE --> PA_SANTE["Santé"]:::new
-    FICHE_PARCELLE --> PA_CARTE["Carte"]:::kept
+    %% ── Fiche parcelle : 5 groupes ──
+    FICHE_PARC --> PA_APERCU["Aperçu"]:::kept
+    FICHE_PARC --> PA_TERRAIN["Terrain"]:::new
+    FICHE_PARC --> PA_INTERV["Interventions"]:::new
+    FICHE_PARC --> PA_ANALYSE["Analyse<br/>(cartes conditionnelles)"]:::new
+    FICHE_PARC --> PA_PLUS["Plus"]:::new
 
-    PA_PLAC --> CREATE_PLAC["Création placette"]:::new
-    PA_PLAC --> FICHE_PLAC["Fiche placette"]:::kept
+    %% Terrain
+    PA_TERRAIN --> PA_PEUP["Peuplement"]:::transformed
+    PA_TERRAIN --> PA_PLAC["Placettes"]:::kept
+    PA_TERRAIN --> PA_INV["Inventaires"]:::new
+    PA_TERRAIN --> PA_CARTE["Carte"]:::kept
+
+    %% Interventions
+    PA_INTERV --> PA_MART["Martelages"]:::new
+    PA_INTERV --> PA_TRAV["Travaux / Chantier"]:::new
+    PA_INTERV --> PA_HIST["Historique"]:::new
+
+    %% Analyse (cartes conditionnelles)
+    PA_ANALYSE --> PA_DIAG["Diagnostic stationnel<br/>(si protocole installé)"]:::transformed
+    PA_ANALYSE --> PA_SANTE["Santé<br/>(si observations)"]:::new
+    PA_ANALYSE --> PA_IBP["Biodiversité/IBP<br/>(si protocole IBP)"]:::transformed
+    PA_ANALYSE --> PA_RIP["Ripisylve<br/>(si zone ripicole)"]:::transformed
+    PA_ANALYSE --> PA_GSIE["Analyse GSIE<br/>(si serveur)"]:::transformed
+
+    %% Plus
+    PA_PLUS --> PA_DOCS["Documents"]:::new
+    PA_PLUS --> PA_PROV["Provenance"]:::new
+    PA_PLUS --> PA_PARAM["Paramètres locaux"]:::new
+
+    %% Placette
+    PA_PLAC --> CREATE_PLAC["Création placette guidée"]:::new
+    PA_PLAC --> FICHE_PLAC["Fiche placette<br/>(5 groupes)"]:::kept
     CREATE_PLAC --> FICHE_PLAC
 
-    FICHE_PLAC --> PL_RESUME["Résumé"]:::kept
-    FICHE_PLAC --> PL_TIGES["Tiges"]:::kept
-    FICHE_PLAC --> PL_ESS["Essences"]:::kept
+    %% ── Fiche placette : 5 groupes ──
+    FICHE_PLAC --> PL_APERCU["Aperçu"]:::kept
+    FICHE_PLAC --> PL_TIGES["Tiges<br/>(visualisation)"]:::kept
     FICHE_PLAC --> PL_MART["Martelage"]:::new
-    FICHE_PLAC --> PL_EVOL["Évolution"]:::kept
-    FICHE_PLAC --> PL_BIO["Biodiversité"]:::transformed
-    FICHE_PLAC --> PL_CALC["Calculs"]:::kept
-    FICHE_PLAC --> PL_CARTE["Carte"]:::kept
+    FICHE_PLAC --> PL_ANALYSE["Analyse<br/>(cartes conditionnelles)"]:::new
+    FICHE_PLAC --> PL_PLUS["Plus"]:::new
 
-    PL_TIGES --> SAISIE_TIGE["Saisie tige"]:::new
-    PL_MART --> PREP_MARTEL["Préparation martelage"]:::new
+    %% Tiges = visualisation (liste + carte + infos)
+    PL_TIGES --> PL_TIG_LISTE["Liste des tiges<br/>(numéro, essence, diamètre, emplacement, infos)"]:::kept
+    PL_TIGES --> PL_TIG_CARTE["Carte des tiges<br/>(position + tap pour infos)"]:::new
+    PL_TIGES --> PL_ESS["Essences<br/>(EssenceDiam enrichi)"]:::kept
+    PL_TIGES --> PL_EVOL["Évolution<br/>(PlacetteEvolution enrichi)"]:::kept
+
+    %% Martelage
+    PL_MART --> PL_MART_SESS["Sessions"]:::new
+    PL_MART --> PL_MART_SAISIE["Saisie terrain<br/>(PlacetteDetailScreen adapté)"]:::kept
     PL_MART -->|mesurer caméra| TREEVISION["TreeVision"]:::new
+
+    %% Analyse placette
+    PL_ANALYSE --> PL_CALC["Calculs<br/>(Dashboard enrichi)"]:::kept
+    PL_ANALYSE --> PL_SANTE["Santé<br/>(si observations)"]:::new
+    PL_ANALYSE --> PL_BIO["Biodiversité/IBP<br/>(si protocole IBP)"]:::transformed
+    PL_ANALYSE --> PL_GSIE["Analyse GSIE<br/>(si serveur)"]:::transformed
+
+    %% Plus placette
+    PL_PLUS --> PL_PJ["Pièces jointes"]:::new
+    PL_PLUS --> PL_PROV["Provenance"]:::new
+    PL_PLUS --> PL_HIST["Historique"]:::new
 
     classDef new fill:#2d6a4f,color:#fff,stroke:#1b4332,stroke-width:2px
     classDef kept fill:#52b788,color:#fff,stroke:#2d6a4f,stroke-width:2px
@@ -188,13 +231,14 @@ flowchart TD
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <section id="d4">
   <h2>4. Martelage — saisie → synthèse automatique</h2>
-  <p class="desc">Transformation clé : l'ancien écran Martelage devient SynthèseMartelage. La saisie se fait dans un nouvel écran terrain. La synthèse s'ouvre automatiquement après la fin.</p>
+  <p class="desc"><strong>v0.9.1</strong> : la saisie martelage n'est pas un nouvel écran. C'est l'écran actuel <code>PlacetteDetailScreen</code> (titre « Placette essences ») <strong>conservé et adapté</strong> avec ajouts (indicateurs session, prélèvement, TreeVision, actions session). L'ancien écran Martelage devient SynthèseMartelage (ouverture auto après fin).</p>
   <div class="mermaid">
 flowchart TD
-    PREP_MARTEL["Écran préparation"]:::new
-    SAISIE_MARTEL["Écran saisie terrain<br/>(PlacetteDetailScreen adapté)"]:::kept
+    PREP_MARTEL["Écran préparation<br/>(nouveau)"]:::new
+    SAISIE_MARTEL["Écran saisie terrain<br/>(PlacetteDetailScreen adapté — pas un nouvel écran)"]:::kept
     PAUSE["Pause"]:::new
     FIN["Fin — double validation"]:::new
     SNAP["Instantané immuable"]:::new
@@ -217,13 +261,14 @@ flowchart TD
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <section id="d5">
   <h2>5. Missions — liste, dashboard, parcours</h2>
-  <p class="desc">Les diagnostics sont aussi accessibles comme missions (protocoles du Mission Engine).</p>
+  <p class="desc">Les diagnostics sont aussi accessibles comme missions (protocoles du Mission Engine). Le parcours guidé chainé : Préparation → Arrivée → Collecte → Contrôle → Validation → Restitution → Sync.</p>
   <div class="mermaid">
 flowchart TD
     MISSIONS["Missions<br/>(bottom nav)"]:::new
-    LISTE["Liste des missions"]:::new
+    LISTE["Liste des missions<br/>(filtres : aujourd'hui, à venir, en cours...)"]:::new
     DASH["Tableau de bord mission"]:::new
 
     MISSIONS --> LISTE
@@ -240,9 +285,9 @@ flowchart TD
 
     M_PARCOURS -->|inventaire| FICHE_PLAC["Fiche placette"]:::kept
     M_PARCOURS -->|martelage| PREP_MARTEL["Préparation martelage"]:::new
-    M_PARCOURS -->|diag stationnel| PA_DIAG["Diagnostic stationnel"]:::transformed
-    M_PARCOURS -->|ripisylve| PA_RIP["Ripisylve"]:::transformed
-    M_PARCOURS -->|IBP| PA_IBP["Biodiversité/IBP"]:::transformed
+    M_PARCOURS -->|diag stationnel| PA_DIAG["Diagnostic stationnel<br/>(carte conditionnelle)"]:::transformed
+    M_PARCOURS -->|ripisylve| PA_RIP["Ripisylve<br/>(carte conditionnelle)"]:::transformed
+    M_PARCOURS -->|IBP| PA_IBP["Biodiversité/IBP<br/>(carte conditionnelle)"]:::transformed
     M_PARCOURS -->|chantier| PA_TRAV["Travaux"]:::new
 
     classDef new fill:#2d6a4f,color:#fff,stroke:#1b4332,stroke-width:2px
@@ -251,6 +296,7 @@ flowchart TD
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <section id="d6">
   <h2>6. Carte — refonte complète</h2>
   <p class="desc">La carte devient la 3ème entrée de la bottom nav. Carte globale du workspace. L'ancien Map par parcelle est conservé depuis les fiches.</p>
@@ -260,20 +306,22 @@ flowchart TD
     MAP_PARC["Map par parcelle<br/>(conservé)"]:::kept
 
     CARTE --> C_MODES["Modes : Explorer/Mission/Éditer/Mesurer/Télécharger/Analyser"]:::new
-    CARTE --> C_COUCHES["Panneau couches"]:::new
-    CARTE --> C_FICHE["Fiche d'objet"]:::new
-    CARTE --> C_OUTILS["Outils : distance, surface, profil, dessin"]:::new
-    CARTE --> C_OFFLINE["Cartes hors ligne"]:::new
+    CARTE --> C_COUCHES["Panneau couches<br/>(Travail, Forêt, Parcellaire, Référentiels, IGN, GSIE, Personnel)"]:::new
+    CARTE --> C_FICHE["Fiche d'objet<br/>(panneau inférieur)"]:::new
+    CARTE --> C_OUTILS["Outils : distance, surface, profil, dessin, snapping, buffer, export"]:::new
+    CARTE --> C_OFFLINE["Cartes hors ligne → QPIS"]:::new
 
     C_FICHE -->|ouvrir| FICHE_FORET["Fiche forêt"]:::transformed
     C_FICHE -->|ouvrir| FICHE_PARC["Fiche parcelle"]:::kept
+    C_FICHE -->|ouvrir| FICHE_PLAC["Fiche placette"]:::kept
     C_FICHE -->|démarrer| DASH["Dashboard mission"]:::new
-    C_FICHE -->|ajouter| CREATE_FORET["Création forêt"]:::new
+    C_FICHE -->|ajouter territoire| CREATE_FORET["Création forêt"]:::new
+    C_FICHE -->|ajouter placette| CREATE_PLAC["Création placette"]:::new
 
     C_OFFLINE --> QPIS["Gestionnaire QPIS"]:::transformed
 
     FICHE_FORET --> F_CARTE["Onglet Carte"]:::kept
-    FICHE_PARC --> PA_CARTE["Onglet Carte"]:::kept
+    FICHE_PARC --> PA_CARTE["Terrain > Carte"]:::kept
     F_CARTE --> MAP_PARC
     PA_CARTE --> MAP_PARC
 
@@ -283,26 +331,27 @@ flowchart TD
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <section id="d7">
-  <h2>7. Données — navigateur global</h2>
-  <p class="desc">4ème entrée bottom nav. Navigateur de toutes les données du workspace.</p>
+  <h2>7. Explorer — navigateur global</h2>
+  <p class="desc"><strong>v0.9.0+</strong> : 4ème entrée bottom nav. « Explorer » (variante B) privilégié sur « Données » (variante A) — à tester avec utilisateurs. Navigateur de toutes les données du workspace.</p>
   <div class="mermaid">
 flowchart TD
-    DONNEES["Données<br/>(bottom nav)"]:::new
+    EXPLORER["Explorer<br/>(bottom nav — variante B)"]:::new
 
-    DONNEES --> D_PROJETS["Projets"]:::new
-    DONNEES --> D_FORETS["Forêts"]:::kept
-    DONNEES --> D_PARC["Parcelles"]:::kept
-    DONNEES --> D_PEUP["Peuplements"]:::new
-    DONNEES --> D_PLAC["Placettes"]:::kept
-    DONNEES --> D_TIGES["Tiges"]:::new
-    DONNEES --> D_OBS["Observations"]:::new
-    DONNEES --> D_MISS["Missions"]:::new
-    DONNEES --> D_TRAV["Travaux"]:::new
-    DONNEES --> D_DOCS["Documents"]:::new
-    DONNEES --> D_CALC["Calculs"]:::new
-    DONNEES --> D_PACKS["Packs"]:::new
-    DONNEES --> D_METH["Méthodes"]:::new
+    EXPLORER --> D_PROJETS["Projets"]:::new
+    EXPLORER --> D_FORETS["Forêts"]:::kept
+    EXPLORER --> D_PARC["Parcelles"]:::kept
+    EXPLORER --> D_PEUP["Peuplements"]:::new
+    EXPLORER --> D_PLAC["Placettes"]:::kept
+    EXPLORER --> D_TIGES["Tiges"]:::new
+    EXPLORER --> D_OBS["Observations"]:::new
+    EXPLORER --> D_MISS["Missions"]:::new
+    EXPLORER --> D_TRAV["Travaux"]:::new
+    EXPLORER --> D_DOCS["Documents"]:::new
+    EXPLORER --> D_CALC["Calculs"]:::new
+    EXPLORER --> D_PACKS["Packs"]:::new
+    EXPLORER --> D_METH["Méthodes"]:::new
 
     D_PROJETS --> FICHE_PROJET["Fiche projet"]:::new
     D_FORETS --> FICHE_FORET["Fiche forêt"]:::transformed
@@ -310,35 +359,52 @@ flowchart TD
     D_PLAC --> FICHE_PLAC["Fiche placette"]:::kept
     D_METH --> CENTRE_SCI["Centre scientifique"]:::transformed
 
+    EXPLORER --> D_FONCTIONS["Recherche globale, filtres, export, import, archivage, doublons, sync, qualité"]:::new
+
     classDef new fill:#2d6a4f,color:#fff,stroke:#1b4332,stroke-width:2px
     classDef kept fill:#52b788,color:#fff,stroke:#2d6a4f,stroke-width:2px
     classDef transformed fill:#e76f51,color:#fff,stroke:#9c3d28,stroke-width:2px
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <section id="d8">
-  <h2>8. Compte — 16 sections (refonte Settings)</h2>
-  <p class="desc">L'ancien écran Settings est supprimé. Tout passe dans Compte (5ème entrée bottom nav).</p>
+  <h2>8. Compte — 4 domaines (refonte Settings)</h2>
+  <p class="desc"><strong>v0.9.0+</strong> : l'ancien écran Settings est supprimé. Tout passe dans Compte (5ème entrée bottom nav). Les 16 destinations secondaires sont regroupées en <strong>4 domaines visuels</strong>, pas 16 lignes plates.</p>
   <div class="mermaid">
 flowchart TD
     COMPTE["Compte<br/>(bottom nav)"]:::transformed
 
-    COMPTE --> C_PROFIL["Profil"]:::transformed
-    COMPTE --> C_WORK["Workspace"]:::new
-    COMPTE --> C_ORGA["Organisations"]:::new
-    COMPTE --> C_ABO["Abonnement"]:::new
-    COMPTE --> C_SEC["Sécurité"]:::transformed
-    COMPTE --> C_APP["Appareils"]:::new
-    COMPTE --> C_SYNC["Sync → Centre sync"]:::new
-    COMPTE --> C_PACKS["Packs → QPIS"]:::transformed
-    COMPTE --> C_TERRAIN["Terrain"]:::new
-    COMPTE --> C_CARTES["Cartes"]:::new
-    COMPTE --> C_IA["IA"]:::new
-    COMPTE --> C_CONF["Confidentialité"]:::kept
-    COMPTE --> C_ACCESS["Accessibilité"]:::new
-    COMPTE --> C_AIDE["Aide"]:::new
-    COMPTE --> C_DEV["Développeur"]:::kept
-    COMPTE --> C_ABOUT["À propos"]:::new
+    %% 4 domaines
+    COMPTE --> G1["Identité"]:::new
+    COMPTE --> G2["Offre Quintessences"]:::new
+    COMPTE --> G3["Application"]:::new
+    COMPTE --> G4["Confidentialité et assistance"]:::new
+
+    %% Identité
+    G1 --> C_PROFIL["Profil<br/>(ancien Account refondu)"]:::transformed
+    G1 --> C_ORGA["Organisations"]:::new
+    G1 --> C_WORK["Workspace"]:::new
+    G1 --> C_SEC["Sécurité<br/>(passkeys, Google, TOTP, récupération)"]:::transformed
+    G1 --> C_APP["Appareils"]:::new
+
+    %% Offre
+    G2 --> C_ABO["Abonnement"]:::new
+    G2 --> C_PACKS["Packs → QPIS"]:::transformed
+    G2 --> C_STOCK["Stockage"]:::new
+
+    %% Application
+    G3 --> C_TERRAIN["Terrain<br/>(pluie, gants, gaucher, haptique)"]:::new
+    G3 --> C_CARTES["Cartes"]:::new
+    G3 --> C_IA["IA<br/>(modèles, assistant vocal)"]:::new
+    G3 --> C_SYNC["Sync → Centre sync"]:::new
+    G3 --> C_ACCESS["Accessibilité"]:::new
+
+    %% Confidentialité
+    G4 --> C_CONF["Confidentialité<br/>(RGPD — ancien PrivacyPolicy)"]:::kept
+    G4 --> C_AIDE["Aide → Onboarding"]:::new
+    G4 --> C_DEV["Développeur<br/>(ancien DeveloperOptions enrichi)"]:::kept
+    G4 --> C_ABOUT["À propos"]:::new
 
     C_WORK --> WORKSPACE["Sélection workspace"]:::new
     C_SYNC --> CENTRE_SYNC["Centre sync"]:::new
@@ -351,6 +417,7 @@ flowchart TD
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <section id="d9">
   <h2>9. Sync, conflits, QPIS, centre scientifique, analyse GSIE</h2>
   <p class="desc">Écrans transverses accessibles depuis plusieurs points d'entrée.</p>
@@ -359,32 +426,38 @@ flowchart TD
     CENTRE_SYNC["Centre sync"]:::new
     CONFLITS["Résolution conflits"]:::new
     QPIS["Gestionnaire QPIS"]:::transformed
-    CENTRE_SCI["Centre scientifique"]:::transformed
-    ANALYSE["Analyse GSIE"]:::transformed
+    CENTRE_SCI["Centre scientifique<br/>(ancien TarifDocs enrichi)"]:::transformed
+    ANALYSE["Analyse GSIE<br/>(refonte SuperCorrelateur)"]:::transformed
 
     CENTRE_SYNC --> CS_GEN["Vue générale"]:::new
     CENTRE_SYNC --> CS_ATT["En attente"]:::new
     CENTRE_SYNC --> CS_ERR["Erreurs"]:::new
     CENTRE_SYNC --> CS_CONF["Conflits"]:::new
     CENTRE_SYNC --> CS_APP["Appareils"]:::new
+    CENTRE_SYNC --> CS_HIST["Historique"]:::new
 
     CS_CONF --> CONFLITS
-    CONFLITS -->|local/serveur/fusionner| CS_CONF
+    CONFLITS -->|local/serveur/fusionner/dupliquer/reporter| CS_CONF
 
     QPIS --> Q_REC["Recommandés"]:::new
     QPIS --> Q_INST["Installés"]:::new
     QPIS --> Q_TERR["Territoires"]:::new
     QPIS --> Q_SCI["Scientifiques"]:::new
     QPIS --> Q_IA["IA"]:::new
+    QPIS --> Q_ORGA["Organisation"]:::new
     QPIS --> Q_STOCK["Stockage"]:::new
+    QPIS --> Q_HIST["Historique"]:::new
 
-    CENTRE_SCI --> CS_METH["Méthodes"]:::new
-    CENTRE_SCI --> CS_PAGE["Page méthode"]:::new
-    CENTRE_SCI --> IBP_REF["IBP Reference"]:::transformed
+    CENTRE_SCI --> CS_METH["Méthodes installées"]:::new
+    CENTRE_SCI --> CS_PAGE["Page méthode<br/>(description, variables, formule, source, territoire, espèces, incertitude)"]:::new
+    CENTRE_SCI --> IBP_REF["IBP Reference<br/>(déplacé)"]:::transformed
 
-    ANALYSE --> AG_LOCAL["Analyse locale"]:::new
-    ANALYSE --> AG_GSIE["Analyse GSIE"]:::new
-    ANALYSE --> AG_RECO["Recommandations"]:::new
+    ANALYSE --> AG_LOCAL["Analyse locale<br/>(hors ligne)"]:::new
+    ANALYSE --> AG_GSIE["Analyse GSIE<br/>(moteur, date, version, preuve, incertitude)"]:::new
+    ANALYSE --> AG_DIAG["Diagnostic"]:::new
+    ANALYSE --> AG_RECO["Recommandations<br/>(explicables, modifiables, refusables)"]:::new
+    ANALYSE --> AG_SCEN["Scénarios"]:::new
+    ANALYSE --> AG_SRC["Sources"]:::new
 
     SYNTHESE["SynthèseMartelage"]:::transformed --> ANALYSE
     FICHE_PARC["Fiche parcelle"]:::kept --> ANALYSE
@@ -395,9 +468,10 @@ flowchart TD
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <section id="d10">
-  <h2>10. Diagnostics — avant / après (déplacement)</h2>
-  <p class="desc">Les diagnostics (stationnel, ripisylve, IBP) ne sont plus des NavGraphs séparés. Ils deviennent des onglets des fiches + des protocoles Mission Engine.</p>
+  <h2>10. Diagnostics — avant / après (cartes conditionnelles)</h2>
+  <p class="desc"><strong>v0.9.0+</strong> : les diagnostics ne sont plus des NavGraphs séparés ni des onglets fixes. Ils deviennent des <strong>cartes conditionnelles</strong> dans la section Analyse des fiches + des protocoles Mission Engine. Affichage selon : protocoles installés, type de territoire, métier, abonnement, mission, données disponibles.</p>
   <div class="mermaid">
 flowchart LR
     subgraph AVANT["Avant — NavGraphs séparés (11 routes)"]
@@ -414,12 +488,14 @@ flowchart LR
         IC["IbpCompare"]:::deleted
     end
 
-    subgraph APRES["Après — onglets + missions"]
-        PA_DIAG["Fiche parcelle > Diagnostic stationnel"]:::transformed
-        PA_RIP["Fiche parcelle > Ripisylve"]:::transformed
-        PA_IBP["Fiche parcelle > Biodiversité/IBP"]:::transformed
-        PL_BIO["Fiche placette > Biodiversité"]:::transformed
-        M_DIAG["Mission > Diagnostic stationnel"]:::new
+    subgraph APRES["Après — cartes conditionnelles + missions"]
+        PA_DIAG["Parcelle > Analyse > Diag. stationnel<br/>(si protocole installé)"]:::transformed
+        PA_RIP["Parcelle > Analyse > Ripisylve<br/>(si zone ripicole)"]:::transformed
+        PA_IBP["Parcelle > Analyse > Biodiversité/IBP<br/>(si protocole IBP)"]:::transformed
+        PA_SANTE["Parcelle > Analyse > Santé<br/>(si observations)"]:::new
+        PA_GSIE["Parcelle > Analyse > GSIE<br/>(si serveur)"]:::transformed
+        PL_BIO["Placette > Analyse > Biodiversité<br/>(si protocole IBP)"]:::transformed
+        M_DIAG["Mission > Diag. stationnel"]:::new
         M_RIP["Mission > Ripisylve"]:::new
         M_IBP["Mission > IBP"]:::new
         IBP_REF["Centre sci > IBP Reference"]:::transformed
@@ -444,15 +520,16 @@ flowchart LR
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <section id="d11">
   <h2>11. TreeVision, Travaux, Documents</h2>
-  <p class="desc">TreeVision reste expérimental. Travaux et Documents sont de nouveaux écrans métier.</p>
+  <p class="desc"><strong>v0.9.1</strong> : TreeVision est accessible depuis <strong>Martelage</strong> (pas depuis Tiges). Tiges = visualisation (liste + carte + infos). Travaux et Documents sont de nouveaux écrans métier.</p>
   <div class="mermaid">
 flowchart TD
     PREP_MARTEL["Préparation martelage"]:::new
-    SAISIE_MARTEL["Saisie martelage"]:::new
+    SAISIE_MARTEL["Saisie martelage<br/>(PlacetteDetailScreen adapté)"]:::kept
     TREEVISION["TreeVision caméra<br/>(expérimental)"]:::new
-    TV_RESULT["Résultat TreeVision"]:::new
+    TV_RESULT["Résultat TreeVision<br/>(diamètre, hauteur, incertitude, confiance)"]:::new
 
     PREP_MARTEL --> SAISIE_MARTEL
     SAISIE_MARTEL -->|mesurer caméra| TREEVISION
@@ -462,16 +539,21 @@ flowchart TD
     PA_TRAV["Chantier travaux"]:::new
     PA_TRAV --> T_PRESC["Prescription"]:::new
     PA_TRAV --> T_PLAN["Planification"]:::new
+    PA_TRAV --> T_CARTE["Carte"]:::kept
     PA_TRAV --> T_EXEC["Exécution"]:::new
     PA_TRAV --> T_CTRL["Contrôle"]:::new
     PA_TRAV --> T_RECEPT["Réception"]:::new
+    PA_TRAV --> T_DOCS["Documents"]:::new
+    PA_TRAV --> T_HIST["Historique"]:::new
 
     F_DOCS["Documents de gestion"]:::new
     F_DOCS --> DOC_PSG["PSG"]:::new
     F_DOCS --> DOC_AMEN["Aménagement"]:::new
     F_DOCS --> DOC_COUPE["Programme de coupes"]:::new
     F_DOCS --> DOC_TRAV["Programme de travaux"]:::new
+    F_DOCS --> DOC_CARTES["Cartes"]:::new
     F_DOCS --> DOC_BILAN["Bilans"]:::new
+    F_DOCS --> DOC_AVEN["Avenants"]:::new
 
     classDef new fill:#2d6a4f,color:#fff,stroke:#1b4332,stroke-width:2px
     classDef kept fill:#52b788,color:#fff,stroke:#2d6a4f,stroke-width:2px
@@ -479,6 +561,7 @@ flowchart TD
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <section id="d12">
   <h2>12. Vue globale — toutes les pages sur un seul graphe</h2>
   <p class="desc">Vue d'ensemble de toutes les 49 pages actives et de leurs liens principaux.</p>
@@ -493,8 +576,8 @@ flowchart TD
 
     ACCUEIL --- MISSIONS["Missions"]:::new
     MISSIONS --- CARTE["Carte"]:::transformed
-    CARTE --- DONNEES["Données"]:::new
-    DONNEES --- COMPTE["Compte"]:::transformed
+    CARTE --- EXPLORER["Explorer"]:::new
+    EXPLORER --- COMPTE["Compte"]:::transformed
 
     ACCUEIL --> PROJETS["Projets"]:::new
     ACCUEIL --> CREER["Créer"]:::new
@@ -510,16 +593,17 @@ flowchart TD
     FICHE_PARC --> CREATE_PLAC["Création placette"]:::new
     CREATE_PLAC --> FICHE_PLAC
 
-    FICHE_PLAC --> SAISIE_TIGE["Saisie tige"]:::new
+    FICHE_PLAC --> PL_TIGES["Tiges (visualisation)"]:::kept
     FICHE_PLAC --> PREP_MARTEL["Prép. martelage"]:::new
-    PREP_MARTEL --> SAISIE_MARTEL["Saisie martelage"]:::new
+    PREP_MARTEL --> SAISIE_MARTEL["Saisie martelage<br/>(PlacetteDetailScreen adapté)"]:::kept
     SAISIE_MARTEL -->|mesurer caméra| TREEVISION["TreeVision"]:::new
     SAISIE_MARTEL -->|⇢ auto| SYNTHESE["SynthèseMartelage"]:::transformed
     SYNTHESE --> ANALYSE_GSIE["Analyse GSIE"]:::transformed
 
-    FICHE_PARC --> PA_DIAG["Diag. stationnel"]:::transformed
-    FICHE_PARC --> PA_RIP["Ripisylve"]:::transformed
-    FICHE_PARC --> PA_IBP["Biodiversité/IBP"]:::transformed
+    FICHE_PARC --> PA_ANALYSE["Analyse (cartes cond.)"]:::new
+    PA_ANALYSE --> PA_DIAG["Diag. stationnel"]:::transformed
+    PA_ANALYSE --> PA_RIP["Ripisylve"]:::transformed
+    PA_ANALYSE --> PA_IBP["Biodiversité/IBP"]:::transformed
     FICHE_PARC --> PA_TRAV["Travaux"]:::new
     FICHE_FORET --> F_DOCS["Documents"]:::new
 
@@ -533,9 +617,9 @@ flowchart TD
     CARTE --> FICHE_PARC
     CARTE --> QPIS["QPIS"]:::transformed
 
-    DONNEES --> FICHE_PROJET
-    DONNEES --> FICHE_FORET
-    DONNEES --> CENTRE_SCI["Centre scientifique"]:::transformed
+    EXPLORER --> FICHE_PROJET
+    EXPLORER --> FICHE_FORET
+    EXPLORER --> CENTRE_SCI["Centre scientifique"]:::transformed
 
     COMPTE --> WORKSPACE
     COMPTE --> CENTRE_SYNC["Centre sync"]:::new
@@ -548,6 +632,7 @@ flowchart TD
   </div>
 </section>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <section id="recap">
   <h2>Récapitulatif</h2>
   <table>
@@ -559,8 +644,39 @@ flowchart TD
       <tr><td>Transformés</td><td>10</td><td>Orange</td></tr>
       <tr><td>Nouveaux</td><td>21</td><td>Bleu foncé</td></tr>
       <tr><td>Supprimés (référence)</td><td>4</td><td>Gris pointillé</td></tr>
-      <tr><td><strong>Total pages v0.8.0</strong></td><td><strong>49 actives</strong></td><td>—</td></tr>
+      <tr><td><strong>Total pages v0.9.1</strong></td><td><strong>49 actives</strong></td><td>—</td></tr>
       <tr><td>Total routes v0.7.0</td><td>27</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top: 24px; font-size: 15px; color: #1b4332;">Corrections v0.9.0 — v0.9.1</h3>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Correction</th><th>Impact</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>v0.9.0-1</td><td>Hiérarchie territoriale</td><td>⊇ → relations nommées (graphe N-N)</td></tr>
+      <tr><td>v0.9.0-2</td><td>Navigation contextuelle</td><td>Vue utilisateur, pas propriété données</td></tr>
+      <tr><td>v0.9.0-3</td><td>Surcharge onglets</td><td>Parcelle 13→5 groupes, placette 11→5 groupes</td></tr>
+      <tr><td>v0.9.0-4</td><td>Bottom nav</td><td>« Données » → « Explorer » (variante B)</td></tr>
+      <tr><td>v0.9.0-5</td><td>Compte</td><td>16 sections → 4 domaines visuels</td></tr>
+      <tr><td>v0.9.0-6</td><td>Permissions</td><td>Au premier usage, pas dans onboarding</td></tr>
+      <tr><td>v0.9.0-7</td><td>Fond vidéo connexion</td><td>APK léger + pack signé facultatif</td></tr>
+      <tr><td>v0.9.0-8</td><td>Splash</td><td>Bloquant / non-bloquant séparés</td></tr>
+      <tr><td>v0.9.0-9</td><td>Roadmap P7</td><td>« Reporté » → obsolète (UI transversale)</td></tr>
+      <tr><td>v0.9.0-10</td><td>12 métiers</td><td>Cible longue, 1 métier v1</td></tr>
+      <tr><td>v0.9.0-11</td><td>Diagnostics</td><td>Onglets fixes → cartes conditionnelles</td></tr>
+      <tr><td>v0.9.1-1</td><td>Parent unique</td><td>→ relations structurelles/contextuelles</td></tr>
+      <tr><td>v0.9.1-2</td><td>« Données » résiduel</td><td>→ « Explorer » (8 occurrences)</td></tr>
+      <tr><td>v0.9.1-3</td><td>Tableau cadrage</td><td>Actualisé (Explorer, cartes conditionnelles)</td></tr>
+      <tr><td>v0.9.1-4</td><td>« 16 sections »</td><td>→ « 4 domaines, 16 destinations »</td></tr>
+      <tr><td>v0.9.1-5</td><td>§12.8 P0-P7</td><td>→ archivées, lots 0-10 = plan actuel</td></tr>
+      <tr><td>v0.9.1-6</td><td>§12.5 déclencheurs</td><td>P0-P6 → Lot 0/3/2/5/9/10</td></tr>
+      <tr><td>v0.9.1-7</td><td>Routes altérées</td><td>Avertissement : relire le code source</td></tr>
+      <tr><td>v0.9.1-8</td><td>§14 et §15</td><td>Marqués NON NORMATIF</td></tr>
+      <tr><td>v0.9.1-9</td><td>TreeVision</td><td>Déplacé de Tiges → Martelage</td></tr>
+      <tr><td>v0.9.1-10</td><td>Tiges</td><td>Visualisation (liste + carte + infos par tige)</td></tr>
+      <tr><td>v0.9.1-11</td><td>Saisie martelage</td><td>= PlacetteDetailScreen adapté (pas nouvel écran)</td></tr>
     </tbody>
   </table>
 </section>
@@ -568,7 +684,7 @@ flowchart TD
 </main>
 
 <footer>
-  GeoSylva 3.0 — Carte de navigation · v0.8.0 · Généré depuis §29 de GEOSYLVA_3_SPECIFICATION_FONCTIONNELLE.md
+  GeoSylva 3.0 — Carte de navigation · v0.9.1 — Candidate for Review · Généré depuis §29 de GEOSYLVA_3_SPECIFICATION_FONCTIONNELLE.md
 </footer>
 
 <script>
