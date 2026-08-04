@@ -3,7 +3,7 @@
 | Champ | Valeur |
 |---|---|
 | Identifiant | GEOSYLVA-003 |
-| Statut | Draft |
+| Statut | Frozen — Spec produit figée pour implémentation |
 | Version | 0.9.1 |
 | Date | 2026-08-04 |
 | Auteur | Quintessences — spécification issue du brainstorming Fondateur/Codex |
