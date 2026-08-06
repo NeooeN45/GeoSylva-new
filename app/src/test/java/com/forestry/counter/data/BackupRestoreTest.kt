@@ -4,8 +4,10 @@ import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import com.forestry.counter.data.service.BackupService
+import com.forestry.counter.data.mapper.toEntity
 import com.forestry.counter.domain.model.AppExport
 import com.forestry.counter.domain.model.Counter
+import com.forestry.counter.domain.model.Foret
 import com.forestry.counter.domain.model.Formula
 import com.forestry.counter.domain.model.Group
 import com.forestry.counter.domain.model.ImportMode
@@ -340,42 +342,72 @@ class BackupRestoreTest {
     // @Ignore jusqu'à l'implémentation (TODO issue #14, Vague C P0).
     // ════════════════════════════════════════════════════════════════════════
 
-    @Ignore("TODO §11 issue #14 : implémenter BackupService.export() pour les entités forestières")
     @Test
     fun should_round_trip_foret_with_parcelles_and_tiges() = runTest {
-        val backupService = BackupService()
-        // Given — une Forêt avec Parcelles et Tiges (metadata §3.1 renseignées)
-        // val foret = Foret(foretId = "f1", nom = "Forêt test", proprietaireNom = "Dupont",
-        //     proprietaireEmail = null, gestionnaireNom = null, typeForet = null,
-        //     objectifGestion = null, psgNumero = null, psgDateExpiration = null,
-        //     departement = null, remarques = null,
-        //     auteur = "account-uuid", source = "manual", version = 1)
-        // ... construire Parcelle + Tige, puis :
+        val foretDao = FakeForetDao()
+        val parcelleDao = FakeParcelleDao()
+        val placetteDao = FakePlacetteDao()
+        val tigeDao = FakeTigeDao()
+        val backupService = BackupService(foretDao, parcelleDao, placetteDao, tigeDao)
+
+        // Given — une Forêt avec metadata §3.1
+        val foret = Foret(
+            foretId = "f1", nom = "Forêt test", proprietaireNom = "Dupont",
+            proprietaireEmail = null, gestionnaireNom = null, typeForet = null,
+            objectifGestion = null, psgNumero = null, psgDateExpiration = null,
+            departement = null, remarques = null,
+            auteur = "account-uuid", source = "manual", version = 1,
+        )
+        foretDao.insert(foret.toEntity())
+
+        // When — export puis import
         val backup = backupService.export()
-        // When — restore
+        foretDao.hardDeleteAll()
         backupService.import(backup)
-        // Then — données restaurées identiques (y compris auteur/source/version)
-        throw NotImplementedError("à activer après implémentation de BackupService")
+
+        // Then — la forêt restaurée préserve les metadata
+        val restored = foretDao.getById("f1")
+        assertEquals("Forêt test", restored?.nom)
+        assertEquals("account-uuid", restored?.auteur)
+        assertEquals("manual", restored?.source)
+        assertEquals(1, restored?.version)
     }
 
-    @Ignore("TODO §11 issue #14 : implémenter BackupService.import() (restauration après crash)")
     @Test
     fun should_restore_foret_data_after_crash() = runTest {
-        val backupService = BackupService()
+        val foretDao = FakeForetDao()
+        val parcelleDao = FakeParcelleDao()
+        val placetteDao = FakePlacetteDao()
+        val tigeDao = FakeTigeDao()
+        val backupService = BackupService(foretDao, parcelleDao, placetteDao, tigeDao)
+
+        val foret = Foret(
+            foretId = "f1", nom = "Forêt crash", proprietaireNom = "Test",
+            proprietaireEmail = null, gestionnaireNom = null, typeForet = null,
+            objectifGestion = null, psgNumero = null, psgDateExpiration = null,
+            departement = null, remarques = null,
+        )
+        foretDao.insert(foret.toEntity())
+
         val backup = backupService.export()
-        // Crash simulé — base corrompue / vidée
+        // Crash simulé — base vidée
+        foretDao.hardDeleteAll()
         backupService.import(backup)
-        // Then — les entités restaurées préservent les metadata auteur/source/version
-        throw NotImplementedError("à activer après implémentation de BackupService")
+
+        // Then — les entités restaurées sont présentes
+        assertEquals(1, foretDao.getAllNow().size)
+        assertEquals("Forêt crash", foretDao.getById("f1")?.nom)
     }
 
-    @Ignore("TODO §11 issue #14 : gérer l'import d'un backup forestier corrompu")
-    @Test
+    @Test(expected = IllegalArgumentException::class)
     fun should_handle_corrupt_forestry_backup_without_silent_crash() = runTest {
-        val backupService = BackupService()
-        // Import d'un backup malformé doit lever une exception explicite,
-        // pas crasher silencieusement.
+        val foretDao = FakeForetDao()
+        val parcelleDao = FakeParcelleDao()
+        val placetteDao = FakePlacetteDao()
+        val tigeDao = FakeTigeDao()
+        val backupService = BackupService(foretDao, parcelleDao, placetteDao, tigeDao)
+
+        // Import d'un backup malformé doit lever une exception explicite
         backupService.import(BackupService.ForestryBackup(exportDate = 0L))
-        throw NotImplementedError("à activer après implémentation de BackupService")
     }
 }
