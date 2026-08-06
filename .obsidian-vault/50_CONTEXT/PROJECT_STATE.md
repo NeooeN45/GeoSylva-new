@@ -1,6 +1,6 @@
 ---
 date: 2026-06-29
-updated: 2026-08-03
+updated: 2026-07-17
 project: GeoSylva
 version: 2.4.0
 db_version: 32
@@ -56,6 +56,8 @@ tags: [context, project-state]
 | `RESEARCH_OPPORTUNITIES.md` | 150+ opportunités (APIs, IA, financement, hardware) |
 | `AUDIT_FORESTIER_COMPLET.md` | Audit vague 1 (101 issues) |
 | `AUDIT_GLOBAL_GEOSYLVA.md` | Audit vague 2 (123 issues) |
+| `.obsidian-vault/30_RESEARCH/2026-07-17_audit-fiabilite-donnees-dendrometriques.md` | Audit fiabilité données dendrométriques (5 subagents, 60+ sources) |
+| `.obsidian-vault/30_RESEARCH/2026-07-17_audit-approfondi-algorithmique-moteurs.md` | Audit approfondi algorithmique moteurs (4 subagents, 12 fichiers Kotlin, 5 faiblesses structurelles) |
 
 ## Système de skills
 
@@ -79,6 +81,28 @@ tags: [context, project-state]
 d’identité mobile local est livré. Les prochaines tranches sont la
 activation Cloudflare/OAuth/SMTP publique, le centre de comptes web, puis la
 synchronisation métier versionnée avec reprise réseau.
+
+## Audit moteurs internes (2026-07-17)
+
+Deux audits complémentaires produits dans `.obsidian-vault/30_RESEARCH/` :
+
+1. **Audit fiabilité données dendrométriques** (5 subagents, 60+ sources) :
+   - 3 problèmes critiques de sourcing (Algan non sourcé, Schumacher-Hall référence inexistante, incohérence unités densité)
+   - Sources canoniques recommandées : XyloDensMap, GCubeR/EMERGE, FBF/ONF/CEEB, IPCC 2019, IGN IFN
+   - Plan d'action P0-P3 priorisé
+
+2. **Audit approfondi algorithmique moteurs** (4 subagents, 12 fichiers Kotlin, ~3000 lignes de tests) :
+   - 5 faiblesses structurelles majeures identifiées :
+     - **S1** ForestryCalculator God object (760 lignes, 7 responsabilités) — violation SRP
+     - **S2** Pas de pattern Strategy (ajout méthode cubage = 5 fichiers à modifier) — violation OCP
+     - **S3** Composition multiplicative aveugle ProPricingEngine (8 coef., amplitude 592×, pas de garde-fou)
+     - **S4** Facteurs de prix structurels absents (diamètre, volume unitaire, conjoncture marché)
+     - **S5** Coefficients hardcodés (pas de repository, pas de cache, pas de sync GSIE, pas de versioning)
+   - Refonte proposée : pattern Strategy étendu (15-20 méthodes cubage), modulateurs bornés (remplacer multiplicative aveugle), repository coefficients (cache offline + sync GSIE canal 1), injection Hilt, facade ForestryOrchestrator
+   - Migration incrémentale en 6 phases (feature flags, tests de régression, rollback)
+   - Plan de refonte P0-P3 priorisé (38 actions)
+
+Statut : **Draft** — à valider par le Fondateur avant refonte du code Kotlin.
 
 ## Financement
 

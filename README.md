@@ -354,7 +354,25 @@ ses jetons GSIE.
 
 ---
 
-## 🔒 Sécurité & Confidentialité
+## Intégration GSIE et Hub GeoSylva
+
+GeoSylva est la **projection forestière** du jumeau numérique environnemental
+fédéré GSIE. L'application reste entièrement offline-first et publie, lorsque
+l'utilisateur l'autorise, des observations, peuplements, diagnostics,
+interventions et résultats versionnés vers GSIE.
+
+Les données Ignis, Hydro, Flora et Artemis sont consommées via les contrats
+GSIE versionnés, jamais par accès direct à leurs bases. Le Hub GeoSylva permet
+ensuite d'explorer l'évolution de la forêt, comparer des scénarios de
+croissance, de rendement, de changement d'essences ou de restauration
+post-incendie sans modifier l'état réel tant qu'aucune décision n'est validée.
+
+Voir [GSIE_INTEGRATION.md](GSIE_INTEGRATION.md) et
+`Quintessences/GSIE/ARCHITECTURE/GSIE_ENVIRONMENTAL_DIGITAL_TWIN_PLATFORM.md`.
+
+---
+
+## �🔒 Sécurité & Confidentialité
 
 - ✅ **Aucune publicité** — expérience 100% professionnelle
 - ✅ **Aucun tracking / analytics** — aucune télémétrie publicitaire ou comportementale
@@ -387,6 +405,7 @@ ses jetons GSIE.
 | [AUDIT_UI_UX_GLOBAL.md](AUDIT_UI_UX_GLOBAL.md) | Audit UI/UX complet |
 | [RESEARCH_OPPORTUNITIES.md](RESEARCH_OPPORTUNITIES.md) | 150+ opportunités de recherche |
 | [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) | Conditions de licence commerciale |
+| [GSIE_INTEGRATION.md](GSIE_INTEGRATION.md) | Intégration au jumeau numérique fédéré GSIE |
 
 ---
 
