@@ -9,6 +9,9 @@ interface TigeDao {
     @Query("SELECT * FROM tiges WHERE deletedAt IS NULL ORDER BY timestamp ASC")
     fun getAllTiges(): Flow<List<TigeEntity>>
 
+    @Query("SELECT * FROM tiges WHERE deletedAt IS NULL ORDER BY timestamp ASC")
+    suspend fun getAllTigesNow(): List<TigeEntity>
+
     @Query("SELECT * FROM tiges WHERE parcelleOwnerId = :parcelleId AND deletedAt IS NULL ORDER BY timestamp ASC")
     fun getTigesByParcelle(parcelleId: String): Flow<List<TigeEntity>>
 
@@ -97,4 +100,12 @@ interface TigeDao {
         origine: String?,
         isTigeHabitat: Boolean
     ): Int
+
+    // --- Backfill UUID (Lot 1) ---
+
+    @Query("SELECT * FROM tiges WHERE uuid IS NULL AND deletedAt IS NULL")
+    suspend fun getWithoutUuid(): List<TigeEntity>
+
+    @Query("UPDATE tiges SET uuid = :uuid WHERE tigeId = :id")
+    suspend fun setUuid(id: String, uuid: String)
 }

@@ -1,5 +1,17 @@
 package com.forestry.counter.data.service
 
+import com.forestry.counter.data.local.dao.ForetDao
+import com.forestry.counter.data.local.dao.ParcelleDao
+import com.forestry.counter.data.local.dao.PlacetteDao
+import com.forestry.counter.data.local.dao.TigeDao
+import com.forestry.counter.data.mapper.toDomain
+import com.forestry.counter.data.mapper.toEntity
+import com.forestry.counter.data.mapper.toParcelle
+import com.forestry.counter.data.mapper.toParcelleEntity
+import com.forestry.counter.data.mapper.toPlacette
+import com.forestry.counter.data.mapper.toPlacetteEntity
+import com.forestry.counter.data.mapper.toTige
+import com.forestry.counter.data.mapper.toTigeEntity
 import com.forestry.counter.domain.model.Foret
 import com.forestry.counter.domain.model.Parcelle
 import com.forestry.counter.domain.model.Placette
@@ -8,21 +20,19 @@ import com.forestry.counter.domain.model.Tige
 /**
  * Service de restauration après crash ou migration appareil — spec GeoSylva 3.0 §11.
  *
- * Contrairement à [com.forestry.counter.domain.usecase.export.ExportDataUseCase] /
- * [com.forestry.counter.domain.usecase.import.ImportDataUseCase] qui couvrent les
- * entités « compteur » (Group / Counter / Formula), ce service est chargé de
- * l'export/import des **entités cœur métier forestières** (Forêt → Parcelle →
- * Placette → Tige) ainsi que de leurs metadata de traçabilité §3.1
- * (`auteur`, `source`, `version`).
+ * Export/import JSON round-trip des entités cœur métier forestières
+ * (Forêt → Parcelle → Placette → Tige) avec préservation des identifiants
+ * et des metadata de traçabilité §3.1 (`auteur`, `source`, `version`).
  *
- * TODO(issue #14, Vague C P0) : implémenter l'export/import JSON round-trip des
- * entités forestières. Le contrat attendu est un round-trip sans perte :
- * `export()` produit un [ForestryBackup] sérialisable, `import()` le rejoue en
- * préservant les identifiants et les metadata. Les tests correspondants sont
- * marqués `@Ignore` dans [com.forestry.counter.data.BackupRestoreTest] en
- * attendant l'implémentation.
+ * Lot 1 Sprint 2.2 : implémentation du contrat documenté par
+ * [com.forestry.counter.data.BackupRestoreTest].
  */
-class BackupService {
+class BackupService(
+    private val foretDao: ForetDao,
+    private val parcelleDao: ParcelleDao,
+    private val placetteDao: PlacetteDao,
+    private val tigeDao: TigeDao,
+) {
 
     /**
      * Instantané sérialisable des entités cœur forestières.
@@ -46,18 +56,41 @@ class BackupService {
     /**
      * Exporte l'intégralité des entités cœur forestières dans un [ForestryBackup].
      *
-     * @throws NotImplementedError tant que l'implémentation n'est pas disponible.
+     * Les lignes soft-deleted (`deletedAt != null`) sont exclues — un backup
+     * ne doit pas restaurer des données supprimées logiquement.
      */
-    suspend fun export(): ForestryBackup = throw NotImplementedError(
-        "BackupService.export() n'est pas encore implémenté (TODO §11, issue #14)"
-    )
+    suspend fun export(): ForestryBackup {
+        val forets = foretDao.getAllNow().map { it.toDomain() }
+        val parcelles = parcelleDao.getAllParcellesNow().map { it.toParcelle() }
+        val placettes = placetteDao.getAllPlacettesNow().map { it.toPlacette() }
+        val tiges = tigeDao.getAllTigesNow().map { it.toTige() }
+        return ForestryBackup(
+            exportDate = System.currentTimeMillis(),
+            forets = forets,
+            parcelles = parcelles,
+            placettes = placettes,
+            tiges = tiges,
+        )
+    }
 
     /**
      * Rejoue un [ForestryBackup] en base, en préservant identifiants et metadata.
      *
-     * @throws NotImplementedError tant que l'implémentation n'est pas disponible.
+     * Stratégie : REPLACE (upsert) — si une entité avec le même ID existe,
+     * elle est écrasée par la version du backup. Les identifiants et les
+     * metadata §3.1 (`auteur`, `source`, `version`) sont préservés.
+     *
+     * @throws IllegalArgumentException si le backup est malformé (exportDate <= 0
+     *   sans aucune entité).
      */
-    suspend fun import(backup: ForestryBackup): Unit {
-        throw NotImplementedError("BackupService.import() n'est pas encore implémenté (TODO §11, issue #14)")
+    suspend fun import(backup: ForestryBackup) {
+        if (backup.exportDate <= 0L && backup.forets.isEmpty() && backup.parcelles.isEmpty()) {
+            throw IllegalArgumentException("Backup malformé : exportDate invalide et aucune entité")
+        }
+        // Ordre d'insertion respectant les FK : forets → parcelles → placettes → tiges
+        backup.forets.forEach { foretDao.insert(it.toEntity()) }
+        backup.parcelles.forEach { parcelleDao.insertParcelle(it.toParcelleEntity()) }
+        backup.placettes.forEach { placetteDao.insertPlacette(it.toPlacetteEntity()) }
+        backup.tiges.forEach { tigeDao.insertTige(it.toTigeEntity()) }
     }
 }

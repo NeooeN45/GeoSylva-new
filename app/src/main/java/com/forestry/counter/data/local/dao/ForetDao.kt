@@ -42,9 +42,20 @@ interface ForetDao {
     @Query("SELECT * FROM forets WHERE deletedAt IS NULL ORDER BY nom ASC")
     fun getAll(): Flow<List<ForetEntity>>
 
+    @Query("SELECT * FROM forets WHERE deletedAt IS NULL ORDER BY nom ASC")
+    suspend fun getAllNow(): List<ForetEntity>
+
     @Query("SELECT * FROM forets WHERE foretId = :id AND deletedAt IS NULL")
     suspend fun getById(id: String): ForetEntity?
 
     @Query("SELECT * FROM forets WHERE proprietaireNom LIKE '%' || :query || '%' AND deletedAt IS NULL ORDER BY nom ASC")
     fun searchByProprietaire(query: String): Flow<List<ForetEntity>>
+
+    // --- Backfill UUID (Lot 1) ---
+
+    @Query("SELECT * FROM forets WHERE uuid IS NULL AND deletedAt IS NULL")
+    suspend fun getWithoutUuid(): List<ForetEntity>
+
+    @Query("UPDATE forets SET uuid = :uuid WHERE foretId = :id")
+    suspend fun setUuid(id: String, uuid: String)
 }

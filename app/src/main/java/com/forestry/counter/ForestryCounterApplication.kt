@@ -118,6 +118,8 @@ class ForestryCounterApplication : Application() {
         private set
     lateinit var parcelleSyncRepository: ParcelSyncRepository
         private set
+    lateinit var projectRepository: com.forestry.counter.domain.repository.ProjectRepository
+        private set
 
     // Services
     lateinit var localisationResolverService: LocalisationResolverService
@@ -235,6 +237,7 @@ class ForestryCounterApplication : Application() {
         ripisylveRepository = RipisylveRepositoryImpl(database.ripisylveDao(), metadataService)
         stationRepository = StationRepositoryImpl(database.stationDao(), metadataService)
         localisationResolverService = LocalisationResolverService(parcelleRepository, stationEnvironnementaleRepository)
+        projectRepository = com.forestry.counter.data.repository.ProjectRepositoryImpl(database.projectDao())
 
         // Initialize forestry calculator
         forestryCalculator = ForestryCalculator(parameterRepository)

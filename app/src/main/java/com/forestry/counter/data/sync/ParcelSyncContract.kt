@@ -103,4 +103,15 @@ internal data class ParcelSyncResponseDto(
     @SerialName("client_id") val clientId: String,
     val status: String,
     @SerialName("server_version") val serverVersion: Int,
+    @SerialName("client_updated_at") val clientUpdatedAt: String? = null,
+    @SerialName("server_updated_at") val serverUpdatedAt: String? = null,
+    val parcel: ParcelSyncPayloadDto? = null,
+)
+
+@Serializable
+internal data class GeoSylvaParcelPageDto(
+    val items: List<ParcelSyncResponseDto>,
+    val page: Int,
+    val size: Int,
+    val total: Int,
 )

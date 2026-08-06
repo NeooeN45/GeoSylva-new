@@ -50,4 +50,12 @@ interface ParcelleDao {
      */
     @Query("DELETE FROM parcelles")
     suspend fun hardDeleteAll()
+
+    // --- Backfill UUID (Lot 1) ---
+
+    @Query("SELECT * FROM parcelles WHERE uuid IS NULL AND deletedAt IS NULL")
+    suspend fun getWithoutUuid(): List<ParcelleEntity>
+
+    @Query("UPDATE parcelles SET uuid = :uuid WHERE parcelleId = :id")
+    suspend fun setUuid(id: String, uuid: String)
 }

@@ -1,6 +1,7 @@
 package com.forestry.counter.data.local.entity
 
 import androidx.room.ColumnInfo
+import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -23,12 +24,15 @@ import androidx.room.PrimaryKey
         Index(name = "index_parcelles_name", value = ["name"]),
         Index(name = "index_parcelles_forestOwnerId", value = ["forestOwnerId"]),
         Index(name = "index_parcelles_foretId", value = ["foretId"]),
-        Index(name = "index_parcelles_codeInsee", value = ["codeInseeCommune"])
+        Index(name = "index_parcelles_codeInsee", value = ["codeInseeCommune"]),
+        Index(name = "index_parcelles_uuid", value = ["uuid"], unique = true)
     ]
 )
 data class ParcelleEntity(
     @PrimaryKey
     val parcelleId: String,
+    /** UUID normalisé (RFC 4122) pour interop GSIE serveur — backfill asynchrone. */
+    val uuid: String? = null,
     val forestOwnerId: String?,
     val foretId: String?,
     val name: String,
@@ -63,6 +67,10 @@ data class ParcelleEntity(
 
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
+
+    /** Provenance normalisée (organisme source, licence, précision, statut) — spec §29.13. */
+    @Embedded
+    val provenance: ProvenanceEmbed = ProvenanceEmbed(null, null, null, null, null),
 
     // Metadata spec GeoSylva 3.0 (GEOSYLVA-003 §3.1)
     val deletedAt: Long? = null,

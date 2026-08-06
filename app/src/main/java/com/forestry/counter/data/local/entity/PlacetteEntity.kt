@@ -24,12 +24,15 @@ import androidx.room.PrimaryKey
     ],
     indices = [
         Index(name = "index_placettes_parcelleOwnerId", value = ["parcelleOwnerId"]),
-        Index(name = "index_placettes_sessionId", value = ["sessionId"])
+        Index(name = "index_placettes_sessionId", value = ["sessionId"]),
+        Index(name = "index_placettes_uuid", value = ["uuid"], unique = true)
     ]
 )
 data class PlacetteEntity(
     @PrimaryKey
     val placetteId: String,
+    /** UUID normalisé (RFC 4122) pour interop GSIE serveur — backfill asynchrone. */
+    val uuid: String? = null,
     val parcelleOwnerId: String,
     val name: String?,
     val type: String?,

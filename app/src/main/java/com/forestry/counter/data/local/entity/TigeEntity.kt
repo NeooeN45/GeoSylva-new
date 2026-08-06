@@ -39,12 +39,15 @@ import androidx.room.PrimaryKey
         Index(name = "index_tiges_placetteOwnerId", value = ["placetteOwnerId"]),
         Index(name = "index_tiges_essenceCode", value = ["essenceCode"]),
         Index(name = "index_tiges_diamCm", value = ["diamCm"]),
-        Index(name = "index_tiges_sessionId", value = ["sessionId"])
+        Index(name = "index_tiges_sessionId", value = ["sessionId"]),
+        Index(name = "index_tiges_uuid", value = ["uuid"], unique = true)
     ]
 )
 data class TigeEntity(
     @PrimaryKey
     val tigeId: String,
+    /** UUID normalisé (RFC 4122) pour interop GSIE serveur — backfill asynchrone. */
+    val uuid: String? = null,
     val parcelleOwnerId: String,
     val placetteOwnerId: String?,
     val sessionId: String?,
