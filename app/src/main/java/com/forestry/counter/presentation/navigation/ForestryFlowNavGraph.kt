@@ -90,6 +90,9 @@ fun NavGraphBuilder.forestryFlowNavGraph(
             },
             onNavigateToIbp = { pid ->
                 navController.navigate(Screen.IbpHistory.createRoute(pid))
+            },
+            onNavigateToCreateParcelle = { fid ->
+                navController.navigate(Screen.CreateParcelle.createRoute(fid))
             }
         )
     }
@@ -124,6 +127,9 @@ fun NavGraphBuilder.forestryFlowNavGraph(
             },
             onNavigateToDiagnostic = { pid ->
                 navController.navigate(Screen.DiagnosticMenu.createRoute(pid))
+            },
+            onNavigateToCreatePlacette = { pid ->
+                navController.navigate(Screen.CreatePlacette.createRoute(pid))
             }
         )
     }

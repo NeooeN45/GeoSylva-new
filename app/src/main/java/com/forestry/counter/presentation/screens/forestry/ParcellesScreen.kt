@@ -79,7 +79,8 @@ fun ParcellesScreen(
     onNavigateToMartelage: ((String) -> Unit)? = null,
     onNavigateToMap: (() -> Unit)? = null,
     onNavigateToDiagnostic: ((String) -> Unit)? = null,
-    onNavigateToIbp: ((String) -> Unit)? = null
+    onNavigateToIbp: ((String) -> Unit)? = null,
+    onNavigateToCreateParcelle: ((String) -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -253,7 +254,11 @@ fun ParcellesScreen(
             },
             floatingActionButton = {
                 FloatingActionButton(onClick = {
-                    addParcelle()
+                    if (onNavigateToCreateParcelle != null && forestId != null) {
+                        onNavigateToCreateParcelle(forestId)
+                    } else {
+                        addParcelle()
+                    }
                 }) {
                     Icon(Icons.Default.Add, contentDescription = stringResource(R.string.create_parcelle))
                 }

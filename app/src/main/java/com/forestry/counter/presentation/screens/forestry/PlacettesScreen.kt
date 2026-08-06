@@ -73,7 +73,8 @@ fun PlacettesScreen(
     onNavigateToMartelageForParcelle: ((String) -> Unit)? = null,
     onNavigateToMap: ((String) -> Unit)? = null,
     onNavigateToDashboard: ((String) -> Unit)? = null,
-    onNavigateToDiagnostic: ((String) -> Unit)? = null
+    onNavigateToDiagnostic: ((String) -> Unit)? = null,
+    onNavigateToCreatePlacette: ((String) -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
@@ -238,7 +239,11 @@ fun PlacettesScreen(
             },
             floatingActionButton = {
                 FloatingActionButton(onClick = {
-                    addPlacette()
+                    if (onNavigateToCreatePlacette != null) {
+                        onNavigateToCreatePlacette(parcelleId)
+                    } else {
+                        addPlacette()
+                    }
                 }) {
                     Icon(Icons.Default.Add, contentDescription = stringResource(R.string.create_placette))
                 }

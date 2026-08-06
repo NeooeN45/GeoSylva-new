@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.forestry.counter.ForestryCounterApplication
 
@@ -113,6 +114,20 @@ sealed class Screen(val route: String) {
     object SuperCorrelateur : Screen("super_correlateur/{parcelleId}") {
         fun createRoute(parcelleId: String) = "super_correlateur/$parcelleId"
     }
+    object Projects : Screen("projects")
+    object ProjectDetail : Screen("project/{projectId}") {
+        fun createRoute(projectId: String) = "project/$projectId"
+    }
+    object ForestDetail : Screen("forest/{forestId}") {
+        fun createRoute(forestId: String) = "forest/$forestId"
+    }
+    object CreateForest : Screen("forest/create")
+    object CreateParcelle : Screen("parcelle/create/{forestId}") {
+        fun createRoute(forestId: String) = "parcelle/create/$forestId"
+    }
+    object CreatePlacette : Screen("placette/create/{parcelleId}") {
+        fun createRoute(parcelleId: String) = "placette/create/$parcelleId"
+    }
 }
 
 // ─── Root navigation host ─────────────────────────────────────────────────────
@@ -193,16 +208,58 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
         },
     )
 
-    val startDest = if (onboardingCompleted) Screen.Forets.route else Screen.Onboarding.route
+    val startDest = if (onboardingCompleted) BottomNavDestination.startRoute else Screen.Onboarding.route
 
-    NavHost(
-        navController = navController,
-        startDestination = startDest,
-    ) {
-        onboardingNavGraph(navController, app, transitions)
-        forestryFlowNavGraph(navController, app, transitions)
-        ibpNavGraph(navController, app, transitions)
-        diagnosticNavGraph(navController, app, transitions)
-        settingsNavGraph(navController, app, transitions)
+    MainScaffold(navController = navController, app = app) { innerModifier ->
+        NavHost(
+            navController = navController,
+            startDestination = startDest,
+        ) {
+            // Lot 1 — 5 onglets de premier niveau (bottom nav)
+            BottomNavDestination.entries.forEach { destination ->
+                composable(
+                    route = destination.route,
+                    enterTransition = transitions.enter,
+                    exitTransition = transitions.exit,
+                    popEnterTransition = transitions.popEnter,
+                    popExitTransition = transitions.popExit,
+                ) {
+                    TopLevelTabContent(
+                        route = destination.route,
+                        app = app,
+                        onNavigateToExplorer = {
+                            navController.navigate(BottomNavDestination.EXPLORER.route) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        onNavigateToForet = { foretId ->
+                            navController.navigate(Screen.ForestDetail.createRoute(foretId))
+                        },
+                        onNavigateToForets = {
+                            navController.navigate(Screen.Forets.route)
+                        },
+                        onNavigateToProjects = {
+                            navController.navigate(Screen.Projects.route)
+                        },
+                        onCategoryClick = { category ->
+                            // Lot 1 : les catégories non implémentées n'ont pas encore
+                            // d'écran dédié. Navigation vers les écrans existants quand
+                            // disponible, sinon rien.
+                        },
+                        modifier = innerModifier,
+                    )
+                }
+            }
+
+            onboardingNavGraph(navController, app, transitions)
+            forestryFlowNavGraph(navController, app, transitions)
+            ibpNavGraph(navController, app, transitions)
+            diagnosticNavGraph(navController, app, transitions)
+            settingsNavGraph(navController, app, transitions)
+            projectsNavGraph(navController, app, transitions)
+            forestDetailNavGraph(navController, app, transitions)
+        }
     }
 }
