@@ -44,6 +44,7 @@ Deux principes de rédaction :
 | Portée | GeoSylva seule | 2026-08-06 |
 | Approche | Écrans de référence d'abord (§10) | 2026-08-06 |
 | Écrans de référence | 4 (§7) | 2026-08-06 |
+| Vidéo de connexion | Banque libre de droits, puis prise de vue propre (§7.1) | 2026-08-06 |
 
 ---
 
@@ -397,8 +398,47 @@ jamais retarder l'accès à l'application.
 sans réseau — la vidéo est locale, et l'accès en mode hors ligne ne doit
 jamais être bloqué par un échec d'authentification distante.
 
-**Chantier ouvert :** la vidéo n'existe pas. Sa production (prise de vue
-en forêt, ou séquence de synthèse) est un lot à part.
+**Origine de la vidéo — décidée en deux temps**
+
+1. **Maintenant :** une séquence de banque d'images sous licence libre
+   (Coverr, Pexels, Mixkit, Pixabay CC0). La licence retenue est
+   consignée dans `res/raw/LICENCES.md` avec l'URL d'origine et la date
+   de téléchargement.
+2. **Ensuite :** remplacement par une prise de vue réalisée par le
+   Fondateur dans une forêt réelle. C'est l'objectif — une application
+   d'inventaire forestier gagne à montrer une vraie forêt, et cela
+   devient un actif de marque propre.
+
+**Contrainte d'architecture qui en découle :** la vidéo est un **actif
+remplaçable**. Un seul point de référence dans le code
+(`GsLoginVideo.SOURCE`), aucune logique dépendante de son contenu, de sa
+durée ou de sa colorimétrie. Le remplacement doit être une substitution
+de fichier, jamais une reprise d'écran.
+
+**Préparation de la séquence** — quelle que soit son origine :
+
+| Étape | Exigence |
+|---|---|
+| Recadrage | Portrait 1080×1920 |
+| Découpe | 6 à 8 s, première et dernière image visuellement identiques |
+| Piste audio | Supprimée du conteneur, pas seulement coupée |
+| Encodage | H.264, débit ajusté pour rester sous 2,5 Mo |
+
+```bash
+ffmpeg -i source.mp4 -t 7 -an \
+  -vf "crop=ih*9/16:ih,scale=1080:1920" \
+  -c:v libx264 -crf 28 -preset slow -movflags +faststart \
+  app/src/main/res/raw/login_backdrop.mp4
+```
+
+L'option `-an` supprime la piste audio ; `-movflags +faststart` évite un
+retard au démarrage.
+
+**Critères de choix de la séquence :** canopée en contre-plongée ou
+sous-bois, mouvement lent (vent dans le feuillage de préférence à un
+travelling), lumière douce ou contre-jour, aucune personne ni matériel
+identifiable, aucune essence exotique incohérente avec la forêt
+française.
 
 ### 7.2 Écran d'accueil — spécification
 
@@ -585,7 +625,7 @@ tout nouvel écran de référence.
 | # | Sujet | Décision attendue |
 |---|---|---|
 | 1 | **Images de fond** — textures et photographies à produire | Origine : prise de vue, banque sous licence, ou synthèse ? |
-| 2 | **Vidéo de connexion** — à produire | Prise de vue en forêt ou séquence de synthèse ? |
+| 2 | **Vidéo de connexion** | **Tranché** (§7.1) — banque libre de droits d'abord, prise de vue du Fondateur ensuite. Reste à sélectionner la séquence. |
 | 3 | **Forêt jour/nuit animée** dans les réglages, avec animaux diurnes et chouette nocturne | Retenue comme idée. À réaliser en **Lottie**, pas MotionLayout — un illustrateur peut alors la produire sans toucher au code. Lot séparé, en fin de parcours. |
 | 4 | **Montée Kotlin 2.x (L0)** | Chantier isolé à planifier — préalable bloquant |
 | 5 | **Extension aux autres applications** Quintessences | Différée. À rouvrir quand GeoSylva 3.0 aura prouvé la doctrine. |
