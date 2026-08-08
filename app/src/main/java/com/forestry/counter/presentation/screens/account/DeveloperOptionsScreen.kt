@@ -85,6 +85,7 @@ fun DeveloperOptionsScreen(
             apiBaseUrl = repository.apiBaseUrl,
             onRefresh = viewModel::refresh,
             onSynchronizeParcels = viewModel::synchronizeParcels,
+            onPullParcels = viewModel::pullParcels,
             onDisable = viewModel::disableDeveloperMode,
             modifier = Modifier.padding(padding),
         )
@@ -97,6 +98,7 @@ private fun DeveloperContent(
     apiBaseUrl: String,
     onRefresh: () -> Unit,
     onSynchronizeParcels: () -> Unit,
+    onPullParcels: () -> Unit,
     onDisable: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -109,7 +111,7 @@ private fun DeveloperContent(
         item { RefreshButton(state.isRefreshing, onRefresh) }
         item { ApiDiagnosticCard(apiBaseUrl, state.diagnostic) }
         item { IdentityDiagnosticCard(state) }
-        item { ParcelSyncDiagnosticCard(state, onSynchronizeParcels) }
+        item { ParcelSyncDiagnosticCard(state, onSynchronizeParcels, onPullParcels) }
         item { BuildDiagnosticCard() }
         item { DeviceDiagnosticCard() }
         item { DisableDeveloperCard(onDisable) }
@@ -120,6 +122,7 @@ private fun DeveloperContent(
 private fun ParcelSyncDiagnosticCard(
     state: DeveloperOptionsUiState,
     onSynchronizeParcels: () -> Unit,
+    onPullParcels: () -> Unit,
 ) {
     IdentitySectionCard(stringResource(R.string.developer_section_parcel_sync)) {
         IdentityInfoRow(
@@ -169,6 +172,38 @@ private fun ParcelSyncDiagnosticCard(
             }
             Text(
                 stringResource(R.string.developer_sync_all_parcels),
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+        state.pullResult?.let { result ->
+            Text(
+                stringResource(
+                    R.string.developer_sync_pull_result,
+                    result.inserted,
+                    result.updated,
+                    result.deleted,
+                    result.skippedLocalDirty,
+                ),
+            )
+        }
+        if (state.pullError) {
+            Text(
+                stringResource(R.string.developer_sync_pull_error),
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+        OutlinedButton(
+            onClick = onPullParcels,
+            enabled = !state.isPullingParcels && state.session != null,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (state.isPullingParcels) {
+                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else {
+                Icon(Icons.Default.Refresh, contentDescription = null)
+            }
+            Text(
+                stringResource(R.string.developer_sync_pull_parcels),
                 modifier = Modifier.padding(start = 8.dp),
             )
         }

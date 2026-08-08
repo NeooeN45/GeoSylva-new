@@ -1,8 +1,38 @@
 package com.forestry.counter.data.sync
 
 import com.forestry.counter.data.local.entity.ParcelleEntity
+import com.forestry.counter.data.local.entity.ProvenanceEmbed
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+
+internal const val PARCEL_STATUS_DELETED = "deleted"
+
+/** Résultat de la fusion serveur→local d'une parcelle (GEOSYLVA P0-3, pull). */
+internal enum class MergeOutcome { INSERTED, UPDATED, DELETED, SKIPPED_LOCAL_DIRTY, NOOP }
+
+/**
+ * Décide l'action de fusion pour UNE parcelle reçue du serveur, sans
+ * effectuer aucun accès disque — la logique de décision est pure et
+ * testable indépendamment de Room/Retrofit (voir [ParcelSyncPolicyTest]).
+ *
+ * Règle non négociable : une modification locale non encore synchronisée
+ * avec succès ([isLocalDirty]) gagne toujours — le pull ne l'écrase jamais.
+ */
+internal fun decideMergeOutcome(
+    isLocalDirty: Boolean,
+    isTombstone: Boolean,
+    existsLocally: Boolean,
+    isAlreadyDeletedLocally: Boolean,
+): MergeOutcome = when {
+    isLocalDirty -> MergeOutcome.SKIPPED_LOCAL_DIRTY
+    isTombstone -> if (existsLocally && !isAlreadyDeletedLocally) {
+        MergeOutcome.DELETED
+    } else {
+        MergeOutcome.NOOP
+    }
+    !existsLocally -> MergeOutcome.INSERTED
+    else -> MergeOutcome.UPDATED
+}
 
 internal enum class SyncFailureAction {
     REFRESH_SESSION,
@@ -107,6 +137,60 @@ internal data class ParcelSyncResponseDto(
     @SerialName("server_updated_at") val serverUpdatedAt: String? = null,
     val parcel: ParcelSyncPayloadDto? = null,
 )
+
+/**
+ * Sens inverse de [toSyncPayload] — reconstruit l'entité locale à partir de
+ * la réponse serveur (GEOSYLVA P0-3, pull).
+ *
+ * Retourne `null` si [ParcelSyncResponseDto.parcel] est absent (tombstone
+ * `status="deleted"` — voir [PARCEL_STATUS_DELETED], géré séparément par
+ * l'appelant via une suppression douce plutôt qu'une reconstruction).
+ *
+ * [existing] fournit les champs que le contrat réseau ne transporte pas
+ * (`uuid`, `auteur`, `source`, `provenance`) — préservés tels quels s'ils
+ * existaient déjà localement, sinon laissés à leur valeur par défaut.
+ */
+internal fun ParcelSyncResponseDto.toParcelleEntity(existing: ParcelleEntity?): ParcelleEntity? {
+    val payload = parcel ?: return null
+    return ParcelleEntity(
+        parcelleId = clientId,
+        uuid = existing?.uuid,
+        forestOwnerId = payload.forestOwnerId,
+        foretId = payload.forestId,
+        name = payload.name,
+        surfaceHa = payload.surfaceHa,
+        shape = payload.shape,
+        slopePct = payload.slopePct,
+        aspect = payload.aspect,
+        access = payload.access,
+        altitudeM = payload.altitudeM,
+        objectifType = payload.objectiveType,
+        objectifVal = payload.objectiveValue,
+        tolerancePct = payload.tolerancePct,
+        samplingMode = payload.samplingMode,
+        sampleAreaM2 = payload.sampleAreaM2,
+        targetSpeciesCsv = payload.targetSpeciesCsv,
+        srid = payload.srid,
+        remarks = payload.remarks,
+        codeInseeCommune = payload.municipalityCode,
+        nomCommune = payload.municipalityName,
+        sectionCadastrale = payload.cadastralSection,
+        numeroCadastral = payload.cadastralNumber,
+        contenanceCadastraleHa = payload.cadastralAreaHa,
+        geometrieIgnWkt = payload.ignGeometryWkt,
+        natureCadastraleCode = payload.cadastralNatureCode,
+        localisationMode = payload.locationMode,
+        codeSer = payload.serCode,
+        nomSer = payload.serName,
+        createdAt = payload.createdAtMs,
+        updatedAt = payload.updatedAtMs,
+        provenance = existing?.provenance ?: ProvenanceEmbed(null, null, null, null, null),
+        deletedAt = null,
+        auteur = existing?.auteur,
+        source = existing?.source,
+        version = serverVersion,
+    )
+}
 
 @Serializable
 internal data class GeoSylvaParcelPageDto(

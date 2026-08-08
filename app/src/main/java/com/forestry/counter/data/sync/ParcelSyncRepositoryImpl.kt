@@ -13,6 +13,7 @@ import com.forestry.counter.data.local.entity.ParcelSyncEntity
 import com.forestry.counter.data.remote.identity.EncryptedIdentitySessionStore
 import com.forestry.counter.data.work.ParcelSyncWorker
 import com.forestry.counter.domain.model.ParcelSyncProcessResult
+import com.forestry.counter.domain.model.ParcelSyncPullResult
 import com.forestry.counter.domain.model.ParcelSyncSummary
 import com.forestry.counter.domain.repository.IdentityRepository
 import com.forestry.counter.domain.repository.ParcelSyncRepository
@@ -144,6 +145,111 @@ internal class ParcelSyncRepositoryImpl(
         if (ready.size == BATCH_SIZE) schedule()
         return ParcelSyncProcessResult(synchronized, conflicts, errors, shouldRetry)
     }
+
+    override suspend fun pull(): Result<ParcelSyncPullResult> {
+        val accountId = identityRepository.session.value?.accountId
+            ?: return Result.failure(IllegalStateException("Aucun compte connecté"))
+        if (!activationStore.isEnabled(accountId)) {
+            return Result.failure(IllegalStateException("Synchronisation non activée"))
+        }
+        val service = api ?: return Result.failure(IllegalStateException(ERROR_API_NOT_CONFIGURED))
+        return runCatching {
+            var page = 1
+            var pagesFetched = 0
+            var inserted = 0
+            var updated = 0
+            var deleted = 0
+            var skippedLocalDirty = 0
+            while (pagesFetched < MAX_PULL_PAGES) {
+                val body = fetchPullPage(service, page)
+                pagesFetched += 1
+                body.items.forEach { item ->
+                    when (mergeFromServer(accountId, item)) {
+                        MergeOutcome.INSERTED -> inserted += 1
+                        MergeOutcome.UPDATED -> updated += 1
+                        MergeOutcome.DELETED -> deleted += 1
+                        MergeOutcome.SKIPPED_LOCAL_DIRTY -> skippedLocalDirty += 1
+                        MergeOutcome.NOOP -> {}
+                    }
+                }
+                val fetchedSoFar = page * body.size
+                if (body.items.isEmpty() || fetchedSoFar >= body.total) break
+                page += 1
+            }
+            ParcelSyncPullResult(inserted, updated, deleted, skippedLocalDirty, pagesFetched)
+        }
+    }
+
+    private suspend fun fetchPullPage(service: ParcelSyncApiService, page: Int): GeoSylvaParcelPageDto {
+        var response = service.list(authorizationHeader(), page, PULL_PAGE_SIZE)
+        if (response.code() == 401 && identityRepository.refreshSession().isSuccess) {
+            response = service.list(authorizationHeader(), page, PULL_PAGE_SIZE)
+        }
+        if (!response.isSuccessful) {
+            throw IOException("HTTP ${response.code()} lors de la recuperation des parcelles")
+        }
+        return response.body() ?: throw IOException("Reponse vide lors de la recuperation des parcelles")
+    }
+
+    /**
+     * Fusionne une parcelle serveur en local — jamais si une modification
+     * locale n'a pas encore ete synchronisee avec succes (le local gagne,
+     * voir doc [com.forestry.counter.domain.repository.ParcelSyncRepository.pull]).
+     */
+    private suspend fun mergeFromServer(accountId: String, item: ParcelSyncResponseDto): MergeOutcome {
+        val queued = syncDao.get(accountId, item.clientId)
+        val existing = parcelleDao.getParcelleByIdAny(item.clientId)
+        val outcome = decideMergeOutcome(
+            isLocalDirty = queued != null && queued.state != STATE_SYNCED,
+            isTombstone = item.status == PARCEL_STATUS_DELETED,
+            existsLocally = existing != null,
+            isAlreadyDeletedLocally = existing?.deletedAt != null,
+        )
+        when (outcome) {
+            MergeOutcome.SKIPPED_LOCAL_DIRTY -> Unit
+            MergeOutcome.NOOP -> recordSynced(accountId, item)
+            MergeOutcome.DELETED -> {
+                parcelleDao.deleteParcelleById(item.clientId, parseServerTimestamp(item.serverUpdatedAt))
+                recordSynced(accountId, item)
+            }
+            MergeOutcome.INSERTED -> {
+                val entity = item.toParcelleEntity(existing) ?: return MergeOutcome.NOOP
+                parcelleDao.insertParcelle(entity)
+                recordSynced(accountId, item)
+            }
+            MergeOutcome.UPDATED -> {
+                val entity = item.toParcelleEntity(existing) ?: return MergeOutcome.NOOP
+                parcelleDao.updateParcelle(entity)
+                recordSynced(accountId, item)
+            }
+        }
+        return outcome
+    }
+
+    /** Aligne la file d'attente locale sur l'etat serveur connu apres un pull reussi. */
+    private suspend fun recordSynced(accountId: String, item: ParcelSyncResponseDto) {
+        val now = System.currentTimeMillis()
+        syncDao.upsert(
+            ParcelSyncEntity(
+                accountId = accountId,
+                parcelId = item.clientId,
+                operation = OPERATION_UPSERT,
+                operationId = UUID.randomUUID().toString(),
+                state = STATE_SYNCED,
+                serverVersion = item.serverVersion,
+                retryCount = 0,
+                queuedAt = now,
+                lastAttemptAt = now,
+                lastSuccessAt = now,
+                nextAttemptAt = now,
+                lastErrorCode = null,
+            )
+        )
+    }
+
+    private fun parseServerTimestamp(serverUpdatedAt: String?): Long =
+        serverUpdatedAt?.let { runCatching { Instant.parse(it).toEpochMilli() }.getOrNull() }
+            ?: System.currentTimeMillis()
 
     private suspend fun synchronize(
         service: ParcelSyncApiService,
@@ -337,6 +443,8 @@ internal class ParcelSyncRepositoryImpl(
         const val MIN_RETRY_DELAY_MS = 15_000L
         const val MAX_RETRY_DELAY_MS = 60 * 60 * 1_000L
         const val STALE_SYNC_DELAY_MS = 10 * 60 * 1_000L
+        const val PULL_PAGE_SIZE = 200
+        const val MAX_PULL_PAGES = 200
         val EMPTY_RESULT = ParcelSyncProcessResult(0, 0, 0, false)
     }
 }

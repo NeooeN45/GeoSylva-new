@@ -21,6 +21,14 @@ interface ParcelleDao {
     @Query("SELECT * FROM parcelles WHERE parcelleId = :id AND deletedAt IS NULL")
     suspend fun getParcelleById(id: String): ParcelleEntity?
 
+    /**
+     * Comme [getParcelleById] mais inclut les parcelles supprimées
+     * (deletedAt non nul) — nécessaire au pull serveur→local pour distinguer
+     * "jamais vue" de "supprimée localement" (GEOSYLVA P0-3, résolution).
+     */
+    @Query("SELECT * FROM parcelles WHERE parcelleId = :id")
+    suspend fun getParcelleByIdAny(id: String): ParcelleEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertParcelle(entity: ParcelleEntity)
 

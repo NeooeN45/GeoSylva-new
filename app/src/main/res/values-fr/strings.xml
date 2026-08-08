@@ -2290,5 +2290,8 @@
     <string name="developer_sync_all_parcels">Activer et synchroniser les parcelles</string>
     <string name="developer_sync_queued_result">%1$d parcelle(s) placée(s) dans la file chiffrée</string>
     <string name="developer_sync_requires_account">Un compte connecté est nécessaire.</string>
+    <string name="developer_sync_pull_parcels">Récupérer depuis le serveur</string>
+    <string name="developer_sync_pull_result">%1$d ajoutée(s), %2$d mise(s) à jour, %3$d supprimée(s), %4$d ignorée(s) (modification locale non synchronisée)</string>
+    <string name="developer_sync_pull_error">Échec de la récupération — vérifie la connexion.</string>
 
 </resources>

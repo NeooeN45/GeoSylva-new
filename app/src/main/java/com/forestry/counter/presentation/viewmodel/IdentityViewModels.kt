@@ -11,6 +11,7 @@ import com.forestry.counter.domain.model.ApiDiagnostic
 import com.forestry.counter.domain.model.IdentityClientException
 import com.forestry.counter.domain.model.IdentityError
 import com.forestry.counter.domain.model.ProviderCapability
+import com.forestry.counter.domain.model.ParcelSyncPullResult
 import com.forestry.counter.domain.model.ParcelSyncSummary
 import com.forestry.counter.domain.repository.IdentityRepository
 import com.forestry.counter.domain.repository.ParcelSyncRepository
@@ -384,6 +385,9 @@ data class DeveloperOptionsUiState(
     val isQueueingParcels: Boolean = false,
     val queuedParcelCount: Int? = null,
     val parcelSyncError: Boolean = false,
+    val isPullingParcels: Boolean = false,
+    val pullResult: ParcelSyncPullResult? = null,
+    val pullError: Boolean = false,
 )
 
 class DeveloperOptionsViewModel(
@@ -454,6 +458,27 @@ class DeveloperOptionsViewModel(
                 onFailure = {
                     _uiState.update {
                         it.copy(isQueueingParcels = false, parcelSyncError = true)
+                    }
+                },
+            )
+        }
+    }
+
+    fun pullParcels() {
+        if (_uiState.value.isPullingParcels) return
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(isPullingParcels = true, pullResult = null, pullError = false)
+            }
+            parcelSyncRepository.pull().fold(
+                onSuccess = { result ->
+                    _uiState.update {
+                        it.copy(isPullingParcels = false, pullResult = result)
+                    }
+                },
+                onFailure = {
+                    _uiState.update {
+                        it.copy(isPullingParcels = false, pullError = true)
                     }
                 },
             )

@@ -16,6 +16,8 @@ class FakeParcelleDao : ParcelleDao {
         flowOf(data.find { it.parcelleId == id && it.deletedAt == null })
     override suspend fun getParcelleById(id: String): ParcelleEntity? =
         data.find { it.parcelleId == id && it.deletedAt == null }
+    override suspend fun getParcelleByIdAny(id: String): ParcelleEntity? =
+        data.find { it.parcelleId == id }
     override suspend fun insertParcelle(parcelle: ParcelleEntity) { data.add(parcelle) }
     override suspend fun insertParcelles(entities: List<ParcelleEntity>) { data.addAll(entities) }
     override suspend fun updateParcelle(parcelle: ParcelleEntity) {
