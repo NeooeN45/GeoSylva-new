@@ -2246,6 +2246,11 @@
     <string name="account_send_verification_code">Envoyer le code de vérification</string>
     <string name="account_verification_code">Code de huit caractères</string>
     <string name="account_confirm_verification">Vérifier mon adresse</string>
+    <string name="account_notice_google_linked">Compte Google rattaché.</string>
+    <string name="account_link_google">Rattacher mon compte Google</string>
+    <string name="account_link_google_hint">Vous pourrez ensuite vous connecter d’un seul geste, avec le même compte Quintessences.</string>
+    <string name="account_google_linked_badge">Google rattaché</string>
+    <string name="identity_error_google_already_linked">Cette identité Google est déjà rattachée à un autre compte.</string>
     <string name="account_notice_profile_updated">Profil mis à jour.</string>
     <string name="account_notice_verification_sent">Code envoyé. Consultez votre boîte de réception.</string>
     <string name="account_notice_email_verified">Adresse e-mail vérifiée.</string>

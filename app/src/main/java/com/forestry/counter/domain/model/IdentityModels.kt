@@ -102,6 +102,8 @@ enum class IdentityError {
     INVALID_CREDENTIALS,
     ACCOUNT_ALREADY_EXISTS,
     ACCOUNT_LINK_REQUIRED,
+    /** Cette identité Google est déjà rattachée à un compte. */
+    GOOGLE_ALREADY_LINKED,
     ACTION_CODE_INVALID,
     EMAIL_DELIVERY_UNAVAILABLE,
     NETWORK_UNAVAILABLE,

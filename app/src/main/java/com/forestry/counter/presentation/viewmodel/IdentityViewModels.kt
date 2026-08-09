@@ -261,6 +261,7 @@ enum class AccountNotice {
     PROFILE_UPDATED,
     VERIFICATION_SENT,
     EMAIL_VERIFIED,
+    GOOGLE_LINKED,
 }
 
 class AccountViewModel(private val repository: IdentityRepository) : ViewModel() {
@@ -326,6 +327,50 @@ class AccountViewModel(private val repository: IdentityRepository) : ViewModel()
             _uiState.update { it.copy(isLoadingProviders = true) }
             val providers = repository.getProviders().getOrDefault(emptyList())
             _uiState.update { it.copy(providers = providers, isLoadingProviders = false) }
+        }
+    }
+
+    /**
+     * Rattache Google au compte connecté (ID-F-008).
+     *
+     * Résout l'impasse dans laquelle se trouvait l'utilisateur : une tentative
+     * de connexion Google sur un compte local existant renvoyait
+     * `ACCOUNT_LINK_REQUIRED`, sans aucun moyen d'y donner suite. Le
+     * rattachement se fait ici, session ouverte, comme le serveur l'exige.
+     */
+    fun linkGoogle(client: GoogleCredentialClient) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isWorking = true, error = null, notice = null) }
+            val nonce = repository.requestGoogleNonce().getOrElse { error ->
+                _uiState.update {
+                    it.copy(isWorking = false, error = error.identityError())
+                }
+                return@launch
+            }
+            val idToken = client.requestIdToken(nonce.value).getOrElse { error ->
+                val identityError = error.identityError()
+                _uiState.update {
+                    it.copy(
+                        isWorking = false,
+                        // Une annulation de l'utilisateur n'est pas une erreur.
+                        error = identityError.takeUnless { e -> e == IdentityError.CANCELLED },
+                    )
+                }
+                return@launch
+            }
+            repository.linkGoogle(idToken, nonce.value).fold(
+                onSuccess = {
+                    _uiState.update {
+                        it.copy(isWorking = false, notice = AccountNotice.GOOGLE_LINKED)
+                    }
+                    refreshProfile()
+                },
+                onFailure = { error ->
+                    _uiState.update {
+                        it.copy(isWorking = false, error = error.identityError())
+                    }
+                },
+            )
         }
     }
 

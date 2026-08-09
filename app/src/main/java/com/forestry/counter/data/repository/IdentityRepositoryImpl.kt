@@ -118,6 +118,13 @@ internal class IdentityRepositoryImpl(
         loginWithGoogle(GoogleLoginRequestDto(idToken, nonce))
     }
 
+    override suspend fun linkGoogle(
+        idToken: String,
+        nonce: String,
+    ): Result<LoginOutcome> = authenticateOrChallenge {
+        linkGoogle(authorizationHeader(), GoogleLoginRequestDto(idToken, nonce))
+    }
+
     override suspend fun refreshSession(): Result<AccountSession> {
         val refreshToken = sessionStore.read()?.refreshToken
             ?: return Result.failure(IdentityClientException(IdentityError.INVALID_CREDENTIALS))
@@ -305,6 +312,7 @@ internal class IdentityRepositoryImpl(
         val identityError = when {
             detail == "ACCOUNT_ALREADY_EXISTS" -> IdentityError.ACCOUNT_ALREADY_EXISTS
             detail == "ACCOUNT_LINK_REQUIRED" -> IdentityError.ACCOUNT_LINK_REQUIRED
+            detail == "GOOGLE_IDENTITY_ALREADY_LINKED" -> IdentityError.GOOGLE_ALREADY_LINKED
             detail == "CODE_INVALIDE_OU_EXPIRE" -> IdentityError.ACTION_CODE_INVALID
             code() == 401 -> IdentityError.INVALID_CREDENTIALS
             code() == 503 && detail?.contains("messagerie", ignoreCase = true) == true -> {

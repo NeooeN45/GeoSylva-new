@@ -133,6 +133,7 @@ internal fun identityErrorMessage(error: IdentityError): Int = when (error) {
     IdentityError.INVALID_CREDENTIALS -> R.string.identity_error_invalid_credentials
     IdentityError.ACCOUNT_ALREADY_EXISTS -> R.string.identity_error_account_exists
     IdentityError.ACCOUNT_LINK_REQUIRED -> R.string.identity_error_link_required
+    IdentityError.GOOGLE_ALREADY_LINKED -> R.string.identity_error_google_already_linked
     IdentityError.ACTION_CODE_INVALID -> R.string.identity_error_action_code
     IdentityError.EMAIL_DELIVERY_UNAVAILABLE -> R.string.identity_error_email_delivery
     IdentityError.NETWORK_UNAVAILABLE -> R.string.identity_error_network

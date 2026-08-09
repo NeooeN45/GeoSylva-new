@@ -45,6 +45,15 @@ interface IdentityRepository {
 
     suspend fun loginWithGoogle(idToken: String, nonce: String): Result<AccountSession>
 
+    /**
+     * Rattache une identité Google au compte connecté (ID-F-008).
+     *
+     * À déclencher depuis l'espace compte : le serveur exige une session
+     * valide, un compte existant n'étant jamais fusionné automatiquement sur
+     * la seule correspondance d'adresse e-mail.
+     */
+    suspend fun linkGoogle(idToken: String, nonce: String): Result<LoginOutcome>
+
     suspend fun refreshSession(): Result<AccountSession>
 
     suspend fun logout(): Result<Unit>

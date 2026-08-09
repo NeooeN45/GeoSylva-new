@@ -47,6 +47,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.forestry.counter.R
+import androidx.compose.foundation.Image
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import com.forestry.counter.data.remote.identity.GoogleCredentialClient
+import com.forestry.counter.domain.model.IdentityProvider
+import com.forestry.counter.domain.model.ProviderAvailability
 import com.forestry.counter.domain.model.AccountSession
 import com.forestry.counter.domain.model.AccountProfile
 import com.forestry.counter.domain.model.ProviderCapability
@@ -76,6 +82,8 @@ fun AccountScreen(
     val factory = remember(repository) { GeoSylvaViewModelFactory { AccountViewModel(repository) } }
     val viewModel: AccountViewModel = viewModel(factory = factory)
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val googleClient = remember(context) { GoogleCredentialClient(context) }
 
     Scaffold(
         modifier = modifier,
@@ -103,6 +111,8 @@ fun AccountScreen(
             onVerificationCodeChange = viewModel::setVerificationCode,
             onRequestVerification = viewModel::requestEmailVerification,
             onConfirmVerification = viewModel::confirmEmailVerification,
+            onLinkGoogle = { viewModel.linkGoogle(googleClient) },
+            googleClientConfigured = repository.isGoogleClientConfigured,
             modifier = Modifier.padding(padding),
         )
     }
@@ -117,6 +127,8 @@ private fun AccountContent(
     onVerificationCodeChange: (String) -> Unit,
     onRequestVerification: () -> Unit,
     onConfirmVerification: () -> Unit,
+    onLinkGoogle: () -> Unit,
+    googleClientConfigured: Boolean,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -145,10 +157,88 @@ private fun AccountContent(
                     }
                 }
             }
+            item {
+                GoogleLinkCard(
+                    state = state,
+                    googleClientConfigured = googleClientConfigured,
+                    onLinkGoogle = onLinkGoogle,
+                )
+            }
             item { AccountSecurityCard() }
             item { LogoutCard(state.isLoggingOut, onLogout) }
         }
         item { ProviderCapabilitiesCard(state.providers, state.isLoadingProviders) }
+    }
+}
+
+/**
+ * Rattachement de Google au compte courant (ID-F-008).
+ *
+ * C'est ici, et nulle part ailleurs, que se résout `ACCOUNT_LINK_REQUIRED` :
+ * le serveur refuse de fusionner deux comptes sur la seule correspondance
+ * d'adresse e-mail, et exige une session déjà ouverte. Sans cette carte,
+ * l'utilisateur qui tentait « Continuer avec Google » sur un compte local
+ * existant se retrouvait dans une impasse — le message s'affichait, aucune
+ * action n'était possible.
+ *
+ * La carte disparaît une fois Google rattaché, remplacée par un simple
+ * constat : il n'y a plus rien à faire.
+ */
+@Composable
+private fun GoogleLinkCard(
+    state: AccountUiState,
+    googleClientConfigured: Boolean,
+    onLinkGoogle: () -> Unit,
+) {
+    val alreadyLinked = state.profile
+        ?.providers
+        ?.contains(IdentityProvider.GOOGLE) == true
+
+    val googleAvailable = state.providers.any {
+        it.provider == IdentityProvider.GOOGLE &&
+            it.availability == ProviderAvailability.AVAILABLE
+    }
+
+    // Rien à proposer si le fournisseur n'est pas exploitable : mieux vaut
+    // ne rien afficher qu'un bouton mort.
+    if (!alreadyLinked && !(googleAvailable && googleClientConfigured)) return
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.identity_google_continue),
+                style = MaterialTheme.typography.titleMedium,
+            )
+
+            if (alreadyLinked) {
+                StatusPill(
+                    text = stringResource(R.string.account_google_linked_badge),
+                    positive = true,
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.account_link_google_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Button(
+                    onClick = onLinkGoogle,
+                    enabled = !state.isWorking,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_google_logo),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.size(12.dp))
+                    Text(stringResource(R.string.account_link_google))
+                }
+            }
+        }
     }
 }
 
@@ -161,6 +251,7 @@ private fun AccountNoticeCard(notice: AccountNotice) {
                     AccountNotice.PROFILE_UPDATED -> R.string.account_notice_profile_updated
                     AccountNotice.VERIFICATION_SENT -> R.string.account_notice_verification_sent
                     AccountNotice.EMAIL_VERIFIED -> R.string.account_notice_email_verified
+                    AccountNotice.GOOGLE_LINKED -> R.string.account_notice_google_linked
                 }
             ),
             color = MaterialTheme.colorScheme.onPrimaryContainer,

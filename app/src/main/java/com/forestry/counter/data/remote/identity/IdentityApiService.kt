@@ -30,6 +30,20 @@ internal interface IdentityApiService {
     @POST("api/v1/auth/login/google")
     suspend fun loginWithGoogle(@Body request: GoogleLoginRequestDto): TokenResponseDto
 
+    /**
+     * Rattache une identité Google au compte déjà connecté.
+     *
+     * Exige un jeton d'accès : le serveur refuse de fusionner deux comptes
+     * sur la seule foi d'une adresse e-mail identique (ID-F-007). Le
+     * rattachement est donc une action volontaire, faite depuis l'espace
+     * compte, et jamais depuis l'écran de connexion.
+     */
+    @POST("api/v1/auth/link/google")
+    suspend fun linkGoogle(
+        @Header("Authorization") authorization: String,
+        @Body request: GoogleLoginRequestDto,
+    ): LoginOutcomeDto
+
     @POST("api/v1/auth/refresh")
     suspend fun refresh(@Body request: RefreshRequestDto): TokenResponseDto
 
