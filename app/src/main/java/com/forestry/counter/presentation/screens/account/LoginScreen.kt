@@ -170,12 +170,20 @@ fun LoginScreen(
                     onSubmit = viewModel::submit,
                     onGoogle = { viewModel.signInWithGoogle(googleClient) },
                     onForgotPassword = onForgotPassword,
+                    // La création de compte se fait sur le site Quintessences
+                    // (DEC-000057). Si aucun navigateur ne peut s'ouvrir, on
+                    // bascule sur le formulaire embarqué plutôt que de laisser
+                    // l'utilisateur devant un bouton sans effet.
                     onCreateAccount = {
                         val url = context.getString(R.string.identity_signup_url)
-                        runCatching {
+                        val opened = runCatching {
                             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                        }
+                        }.isSuccess
+                        if (!opened) viewModel.setMode(LoginMode.REGISTER)
                     },
+                    onBackToSignIn = { viewModel.setMode(LoginMode.SIGN_IN) },
+                    onDisplayNameChange = viewModel::setDisplayName,
+                    onPasswordConfirmationChange = viewModel::setPasswordConfirmation,
                     modifier = bottomModifier,
                 )
             }
@@ -228,8 +236,12 @@ private fun LoginForm(
     onGoogle: () -> Unit,
     onForgotPassword: () -> Unit,
     onCreateAccount: () -> Unit,
+    onBackToSignIn: () -> Unit,
+    onDisplayNameChange: (String) -> Unit,
+    onPasswordConfirmationChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val registering = state.mode == LoginMode.REGISTER
     // Une erreur ne s'affiche qu'après une action de l'utilisateur. Sans ce
     // garde-fou, l'échec du chargement des fournisseurs d'identité — normal
     // hors réseau, ce qui est le cas nominal en forêt — accueillait
@@ -245,14 +257,27 @@ private fun LoginForm(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = stringResource(R.string.identity_welcome),
+            text = stringResource(
+                if (registering) R.string.identity_create_account
+                else R.string.identity_welcome
+            ),
             color = TextOnMedia,
-            fontSize = 40.sp,
+            fontSize = if (registering) 32.sp else 40.sp,
             fontWeight = FontWeight.Light,
             textAlign = TextAlign.Center,
         )
 
         Spacer(Modifier.height(Space.lg))
+
+        if (registering) {
+            MediaTextField(
+                value = state.displayName,
+                onValueChange = onDisplayNameChange,
+                placeholder = stringResource(R.string.identity_display_name),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+            )
+            Spacer(Modifier.height(Space.sm))
+        }
 
         MediaTextField(
             value = state.email,
@@ -271,20 +296,39 @@ private fun LoginForm(
             onValueChange = onPasswordChange,
         )
 
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = onForgotPassword) {
-                Text(
-                    text = stringResource(R.string.identity_forgot_password),
-                    color = TextSecondaryOnMedia,
-                    style = MaterialTheme.typography.bodySmall,
-                )
+        if (registering) {
+            Spacer(Modifier.height(Space.sm))
+            MediaTextField(
+                value = state.passwordConfirmation,
+                onValueChange = onPasswordConfirmationChange,
+                placeholder = stringResource(R.string.identity_password_confirmation),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done,
+                ),
+                visualTransformation = PasswordVisualTransformation(),
+            )
+        }
+
+        if (!registering) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onForgotPassword) {
+                    Text(
+                        text = stringResource(R.string.identity_forgot_password),
+                        color = TextSecondaryOnMedia,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
             }
         }
 
-        Spacer(Modifier.height(Space.xs))
+        Spacer(Modifier.height(if (registering) Space.md else Space.xs))
 
         PrimaryMediaButton(
-            label = stringResource(R.string.identity_sign_in),
+            label = stringResource(
+                if (registering) R.string.identity_create_account
+                else R.string.identity_sign_in
+            ),
             loading = state.isSubmitting,
             onClick = { attempted = true; onSubmit() },
         )
@@ -321,19 +365,30 @@ private fun LoginForm(
 
         Spacer(Modifier.height(Space.md))
 
-        OrSeparator()
+        if (registering) {
+            // Repli hors ligne du site : on sort par où on est entré.
+            TextButton(onClick = onBackToSignIn) {
+                Text(
+                    text = stringResource(R.string.identity_mfa_cancel),
+                    color = TextSecondaryOnMedia,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        } else {
+            OrSeparator()
 
-        Spacer(Modifier.height(Space.md))
+            Spacer(Modifier.height(Space.md))
 
-        GoogleMediaButton(
-            state = state,
-            googleClientConfigured = googleClientConfigured,
-            onGoogle = { attempted = true; onGoogle() },
-        )
+            GoogleMediaButton(
+                state = state,
+                googleClientConfigured = googleClientConfigured,
+                onGoogle = { attempted = true; onGoogle() },
+            )
 
-        Spacer(Modifier.height(Space.lg))
+            Spacer(Modifier.height(Space.lg))
 
-        CreateAccountRow(onCreateAccount = onCreateAccount)
+            CreateAccountRow(onCreateAccount = onCreateAccount)
+        }
     }
 }
 

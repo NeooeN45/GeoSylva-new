@@ -2182,8 +2182,8 @@
     <string name="identity_welcome">Bienvenue</string>
     <string name="identity_no_account">Pas encore de compte ?</string>
     <string name="identity_signup_web">Créer un compte</string>
-    <!-- TODO Fondateur : remplacer par l'URL réelle d'inscription Quintessences -->
-    <string name="identity_signup_url" translatable="false">https://example.invalid/quintessences/inscription</string>
+    <!-- Site public Quintessences (DEC-000057) — page src/pages/compte/inscription.astro -->
+    <string name="identity_signup_url" translatable="false">https://quintessences-platform.com/compte/inscription</string>
     <string name="identity_mfa_title">Vérification en deux étapes</string>
     <string name="identity_mfa_hint">Saisissez le code affiché par votre application d’authentification.</string>
     <string name="identity_mfa_hint_recovery">Saisissez l’un de vos codes de récupération.</string>
