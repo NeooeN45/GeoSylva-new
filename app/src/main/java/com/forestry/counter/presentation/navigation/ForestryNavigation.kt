@@ -281,6 +281,9 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                         onNavigateToLogin = {
                             navController.navigate(Screen.Login.route)
                         },
+                        onCreateForest = {
+                            navController.navigate(Screen.CreateForest.route)
+                        },
                         onCategoryClick = { category ->
                             // Lot 1 : les catégories non implémentées n'ont pas encore
                             // d'écran dédié. Navigation vers les écrans existants quand

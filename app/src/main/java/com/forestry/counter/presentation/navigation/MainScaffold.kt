@@ -95,6 +95,7 @@ fun TopLevelTabContent(
     onNavigateToForets: () -> Unit,
     onNavigateToProjects: () -> Unit,
     onNavigateToLogin: () -> Unit,
+    onCreateForest: () -> Unit,
     onCategoryClick: (ExplorerCategory) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -105,6 +106,7 @@ fun TopLevelTabContent(
                 viewModel = viewModel,
                 onNavigateToExplorer = onNavigateToExplorer,
                 onNavigateToForet = onNavigateToForet,
+                onCreateForest = onCreateForest,
                 modifier = modifier,
             )
         }
