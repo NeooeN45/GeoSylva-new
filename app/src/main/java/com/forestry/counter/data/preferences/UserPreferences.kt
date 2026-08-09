@@ -104,7 +104,7 @@ class UserPreferencesManager(private val context: Context) {
     }
 
     val accentColor: Flow<String> = dataStore.data.map { prefs ->
-        prefs[ACCENT_COLOR] ?: "#4CAF50" // Default green
+        prefs[ACCENT_COLOR] ?: "#2D5F3F" // Vert forêt profond — couleur de marque GeoSylva
     }
 
     suspend fun setAccentColor(color: String) {
@@ -185,7 +185,9 @@ class UserPreferencesManager(private val context: Context) {
     }
 
     val dynamicColorEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
-        prefs[DYNAMIC_COLOR_ENABLED] ?: true
+        // Désactivé par défaut : Material You dériverait la palette du fond
+        // d'écran de l'utilisateur et effacerait l'identité GeoSylva.
+        prefs[DYNAMIC_COLOR_ENABLED] ?: false
     }
 
     suspend fun setDynamicColorEnabled(enabled: Boolean) {
@@ -196,7 +198,11 @@ class UserPreferencesManager(private val context: Context) {
 
     // App language ("system", "fr", "en", ...)
     val appLanguage: Flow<String> = dataStore.data.map { prefs ->
-        prefs[APP_LANGUAGE] ?: "system"
+        // GeoSylva est une application française : le français s'applique par
+        // défaut, quel que soit le réglage de l'appareil. La traduction
+        // anglaise reste accessible via « Langue » dans les réglages, et le
+        // choix de l'utilisateur prime toujours sur ce défaut.
+        prefs[APP_LANGUAGE] ?: "fr"
     }
 
     suspend fun setAppLanguage(tag: String) {

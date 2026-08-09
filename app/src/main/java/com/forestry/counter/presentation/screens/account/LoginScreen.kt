@@ -1,69 +1,77 @@
 package com.forestry.counter.presentation.screens.account
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import com.forestry.counter.presentation.theme.Elevation
+import com.forestry.counter.presentation.theme.GreenDeepOnMedia
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Forest
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.forestry.counter.R
@@ -71,18 +79,47 @@ import com.forestry.counter.data.remote.identity.GoogleCredentialClient
 import com.forestry.counter.domain.model.IdentityProvider
 import com.forestry.counter.domain.model.ProviderAvailability
 import com.forestry.counter.domain.repository.IdentityRepository
+import com.forestry.counter.presentation.components.VideoBackdrop
+import com.forestry.counter.presentation.theme.GreenOnMedia
+import com.forestry.counter.presentation.theme.FieldBorderOnMedia
+import com.forestry.counter.presentation.theme.FieldOnMedia
+import com.forestry.counter.presentation.theme.GsShape
+import com.forestry.counter.presentation.theme.Motion
+import com.forestry.counter.presentation.theme.OnGreenOnMedia
+import com.forestry.counter.presentation.theme.PlaceholderOnMedia
+import com.forestry.counter.presentation.theme.Radius
+import com.forestry.counter.presentation.theme.Space
+import com.forestry.counter.presentation.theme.TextOnMedia
+import com.forestry.counter.presentation.theme.TextSecondaryOnMedia
+import com.forestry.counter.presentation.theme.Touch
 import com.forestry.counter.presentation.viewmodel.GeoSylvaViewModelFactory
 import com.forestry.counter.presentation.viewmodel.LoginMode
 import com.forestry.counter.presentation.viewmodel.LoginUiState
 import com.forestry.counter.presentation.viewmodel.LoginViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Écran de connexion — porte d'entrée de GeoSylva.
+ *
+ * Registre consultation, poussé à son maximum : c'est le seul écran porteur
+ * d'une vidéo, et le seul moment où l'application se présente avant que le
+ * travail commence.
+ *
+ * Parti pris de composition : **aucune carte**. Les champs sont des surfaces
+ * sombres translucides posées directement sur la vidéo, alignées en bas de
+ * l'écran, dans la zone du pouce. La version précédente empilait le formulaire
+ * dans un panneau presque opaque qui couvrait les deux tiers de l'image.
+ *
+ * La création de compte n'a pas lieu ici : elle ouvre le site Quintessences.
+ * Un compte se crée une fois, sur un vrai clavier ; l'application n'a pas à
+ * porter un second formulaire pour ça.
+ */
 @Composable
 fun LoginScreen(
     repository: IdentityRepository,
     onAuthenticated: () -> Unit,
     onContinueOffline: () -> Unit,
     onForgotPassword: () -> Unit,
+    animationsEnabled: Boolean = true,
 ) {
     val factory = remember(repository) { GeoSylvaViewModelFactory { LoginViewModel(repository) } }
     val viewModel: LoginViewModel = viewModel(factory = factory)
@@ -94,385 +131,557 @@ fun LoginScreen(
         if (state.completed) onAuthenticated()
     }
 
-    LoginBackdrop {
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = { LoginTopBar(onContinueOffline) },
-        ) { padding ->
-            LoginContent(
-                state = state,
-                googleClientConfigured = repository.isGoogleClientConfigured,
-                onModeChange = viewModel::setMode,
-                onEmailChange = viewModel::setEmail,
-                onPasswordChange = viewModel::setPassword,
-                onPasswordConfirmationChange = viewModel::setPasswordConfirmation,
-                onDisplayNameChange = viewModel::setDisplayName,
-                onSubmit = viewModel::submit,
-                onGoogle = { viewModel.signInWithGoogle(googleClient) },
-                onRetry = viewModel::reloadProviders,
-                onForgotPassword = onForgotPassword,
-                modifier = Modifier.padding(padding),
+    // L'écran ne propose que la connexion : la création de compte part sur le web.
+    LaunchedEffect(Unit) { viewModel.setMode(LoginMode.SIGN_IN) }
+
+    VideoBackdrop(animationsEnabled = animationsEnabled) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            OfflineEscape(
+                onContinueOffline = onContinueOffline,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .padding(Space.sm),
+            )
+
+            val bottomModifier = Modifier
+                .align(Alignment.BottomCenter)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .consumeWindowInsets(WindowInsets.safeDrawing)
+                .imePadding()
+
+            // Le second facteur remplace le formulaire au lieu de s'y ajouter :
+            // à cette étape, l'utilisateur n'a qu'une seule chose à faire.
+            if (state.isAwaitingMfa) {
+                MfaForm(
+                    state = state,
+                    onCodeChange = viewModel::setMfaCode,
+                    onToggleRecovery = viewModel::setMfaUsesRecoveryCode,
+                    onSubmit = viewModel::submitMfa,
+                    onCancel = viewModel::cancelMfa,
+                    modifier = bottomModifier,
+                )
+            } else {
+                LoginForm(
+                    state = state,
+                    googleClientConfigured = repository.isGoogleClientConfigured,
+                    onEmailChange = viewModel::setEmail,
+                    onPasswordChange = viewModel::setPassword,
+                    onSubmit = viewModel::submit,
+                    onGoogle = { viewModel.signInWithGoogle(googleClient) },
+                    onForgotPassword = onForgotPassword,
+                    onCreateAccount = {
+                        val url = context.getString(R.string.identity_signup_url)
+                        runCatching {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                        }
+                    },
+                    modifier = bottomModifier,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Sortie hors ligne, toujours accessible.
+ *
+ * GeoSylva fonctionne entièrement sans compte ni réseau : cette porte ne doit
+ * jamais ressembler à un abandon. Elle est traitée comme un contrôle à part
+ * entière, sur une pastille de verre, pas comme un lien discret.
+ */
+@Composable
+private fun OfflineEscape(
+    onContinueOffline: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .background(FieldOnMedia, GsShape.pill)
+            .padding(horizontal = Space.xxs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextButton(onClick = onContinueOffline) {
+            Icon(
+                Icons.Default.CloudOff,
+                contentDescription = null,
+                tint = TextSecondaryOnMedia,
+                modifier = Modifier.size(Space.md),
+            )
+            Spacer(Modifier.size(Space.xs))
+            Text(
+                text = stringResource(R.string.identity_continue_offline),
+                color = TextOnMedia,
+                style = MaterialTheme.typography.labelLarge,
             )
         }
     }
 }
 
 @Composable
-private fun LoginBackdrop(content: @Composable () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        Image(
-            painter = painterResource(R.drawable.forest_background),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
+private fun LoginForm(
+    state: LoginUiState,
+    googleClientConfigured: Boolean,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onSubmit: () -> Unit,
+    onGoogle: () -> Unit,
+    onForgotPassword: () -> Unit,
+    onCreateAccount: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // Une erreur ne s'affiche qu'après une action de l'utilisateur. Sans ce
+    // garde-fou, l'échec du chargement des fournisseurs d'identité — normal
+    // hors réseau, ce qui est le cas nominal en forêt — accueillait
+    // l'utilisateur par un message rouge dès l'ouverture.
+    var attempted by rememberSaveable { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = Space.lg)
+            .padding(bottom = Space.lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = stringResource(R.string.identity_welcome),
+            color = TextOnMedia,
+            fontSize = 40.sp,
+            fontWeight = FontWeight.Light,
+            textAlign = TextAlign.Center,
         )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color(0xD9142419), Color(0xF20B160E)),
-                    )
-                ),
+
+        Spacer(Modifier.height(Space.lg))
+
+        MediaTextField(
+            value = state.email,
+            onValueChange = onEmailChange,
+            placeholder = stringResource(R.string.identity_email),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Next,
+            ),
         )
-        content()
+
+        Spacer(Modifier.height(Space.sm))
+
+        PasswordFieldOnMedia(
+            value = state.password,
+            onValueChange = onPasswordChange,
+        )
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = onForgotPassword) {
+                Text(
+                    text = stringResource(R.string.identity_forgot_password),
+                    color = TextSecondaryOnMedia,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(Space.xs))
+
+        PrimaryMediaButton(
+            label = stringResource(R.string.identity_sign_in),
+            loading = state.isSubmitting,
+            onClick = { attempted = true; onSubmit() },
+        )
+
+        // Seules les erreurs réellement provoquées par l'utilisateur sont
+        // affichées. L'état du serveur GSIE n'apparaît plus au premier
+        // lancement : ce n'est pas au premier écran d'exposer la configuration
+        // du système.
+        // Compte administrateur sans second facteur : l'application ne porte
+        // pas ce parcours, mais elle doit dire pourquoi la connexion s'arrête.
+        if (state.mfaSetupRequired) {
+            Text(
+                text = stringResource(R.string.identity_mfa_setup_required),
+                color = TextOnMedia,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = Space.sm),
+            )
+        }
+
+        state.error?.takeIf { attempted }?.let { error ->
+            Text(
+                text = stringResource(identityErrorMessage(error)),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = Space.sm),
+            )
+        }
+
+        Spacer(Modifier.height(Space.md))
+
+        OrSeparator()
+
+        Spacer(Modifier.height(Space.md))
+
+        GoogleMediaButton(
+            state = state,
+            googleClientConfigured = googleClientConfigured,
+            onGoogle = { attempted = true; onGoogle() },
+        )
+
+        Spacer(Modifier.height(Space.lg))
+
+        CreateAccountRow(onCreateAccount = onCreateAccount)
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Second facteur — étape qui suit un mot de passe accepté mais insuffisant.
+ *
+ * Reprend exactement le vocabulaire visuel de l'écran de connexion : mêmes
+ * champs sombres translucides sur la vidéo, même bouton vert. L'utilisateur
+ * doit sentir qu'il poursuit la même action, pas qu'il change d'application.
+ */
 @Composable
-private fun LoginTopBar(onContinueOffline: () -> Unit) {
-    TopAppBar(
-        title = {},
-        navigationIcon = {
-            IconButton(onClick = onContinueOffline) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(R.string.cd_back),
-                    tint = Color.White,
-                )
-            }
-        },
-        actions = {
-            TextButton(onClick = onContinueOffline) {
-                Text(stringResource(R.string.identity_continue_offline), color = Color.White)
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
-    )
-}
-
-@Composable
-private fun LoginContent(
+private fun MfaForm(
     state: LoginUiState,
-    googleClientConfigured: Boolean,
-    onModeChange: (LoginMode) -> Unit,
-    onEmailChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
-    onPasswordConfirmationChange: (String) -> Unit,
-    onDisplayNameChange: (String) -> Unit,
+    onCodeChange: (String) -> Unit,
+    onToggleRecovery: (Boolean) -> Unit,
     onSubmit: () -> Unit,
-    onGoogle: () -> Unit,
-    onRetry: () -> Unit,
-    onForgotPassword: () -> Unit,
+    onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.Center,
+            .padding(horizontal = Space.lg)
+            .padding(bottom = Space.lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        LoginBrandHeader()
-        Spacer(Modifier.height(24.dp))
-        LoginCard(
-            state,
-            googleClientConfigured,
-            onModeChange,
-            onEmailChange,
-            onPasswordChange,
-            onPasswordConfirmationChange,
-            onDisplayNameChange,
-            onSubmit,
-            onGoogle,
-            onRetry,
-            onForgotPassword,
-        )
-        Spacer(Modifier.height(20.dp))
-        LoginSecurityNotice()
-    }
-}
-
-@Composable
-private fun LoginBrandHeader() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-            Icon(
-                Icons.Default.Forest,
-                contentDescription = null,
-                modifier = Modifier.padding(16.dp).size(36.dp),
-            )
-        }
-        Spacer(Modifier.height(16.dp))
         Text(
-            stringResource(R.string.identity_login_title),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
+            text = stringResource(R.string.identity_mfa_title),
+            color = TextOnMedia,
+            fontSize = 30.sp,
+            fontWeight = FontWeight.Light,
+            textAlign = TextAlign.Center,
         )
+
+        Spacer(Modifier.height(Space.sm))
+
         Text(
-            stringResource(R.string.identity_login_subtitle),
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.White.copy(alpha = 0.78f),
-            modifier = Modifier.padding(top = 8.dp),
+            text = stringResource(
+                if (state.mfaUsesRecoveryCode) R.string.identity_mfa_hint_recovery
+                else R.string.identity_mfa_hint
+            ),
+            color = TextSecondaryOnMedia,
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
         )
-    }
-}
 
-@Composable
-private fun LoginCard(
-    state: LoginUiState,
-    googleClientConfigured: Boolean,
-    onModeChange: (LoginMode) -> Unit,
-    onEmailChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
-    onPasswordConfirmationChange: (String) -> Unit,
-    onDisplayNameChange: (String) -> Unit,
-    onSubmit: () -> Unit,
-    onGoogle: () -> Unit,
-    onRetry: () -> Unit,
-    onForgotPassword: () -> Unit,
-) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-        ),
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            ProviderConnectionStatus(state, onRetry)
-            GoogleButton(state, googleClientConfigured, onGoogle)
-            OrDivider()
-            LoginModeTabs(state.mode, onModeChange)
-            LocalCredentialsForm(
-                state,
-                onEmailChange,
-                onPasswordChange,
-                onPasswordConfirmationChange,
-                onDisplayNameChange,
-                onSubmit,
-                onForgotPassword,
-            )
-            ProfessionalButton()
-            state.error?.let { IdentityErrorBanner(it) }
-        }
-    }
-}
+        Spacer(Modifier.height(Space.lg))
 
-@Composable
-private fun ProviderConnectionStatus(state: LoginUiState, onRetry: () -> Unit) {
-    if (state.isLoadingProviders) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-            Text(stringResource(R.string.identity_retry))
-        }
-    } else if (state.providers.isEmpty()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        MediaTextField(
+            value = state.mfaCode,
+            onValueChange = onCodeChange,
+            placeholder = stringResource(
+                if (state.mfaUsesRecoveryCode) R.string.identity_mfa_recovery_code
+                else R.string.identity_mfa_code
+            ),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = if (state.mfaUsesRecoveryCode) KeyboardType.Text
+                               else KeyboardType.NumberPassword,
+                imeAction = ImeAction.Done,
+            ),
+        )
+
+        state.error?.let { error ->
             Text(
-                stringResource(R.string.identity_server_not_configured),
+                text = stringResource(identityErrorMessage(error)),
+                color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = Space.sm),
             )
-            TextButton(onClick = onRetry) { Text(stringResource(R.string.identity_retry)) }
+        }
+
+        Spacer(Modifier.height(Space.md))
+
+        PrimaryMediaButton(
+            label = stringResource(R.string.identity_mfa_verify),
+            loading = state.isSubmitting,
+            onClick = onSubmit,
+        )
+
+        Spacer(Modifier.height(Space.xs))
+
+        TextButton(onClick = { onToggleRecovery(!state.mfaUsesRecoveryCode) }) {
+            Text(
+                text = stringResource(
+                    if (state.mfaUsesRecoveryCode) R.string.identity_mfa_use_totp
+                    else R.string.identity_mfa_use_recovery
+                ),
+                color = GreenOnMedia,
+                style = MaterialTheme.typography.labelLarge,
+            )
+        }
+
+        TextButton(onClick = onCancel) {
+            Text(
+                text = stringResource(R.string.identity_mfa_cancel),
+                color = TextSecondaryOnMedia,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+}
+
+/**
+ * Champ de saisie posé sur le média.
+ *
+ * Sans étiquette flottante ni contour Material : une surface sombre arrondie,
+ * l'intitulé à l'intérieur. C'est ce qui permet de garder la vidéo lisible
+ * derrière tout en gardant le texte saisi parfaitement contrasté.
+ */
+@Composable
+private fun MediaTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    keyboardOptions: KeyboardOptions,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    trailingIcon: (@Composable () -> Unit)? = null,
+) {
+    TextField(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = { Text(placeholder, color = PlaceholderOnMedia) },
+        singleLine = true,
+        keyboardOptions = keyboardOptions,
+        visualTransformation = visualTransformation,
+        trailingIcon = trailingIcon,
+        shape = RoundedCornerShape(Radius.lg),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = FieldOnMedia,
+            unfocusedContainerColor = FieldOnMedia,
+            disabledContainerColor = FieldOnMedia,
+            focusedTextColor = TextOnMedia,
+            unfocusedTextColor = TextOnMedia,
+            cursorColor = GreenOnMedia,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
+            focusedTrailingIconColor = TextSecondaryOnMedia,
+            unfocusedTrailingIconColor = TextSecondaryOnMedia,
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(Touch.field),
+    )
+}
+
+@Composable
+private fun PasswordFieldOnMedia(
+    value: String,
+    onValueChange: (String) -> Unit,
+) {
+    var visible by rememberSaveable { mutableStateOf(false) }
+    MediaTextField(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = stringResource(R.string.identity_password),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Done,
+        ),
+        visualTransformation = if (visible) VisualTransformation.None
+                               else PasswordVisualTransformation(),
+        trailingIcon = {
+            IconButton(onClick = { visible = !visible }) {
+                Icon(
+                    imageVector = if (visible) Icons.Default.VisibilityOff
+                                  else Icons.Default.Visibility,
+                    contentDescription = stringResource(
+                        if (visible) R.string.identity_hide_password
+                        else R.string.identity_show_password
+                    ),
+                )
+            }
+        },
+    )
+}
+
+/**
+ * Action principale.
+ *
+ * Le vert clair est la seule surface pleine de l'écran : tout le reste est
+ * translucide. La cible est donc évidente sans flèche directrice ni consigne.
+ *
+ * Trois détails qui distinguent ce bouton d'un aplat de couleur :
+ * un dégradé vertical très léger qui lui donne du relief sans virer au
+ * clinquant, une ombre portée verte qui le décolle de la vidéo, et un chevron
+ * qui avance de quelques points à l'appui — le geste est confirmé visuellement
+ * avant même que le réseau réponde.
+ */
+@Composable
+private fun PrimaryMediaButton(
+    label: String,
+    loading: Boolean,
+    onClick: () -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) Motion.PRESS_SCALE else 1f,
+        animationSpec = Motion.springSnappy(),
+        label = "appui-connexion",
+    )
+    val arrowShift by animateDpAsState(
+        targetValue = if (pressed) Space.xxs else 0.dp,
+        animationSpec = Motion.springBouncy(),
+        label = "chevron-connexion",
+    )
+
+    Button(
+        onClick = onClick,
+        enabled = !loading,
+        interactionSource = interaction,
+        shape = GsShape.pill,
+        contentPadding = PaddingValues(horizontal = Space.lg),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Transparent,
+            contentColor = OnGreenOnMedia,
+            disabledContainerColor = Color.Transparent,
+            disabledContentColor = OnGreenOnMedia.copy(alpha = 0.6f),
+        ),
+        elevation = null,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(Touch.fieldPrimary)
+            .scale(scale)
+            .shadow(
+                elevation = if (pressed) Elevation.card else Elevation.overlay,
+                shape = GsShape.pill,
+                ambientColor = GreenOnMedia,
+                spotColor = GreenOnMedia,
+            )
+            .background(
+                brush = Brush.verticalGradient(
+                    listOf(GreenOnMedia.copy(alpha = 0.98f), GreenDeepOnMedia),
+                ),
+                shape = GsShape.pill,
+            ),
+    ) {
+        if (loading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(Space.lg),
+                strokeWidth = Space.xxs / 2,
+                color = OnGreenOnMedia,
+            )
+        } else {
+            // Le libellé reste optiquement centré : le chevron est posé à
+            // droite dans un espace de largeur égale au décalage de gauche.
+            Spacer(Modifier.size(Space.lg))
+            Text(
+                text = label.uppercase(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.2.sp,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center,
+            )
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(Space.lg)
+                    .offset(x = arrowShift),
+            )
         }
     }
 }
 
 @Composable
-private fun GoogleButton(
+private fun OrSeparator() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        HorizontalDivider(modifier = Modifier.weight(1f), color = FieldBorderOnMedia)
+        Text(
+            text = stringResource(R.string.identity_or),
+            color = TextSecondaryOnMedia,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(horizontal = Space.sm),
+        )
+        HorizontalDivider(modifier = Modifier.weight(1f), color = FieldBorderOnMedia)
+    }
+}
+
+@Composable
+private fun GoogleMediaButton(
     state: LoginUiState,
     googleClientConfigured: Boolean,
     onGoogle: () -> Unit,
 ) {
     val capability = state.providers.firstOrNull { it.provider == IdentityProvider.GOOGLE }
-    val available = capability?.availability == ProviderAvailability.AVAILABLE
+    val available = capability?.availability == ProviderAvailability.AVAILABLE &&
+        googleClientConfigured
+
     OutlinedButton(
         onClick = onGoogle,
-        enabled = available && googleClientConfigured && !state.isSubmitting,
-        modifier = Modifier.fillMaxWidth().height(52.dp),
+        enabled = available && !state.isSubmitting,
+        shape = GsShape.pill,
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = FieldOnMedia,
+            contentColor = TextOnMedia,
+            disabledContainerColor = FieldOnMedia.copy(alpha = 0.5f),
+            disabledContentColor = TextSecondaryOnMedia.copy(alpha = 0.5f),
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(Touch.field),
     ) {
-        Text("G", fontWeight = FontWeight.Bold)
-        Spacer(Modifier.size(12.dp))
-        Text(stringResource(R.string.identity_google_continue))
-    }
-    if (!available || !googleClientConfigured) {
+        // Le logo est affiché sans teinte : les couleurs de la marque Google
+        // sont imposées et ne se dérivent pas de la palette GeoSylva.
+        Image(
+            painter = painterResource(R.drawable.ic_google_logo),
+            contentDescription = null,
+            modifier = Modifier.size(Space.lg),
+        )
+        Spacer(Modifier.size(Space.sm))
         Text(
-            stringResource(R.string.identity_google_unavailable),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            text = stringResource(R.string.identity_google_continue),
+            style = MaterialTheme.typography.titleSmall,
         )
     }
 }
 
 @Composable
-private fun OrDivider() {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        HorizontalDivider(modifier = Modifier.weight(1f))
-        Text(
-            stringResource(R.string.identity_or),
-            modifier = Modifier.padding(horizontal = 12.dp),
-            style = MaterialTheme.typography.labelMedium,
-        )
-        HorizontalDivider(modifier = Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun LoginModeTabs(mode: LoginMode, onModeChange: (LoginMode) -> Unit) {
-    TabRow(selectedTabIndex = if (mode == LoginMode.SIGN_IN) 0 else 1) {
-        Tab(
-            selected = mode == LoginMode.SIGN_IN,
-            onClick = { onModeChange(LoginMode.SIGN_IN) },
-            text = { Text(stringResource(R.string.identity_mode_sign_in)) },
-        )
-        Tab(
-            selected = mode == LoginMode.REGISTER,
-            onClick = { onModeChange(LoginMode.REGISTER) },
-            text = { Text(stringResource(R.string.identity_mode_register)) },
-        )
-    }
-}
-
-@Composable
-private fun LocalCredentialsForm(
-    state: LoginUiState,
-    onEmailChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
-    onPasswordConfirmationChange: (String) -> Unit,
-    onDisplayNameChange: (String) -> Unit,
-    onSubmit: () -> Unit,
-    onForgotPassword: () -> Unit,
-) {
-    var passwordVisible by rememberSaveable { mutableStateOf(false) }
-    if (state.mode == LoginMode.REGISTER) {
-        OutlinedTextField(
-            value = state.displayName,
-            onValueChange = onDisplayNameChange,
-            label = { Text(stringResource(R.string.identity_display_name)) },
-            leadingIcon = { Icon(Icons.Default.AccountCircle, contentDescription = null) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
-    EmailField(state.email, onEmailChange)
-    PasswordField(state.password, passwordVisible, onPasswordChange) {
-        passwordVisible = !passwordVisible
-    }
-    if (state.mode == LoginMode.SIGN_IN) {
-        TextButton(onClick = onForgotPassword, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.identity_forgot_password))
-        }
-    }
-    if (state.mode == LoginMode.REGISTER) {
-        PasswordConfirmationField(state.passwordConfirmation, onPasswordConfirmationChange)
-    }
-    Button(
-        onClick = onSubmit,
-        enabled = !state.isSubmitting && state.providers.any {
-            it.provider == IdentityProvider.LOCAL &&
-                it.availability == ProviderAvailability.AVAILABLE
-        },
-        modifier = Modifier.fillMaxWidth().height(52.dp),
-    ) {
-        if (state.isSubmitting) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
-        else Text(
-            stringResource(
-                if (state.mode == LoginMode.SIGN_IN) R.string.identity_sign_in
-                else R.string.identity_create_account
-            )
-        )
-    }
-}
-
-@Composable
-private fun EmailField(value: String, onValueChange: (String) -> Unit) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(stringResource(R.string.identity_email)) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
-        modifier = Modifier.fillMaxWidth(),
-    )
-}
-
-@Composable
-private fun PasswordField(
-    value: String,
-    visible: Boolean,
-    onValueChange: (String) -> Unit,
-    onToggleVisibility: () -> Unit,
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(stringResource(R.string.identity_password)) },
-        supportingText = { Text(stringResource(R.string.identity_password_hint)) },
-        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-        trailingIcon = {
-            IconButton(onClick = onToggleVisibility) {
-                Icon(
-                    if (visible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                    contentDescription = stringResource(
-                        if (visible) R.string.identity_hide_password else R.string.identity_show_password
-                    ),
-                )
-            }
-        },
-        visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-    )
-}
-
-@Composable
-private fun PasswordConfirmationField(value: String, onValueChange: (String) -> Unit) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(stringResource(R.string.identity_password_confirmation)) },
-        visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-    )
-}
-
-@Composable
-private fun ProfessionalButton() {
-    OutlinedButton(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth()) {
-        Text(stringResource(R.string.identity_professional))
-        Spacer(Modifier.size(8.dp))
-        StatusPill(stringResource(R.string.identity_in_development), positive = false)
-    }
-}
-
-@Composable
-private fun LoginSecurityNotice() {
+private fun CreateAccountRow(onCreateAccount: () -> Unit) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Icon(Icons.Default.Lock, contentDescription = null, tint = Color.White.copy(alpha = 0.8f))
         Text(
-            stringResource(R.string.identity_session_secured),
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.78f),
+            text = stringResource(R.string.identity_no_account),
+            color = TextSecondaryOnMedia,
+            style = MaterialTheme.typography.bodyMedium,
         )
+        TextButton(onClick = onCreateAccount) {
+            Text(
+                text = stringResource(R.string.identity_signup_web).uppercase(),
+                color = GreenOnMedia,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+            )
+        }
     }
 }

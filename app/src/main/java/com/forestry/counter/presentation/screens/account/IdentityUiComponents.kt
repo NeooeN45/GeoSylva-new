@@ -123,7 +123,9 @@ internal fun availabilityLabel(availability: ProviderAvailability): String = str
 )
 
 @StringRes
-private fun identityErrorMessage(error: IdentityError): Int = when (error) {
+// `internal` et non `private` : l'écran de connexion affiche l'erreur sans
+// bandeau, directement sur le média, et a donc besoin du libellé seul.
+internal fun identityErrorMessage(error: IdentityError): Int = when (error) {
     IdentityError.API_NOT_CONFIGURED -> R.string.identity_server_not_configured
     IdentityError.GOOGLE_NOT_CONFIGURED -> R.string.identity_error_google_config
     IdentityError.SECURE_STORAGE_UNAVAILABLE -> R.string.identity_error_secure_storage

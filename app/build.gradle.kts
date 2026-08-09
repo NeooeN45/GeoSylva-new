@@ -246,6 +246,10 @@ dependencies {
     // MapLibre GL (Map mode)
     implementation(libs.maplibre)
 
+    // Note — la vidéo de l'écran de connexion n'utilise aucune dépendance :
+    // `TextureView` + `MediaPlayer` de la plateforme suffisent pour une boucle
+    // locale et muette. Voir `presentation/components/VideoBackdrop.kt`.
+
     // OkHttp for HTTP calls (price sync)
     implementation(libs.okhttp)
 

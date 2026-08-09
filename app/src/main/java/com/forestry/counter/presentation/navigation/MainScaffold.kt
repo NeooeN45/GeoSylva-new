@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.forestry.counter.ForestryCounterApplication
+import com.forestry.counter.presentation.screens.account.AccountScreen
 import com.forestry.counter.presentation.screens.common.ComingSoonScreen
 import com.forestry.counter.presentation.screens.explorer.ExplorerCategory
 import com.forestry.counter.presentation.screens.explorer.ExplorerScreen
@@ -93,6 +94,7 @@ fun TopLevelTabContent(
     onNavigateToForet: (String) -> Unit,
     onNavigateToForets: () -> Unit,
     onNavigateToProjects: () -> Unit,
+    onNavigateToLogin: () -> Unit,
     onCategoryClick: (ExplorerCategory) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -121,7 +123,15 @@ fun TopLevelTabContent(
             ComingSoonScreen("Carte", modifier)
         }
         BottomNavDestination.COMPTE.route -> {
-            ComingSoonScreen("Compte", modifier)
+            // L'écran existait déjà mais n'était atteignable que par les
+            // réglages — l'onglet affichait « À venir ». ID-F-013 impose un
+            // espace compte distinct de la page de connexion.
+            AccountScreen(
+                repository = app.identityRepository,
+                onNavigateToLogin = onNavigateToLogin,
+                onNavigateBack = null,
+                modifier = modifier,
+            )
         }
     }
 }

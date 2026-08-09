@@ -4,6 +4,7 @@ import com.forestry.counter.domain.model.AccountSession
 import com.forestry.counter.domain.model.AccountProfile
 import com.forestry.counter.domain.model.ApiDiagnostic
 import com.forestry.counter.domain.model.GoogleNonce
+import com.forestry.counter.domain.model.LoginOutcome
 import com.forestry.counter.domain.model.ProviderCapability
 import kotlinx.coroutines.flow.StateFlow
 
@@ -16,7 +17,23 @@ interface IdentityRepository {
 
     suspend fun getProviders(): Result<List<ProviderCapability>>
 
-    suspend fun loginWithPassword(email: String, password: String): Result<AccountSession>
+    /**
+     * Connexion locale. Peut se terminer sans jetons si le compte exige un
+     * second facteur — voir [LoginOutcome].
+     */
+    suspend fun loginWithPassword(email: String, password: String): Result<LoginOutcome>
+
+    /**
+     * Termine une connexion interrompue par un défi MFA.
+     *
+     * @param code six chiffres TOTP, ou un code de récupération si
+     *   [isRecoveryCode] vaut `true`.
+     */
+    suspend fun completeMfaLogin(
+        challengeToken: String,
+        code: String,
+        isRecoveryCode: Boolean = false,
+    ): Result<LoginOutcome>
 
     suspend fun register(
         email: String,

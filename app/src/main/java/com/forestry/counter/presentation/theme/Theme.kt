@@ -20,54 +20,62 @@ private val LightColorScheme = lightColorScheme(
     primary = Primary,
     onPrimary = OnPrimary,
     primaryContainer = PrimaryVariant,
-    onPrimaryContainer = OnPrimary,
+    onPrimaryContainer = OnPrimaryContainer,
     secondary = Secondary,
     onSecondary = OnSecondary,
     secondaryContainer = SecondaryVariant,
-    onSecondaryContainer = OnSecondary,
-    tertiary = Secondary,
-    onTertiary = OnSecondary,
+    onSecondaryContainer = OnSecondaryContainer,
+    tertiary = Tertiary,
+    onTertiary = OnTertiary,
+    tertiaryContainer = TertiaryContainer,
+    onTertiaryContainer = OnTertiaryContainer,
     background = Background,
     onBackground = OnBackground,
     surface = Surface,
     onSurface = OnSurface,
-    surfaceVariant = Gray100,
-    onSurfaceVariant = Gray700,
+    surfaceVariant = SurfaceVariant,
+    onSurfaceVariant = OnSurfaceVariant,
     error = Error,
     onError = OnError,
-    outline = Gray300,
-    outlineVariant = Gray200
+    outline = Outline,
+    outlineVariant = OutlineVariant
 )
 
 private val DarkColorScheme = darkColorScheme(
     primary = PrimaryDark,
     onPrimary = OnPrimaryDark,
     primaryContainer = PrimaryVariantDark,
-    onPrimaryContainer = OnPrimaryDark,
+    onPrimaryContainer = OnPrimaryContainerDark,
     secondary = SecondaryDark,
     onSecondary = OnSecondaryDark,
     secondaryContainer = SecondaryVariantDark,
-    onSecondaryContainer = OnSecondaryDark,
-    tertiary = SecondaryDark,
-    onTertiary = OnSecondaryDark,
+    onSecondaryContainer = OnSecondaryContainerDark,
+    tertiary = TertiaryDark,
+    onTertiary = OnTertiaryDark,
+    tertiaryContainer = TertiaryContainerDark,
+    onTertiaryContainer = OnTertiaryContainerDark,
     background = BackgroundDark,
     onBackground = OnBackgroundDark,
     surface = SurfaceDark,
     onSurface = OnSurfaceDark,
-    surfaceVariant = Gray800,
-    onSurfaceVariant = Gray300,
+    surfaceVariant = SurfaceVariantDark,
+    onSurfaceVariant = OnSurfaceVariantDark,
     error = ErrorDark,
     onError = OnErrorDark,
-    outline = Gray700,
-    outlineVariant = Gray800
+    outline = OutlineDark,
+    outlineVariant = OutlineVariantDark
 )
 
 @Composable
 @Suppress("DEPRECATION")
 fun ForestryCounterTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
-    accentColor: Color = AccentGreen,
-    dynamicColor: Boolean = true,
+    accentColor: Color = Primary,
+    // Défaut à `false` : sur Android 12+, la palette Material You dérivée du
+    // fond d'écran de l'utilisateur écrase entièrement l'identité GeoSylva.
+    // C'est acceptable pour une application système, pas pour un outil métier.
+    // Reste proposé comme option explicite dans les réglages.
+    dynamicColor: Boolean = false,
     fontSize: FontSize = FontSize.MEDIUM,
     content: @Composable () -> Unit
 ) {
@@ -82,8 +90,13 @@ fun ForestryCounterTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        darkTheme -> DarkColorScheme.copy(primary = accentColor)
-        else -> LightColorScheme.copy(primary = accentColor)
+        // L'accent personnalisé n'écrase la couleur de marque que si
+        // l'utilisateur en a explicitement choisi un autre. Sinon une couleur
+        // pensée pour le thème clair se retrouverait appliquée au thème sombre.
+        darkTheme -> if (accentColor == Primary) DarkColorScheme
+                     else DarkColorScheme.copy(primary = accentColor)
+        else -> if (accentColor == Primary) LightColorScheme
+                else LightColorScheme.copy(primary = accentColor)
     }
 
     val scale = fontSize.scale
@@ -109,7 +122,7 @@ fun parseAccentColor(colorString: String): Color {
     return try {
         Color(android.graphics.Color.parseColor(colorString))
     } catch (e: Exception) {
-        AccentGreen
+        Primary
     }
 }
 

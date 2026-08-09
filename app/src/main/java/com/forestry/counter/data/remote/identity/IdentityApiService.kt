@@ -16,8 +16,13 @@ internal interface IdentityApiService {
     @POST("api/v1/auth/register")
     suspend fun register(@Body request: RegistrationRequestDto): TokenResponseDto
 
+    // Renvoie soit des jetons, soit un défi MFA, soit une demande de
+    // configuration MFA (compte administrateur). Voir [LoginOutcomeDto].
     @POST("api/v1/auth/login/password")
-    suspend fun loginWithPassword(@Body request: LocalLoginRequestDto): TokenResponseDto
+    suspend fun loginWithPassword(@Body request: LocalLoginRequestDto): LoginOutcomeDto
+
+    @POST("api/v1/auth/login/mfa")
+    suspend fun loginWithMfa(@Body request: MfaChallengeVerifyRequestDto): LoginOutcomeDto
 
     @POST("api/v1/auth/google/nonce")
     suspend fun googleNonce(): GoogleNonceResponseDto
@@ -109,6 +114,50 @@ internal data class TokenResponseDto(
     @SerialName("refresh_token") val refreshToken: String,
     @SerialName("token_type") val tokenType: String,
     @SerialName("expires_in") val expiresIn: Int,
+)
+
+/**
+ * Réponse de `POST /auth/login/password` et `POST /auth/login/mfa`.
+ *
+ * Le serveur déclare trois modèles distincts — `TokenResponse`,
+ * `MfaChallengeResponse` et `AdminMfaSetupRequiredResponse`. Plutôt que de
+ * faire de la désérialisation polymorphe sur un JSON sans discriminant, on
+ * accepte un objet permissif et on lève l'ambiguïté sur la présence des
+ * champs. `ignoreUnknownKeys` est déjà actif côté client.
+ *
+ * Cette souplesse corrige un vrai défaut : la version précédente attendait
+ * strictement `TokenResponseDto`, si bien qu'un compte protégé par un second
+ * facteur ne pouvait plus se connecter depuis l'application.
+ */
+@Serializable
+internal data class LoginOutcomeDto(
+    @SerialName("access_token") val accessToken: String? = null,
+    @SerialName("refresh_token") val refreshToken: String? = null,
+    @SerialName("token_type") val tokenType: String? = null,
+    @SerialName("expires_in") val expiresIn: Int? = null,
+    @SerialName("mfa_required") val mfaRequired: Boolean = false,
+    @SerialName("challenge_token") val challengeToken: String? = null,
+    @SerialName("mfa_setup_required") val mfaSetupRequired: Boolean = false,
+    @SerialName("setup_token") val setupToken: String? = null,
+) {
+    /** Jetons exploitables, ou `null` s'il s'agit d'une étape intermédiaire. */
+    fun tokensOrNull(): TokenResponseDto? {
+        val access = accessToken ?: return null
+        val refresh = refreshToken ?: return null
+        return TokenResponseDto(
+            accessToken = access,
+            refreshToken = refresh,
+            tokenType = tokenType ?: "Bearer",
+            expiresIn = expiresIn ?: 0,
+        )
+    }
+}
+
+@Serializable
+internal data class MfaChallengeVerifyRequestDto(
+    @SerialName("challenge_token") val challengeToken: String,
+    val code: String,
+    @SerialName("is_recovery_code") val isRecoveryCode: Boolean = false,
 )
 
 @Serializable

@@ -1,5 +1,6 @@
 package com.forestry.counter.presentation
 
+import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -32,11 +33,17 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        // FLAG_SECURE: prevent screenshots and screen recording (RGPD compliance)
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE
-        )
+        // FLAG_SECURE : empêche captures d'écran et enregistrement vidéo (RGPD).
+        // Levé uniquement sur les builds debug, sinon la revue visuelle du
+        // design est impossible — `adb screencap` ne renvoie qu'une image noire.
+        // Les builds release conservent la protection intégralement.
+        val isDebuggable = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        if (!isDebuggable) {
+            window.setFlags(
+                WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE
+            )
+        }
 
         // Release splash after 500ms
         Handler(Looper.getMainLooper()).postDelayed({ keepOnScreen = false }, 500)
@@ -46,8 +53,8 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             val themeMode by prefsManager.themeMode.collectAsStateWithLifecycle(initialValue = com.forestry.counter.data.preferences.ThemeMode.SYSTEM)
-            val accentColorString by prefsManager.accentColor.collectAsStateWithLifecycle(initialValue = "#4CAF50")
-            val dynamicColorEnabled by prefsManager.dynamicColorEnabled.collectAsStateWithLifecycle(initialValue = true)
+            val accentColorString by prefsManager.accentColor.collectAsStateWithLifecycle(initialValue = "#2D5F3F")
+            val dynamicColorEnabled by prefsManager.dynamicColorEnabled.collectAsStateWithLifecycle(initialValue = false)
             val keepOn by prefsManager.keepScreenOn.collectAsStateWithLifecycle(initialValue = false)
             val fontSize by prefsManager.fontSize.collectAsStateWithLifecycle(initialValue = FontSize.MEDIUM)
             val accentColor = parseAccentColor(accentColorString)

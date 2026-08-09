@@ -45,6 +45,38 @@ data class GoogleNonce(
     val expiresInSeconds: Int,
 )
 
+/**
+ * Issue d'une tentative de connexion.
+ *
+ * `POST /auth/login/password` ne renvoie pas toujours des jetons : le serveur
+ * peut réclamer un second facteur ([MfaRequired]) ou, pour un compte
+ * administrateur sans MFA, exiger sa configuration préalable
+ * ([MfaSetupRequired]). Modéliser ces trois issues évite de traiter une
+ * réponse légitime comme une erreur de format.
+ */
+sealed interface LoginOutcome {
+    /** Connexion terminée : les jetons sont émis et la session est ouverte. */
+    data class Authenticated(val session: AccountSession) : LoginOutcome
+
+    /**
+     * Le compte exige un second facteur. Le jeton de défi est à usage unique
+     * et à durée de vie courte ([expiresInSeconds], 300 s côté serveur).
+     */
+    data class MfaRequired(
+        val challengeToken: String,
+        val expiresInSeconds: Int,
+    ) : LoginOutcome
+
+    /**
+     * Compte administrateur sans second facteur configuré. GeoSylva ne porte
+     * pas ce parcours : la configuration se fait depuis l'interface web.
+     */
+    data class MfaSetupRequired(
+        val setupToken: String,
+        val expiresInSeconds: Int,
+    ) : LoginOutcome
+}
+
 enum class ApiConnectionState {
     CONNECTED,
     DEGRADED,

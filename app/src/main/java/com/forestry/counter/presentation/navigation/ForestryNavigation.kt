@@ -19,6 +19,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.forestry.counter.ForestryCounterApplication
+import com.forestry.counter.presentation.screens.account.LoginScreen
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
@@ -101,6 +102,16 @@ sealed class Screen(val route: String) {
         fun createRoute(diagnosticId: String) = "diagnostic/result/$diagnosticId"
     }
     object Onboarding : Screen("onboarding")
+
+    /**
+     * Porte d'entrée de l'application, au tout premier lancement.
+     *
+     * Héberge [Screen.Login] avec une sémantique de démarrage : c'est le seul
+     * écran porteur d'une vidéo, et le seul moment où GeoSylva se présente.
+     * « Continuer hors ligne » y est toujours accessible — l'application doit
+     * rester pleinement utilisable sans compte ni réseau.
+     */
+    object Welcome : Screen("welcome")
     object RipisylveDiagnostic : Screen("ripisylve/diagnostic/{parcelleId}") {
         fun createRoute(parcelleId: String) = "ripisylve/diagnostic/$parcelleId"
     }
@@ -208,13 +219,37 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
         },
     )
 
-    val startDest = if (onboardingCompleted) BottomNavDestination.startRoute else Screen.Onboarding.route
+    // Premier lancement : connexion → onboarding → accueil.
+    // Ensuite : accueil directement. La connexion n'est donc vue qu'une fois
+    // par installation, ce qui justifie d'y placer la vidéo de présentation.
+    val startDest = if (onboardingCompleted) BottomNavDestination.startRoute else Screen.Welcome.route
 
     MainScaffold(navController = navController, app = app) { innerModifier ->
         NavHost(
             navController = navController,
             startDestination = startDest,
         ) {
+            composable(
+                route = Screen.Welcome.route,
+                enterTransition = transitions.enter,
+                exitTransition = transitions.exit,
+                popEnterTransition = transitions.popEnter,
+                popExitTransition = transitions.popExit,
+            ) {
+                val goToOnboarding = {
+                    navController.navigate(Screen.Onboarding.route) {
+                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                    }
+                }
+                LoginScreen(
+                    repository = app.identityRepository,
+                    onAuthenticated = goToOnboarding,
+                    onContinueOffline = goToOnboarding,
+                    onForgotPassword = { navController.navigate(Screen.PasswordRecovery.route) },
+                    animationsEnabled = animationsEnabled,
+                )
+            }
+
             // Lot 1 — 5 onglets de premier niveau (bottom nav)
             BottomNavDestination.entries.forEach { destination ->
                 composable(
@@ -242,6 +277,9 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                         },
                         onNavigateToProjects = {
                             navController.navigate(Screen.Projects.route)
+                        },
+                        onNavigateToLogin = {
+                            navController.navigate(Screen.Login.route)
                         },
                         onCategoryClick = { category ->
                             // Lot 1 : les catégories non implémentées n'ont pas encore

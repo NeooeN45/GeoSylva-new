@@ -58,24 +58,38 @@ import com.forestry.counter.presentation.viewmodel.GeoSylvaViewModelFactory
 import java.text.DateFormat
 import java.util.Date
 
+/**
+ * Espace compte (exigence ID-F-013 de `IDENTITE_001`).
+ *
+ * Deux points d'entrée : l'onglet « Compte » de la barre de navigation, et
+ * les réglages. Dans le premier cas [onNavigateBack] vaut `null` — un onglet
+ * de premier niveau n'a pas de flèche retour.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountScreen(
     repository: IdentityRepository,
     onNavigateToLogin: () -> Unit,
-    onNavigateBack: () -> Unit,
+    onNavigateBack: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
     val factory = remember(repository) { GeoSylvaViewModelFactory { AccountViewModel(repository) } }
     val viewModel: AccountViewModel = viewModel(factory = factory)
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.account_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.cd_back))
+                    if (onNavigateBack != null) {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                stringResource(R.string.cd_back),
+                            )
+                        }
                     }
                 },
             )

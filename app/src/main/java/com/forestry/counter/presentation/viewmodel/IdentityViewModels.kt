@@ -10,6 +10,7 @@ import com.forestry.counter.domain.model.AccountProfile
 import com.forestry.counter.domain.model.ApiDiagnostic
 import com.forestry.counter.domain.model.IdentityClientException
 import com.forestry.counter.domain.model.IdentityError
+import com.forestry.counter.domain.model.LoginOutcome
 import com.forestry.counter.domain.model.ProviderCapability
 import com.forestry.counter.domain.model.ParcelSyncPullResult
 import com.forestry.counter.domain.model.ParcelSyncSummary
@@ -38,7 +39,19 @@ data class LoginUiState(
     val isSubmitting: Boolean = false,
     val error: IdentityError? = null,
     val completed: Boolean = false,
-)
+    /**
+     * Jeton de défi renvoyé par le serveur quand le compte exige un second
+     * facteur. Non nul ⇒ l'écran affiche la saisie du code au lieu du
+     * formulaire e-mail/mot de passe.
+     */
+    val mfaChallengeToken: String? = null,
+    val mfaCode: String = "",
+    val mfaUsesRecoveryCode: Boolean = false,
+    /** Compte administrateur sans MFA : la configuration se fait sur le web. */
+    val mfaSetupRequired: Boolean = false,
+) {
+    val isAwaitingMfa: Boolean get() = mfaChallengeToken != null
+}
 
 class LoginViewModel(private val repository: IdentityRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -94,17 +107,91 @@ class LoginViewModel(private val repository: IdentityRepository) : ViewModel() {
         }
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true, error = null) }
-            val result = if (state.mode == LoginMode.SIGN_IN) {
-                repository.loginWithPassword(state.email, state.password)
+            if (state.mode == LoginMode.SIGN_IN) {
+                completeLogin(repository.loginWithPassword(state.email, state.password))
             } else {
-                repository.register(
-                    email = state.email,
-                    password = state.password,
-                    displayName = state.displayName,
+                completeAuthentication(
+                    repository.register(
+                        email = state.email,
+                        password = state.password,
+                        displayName = state.displayName,
+                    )
                 )
             }
-            completeAuthentication(result)
         }
+    }
+
+    fun setMfaCode(value: String) = updateInput {
+        // Le TOTP fait six chiffres ; un code de récupération est alphanumérique
+        // et plus long. On filtre selon le mode choisi plutôt qu'en aveugle.
+        val cleaned = if (mfaUsesRecoveryCode) {
+            value.filter { it.isLetterOrDigit() || it == '-' }.take(20)
+        } else {
+            value.filter(Char::isDigit).take(6)
+        }
+        copy(mfaCode = cleaned, error = null)
+    }
+
+    fun setMfaUsesRecoveryCode(value: Boolean) = updateInput {
+        copy(mfaUsesRecoveryCode = value, mfaCode = "", error = null)
+    }
+
+    /** Abandonne le défi en cours et revient au formulaire de connexion. */
+    fun cancelMfa() = updateInput {
+        copy(mfaChallengeToken = null, mfaCode = "", error = null, mfaUsesRecoveryCode = false)
+    }
+
+    fun submitMfa() {
+        val state = _uiState.value
+        val challenge = state.mfaChallengeToken ?: return
+        if (state.mfaCode.length < 6) {
+            _uiState.update { it.copy(error = IdentityError.INVALID_INPUT) }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSubmitting = true, error = null) }
+            completeLogin(
+                repository.completeMfaLogin(
+                    challengeToken = challenge,
+                    code = state.mfaCode,
+                    isRecoveryCode = state.mfaUsesRecoveryCode,
+                )
+            )
+        }
+    }
+
+    private fun completeLogin(result: Result<LoginOutcome>) {
+        result.fold(
+            onSuccess = { outcome ->
+                when (outcome) {
+                    is LoginOutcome.Authenticated -> _uiState.update {
+                        it.copy(isSubmitting = false, error = null, completed = true)
+                    }
+
+                    is LoginOutcome.MfaRequired -> _uiState.update {
+                        it.copy(
+                            isSubmitting = false,
+                            error = null,
+                            password = "",
+                            mfaChallengeToken = outcome.challengeToken,
+                            mfaCode = "",
+                        )
+                    }
+
+                    // GeoSylva ne porte pas la configuration du second facteur :
+                    // elle se fait depuis l'interface web, sur un vrai clavier.
+                    is LoginOutcome.MfaSetupRequired -> _uiState.update {
+                        it.copy(
+                            isSubmitting = false,
+                            password = "",
+                            mfaChallengeToken = null,
+                            mfaSetupRequired = true,
+                        )
+                    }
+                }
+            },
+            onFailure = { finishWith(it.identityError()) },
+        )
     }
 
     fun signInWithGoogle(client: GoogleCredentialClient) {

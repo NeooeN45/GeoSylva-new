@@ -28,6 +28,9 @@ import com.forestry.counter.domain.model.ApiDiagnostic
 import com.forestry.counter.domain.model.GoogleNonce
 import com.forestry.counter.domain.model.IdentityClientException
 import com.forestry.counter.domain.model.IdentityError
+import com.forestry.counter.domain.model.LoginOutcome
+import com.forestry.counter.data.remote.identity.LoginOutcomeDto
+import com.forestry.counter.data.remote.identity.MfaChallengeVerifyRequestDto
 import com.forestry.counter.domain.model.IdentityProvider
 import com.forestry.counter.domain.model.ProviderAvailability
 import com.forestry.counter.domain.model.ProviderCapability
@@ -71,8 +74,22 @@ internal class IdentityRepositoryImpl(
     override suspend fun loginWithPassword(
         email: String,
         password: String,
-    ): Result<AccountSession> = authenticate {
+    ): Result<LoginOutcome> = authenticateOrChallenge {
         loginWithPassword(LocalLoginRequestDto(normalizeEmail(email), password))
+    }
+
+    override suspend fun completeMfaLogin(
+        challengeToken: String,
+        code: String,
+        isRecoveryCode: Boolean,
+    ): Result<LoginOutcome> = authenticateOrChallenge {
+        loginWithMfa(
+            MfaChallengeVerifyRequestDto(
+                challengeToken = challengeToken,
+                code = code.trim(),
+                isRecoveryCode = isRecoveryCode,
+            )
+        )
     }
 
     override suspend fun register(
@@ -210,6 +227,41 @@ internal class IdentityRepositoryImpl(
     ): Result<AccountSession> {
         val result = apiResult { persistSession(block()) }
         if (result.isSuccess) loadProfile()
+        return result
+    }
+
+    /**
+     * Comme [authenticate], mais accepte les réponses intermédiaires du
+     * serveur : défi MFA ou configuration MFA requise. La session n'est
+     * enregistrée que lorsque des jetons sont réellement émis.
+     */
+    private suspend fun authenticateOrChallenge(
+        block: suspend IdentityApiService.() -> LoginOutcomeDto,
+    ): Result<LoginOutcome> {
+        val result = apiResult {
+            val dto = block()
+            val tokens = dto.tokensOrNull()
+            when {
+                tokens != null -> LoginOutcome.Authenticated(persistSession(tokens))
+
+                dto.mfaRequired && dto.challengeToken != null ->
+                    LoginOutcome.MfaRequired(
+                        challengeToken = dto.challengeToken,
+                        expiresInSeconds = dto.expiresIn ?: 0,
+                    )
+
+                dto.mfaSetupRequired && dto.setupToken != null ->
+                    LoginOutcome.MfaSetupRequired(
+                        setupToken = dto.setupToken,
+                        expiresInSeconds = dto.expiresIn ?: 0,
+                    )
+
+                // Ni jetons, ni défi identifiable : le contrat serveur a
+                // changé. Mieux vaut une erreur explicite qu'un état muet.
+                else -> throw IdentityClientException(IdentityError.INVALID_SERVER_RESPONSE)
+            }
+        }
+        if (result.getOrNull() is LoginOutcome.Authenticated) loadProfile()
         return result
     }
 

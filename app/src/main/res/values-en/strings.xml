@@ -1,0 +1,2320 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GéoSylva</string>
+    
+    <!-- Groups Screen -->
+    <string name="groups_title">Groups</string>
+    <string name="no_groups">No groups yet</string>
+    <string name="create_group">Create Group</string>
+    <string name="create_group_to_start">Create a group to start</string>
+    <string name="group_name">Group Name</string>
+    <string name="group">Group</string>
+    <string name="project_color">Project color</string>
+    <string name="martelage_choose_project_title">Choose a project for marking</string>
+    
+    <!-- Counter Screen -->
+    <string name="no_counters">No counters yet</string>
+    <string name="add_counter">Add Counter</string>
+    <string name="add_counter_to_start">Add a counter to start</string>
+    <string name="counter_name">Counter Name</string>
+    <string name="counter_step">Step</string>
+    <string name="counter_min">Min</string>
+    <string name="counter_max">Max</string>
+    <string name="counter_target">Target</string>
+    <string name="target_value">Target: %1$d</string>
+    
+    <!-- Actions -->
+    <string name="create">Create</string>
+    <string name="add">Add</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="duplicate">Duplicate</string>
+    <string name="rename_project">Rename project</string>
+    <string name="change_project_color">Change project color</string>
+    <string name="reset">Reset</string>
+    <string name="save">Save</string>
+    <string name="save_and_apply">Save &amp; Apply</string>
+    <string name="export">Export</string>
+    <string name="import_label">Import</string>
+    <string name="import_json">Import JSON</string>
+    <string name="import_csv">Import CSV</string>
+    <string name="import_excel">Import Excel</string>
+    <string name="export_json">Export JSON</string>
+    <string name="export_csv">Export CSV</string>
+    <string name="export_zip">Export ZIP</string>
+    <string name="export_excel">Export Excel</string>
+    
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="appearance">Appearance</string>
+    <string name="language">Language</string>
+    <string name="system">System</string>
+    <string name="french">Français</string>
+    <string name="english">English</string>
+    <string name="theme">Theme</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_system">System</string>
+    <string name="font_size">Font Size</string>
+    <string name="animations">Animations</string>
+    <string name="haptic_feedback">Haptic Feedback</string>
+    <string name="dynamic_color">Dynamic Color</string>
+    <string name="use_system_palette">Use system-derived color palette</string>
+    <string name="accent_color">Accent Color</string>
+    <string name="glass_blur">Glassmorphism (blur)</string>
+    <string name="glass_blur_desc">Enable backdrop blur in dark mode (Android 12+)</string>
+    
+    <!-- Privacy -->
+    <string name="no_ads">No Ads</string>
+    <string name="no_tracking">No Tracking</string>
+    <string name="privacy_statement">This app has no advertisements and no tracking</string>
+    
+    <!-- Descriptions -->
+    <string name="back">Back</string>
+    <string name="more_options">More options</string>
+    <string name="formulas">Formulas</string>
+    <string name="calculator">Calculator</string>
+
+    <string name="formulas_empty_title">No formulas</string>
+    <string name="formulas_empty_desc">Press + to create your first formula.</string>
+    <string name="formulas_create_title">Create formula</string>
+    <string name="formulas_edit_title">Edit formula</string>
+
+    <string name="unit">Unit</string>
+    <string name="evaluate">Evaluate</string>
+    <string name="result">Result</string>
+    <string name="history">History</string>
+    <string name="search">Search</string>
+
+    <string name="sort">Sort</string>
+    <string name="sort_by_name">Name</string>
+    <string name="sort_by_surface">Surface</string>
+    <string name="sort_by_last_update">Last update</string>
+    <string name="no_results">No results</string>
+    <string name="clear_search">Clear search</string>
+
+    <string name="insert_counter">Insert counter</string>
+    <string name="insert_from_counter">Insert from counter</string>
+    <string name="bind">Bind</string>
+    <string name="snapshot">Snapshot</string>
+    <string name="save_as_formula">Save as formula</string>
+    <string name="export_result">Export result</string>
+
+    <string name="result_exported">Result exported</string>
+    <string name="export_failed_format">Export failed: %1$s</string>
+    <string name="formula_saved">Formula saved</string>
+    <string name="calculator_expression_bind_hint">Expression (use [CounterName] to bind)</string>
+
+    <string name="result_value_format">Result: %1$.4f</string>
+
+    <!-- GroupScreen extras -->
+    <string name="counter_settings_title">Counter settings</string>
+    <string name="name">Name</string>
+    <string name="color_hex_label">Color (#RRGGBB)</string>
+    <string name="palette">Palette</string>
+    <string name="color_palette_title">Color palette</string>
+    <string name="brightness">Brightness</string>
+    <string name="choose">Choose</string>
+    <string name="less_colors">Less colors</string>
+    <string name="more_colors">More colors</string>
+    <string name="step">Step</string>
+    <string name="target">Target</string>
+    <string name="min">Min</string>
+    <string name="max">Max</string>
+    <string name="decimal_places">Decimal places</string>
+    <string name="initial_value">Initial value</string>
+    <string name="reset_value">Reset value</string>
+    <string name="expression">Expression</string>
+    <string name="tile_size">Tile Size</string>
+    <string name="small">Small</string>
+    <string name="normal_size">Normal</string>
+    <string name="large">Large</string>
+    <string name="sound">Sound</string>
+    <string name="inherit">Inherit</string>
+    <string name="on_state">On</string>
+    <string name="off_state">Off</string>
+    <string name="vibration">Vibration</string>
+    <string name="vibration_intensity_hint">Vibration intensity (1..3, inherit=0)</string>
+    <string name="intensity">Intensity</string>
+    <string name="target_action">Target action</string>
+    <string name="reset_to_zero">Reset to 0</string>
+    <string name="copies">Copies</string>
+    <string name="duplicate_counter">Duplicate Counter</string>
+    <string name="number_of_copies">Number of copies</string>
+
+    <string name="loading">Loading…</string>
+    <string name="essence">Species</string>
+    <string name="product">Product</string>
+    <string name="delete_counter_title">Delete counter</string>
+    <string name="delete_counter_confirm">Are you sure you want to delete %1$s?</string>
+    <string name="delete_counter">Delete counter</string>
+    <string name="quick_colors">Quick colors</string>
+    <string name="create_counter_title">Create Counter</string>
+    <string name="min_optional">Min (optional)</string>
+    <string name="max_optional">Max (optional)</string>
+    <string name="target_optional">Target (optional)</string>
+    <string name="color_hex_optional">Color (#RRGGBB, optional)</string>
+    <string name="computed_use_formula">Computed (use formula)</string>
+    <string name="computed_default_name">Computed</string>
+    <string name="computed_expression_label">Expression (e.g. sum(name:startsWith("H")))</string>
+    <string name="expression_hint">Expression</string>
+    <string name="standard_counter">Standard counter</string>
+    <string name="calculated_counter">Calculated (formula)</string>
+
+    <string name="settings_section_interaction">Interaction</string>
+    <string name="settings_animations_desc">Enable UI animations</string>
+    <string name="settings_sound_desc">Play a sound on +1/−1</string>
+    <string name="settings_haptic_desc">Vibrate on counter tap</string>
+    <string name="settings_haptic_intensity_label">Haptic intensity: %1$d</string>
+    <string name="settings_gps_capture_mode_title">GPS capture profile</string>
+    <string name="settings_gps_capture_mode_fast">Fast (3 readings)</string>
+    <string name="settings_gps_capture_mode_standard">Standard (5 readings)</string>
+    <string name="settings_gps_capture_mode_precise">Precise (8 readings)</string>
+    <string name="settings_gps_precision_threshold_format">Accepted GPS precision: ≤ %1$.1f m</string>
+    <string name="settings_gps_precision_threshold_desc">Points above this accuracy threshold are rejected when recording stems.</string>
+    <string name="settings_map_only_reliable_gps">Map: show only reliable GPS points</string>
+    <string name="settings_map_only_reliable_gps_desc">Hide stems whose horizontal precision is above the configured threshold.</string>
+    <string name="settings_map_reliable_gps_threshold_format">Map reliable threshold: ≤ %1$.1f m</string>
+    <string name="settings_map_reliable_gps_threshold_desc">Only points below this value are considered reliable on the map.</string>
+
+    <string name="settings_section_data">Data</string>
+    <string name="settings_csv_separator">CSV separator</string>
+    <string name="settings_csv_current">Current: %1$s</string>
+    <string name="settings_csv_separator_dialog_title">CSV separator</string>
+    <string name="settings_csv_option_comma">, (comma)</string>
+    <string name="settings_csv_option_semicolon">; (semicolon)</string>
+    <string name="settings_csv_option_tab">Tab</string>
+
+    <string name="settings_section_privacy">Privacy</string>
+    <string name="settings_no_ads_desc">This app has no advertisements</string>
+    <string name="settings_no_tracking_desc">No analytics or tracking</string>
+    <string name="view_privacy_policy">View privacy policy</string>
+    <string name="view_privacy_policy_desc">Read the full privacy policy</string>
+    <string name="proprietaire_email_helper">Optional — used only to contact the owner for management reports. Not shared with any third party.</string>
+    <string name="delete_all_data">Delete all my data</string>
+    <string name="delete_all_data_desc">Permanently deletes all forestry data and photos on this device</string>
+    <string name="delete_all_data_warning">This action is irreversible. All forests, plots, trees, observations and photos will be permanently deleted.</string>
+    <string name="delete_all_data_confirm">Delete all</string>
+    <string name="delete_all_data_cancel">Cancel</string>
+    <string name="delete_all_data_success">All data has been deleted</string>
+    <string name="settings_crash_logs_title">Crash logs</string>
+    <string name="settings_crash_logs_desc">Write crashes to local logs (for debugging)</string>
+    <string name="settings_view_latest_crash_log">View latest crash log</string>
+    <string name="settings_view_latest_crash_log_desc">Open the most recent crash log, if any</string>
+    <string name="settings_no_crash_logs_found">No crash logs found</string>
+    <string name="settings_latest_crash_log_title">Latest crash log</string>
+    <string name="close">Close</string>
+    <string name="clear_logs">Clear logs</string>
+    <string name="settings_exported_latest_log">Exported latest log</string>
+    <string name="settings_no_log_to_export">No log to export</string>
+    <string name="settings_exported_logs_zip">Exported logs ZIP</string>
+    <string name="settings_no_logs_to_export">No logs to export</string>
+    <string name="settings_export_latest_crash_log">Export latest crash log</string>
+    <string name="settings_export_latest_crash_log_desc">Save the most recent log as a text file</string>
+    <string name="settings_export_all_crash_logs">Export all crash logs (ZIP)</string>
+    <string name="settings_export_all_crash_logs_desc">Archive all local crash logs into a ZIP file</string>
+
+    <string name="settings_section_backups">Backups</string>
+    <string name="settings_automatic_backups">Automatic backups</string>
+    <string name="settings_automatic_backups_desc">Create periodic ZIP backups in app storage</string>
+    <string name="settings_backup_frequency">Backup frequency</string>
+    <string name="settings_backup_frequency_desc">Every %1$d day(s)</string>
+    <string name="settings_manual_backup">Manual backup (ZIP)</string>
+    <string name="settings_manual_backup_desc">Choose a destination and save a ZIP export</string>
+    <string name="settings_backup_created">Backup created</string>
+    <string name="settings_backup_failed">Backup failed: %1$s</string>
+
+    <string name="sync">Sync</string>
+    <string name="configure">Configure</string>
+    <string name="template">Template</string>
+    <string name="not_configured">Not configured</string>
+
+    <string name="settings_section_products_prices">Products &amp; Prices</string>
+    <string name="settings_product_rules_json">Product rules (JSON)</string>
+    <string name="settings_product_rules_json_desc">Tap to edit BO/BI/BCh/Pulp rules</string>
+    <string name="settings_product_rules_saved">Rules saved</string>
+    <string name="settings_price_tables_csv">Price tables (CSV)</string>
+    <string name="settings_price_tables_csv_hint">Import: essence,product,min,max,eurPerM3</string>
+    <string name="settings_price_source_url">Price source (URL)</string>
+    <string name="settings_price_sync_started">Sync started</string>
+    <string name="settings_price_url_dialog_title">Configure price source</string>
+    <string name="settings_price_url_label">Prices JSON URL</string>
+    <string name="settings_price_url_example">Example: https://example.org/prices.json</string>
+    <string name="settings_price_url_saved">URL saved</string>
+
+    <string name="settings_product_rules_format">Format: [{essence, min, max, product}]</string>
+
+    <string name="settings_edit_price_tables">Edit price tables</string>
+    <string name="settings_edit_price_tables_desc">Edit essence, product, classes and €/m³</string>
+    <string name="price_tables_editor_title">Price tables</string>
+    <string name="add_line">Add line</string>
+    <string name="price_tables_saved">Price tables saved</string>
+    <string name="price_tables_invalid_row_format">Invalid row %1$d: %2$s</string>
+    <string name="reset_price_tables_title">Reset to default prices</string>
+    <string name="reset_price_tables_desc">Replace current price tables with default values?</string>
+    <string name="price_preset_dialog_title">Regional price presets</string>
+    <string name="price_preset_dialog_desc">Load indicative timber prices for a French region. This will replace your current price table.</string>
+    <string name="price_preset_loaded_format">Preset "%1$s" loaded</string>
+    <string name="price_preset_entries_suffix">price entries</string>
+    <string name="product_breakdown_title">Product breakdown</string>
+    <string name="total_estimated_value">Total estimated value</string>
+    <string name="product_price_updated">Price updated for %1$s</string>
+    <string name="product_changed">Product changed from %1$s to %2$s</string>
+    <string name="quality_affected_price">Quality %1$s affects price by %2$.0f%%</string>
+
+    <string name="diameter_card_hint">Tap = +1, long press = -1</string>
+
+    <string name="martelage">Marking</string>
+
+    <string name="map_parcelle_title">Map (parcel)</string>
+    <string name="map_subtitle_stems_format">%1$d geolocated stems / %2$d</string>
+    <string name="gps_coverage">GPS coverage</string>
+    <string name="gps_points_format">GPS points: %1$d / %2$d</string>
+    <string name="map_coming_soon">Interactive map (MapLibre) will be enabled in a future version.</string>
+    <string name="map_no_gps_data">No geolocated stems in this plot. Enable GPS when recording to see trees on the map.</string>
+    <string name="map_legend">Legend</string>
+    <string name="map_style">Map style</string>
+    <string name="map_recenter">View trees</string>
+    <string name="map_my_location">My location</string>
+    <string name="map_empty">No stems in this plot.</string>
+    <string name="map_view">Map</string>
+    <string name="dashboard_title">Dashboard</string>
+    <string name="dashboard_total_stems">Total stems</string>
+    <string name="dashboard_avg_diam">Avg. diameter</string>
+    <string name="dashboard_avg_height">Avg. height</string>
+    <string name="dashboard_basal_area">Basal area</string>
+    <string name="dashboard_species_distribution">Species distribution</string>
+    <string name="dashboard_diameter_distribution">Diameter classes</string>
+    <string name="dashboard_basal_area_by_species">Basal area by species (m²)</string>
+    <string name="dashboard_others">others</string>
+    <string name="dashboard_button">Dashboard</string>
+    <string name="diag_station_btn">Station diag.</string>
+    <string name="diag_ripisylve_btn">Riparian diag.</string>
+    <string name="dashboard_height_distribution">Height distribution (m)</string>
+    <string name="dashboard_quality_distribution">Quality grade distribution</string>
+    <string name="dashboard_species_count">Species</string>
+    <string name="dashboard_no_data">No stems recorded yet.</string>
+    <string name="dashboard_quality_unassessed">%1$d not assessed</string>
+
+    <!-- Sanity / Guardrail warnings -->
+    <string name="sanity_card_title">Data consistency check</string>
+    <string name="sanity_more_warnings">+ %1$d more alerts</string>
+    <string name="sanity_diam_zero">A stem has diameter = 0</string>
+    <string name="sanity_diam_too_small">Diameter %.1f cm is abnormally small</string>
+    <string name="sanity_diam_too_large">Diameter %.1f cm exceeds physical limits</string>
+    <string name="sanity_diam_very_large">Diameter %.1f cm is unusually large — please verify</string>
+    <string name="sanity_height_zero">A stem has height = 0</string>
+    <string name="sanity_height_too_small">Height %.1f m is abnormally small</string>
+    <string name="sanity_height_too_large">Height %.1f m exceeds physical limits</string>
+    <string name="sanity_height_very_large">Height %.1f m is unusually large — please verify</string>
+    <string name="sanity_hd_ratio_extreme">Height/diameter ratio is extreme — likely data entry error</string>
+    <string name="sanity_hd_ratio_high">Height/diameter ratio is very high — slender tree or error?</string>
+    <string name="sanity_coef_forme_range">Form coefficient %.2f is outside typical range (0.15–0.85)</string>
+    <string name="sanity_volume_negative">Computed volume is negative — calculation error</string>
+    <string name="sanity_volume_tree_extreme">Volume %.2f m³ per tree exceeds physical limits</string>
+    <string name="sanity_volume_tree_large">Volume %.2f m³ per tree is very large — please verify</string>
+    <string name="sanity_volume_vs_diam">Computed volume is incoherent with diameter</string>
+    <string name="sanity_many_input_errors">%1$d stems have input anomalies</string>
+    <string name="sanity_potential_duplicates">%1$d potential duplicate entries detected (same species + diameter within 1 min)</string>
+    <string name="sanity_surface_zero">Plot surface is zero — cannot compute per-hectare values</string>
+    <string name="sanity_surface_very_small">Plot surface is very small — per-hectare values may be inflated</string>
+    <string name="sanity_n_ha_extreme">N/ha = %1$d is extreme — check plot surface</string>
+    <string name="sanity_n_ha_very_high">N/ha = %1$d is very high — verify plot surface</string>
+    <string name="sanity_g_ha_extreme">G/ha = %.1f m² is extreme — check data</string>
+    <string name="sanity_g_ha_very_high">G/ha = %.1f m² is very high for French forests</string>
+    <string name="sanity_g_ha_very_low">G/ha = %.2f m² is very low — sparse stand or partial data?</string>
+    <string name="sanity_v_ha_extreme">V/ha = %.0f m³ is extreme — check data</string>
+    <string name="sanity_v_ha_very_high">V/ha = %.0f m³ is very high — verify heights and surface</string>
+    <string name="sanity_vg_ratio_low">V/G ratio = %.1f is unusually low — check volume calculation</string>
+    <string name="sanity_vg_ratio_high">V/G ratio = %.1f is unusually high — check heights</string>
+    <string name="sanity_revenue_negative">Negative revenue computed — check prices</string>
+    <string name="sanity_revenue_tree_extreme">Revenue per tree is abnormally high</string>
+    <string name="sanity_revenue_ha_negative">Revenue/ha is negative — check price tables</string>
+    <string name="sanity_revenue_ha_very_high">Revenue/ha = %.0f € is very high — verify</string>
+    <string name="map_layer_picker_title">Base maps</string>
+    <string name="map_layer_osm">OSM</string>
+    <string name="gps_periodic_unavailable">⚠ GPS signal unavailable — location capture may fail</string>
+    <string name="gps_periodic_poor">⚠ Poor GPS accuracy (±%1$.0f m) — threshold is ±%2$.0f m. Move to an open area for better signal.</string>
+    <string name="map_gps_filtered_out">%1$d stems have GPS but precision exceeds %2$d m threshold.\nDisable the precision filter or move to open sky.</string>
+    <string name="offline_download">Download tiles for offline</string>
+    <string name="settings_section_offline_map">Offline map</string>
+    <string name="offline_cache_title">Tile cache</string>
+    <string name="offline_cache_stats_format">%1$d tiles cached (%2$s MB)</string>
+    <string name="offline_cache_empty">No offline tiles cached</string>
+    <string name="offline_cache_clear">Clear tile cache</string>
+    <string name="offline_cache_clear_desc">Free disk space by removing all offline tiles</string>
+    <string name="offline_cache_clear_confirm">Delete all offline tiles? You will need to re-download them from the map screen.</string>
+    <string name="offline_cache_cleared">Offline cache cleared</string>
+    <string name="offline_downloading">Downloading tiles…</string>
+    <string name="offline_download_done">Tiles downloaded ✓</string>
+    <string name="offline_download_error">Download error</string>
+    <string name="map_layer_offline_local">Offline local</string>
+    <string name="map_layer_satellite">Satellite</string>
+    <string name="map_layer_satellite_labels">Sat. + labels</string>
+    <string name="map_layer_topo">Topo</string>
+    <string name="map_layer_carto">Carto</string>
+    <string name="map_layer_cadastre">Cadastre</string>
+    <string name="map_layer_ortho_ign">Ortho IGN</string>
+    <string name="map_layer_sat_cadastre">Sat. + Cad.</string>
+    <string name="map_zoom_in">Zoom in</string>
+    <string name="map_zoom_out">Zoom out</string>
+    <string name="map_north">North</string>
+    <string name="map_category_general">General</string>
+    <string name="map_layer_plan_ign">Plan IGN</string>
+    <string name="map_layer_plan_ign_cadastre">IGN + Cad.</string>
+    <string name="map_layer_ortho_cadastre">Ortho + Cad.</string>
+    <string name="map_layer_dark">Dark</string>
+
+    <string name="map_choose_scope_title">Open map</string>
+    <string name="map_scope_all">All trees</string>
+    <string name="map_scope_all_desc">Display all GPS-tagged trees</string>
+    <string name="map_scope_empty">Map only (no trees)</string>
+    <string name="map_scope_empty_desc">Open empty map with overlays</string>
+    <string name="map_scope_by_project">By project</string>
+
+    <string name="shp_overlay">Parcels overlay</string>
+    <string name="shp_no_overlay">No shapefile imported. Import a .zip containing a shapefile (.shp + .dbf + .prj) to display forest parcels on the map.</string>
+    <string name="shp_import">Import shapefile (.zip)</string>
+    <string name="shp_import_success">%1$d parcels imported successfully</string>
+    <string name="shp_import_error">Import failed. Check that the .zip contains valid .shp, .dbf and .prj files.</string>
+    <string name="shp_importing">Importing and reprojecting…</string>
+    <string name="shp_visible">Show on map</string>
+    <string name="shp_fill_opacity">Fill opacity: %1$d%%</string>
+    <string name="shp_fill_color">Fill color</string>
+    <string name="shp_border_color">Border color</string>
+    <string name="shp_border_opacity">Border opacity: %1$d%%</string>
+    <string name="shp_border_width">Border width: %1$s</string>
+    <string name="shp_labels_title">Labels</string>
+    <string name="shp_label_size">Size: %1$d</string>
+    <string name="shp_combine_labels">Combine on one line</string>
+    <string name="shp_replace">Replace</string>
+    <string name="shp_delete">Delete</string>
+    <string name="shp_info_format">%1$d parcels · %2$d forests</string>
+
+    <string name="parcelles_title">Parcels</string>
+    <string name="parcelles_empty_title">No parcels</string>
+    <string name="parcelles_empty_desc">Create a parcel to start.</string>
+    <string name="create_parcelle">Create parcel</string>
+    <string name="parcelle_default_name_format">Parcel %1$d</string>
+    <string name="parcelle_added">Parcel added</string>
+    <string name="parcelle_updated">Parcel updated</string>
+    <string name="parcelle_deleted">Parcel deleted</string>
+    <string name="delete_parcelle">Delete parcel</string>
+    <string name="delete_parcelle_title">Delete parcel</string>
+    <string name="delete_parcelle_confirm_format">Delete parcel "%1$s"? All plots and stems will be removed.</string>
+    <string name="parcelle_defaults_title">Parcel info</string>
+    <string name="parcelle_shape">Shape</string>
+    <string name="parcelle_slope_pct">Slope (%)</string>
+    <string name="parcelle_aspect">Aspect</string>
+    <string name="parcelle_access">Access</string>
+    <string name="parcelle_altitude_m">Altitude (m)</string>
+    <string name="parcelle_remarks">Notes</string>
+    <string name="surface_ha">Area (ha)</string>
+    <string name="surface_ha_format">Area: %1$.2f ha</string>
+    <string name="sampling_mode">Sampling mode</string>
+    <string name="sampling_mode_circular">Circular</string>
+    <string name="sampling_mode_fixed_area">Fixed area</string>
+    <string name="sample_plot_area_m2">Sample plot area (m²)</string>
+    <string name="target_species">Target species</string>
+    <string name="objective_type_label">Objective (type)</string>
+    <string name="objective_value_label">Objective (value)</string>
+    <string name="tolerance_pct_label">Tolerance (%)</string>
+    <string name="objective_type_n_ha">N/ha</string>
+    <string name="objective_type_g_m2_ha">G (m²/ha)</string>
+    <string name="objective_type_v_m3_ha">V (m³/ha)</string>
+    <string name="objective_type_dm_cm">Dm (cm)</string>
+
+    <string name="placettes_title">Plots</string>
+    <string name="placettes_empty_title">No plots</string>
+    <string name="placettes_empty_desc">Create a plot to start.</string>
+    <string name="create_placette">Create plot</string>
+    <string name="placette_default_name_format">Plot %1$d</string>
+    <string name="placette_added">Plot added</string>
+    <string name="placette_info_dialog_title">Plot info</string>
+    <string name="placette_updated">Plot updated</string>
+    <string name="placette_surface_m2">Plot area (m²)</string>
+    <string name="placette_rayon_m">Radius (m)</string>
+    <string name="placette_deleted">Plot deleted</string>
+    <string name="delete_placette_confirm_name_format">Delete plot "%1$s"? All stems will be removed.</string>
+
+    <string name="placette_essences_title">Plot - Species</string>
+    <string name="placette_essences_empty_desc">No species. Press + to add.</string>
+    <string name="parcelles_count_format">%1$d plot(s)</string>
+    <string name="placettes_count_format">%1$d subplot(s)</string>
+    <string name="dashboard_subtitle_format">%1$d stems · %2$d species</string>
+    <string name="placette_essences_subtitle_format">%1$d stems · %2$d species</string>
+    <string name="placette_tab_essences">Species</string>
+    <string name="placette_tab_evolution">Evolution</string>
+    <string name="placette_evolution_empty">No stem recorded.</string>
+    <string name="placette_evolution_empty_desc">Evolution data will appear once stems have been recorded over several years.</string>
+    <string name="placette_evolution_by_year">Evolution by year (%1$d)</string>
+    <string name="placette_evolution_stems_format">%1$d stems · %2$d species</string>
+    <string name="placette_evolution_diam_mean">Mean diameter</string>
+    <string name="placette_evolution_diam_mean_format">%1$.1f cm</string>
+    <string name="placette_evolution_no_category">Uncategorized</string>
+    <!-- Page Évolution détaillée -->
+    <string name="evolution_detail_title">Evolution %1$d</string>
+    <string name="evolution_detail_stems">Stems</string>
+    <string name="evolution_detail_species">Species</string>
+    <string name="evolution_detail_dm">Mean diameter (Dm)</string>
+    <string name="evolution_detail_dg">Quadratic diameter (Dg)</string>
+    <string name="evolution_detail_g">Basal area (G)</string>
+    <string name="evolution_detail_g_per_ha">G / ha</string>
+    <string name="evolution_detail_n_per_ha">N / ha</string>
+    <string name="evolution_detail_hm">Mean height (Hm)</string>
+    <string name="evolution_detail_hg">Lorey height (Hg)</string>
+    <string name="evolution_detail_volume">Volume</string>
+    <string name="evolution_detail_v_per_ha">V / ha</string>
+    <string name="evolution_detail_biomass">Biomass</string>
+    <string name="evolution_detail_carbon">Carbon</string>
+    <string name="evolution_detail_habitat_trees">Habitat trees</string>
+    <string name="evolution_detail_section_global">Global indicators</string>
+    <string name="evolution_detail_section_distribution">Diameter distribution</string>
+    <string name="evolution_detail_section_temporal">Temporal evolution</string>
+    <string name="evolution_detail_section_by_essence">By species</string>
+    <string name="evolution_detail_section_categories">Marking categories</string>
+    <string name="evolution_detail_section_dendro">Dendrometric indicators</string>
+    <string name="evolution_detail_table_essence">Species</string>
+    <string name="evolution_detail_table_stems">Stems</string>
+    <string name="evolution_detail_table_dm">Dm (cm)</string>
+    <string name="evolution_detail_table_g">G (m²)</string>
+    <string name="evolution_detail_table_v">V (m³)</string>
+    <string name="evolution_detail_table_pct">\% peuplement</string>
+    <string name="evolution_detail_no_data">No data for this year.</string>
+    <string name="evolution_detail_no_heights">No heights recorded — volume and Lorey height unavailable.</string>
+    <string name="evolution_detail_chart_stems">Stems</string>
+    <string name="evolution_detail_chart_diam">Diameter class (cm)</string>
+    <string name="evolution_detail_chart_n">Number of stems</string>
+    <string name="evolution_detail_temporal_stems">Stems</string>
+    <string name="evolution_detail_temporal_dm">Mean diameter (cm)</string>
+    <string name="evolution_detail_temporal_g">Basal area (m²)</string>
+    <string name="evolution_detail_unit_cm">cm</string>
+    <string name="evolution_detail_unit_m2">m²</string>
+    <string name="evolution_detail_unit_m2_ha">m²/ha</string>
+    <string name="evolution_detail_unit_m3">m³</string>
+    <string name="evolution_detail_unit_m3_ha">m³/ha</string>
+    <string name="evolution_detail_unit_t">t</string>
+    <string name="evolution_detail_unit_stems_ha">stems/ha</string>
+    <string name="evolution_detail_section_stems">Stems detail</string>
+    <string name="evolution_detail_stem_diam">Diameter</string>
+    <string name="evolution_detail_stem_height">Height</string>
+    <string name="evolution_detail_stem_category">Category</string>
+    <string name="evolution_detail_stem_quality">Quality</string>
+    <string name="evolution_detail_stem_number">N°</string>
+    <string name="evolution_detail_stem_no_height">—</string>
+    <string name="evolution_detail_stem_no_category">—</string>
+    <string name="evolution_detail_stems_count_format">%1$d stems</string>
+    <string name="evolution_detail_donut_title">Category distribution</string>
+    <string name="reorder">Reorder</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
+    <string name="add_essence_title">Add species</string>
+    <string name="search_tolerant_hint">Search (typo-tolerant)</string>
+    <string name="cannot_delete_existing_data">Cannot delete: existing data</string>
+    <string name="color_for_format">Color for %1$s</string>
+    <string name="choose_color_for_essence">Choose a color for this species</string>
+    <string name="color_long_press_tip">Tip: long-press a color to reset to automatic color.</string>
+    <string name="essence_actions_title_format">Actions: %1$s</string>
+    <string name="essence_info_title">Species properties</string>
+    <string name="essence_density">Wood density</string>
+    <string name="essence_quality">Typical quality</string>
+    <string name="essence_logging">Preferred logging</string>
+    <string name="essence_wood_use">Wood use</string>
+    <string name="essence_growth">Growth speed</string>
+    <string name="essence_shade">Shade tolerance</string>
+    <string name="essence_max_dims">Max dimensions</string>
+    <string name="change_color">Change color</string>
+    <string name="delete_essence_title">Delete species</string>
+    <string name="delete_essence_confirm_format">Delete %1$s from this plot? %2$d stems will be removed.</string>
+    <string name="delete_placette">Delete plot</string>
+    <string name="delete_placette_title">Delete plot</string>
+    <string name="delete_placette_confirm_format">Delete this plot? %1$d stems will be removed.</string>
+    <string name="error">Error</string>
+
+    <string name="gps_permission_required">Allow location to record GPS</string>
+    <string name="location_unavailable">Location unavailable</string>
+    <string name="gps_precision_rejected_format">GPS precision too low (±%1$.1f m). Max accepted: %2$.1f m.</string>
+    <string name="gps_save_failed">Failed to save GPS</string>
+    <string name="gps_error_format">GPS error: %1$s</string>
+
+    <string name="essence_diameters_title_format">%1$s - Diameters</string>
+    <string name="show_special_trees">Show special trees</string>
+    <string name="hide_special_trees">Hide special trees</string>
+    <string name="add_diameter_class">Add diameter class</string>
+    <string name="configure_heights">Configure heights</string>
+    <string name="height">Height</string>
+
+    <string name="special_tree_dying">Dying</string>
+    <string name="special_tree_bio">Bio tree</string>
+    <string name="special_tree_dead">Dead</string>
+    <string name="special_tree_parasite">Parasite</string>
+    <string name="special_tree_special">Special</string>
+
+    <string name="tree_deleted">Tree deleted</string>
+    <string name="tige_added">Stem added</string>
+    <string name="undo">Undo</string>
+    <string name="add_undone">Addition undone</string>
+    <string name="insert_failed">Insert failed</string>
+    <string name="no_tige_to_remove_for_diameter_format">No stem to remove for %1$d cm</string>
+
+    <string name="height_dialog_title_format">Height – %1$s</string>
+    <string name="height_input_mode_title">Height input mode</string>
+    <string name="mean_height">Mean height</string>
+    <string name="height_by_diameter_class">Per diameter class</string>
+    <string name="mean_height_m">Mean height (m)</string>
+    <string name="height_by_class_m">Height by class (m)</string>
+    <string name="height_for_diameter_class_format">H %1$d cm</string>
+    <string name="mean_height_invalid">Invalid mean height</string>
+    <string name="no_valid_height_entered">No valid height entered</string>
+    <string name="heights_saved">Heights saved</string>
+    <string name="validate">Validate</string>
+
+    <string name="add_dying_tree_title">Add dying tree</string>
+    <string name="add_bio_tree_title">Add bio tree</string>
+    <string name="add_dead_tree_title">Add dead tree</string>
+    <string name="add_parasitized_tree_title">Add parasitized tree</string>
+
+    <string name="diameter_cm_label">Diameter (cm)</string>
+    <string name="height_m_optional_label">Height (m, optional)</string>
+    <string name="note_optional_label">Note (optional)</string>
+    <string name="invalid_diameter">Invalid diameter</string>
+    <string name="tree_added">Tree added</string>
+
+    <string name="diameter_cm_value_format">%1$d cm</string>
+    <string name="height_m_value_format">%1$.1f m</string>
+
+    <string name="mandatory_heights_title">Missing heights</string>
+    <string name="mandatory_heights_desc">You must enter heights to compute volume.</string>
+    <string name="mandatory_heights_desc_tarif">The active tariff (%1$s) is a 2-entry method and requires heights to compute volume. Fill them in now or switch to a 1-entry tariff.</string>
+    <string name="mandatory_heights_skip">Skip for now</string>
+    <string name="mandatory_heights_snooze_format">Remind me in %1$d h</string>
+    <string name="mandatory_heights_snooze_title">Height reminder</string>
+    <string name="mandatory_heights_snoozed_format">Height reminder snoozed for %1$d h</string>
+    <string name="mandatory_heights_classes_format">Missing classes: %1$s</string>
+    <string name="height_status_set">H set</string>
+    <string name="height_status_missing">H missing</string>
+    <string name="height_status_measured">H measured</string>
+    <string name="height_quick_fill_title">Quick fill</string>
+    <string name="height_quick_fill_desc">Apply the same height to all empty classes</string>
+    <string name="height_quick_fill_apply">Apply to all</string>
+    <string name="height_tarif_info_2e">2-entry tariff \u2014 heights required</string>
+    <string name="height_tarif_info_1e">1-entry tariff \u2014 heights optional</string>
+    <string name="height_n_stems_format">%1$d stems</string>
+    <string name="height_n_missing_format">%1$d without H</string>
+    <string name="height_mean_computed_format">Computed mean: %1$.1f m (%2$d readings)</string>
+    <string name="height_dialog_essence_title_format">Heights \u2014 %1$s</string>
+    <string name="height_propagated">Heights propagated to upper scopes</string>
+
+    <string name="martelage_missing_prices_title">Missing price data</string>
+    <string name="martelage_missing_prices_desc">%1$s m³ (%2$d%% of the volume) has no price mapping. Import prices and/or product rules.</string>
+    <string name="martelage_missing_prices_essences">Affected: %1$s</string>
+    <string name="martelage_configure_prices">Configure prices</string>
+
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="placeholder_dash">—</string>
+    <string name="ellipsis">…</string>
+    <string name="euro_symbol">€</string>
+
+    <string name="symbol_plus">+</string>
+    <string name="symbol_minus">−</string>
+
+    <string name="martelage_before_cut_title">Pre-cut stand</string>
+    <string name="martelage_scope_placette_desc">Plot: summary limited to this plot</string>
+    <string name="martelage_scope_parcelle_desc">Parcel: all plots in the parcel</string>
+    <string name="martelage_scope_forest_desc">Project / forest: all parcels in this project</string>
+    <string name="martelage_scope_global_desc">Global: all parcels and plots in the app</string>
+
+    <string name="martelage_view_placette">Plot</string>
+    <string name="martelage_view_parcelle">Parcel</string>
+    <string name="martelage_view_global">Global</string>
+
+    <string name="martelage_summary_title">Marking – Summary</string>
+    <string name="martelage_parameters">Parameters</string>
+    <string name="martelage_details">Details</string>
+
+    <string name="martelage_included_parcelles_format">Included parcels: %1$s</string>
+    <string name="martelage_no_tiges_error">Error: no stems found for this scope. Add stems or change view to display the summary tiles.</string>
+    <string name="martelage_available_species">Available species</string>
+    <string name="martelage_no_resinous_species_detected">No conifer species detected in this scope.</string>
+
+    <string name="martelage_dendro_details_title">Dendrometric indicators</string>
+    <string name="martelage_dg_format">Dg (quadratic mean): %1$s cm</string>
+    <string name="martelage_lorey_height_format">Hg (Lorey): %1$s m</string>
+
+    <string name="martelage_calc_parameters_title">Calculation parameters</string>
+    <string name="martelage_sample_area_m2">Sample area (m² or ha)</string>
+    <string name="martelage_ho_dominant_optional">Mean dominant Ho (m) – optional</string>
+    <string name="martelage_heights_by_species_or_ho_desc">Heights per species (required for volume)</string>
+    <string name="martelage_custom_heights_defined">Custom heights set</string>
+    <string name="martelage_default_height_tables_used">No custom heights set</string>
+
+    <string name="martelage_sample_area_missing_error">Error: sample area is missing or zero. Volume, G and Price tiles remain hidden until this value is provided.</string>
+    <string name="martelage_fill_in">Fill in</string>
+
+    <string name="martelage_volume_price_title">Volume &amp; Price</string>
+    <string name="martelage_volume_partial_format">Partial result (%1$.0f%% complete)</string>
+    <string name="martelage_total_volume_format">Total volume: %1$s m³</string>
+    <string name="martelage_volume_per_ha_format">Volume / ha: %1$s m³/ha</string>
+    <string name="martelage_estimated_revenue_format">Estimated revenue: %1$s · /ha: %2$s</string>
+
+    <string name="martelage_basal_area_title">Basal area</string>
+    <string name="martelage_g_removed_format">G removed: %1$s m²</string>
+    <string name="martelage_g_per_ha_format">G / ha: %1$s m²/ha</string>
+
+    <string name="martelage_density_structure_title">Density &amp; structure</string>
+    <string name="martelage_stems_count_format">Stems: %1$d · N/ha: %2$s</string>
+    <string name="martelage_dm_hm_format">Dm (arithmetic mean): %1$s cm · Hm (mean height): %2$s m</string>
+
+    <string name="martelage_label_v_total">V total</string>
+    <string name="martelage_label_v_per_ha">V / ha</string>
+    <string name="martelage_label_revenue">Revenue</string>
+    <string name="martelage_label_revenue_per_ha">Revenue / ha</string>
+    <string name="martelage_label_g_total">G total</string>
+    <string name="martelage_label_g_per_ha">G / ha</string>
+    <string name="martelage_label_surface">Area</string>
+    <string name="martelage_label_ratio_vg">V/G</string>
+    <string name="martelage_label_n_total">N stems</string>
+    <string name="martelage_label_n_per_ha">N / ha</string>
+    <string name="martelage_label_dm">Dm (arith.)</string>
+    <string name="martelage_label_dg">Dg (quadr.)</string>
+    <string name="martelage_label_hm">Hm (mean)</string>
+    <string name="martelage_label_hlorey">Hg (Lorey)</string>
+    <string name="martelage_label_d_range">D range</string>
+    <string name="martelage_label_cv_diam">CV diam.</string>
+    <string name="martelage_class_distribution_title">Class distribution</string>
+    <string name="martelage_class_dist_legend_n">↑ Number of stems</string>
+    <string name="martelage_class_dist_legend_diam">→ Diameter class (cm)</string>
+    <string name="martelage_quality_title">Wood quality</string>
+    <string name="martelage_quality_assessed_format">%1$d / %2$d assessed</string>
+    <string name="martelage_quality_coverage_hint">Assess remaining stems quality to refine pricing</string>
+
+    <string name="martelage_special_trees_title">Special trees</string>
+
+    <string name="martelage_per_species_title">Per species</string>
+    <string name="martelage_table_species">Species</string>
+    <string name="martelage_table_v_m3">V (m³)</string>
+    <string name="martelage_table_v_per_ha">V/ha</string>
+    <string name="martelage_table_g_m2">G (m²)</string>
+    <string name="martelage_table_eur_per_m3">€/m³</string>
+    <string name="martelage_table_revenue">Revenue</string>
+
+    <string name="export_shapefile">Shapefile (SHP)</string>
+    <string name="export_shapefile_desc">ESRI Shapefile ZIP (.shp/.dbf/.prj) for QGIS/ArcGIS</string>
+    <string name="export_shapefile_done">Shapefile exported (%1$d stems)</string>
+
+    <string name="biodiversity_title">Stand ecology</string>
+    <string name="biodiversity_shannon">Shannon H\'</string>
+    <string name="biodiversity_pielou">Piélou J</string>
+    <string name="biodiversity_species">Species</string>
+    <string name="biodiversity_ibp_score">IBP %1$d/%2$d</string>
+    <string name="biodiversity_tgb">TGB ≥70cm: %1$d</string>
+    <string name="biodiversity_bio_trees">Bio: %1$d</string>
+    <string name="biodiversity_dead_trees">Dead: %1$d</string>
+    <string name="biodiversity_dying_trees">Dying: %1$d</string>
+    <string name="biodiversity_shannon_desc">Species diversity (0=monoculture · &gt;1.5=mixed · &gt;2.5=diverse)</string>
+    <string name="biodiversity_pielou_desc">Balance of distribution (0=dominated · &gt;0.7=even)</string>
+    <string name="biodiversity_ibp_context">Simplified field IBP — do a full evaluation for a certified score</string>
+    <string name="biodiversity_level_very_low">Very low</string>
+    <string name="biodiversity_level_low">Low</string>
+    <string name="biodiversity_level_medium">Moderate</string>
+    <string name="biodiversity_level_good">Good</string>
+    <string name="biodiversity_level_very_good">Excellent</string>
+    <string name="biodiversity_shannon_mono">Monoculture</string>
+    <string name="biodiversity_shannon_low">Low diversity</string>
+    <string name="biodiversity_shannon_mixed">Mixed stand</string>
+    <string name="biodiversity_shannon_diverse">Diverse stand</string>
+    <string name="biodiversity_pielou_uneven">Uneven</string>
+    <string name="biodiversity_pielou_moderate">Moderate</string>
+    <string name="biodiversity_pielou_even">Balanced</string>
+    <string name="martelage_volume_desc">Estimated volume and revenue for marked trees (partial if heights incomplete)</string>
+    <string name="martelage_basal_area_desc">G = sum of cross-sections at 1.30 m — stand density indicator</string>
+    <string name="martelage_density_desc">Stand structure: counts, diameters, heights</string>
+
+    <string name="martelage_harvest_simulation_title">Harvest simulation</string>
+    <string name="martelage_harvest_n_pct">Removal N/ha</string>
+    <string name="martelage_harvest_g_pct">Removal G/ha</string>
+    <string name="martelage_residual_stand">Residual stand</string>
+    <string name="martelage_nha_avant_label">N/ha before harvest</string>
+    <string name="martelage_gha_avant_label">G/ha before harvest (m²)</string>
+    <string name="martelage_avant_coupe_hint">Optional: enter stand values before harvest to compute removal rates</string>
+
+    <string name="martelage_stats_unavailable_error">Error: the summary could not be computed with the current data (volume/price tariffs or incompatible heights). Tiles remain disabled.</string>
+
+    <string name="martelage_missing_heights_title">Missing heights</string>
+    <string name="martelage_missing_heights_desc">Volume is partial until heights are provided for: %1$s.</string>
+    <string name="martelage_fill_heights">Fill heights</string>
+
+    <string name="badge_to_complete">To complete</string>
+
+    <string name="martelage_params_dialog_desc">These values are required to compute the pre-cut table.</string>
+    <string name="martelage_surface_hint">Enter in m² (e.g. 2000) or in hectares (e.g. 0.2 ha)</string>
+    <string name="martelage_params_dialog_hint">You can then refine heights by species and diameter class in the mini-menu.</string>
+
+    <string name="martelage_heights_dialog_title_format">Heights – %1$s</string>
+    <string name="martelage_no_stem_for_species">No stems for this species in this scope.</string>
+    <string name="martelage_height_by_class_hint">Enter a mean height by diameter class (m). You can enter multiple heights separated by commas (e.g. 25,20,27): the mean will be used. Leave blank only if all stems in that class have a measured height.</string>
+    <string name="martelage_diameter_class_cm_format">Class %1$d cm</string>
+
+    <string name="settings_background_image">Background image</string>
+    <string name="settings_background_image_desc">Show a background image on the main screens</string>
+    <string name="settings_background_choice">Background choice</string>
+    <string name="settings_background_default_forest">Default forest</string>
+    <string name="settings_background_personal_photo">Personal photo</string>
+
+    <string name="settings_keep_screen_on">Keep screen on</string>
+    <string name="settings_keep_screen_on_desc">Prevent the screen from turning off while using the app</string>
+
+    <string name="settings_quality_finesse">Quality &amp; finesse</string>
+    <string name="settings_tilt_deg_format">Tilt: %1$.1f°</string>
+    <string name="settings_press_scale_format">Press scale: %1$.2f</string>
+    <string name="settings_halo_alpha_format">Halo opacity: %1$.2f</string>
+    <string name="settings_halo_width_dp_format">Halo width: %1$d dp</string>
+    <string name="settings_blur_radius_px_format">Blur radius: %1$d px</string>
+    <string name="settings_blur_overlay_alpha_format">Overlay opacity: %1$.2f</string>
+    <string name="settings_anim_speed_ms_format">Animation speed: %1$d ms</string>
+
+    <string name="settings_import_error_format">Import error: %1$s</string>
+    <string name="settings_prices_lines_imported_format">%1$d lines imported</string>
+    <string name="settings_prices_tables_count_format">%1$d price tables</string>
+
+    <string name="settings_export_scope">Export scope</string>
+    <string name="settings_export_scope_project">Whole project</string>
+    <string name="settings_export_scope_parcelle">One parcel</string>
+    <string name="settings_export_scope_placette">One plot</string>
+    <string name="settings_export_parcelle">Parcel</string>
+    <string name="settings_export_choose_parcelle">Choose a parcel</string>
+    <string name="settings_export_placette">Plot</string>
+    <string name="settings_export_choose_placette">Choose a plot</string>
+
+    <string name="settings_select_parcelle_for_export">Select a parcel for export</string>
+    <string name="settings_select_placette_for_export">Select a plot for export</string>
+    <string name="settings_no_tige_for_scope">No stems for this scope</string>
+
+    <string name="settings_export_csv_tiges">Stems CSV</string>
+    <string name="settings_export_csv_tiges_done">Stems CSV export done</string>
+    <string name="settings_export_geojson">GeoJSON</string>
+    <string name="settings_export_geojson_done">GeoJSON export done</string>
+    <string name="settings_export_gpx">GPX</string>
+    <string name="settings_export_gpx_done">GPX export done</string>
+    <string name="settings_export_excel_forestry">Forestry Excel</string>
+    <string name="settings_export_excel_forestry_done">Forestry Excel export done</string>
+    <string name="settings_export_profile_json">Profile JSON</string>
+    <string name="settings_export_profile_json_done">Profile JSON exported</string>
+
+    <string name="settings_json_label">JSON</string>
+
+    <string name="settings_section_about">About</string>
+    <string name="version">Version</string>
+    <string name="settings_section_forestry_exports">Forestry exports</string>
+
+    <!-- Tarifs de cubage -->
+    <string name="settings_section_tarifs">Volume tariffs</string>
+    <string name="settings_tarif_method">Cubage method</string>
+    <string name="settings_tarif_method_desc">Choose the volume calculation method</string>
+    <string name="settings_tarif_current_format">Current: %1$s</string>
+    <string name="settings_tarif_numero_format">Tariff n°%1$d</string>
+    <string name="settings_tarif_numero_label">Tariff number</string>
+    <string name="settings_tarif_saved">Tariff settings saved</string>
+
+    <string name="tarif_method_schaeffer_1e">Schaeffer 1 entry</string>
+    <string name="tarif_method_schaeffer_1e_desc">V = a + b × C² — 1-entry tariff (circumference only). Schaeffer, 1949.</string>
+    <string name="tarif_method_schaeffer_2e">Schaeffer 2 entries</string>
+    <string name="tarif_method_schaeffer_2e_desc">V = a + b × C² × H — 2-entry tariff (circumference + height). Schaeffer, 1949.</string>
+    <string name="tarif_method_algan">Algan</string>
+    <string name="tarif_method_algan_desc">V = a × D^b × H^c — Algan tariff for regular stands. Algan, 1958.</string>
+    <string name="tarif_method_ifn_rapide">IFN fast tariff</string>
+    <string name="tarif_method_ifn_rapide_desc">IFN 1-entry tariffs (n° 1–36). V = f(DBH). National Forest Inventory.</string>
+    <string name="tarif_method_ifn_lent">IFN slow tariff</string>
+    <string name="tarif_method_ifn_lent_desc">IFN 2-entry tables (DBH, H). National Forest Inventory.</string>
+    <string name="tarif_method_fgh">FGH</string>
+    <string name="tarif_method_fgh_desc">V = F × G × H — explicit variant with form factor.</string>
+    <string name="tarif_method_coef_forme">Form factor</string>
+    <string name="tarif_method_coef_forme_desc">V = G × H × f — Classic method with form/taper factor.</string>
+
+    <string name="tarif_select_dialog_title">Choose cubage method</string>
+    <string name="tarif_numero_dialog_title">Choose tariff number</string>
+    <string name="tarif_numero_range_format">Available: n° %1$d to %2$d</string>
+    <string name="tarif_recommended_for_essence">Recommended for %1$s: n°%2$d</string>
+    <string name="tarif_requires_height">This method requires tree heights.</string>
+    <string name="tarif_no_height_required">This method does not require heights (1-entry tariff).</string>
+    <string name="tarif_source_reference">Source: %1$s</string>
+
+    <string name="tarif_coef_forme_label">Form factor (f)</string>
+    <string name="tarif_coef_forme_default_format">Default for %1$s: %2$.2f</string>
+    <string name="tarif_coef_forme_override_hint">Custom factor (0.30–0.60)</string>
+
+    <string name="tarif_method_used_format">Method: %1$s</string>
+    <string name="tarif_numero_used_format">Tariff n°%1$d</string>
+
+    <!-- Produits bois -->
+    <string name="produit_bo">Sawlog</string>
+    <string name="produit_bi">Industrial wood</string>
+    <string name="produit_bch">Firewood</string>
+    <string name="produit_be">Energy wood</string>
+    <string name="produit_pate">Pulpwood</string>
+    <string name="produit_piq">Stakes</string>
+    <string name="produit_pot">Poles</string>
+
+    <string name="settings_section_decoupe">Product breakdown</string>
+    <string name="settings_decoupe_rules">Breakdown rules</string>
+    <string name="settings_decoupe_rules_desc">Configure volume allocation by product per species</string>
+
+    <!-- Martelage — sélection méthode de cubage -->
+    <string name="martelage_cubage_method">Cubage method</string>
+    <string name="martelage_cubage_method_change">Change</string>
+    <string name="martelage_cubage_method_current_format">Method: %1$s</string>
+    <string name="martelage_cubage_method_numero_format">Tariff n°%1$d</string>
+    <string name="martelage_cubage_method_saved">Cubage method saved</string>
+
+    <!-- GPS amélioré -->
+    <string name="gps_averaging_title">GPS averaging</string>
+    <string name="gps_averaging_desc">Collecting points for better accuracy…</string>
+    <string name="gps_averaging_progress_format">%1$d / %2$d readings</string>
+    <string name="gps_averaging_precision_format">Precision: ±%1$.1f m</string>
+    <string name="gps_averaging_done">GPS position recorded (averaged)</string>
+    <string name="gps_precision_excellent">Excellent (±%1$.1f m)</string>
+    <string name="gps_precision_good">Good (±%1$.1f m)</string>
+    <string name="gps_precision_moderate">Moderate (±%1$.1f m)</string>
+    <string name="gps_precision_poor">Poor (±%1$.1f m)</string>
+    <string name="gps_hdop_format">HDOP: %1$.1f</string>
+    <string name="gps_satellites_format">Sat: %1$d</string>
+    <string name="gps_start_averaging">Start GPS averaging</string>
+    <string name="gps_stop_averaging">Stop</string>
+    <string name="gps_num_readings">Number of readings</string>
+    <string name="gps_num_readings_desc">More readings = better accuracy (3–10 recommended)</string>
+
+    <!-- Export QGIS -->
+    <string name="export_qgis">Export QGIS</string>
+    <string name="export_qgis_geojson">GeoJSON (QGIS)</string>
+    <string name="export_qgis_geojson_desc">Stems with all forestry attributes, EPSG:4326</string>
+    <string name="export_qgis_geojson_done">GeoJSON export done (%1$d stems)</string>
+    <string name="export_qgis_no_gps_stems">No geolocated stems to export</string>
+    <string name="export_qgis_csv_xy">CSV with XY (QGIS)</string>
+    <string name="export_qgis_csv_xy_desc">Semicolon-separated with lon, lat columns</string>
+    <string name="export_qgis_csv_xy_done">CSV XY export done (%1$d stems)</string>
+    <string name="export_qgis_quick">Quick QGIS export</string>
+    <string name="export_qgis_choose_format">Choose export format</string>
+
+    <!-- Martelage — export rapide -->
+    <string name="martelage_export_qgis">QGIS</string>
+    <string name="martelage_export_csv">CSV</string>
+    <string name="martelage_export_choose">Export</string>
+
+    <!-- Wood quality -->
+    <string name="quality_dialog_title">Wood quality</string>
+    <string name="quality_assess">Assess quality</string>
+    <string name="quality_rectitude">Stem straightness</string>
+    <string name="quality_rect_0">Forked</string>
+    <string name="quality_rect_1">Curved</string>
+    <string name="quality_rect_2">Straight</string>
+    <string name="quality_rect_3">Very straight</string>
+    <string name="quality_branching">Branching</string>
+    <string name="quality_branch_0">Very branchy</string>
+    <string name="quality_branch_1">Branchy</string>
+    <string name="quality_branch_2">Pruned</string>
+    <string name="quality_branch_3">No branches</string>
+    <string name="quality_health">Health status</string>
+    <string name="quality_health_0">Rotten</string>
+    <string name="quality_health_1">Mistletoe/fungi</string>
+    <string name="quality_health_2">Healthy</string>
+    <string name="quality_health_3">Perfect</string>
+    <string name="quality_defects">Stem defects</string>
+    <string name="quality_defect_0">Large knots</string>
+    <string name="quality_defect_1">Medium knots</string>
+    <string name="quality_defect_2">Small knots</string>
+    <string name="quality_defect_3">None</string>
+    <string name="quality_result_grade">Grade: %1$s</string>
+    <string name="quality_result_product">Product: %1$s</string>
+    <string name="quality_result_secondary">Secondary product: %1$s</string>
+    <string name="quality_saved">Quality %1$s saved — %2$s</string>
+    <string name="quality_grade_a">Excellent (A)</string>
+    <string name="quality_grade_b">Good (B)</string>
+    <string name="quality_grade_c">Average (C)</string>
+    <string name="quality_grade_d">Poor (D)</string>
+
+    <!-- Lambert 93 -->
+    <string name="lambert93_coords">Lambert 93</string>
+    <string name="lambert93_e_format">E: %.0f m</string>
+    <string name="lambert93_n_format">N: %.0f m</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome_title">Welcome to GeoSylva</string>
+    <string name="onboarding_welcome_tagline">Forest inventory and timber marking</string>
+    <string name="onboarding_welcome_desc">Your professional field assistant for timber marking and forest inventory.</string>
+    <string name="onboarding_welcome_b1">Designed for foresters, surveyors and woodland managers</string>
+    <string name="onboarding_welcome_b2">Works offline — ideal for field conditions</string>
+    <string name="onboarding_welcome_b3">All your forestry data in one place</string>
+    <string name="onboarding_forest_title">Organize your forest</string>
+    <string name="onboarding_forest_desc">Structure your data into forests, plots and subplots. Add your species and configure the appropriate volume tariffs.</string>
+    <string name="onboarding_forest_b1">Create forests, plots and subplots freely</string>
+    <string name="onboarding_forest_b2">95+ tree species with detailed forestry data</string>
+    <string name="onboarding_forest_b3">Configure volume tariffs (Schaeffer, Algan, FGH…)</string>
+    <string name="onboarding_measure_title">Record your stems</string>
+    <string name="onboarding_measure_desc">Enter diameter, height, quality and GPS for each tree. Geolocation lets you visualize your stems on the map.</string>
+    <string name="onboarding_measure_b1">Quick diameter entry by class with +/− buttons</string>
+    <string name="onboarding_measure_b2">Wood quality grading (A/B/C/D) with product classification</string>
+    <string name="onboarding_measure_b3">Optional height input when tariff doesn\'t require it</string>
+    <string name="onboarding_gps_title">Precision GPS</string>
+    <string name="onboarding_gps_desc">Each stem can be geolocated automatically. Multi-reading averaging improves accuracy for precise mapping.</string>
+    <string name="onboarding_gps_b1">Multi-reading GPS averaging (3 to 8 readings)</string>
+    <string name="onboarding_gps_b2">3 capture modes: Fast, Standard, Precise</string>
+    <string name="onboarding_gps_b3">Accuracy monitoring with quality indicators</string>
+    <string name="onboarding_map_title">Interactive map</string>
+    <string name="onboarding_map_desc">Visualize your stems on the map with 12 cartographic layers including IGN, cadastre and forest maps.</string>
+    <string name="onboarding_map_b1">12 map layers: IGN, satellite, forests, cadastre…</string>
+    <string name="onboarding_map_b2">Download tiles for offline use in the field</string>
+    <string name="onboarding_map_b3">Tap on stems to see their details on the map</string>
+    <string name="onboarding_synthesis_title">Analyze your results</string>
+    <string name="onboarding_synthesis_desc">Complete dendrometric synthesis with dashboard charts: volume, basal area and estimated revenue by species.</string>
+    <string name="onboarding_synthesis_b1">Volume, basal area, density per hectare</string>
+    <string name="onboarding_synthesis_b2">Visual dashboard with charts and statistics</string>
+    <string name="onboarding_synthesis_b3">Timber marking simulation with harvest rates</string>
+    <string name="onboarding_export_title">Professional exports</string>
+    <string name="onboarding_export_desc">Export your data in multiple formats for reporting, GIS analysis or archiving.</string>
+    <string name="onboarding_export_b1">PDF synthesis report with full dendrometric tables</string>
+    <string name="onboarding_export_b2">GeoJSON, Shapefile and IBP QGIS export (ZIP + style)</string>
+    <string name="onboarding_export_b3">CSV and Excel exports for spreadsheet analysis</string>
+    <string name="onboarding_ibp_title">Biodiversity Assessment (IBP)</string>
+    <string name="onboarding_ibp_desc">Evaluate forest biodiversity with the official CNPF Potential Biodiversity Index protocol. GPS coordinates are captured automatically for each evaluation.</string>
+    <string name="onboarding_ibp_b1">10 criteria A–J: deadwood, microhabitats, veteran trees, forest continuity…</string>
+    <string name="onboarding_ibp_b2">Biodiversity dashboard: radar chart, priority actions, potential gain</string>
+    <string name="onboarding_ibp_b3">QGIS export (GeoJSON + CSV + QML style) and temporal comparison</string>
+    <!-- Onboarding — Martelage -->
+    <string name="onboarding_marking_title">Intelligent Timber Marking</string>
+    <string name="onboarding_marking_desc">Plan and simulate your thinning operations with a full dendrometric dashboard: basal area, volumes, harvest rates and economic projections.</string>
+    <string name="onboarding_marking_b1">Real-time marking stats: before/after basal area, harvest %, N/ha</string>
+    <string name="onboarding_marking_b2">CNPF typology (F1–F5), stand stability and biodiversity indicators</string>
+    <string name="onboarding_marking_b3">PDF synthesis report and CSV export for timber sale files</string>
+
+    <!-- Onboarding — Station Diagnostic -->
+    <string name="onboarding_station_title">Station Diagnostic</string>
+    <string name="onboarding_station_desc">Assess the ecological conditions of your stand: soil, climate, hydrology, topography. A multi-criteria engine guides silvicultural recommendations.</string>
+    <string name="onboarding_station_b1">Soil profile: texture, pH, trophic level, hydromorphology</string>
+    <string name="onboarding_station_b2">Species compatibility matrix with resilience scoring</string>
+    <string name="onboarding_station_b3">DRIAS 2050 climate projections with drought risk assessment</string>
+
+    <!-- Onboarding — Super Corrélateur -->
+    <string name="onboarding_corr_title">Climate Correlator</string>
+    <string name="onboarding_corr_desc">Cross your stand data with climate projections to identify the best-adapted species for 2050 — based on GIEC SSP scenarios.</string>
+    <string name="onboarding_corr_b1">Species × climate zone compatibility (current and 2050)</string>
+    <string name="onboarding_corr_b2">Climate change resilience score per species (1–5)</string>
+    <string name="onboarding_corr_b3">Prioritized silvicultural transition recommendations</string>
+
+    <!-- Onboarding — Flore / IBP enrichi -->
+    <string name="onboarding_flora_title">Plant Indicator Survey</string>
+    <string name="onboarding_flora_desc">Identify and record vascular plant indicator species to refine the station diagnosis and enrich the biodiversity assessment.</string>
+    <string name="onboarding_flora_b1">500+ vascular species database with Ellenberg values</string>
+    <string name="onboarding_flora_b2">Automatic inference of soil pH, moisture and trophic level</string>
+    <string name="onboarding_flora_b3">Family browser and fuzzy-search autocomplete</string>
+
+    <string name="onboarding_start">Get started</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_skip">Skip</string>
+
+    <!-- Contextual tips -->
+    <string name="tip_parcelles_title">Getting started</string>
+    <string name="tip_parcelles_msg">Create your first plot to start recording stems. Each plot can have multiple subplots with different tariff methods.</string>
+    <string name="tip_placettes_title">Subplots</string>
+    <string name="tip_placettes_msg">Add subplots to organize your inventory. Each subplot can have its own species and diameter classes.</string>
+    <string name="tip_essences_title">Quick tip</string>
+    <string name="tip_essences_msg">Tap a diameter class to add a stem. Long press to remove one. GPS is captured automatically if enabled in settings.</string>
+    <string name="tip_map_title">Map navigation</string>
+    <string name="tip_map_msg">Switch layers with the layer button. Download tiles for offline field use with the cloud button.</string>
+    <string name="tip_martelage_title">Timber marking</string>
+    <string name="tip_martelage_msg">Select species to include in the synthesis. Volume and revenue are computed automatically based on your tariff and prices.</string>
+
+    <!-- Export PDF -->
+    <string name="export_pdf">Export PDF</string>
+    <string name="pdf_title">Timber marking synthesis</string>
+    <string name="pdf_generated_at">Generated on %1$s</string>
+    <string name="pdf_scope">Scope</string>
+    <string name="pdf_surface">Surface area</string>
+    <string name="pdf_stems">Number of stems</string>
+    <string name="pdf_volume">Total volume</string>
+    <string name="pdf_volume_ha">Volume / ha</string>
+    <string name="pdf_basal_area">Basal area</string>
+    <string name="pdf_basal_area_ha">G / ha</string>
+    <string name="pdf_density_ha">Density / ha</string>
+    <string name="pdf_revenue">Estimated revenue</string>
+    <string name="pdf_revenue_ha">Revenue / ha</string>
+    <string name="pdf_dm">Dm (mean diameter)</string>
+    <string name="pdf_dg">Dg (quadratic diameter)</string>
+    <string name="pdf_h_mean">Mean height</string>
+    <string name="pdf_h_lorey">Lorey height</string>
+    <string name="pdf_per_essence_title">Synthesis by species</string>
+    <string name="pdf_col_essence">Species</string>
+    <string name="pdf_col_n">N</string>
+    <string name="pdf_col_v">V (m\u00b3)</string>
+    <string name="pdf_col_v_ha">V/ha</string>
+    <string name="pdf_col_g">G (m\u00b2)</string>
+    <string name="pdf_col_g_ha">G/ha</string>
+    <string name="pdf_col_price">\u20ac/m\u00b3</string>
+    <string name="pdf_col_revenue">Revenue (\u20ac)</string>
+    <string name="pdf_exported">PDF exported</string>
+    <string name="pdf_footer">GeoSylva \u2014 Professional forestry synthesis</string>
+
+    <string name="trace_title">GPS Trace</string>
+    <string name="trace_start">Start trace</string>
+    <string name="trace_stop">Stop recording</string>
+    <string name="trace_add_point">Add point</string>
+    <string name="trace_undo">Undo last point</string>
+    <string name="trace_save">Save</string>
+    <string name="trace_save_title">Save parcel trace</string>
+    <string name="trace_clear">Clear trace</string>
+    <string name="trace_points_count">%1$d points</string>
+    <string name="trace_surface_ha">Surface: %1$s ha</string>
+    <string name="trace_perimeter_m">Perimeter: %1$s m</string>
+    <string name="trace_name_label">Parcel name</string>
+    <string name="trace_saved">Parcel trace saved (%1$s ha)</string>
+
+    <string name="nav_title">Navigation</string>
+    <string name="nav_navigate_to">Navigate</string>
+    <string name="nav_stop">Stop navigation</string>
+    <string name="nav_arrived">Arrived!</string>
+    <string name="nav_accuracy">GPS ±%1$s m</string>
+    <string name="tab_synthesis">Synthesis</string>
+    <string name="tab_valuation">Valuation</string>
+    <string name="tab_analysis">Ecology</string>
+
+    <!-- Tree height measurement -->
+    <string name="height_measure_title">Measure tree height</string>
+    <string name="height_sensor_high">High precision (rotation vector ±0.5°)</string>
+    <string name="height_sensor_medium">Medium precision (accel. + gyro ±1°)</string>
+    <string name="height_sensor_basic">Basic precision (accelerometer ±2°)</string>
+    <string name="height_sensor_none">No sensor — manual angle entry</string>
+    <string name="height_measure_waist_title">Position the phone at waist height</string>
+    <string name="height_measure_waist_desc">Before measuring, hold your phone horizontally at waist height (approx. 1.5 m from the ground). This is the reference height used for all calculations. Adjust the value below if needed.</string>
+    <string name="height_measure_waist_ok">OK, phone positioned</string>
+    <string name="height_measure_waist_never_show">Do not show this reminder again</string>
+    <string name="height_measure_distance_desc">Stand at a known distance from the tree base. The farther you are, the more accurate the result. 15–25 m is ideal.</string>
+    <string name="height_measure_distance">Horizontal distance to tree</string>
+    <string name="height_measure_phone_height">Phone height from ground</string>
+    <string name="height_measure_phone_height_hint">Default: 1.5 m (waist height). Adjust to your own height.</string>
+    <string name="height_measure_use_base_angle">Measure base angle (sloped terrain)</string>
+    <string name="height_measure_use_base_angle_hint">Enable for sloped ground to improve accuracy.</string>
+    <string name="height_measure_aim_top">Aim at the treetop</string>
+    <string name="height_measure_aim_top_desc">Tilt your phone upward and aim at the highest point of the tree crown. Wait for the angle to stabilise, then tap Capture.</string>
+    <string name="height_measure_aim_base">Aim at the tree base</string>
+    <string name="height_measure_aim_base_desc">Tilt your phone downward and aim at the base of the trunk. Wait for the angle to stabilise, then tap Capture.</string>
+    <string name="height_measure_capture">Capture angle</string>
+    <string name="height_measure_next">Next</string>
+    <string name="height_measure_back">Back</string>
+    <string name="height_measure_use_result">Use this height</string>
+    <string name="height_measure_stability_format">Stability: %1$d%%</string>
+    <string name="height_measure_captured_format">Captured: %1$s°</string>
+    <string name="height_measure_result_title">Calculated height</string>
+    <string name="height_measure_precision_format">Precision: ±%1$s m</string>
+    <string name="height_measure_result_incomplete">Insufficient data to calculate height.</string>
+    <string name="height_measure_detail_distance">Distance</string>
+    <string name="height_measure_detail_angle_top">Top angle</string>
+    <string name="height_measure_detail_angle_base">Base angle</string>
+    <string name="height_measure_detail_phone_h">Phone height</string>
+    <string name="height_measure_angle_manual">Elevation angle to treetop</string>
+    <string name="height_measure_angle_manual_hint">Positive value: phone tilted upward. Example: 35.0°</string>
+    <string name="height_measure_open_button">Measure with sensor</string>
+    <string name="height_measure_step_format">Step %1$d / %2$d</string>
+    <string name="height_measure_auto_capture_countdown">Auto-capture in %1$d s…</string>
+    <string name="height_measure_recapture">Recapture</string>
+    <string name="height_measure_angle_warning_high">Very steep angle (&gt; 80°) — move back from the tree for better accuracy.</string>
+    <string name="height_measure_angle_warning_low">Very low angle (&lt; 5°) — you may be too far away, or the tree is very short.</string>
+    <string name="height_measure_angle_warning_base_pos">Base angle should be negative (phone pointing downward).</string>
+    <string name="height_measure_distance_chips">Quick select:</string>
+    <string name="height_measure_tip_steps">Tip: 1 adult step ≈ 0.7 m. Count your steps and multiply.</string>
+    <string name="height_camera_aim_button">Camera</string>
+    <string name="height_camera_permission_needed">Camera permission is required to use the AR viewfinder. Please grant the permission to aim at the treetop with the live camera feed.</string>
+    <string name="height_camera_grant">Grant permission</string>
+    <string name="height_camera_stabilize">Keep the phone steady, pointing at the treetop…</string>
+    <string name="height_measure_altitude_baro">Altitude (baro.): %1$d m</string>
+    <string name="height_measure_compass_badge">Bearing: %1$s %2$d°</string>
+    <string name="height_measure_gps_distance">GPS distance</string>
+    <!-- GPS distance dialog -->
+    <string name="gps_distance_title">GPS distance measurement</string>
+    <string name="gps_distance_no_permission">Location permission required. Please grant it in app settings.</string>
+    <string name="gps_distance_step1">Walk to the base of the tree, then tap "Record position 1".</string>
+    <string name="gps_distance_step2">Walk back to your measuring point, then tap "Record position 2".</string>
+    <string name="gps_distance_result_label">Measured distance</string>
+    <string name="gps_distance_accuracy">GPS accuracy: ±%1$d m</string>
+    <string name="gps_distance_waiting">Waiting for GPS signal…</string>
+    <string name="gps_distance_record1">Record position 1 (tree base)</string>
+    <string name="gps_distance_record2">Record position 2 (my position)</string>
+    <string name="gps_distance_pos1_recorded">Tree base: %1$s, %2$s</string>
+    <string name="gps_distance_use">Use this distance</string>
+    <!-- Placette photos (F6) -->
+    <string name="photo_take">Take photo</string>
+    <string name="photo_taken">Photo saved</string>
+    <string name="placette_photos_title">Photos</string>
+    <string name="photo_delete_title">Delete photo</string>
+    <string name="photo_viewer_title">Photo</string>
+    <string name="photo_rename">Rename</string>
+    <string name="photo_rename_title">Rename photo</string>
+    <string name="photo_rename_label">New name</string>
+    <string name="photo_renamed">Photo renamed</string>
+    <string name="photo_rename_error">Could not rename (name already used?)</string>
+    <string name="photo_export">Export</string>
+    <string name="photo_export_chooser">Export photos</string>
+    <string name="photo_select">Select</string>
+    <string name="photo_selected_count">%1$d selected</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+    <string name="photo_delete_confirm">Delete this photo permanently?</string>
+
+    <!-- Share synthèse -->
+    <string name="share">Share</string>
+    <string name="share_synthesis_header">🌲 GeoSylva — Timber Stand Report</string>
+    <string name="share_scope">Scope</string>
+    <string name="share_surface">Area</string>
+    <string name="share_revenue">Revenue</string>
+    <string name="share_footer">Generated by GeoSylva</string>
+    <string name="stems">stems</string>
+
+    <!-- Recherche essences -->
+    <string name="search_essences">Search species…</string>
+    <string name="search_no_result">No species match your search.</string>
+
+    <!-- Compteur G/ha live -->
+    <string name="live_g_total">G = %1$s m²</string>
+    <string name="live_g_ha">G = %1$s m²/ha</string>
+    <string name="live_n_total">N = %1$d stems</string>
+
+    <string name="ok">OK</string>
+    <string name="discard">Discard</string>
+    <string name="export_error">Export failed</string>
+    <string name="ibp_unsaved_title">Unsaved changes</string>
+    <string name="sort_name">Name</string>
+    <string name="sort_revenue">Value</string>
+    <string name="ibp_unsaved_message">You have unsaved changes. Save before leaving?</string>
+
+    <!-- IBP — Indice de Biodiversité Potentielle -->
+    <string name="ibp_title">IBP</string>
+    <string name="ibp_result">Result</string>
+    <string name="ibp_export_pdf">Export PDF</string>
+    <string name="ibp_saved">IBP evaluation saved</string>
+    <string name="ibp_score_label">Score IBP</string>
+    <string name="ibp_answered">answered</string>
+    <string name="ibp_evaluator">Evaluator</string>
+    <string name="ibp_date">Date</string>
+    <string name="ibp_global_note">Field notes</string>
+    <string name="ibp_global_note_hint">Observations, stand description, remarks…</string>
+    <string name="ibp_result_title">IBP Result</string>
+    <string name="ibp_recommendations">Management recommendations</string>
+    <string name="ibp_new_evaluation">New IBP evaluation</string>
+    <string name="ibp_view_evaluation">View IBP results</string>
+    <string name="ibp_no_evaluation">No IBP evaluation yet for this plot.</string>
+    <string name="ibp_start">Start IBP assessment</string>
+    <string name="ibp_edit">Edit IBP</string>
+    <string name="ibp_delete">Delete IBP</string>
+    <string name="ibp_delete_confirm">Delete this IBP evaluation?</string>
+    <string name="ibp_in_martelage">IBP: %1$s / 50 (%2$s)</string>
+    <string name="ibp_not_done">IBP: not assessed</string>
+    <string name="ibp_history_title">IBP History</string>
+    <string name="ibp_onboarding_title_1">Welcome to IBP</string>
+    <string name="ibp_onboarding_body_1">The Potential Biodiversity Index (IBP) evaluates the biodiversity of a forest stand through 10 criteria grouped in two categories.</string>
+    <string name="ibp_onboarding_title_2">Group A — Stand (7 criteria)</string>
+    <string name="ibp_onboarding_body_2">E1, E2: species richness. GB: large trees. BMS/BMC: standing/lying deadwood. DMH: micro-habitats. VS: shrub layer. Each criterion scores 0, 2 or 5 pts. Group A max: 35 pts.</string>
+    <string name="ibp_onboarding_title_3">Group B — Context (3 criteria)</string>
+    <string name="ibp_onboarding_body_3">CF: forest age/continuity. CO: connections to natural habitats. HC: complementary habitats. Group B max: 15 pts. IBP total = A + B (max 50 pts).</string>
+    <string name="ibp_onboarding_next">Next</string>
+    <string name="ibp_onboarding_start">Start evaluation</string>
+    <string name="ibp_evolution_title">Score evolution</string>
+
+    <!-- IBP Groups -->
+    <string name="ibp_group_a_title">Group A — Stand</string>
+    <string name="ibp_group_a_subtitle">7 criteria evaluated in the stand — 0, 2 or 5 pts each (max. 35 pts)</string>
+    <string name="ibp_group_a_short">Group A</string>
+    <string name="ibp_group_b_title">Group B — Context</string>
+    <string name="ibp_group_b_subtitle">3 criteria at the landscape scale — 0, 2 or 5 pts each (max. 15 pts)</string>
+    <string name="ibp_group_b_short">Group B</string>
+
+    <!-- IBP Levels -->
+    <string name="ibp_level_very_low">Very low</string>
+    <string name="ibp_level_low">Low</string>
+    <string name="ibp_level_medium">Medium</string>
+    <string name="ibp_level_good">Good</string>
+    <string name="ibp_level_very_good">Very good</string>
+
+    <!-- IBP Interpretive comments -->
+    <string name="ibp_comment_very_low">Stand with very low biodiversity potential. Urgent measures needed to diversify habitats and reduce forestry pressure.</string>
+    <string name="ibp_comment_low">Limited biodiversity potential. Several elements can be improved with targeted silvicultural adjustments.</string>
+    <string name="ibp_comment_medium">Medium biodiversity potential. The stand has real assets — maintaining and progressively enriching habitat elements is recommended.</string>
+    <string name="ibp_comment_good">Good biodiversity potential. The stand shows many favourable elements. Maintain current management and reinforce key habitat trees.</string>
+    <string name="ibp_comment_very_good">Excellent biodiversity potential! This stand is a model of favourable habitat diversity — preserve it with very light management.</string>
+
+    <!-- IBP Recommendations per level -->
+    <string name="ibp_rec_vl_1">Diversify tree species by favouring native species in planting.</string>
+    <string name="ibp_rec_vl_2">Leave standing and fallen dead wood in place — target ≥ 4 per ha.</string>
+    <string name="ibp_rec_vl_3">Reduce harvesting pressure; create senescence islands (≥ 5% of stand).</string>
+    <string name="ibp_rec_l_1">Identify and protect high-value biological species (oak, beech, willow, alder…).</string>
+    <string name="ibp_rec_l_2">Retain existing dead wood and allow new dead wood to form naturally.</string>
+    <string name="ibp_rec_l_3">Encourage shrub understorey development along edges and in gaps.</string>
+    <string name="ibp_rec_m_1">Retain large trees and trees bearing dendrohabitats (cavities, sap runs, ivy).</string>
+    <string name="ibp_rec_m_2">Strengthen connections with neighbouring natural habitats through hedges or corridors.</string>
+    <string name="ibp_rec_m_3">Enrich the forest edge with native shrub species (hawthorn, elderberry, spindle).</string>
+    <string name="ibp_rec_g_1">Maintain current management which is favourable to biodiversity.</string>
+    <string name="ibp_rec_g_2">Strengthen forest continuity by preserving old trees in the long term.</string>
+    <string name="ibp_rec_vg_1">Very light management recommended — preserve all habitat elements.</string>
+    <string name="ibp_rec_vg_2">Document and promote this stand as a territorial biodiversity reference.</string>
+
+    <!-- IBP Criterion A (E1) – Essences autochtones -->
+    <string name="ibp_e1_title">A – Native tree genera</string>
+    <string name="ibp_e1_subtitle">Count of distinct native genera (oak, beech, alder, ash, yew, maple…)</string>
+    <string name="ibp_e1_o0">0–1 native genus — Score 0 pt</string>
+    <string name="ibp_e1_o1pt">2 native genera — Score 1 pt</string>
+    <string name="ibp_e1_o1">3–4 native genera — Score 2 pts</string>
+    <string name="ibp_e1_o2">≥5 genera (≥3 at subalpine) — Score 5 pts</string>
+
+    <!-- IBP Criterion B (E2) – Structure verticale -->
+    <string name="ibp_e2_title">B – Vertical vegetation structure</string>
+    <string name="ibp_e2_subtitle">Count of strata present: herbaceous, low shrubs, medium shrubs, intermediate trees, tall trees</string>
+    <string name="ibp_e2_o1pt">2 strata present — Score 1 pt</string>
+    <string name="ibp_e2_o0">1 stratum only — Score 0 pt</string>
+    <string name="ibp_e2_o1">3–4 strata present — Score 2 pts</string>
+    <string name="ibp_e2_o2">All 5 strata present — Score 5 pts</string>
+
+    <!-- IBP Criterion C (BMS) – Bois morts sur pied -->
+    <string name="ibp_bms_title">C – Standing dead wood</string>
+    <string name="ibp_bms_subtitle">BMg (D &gt; 37.5 cm) and BMm (17.5–37.5 cm) standing dead trees ≥ 1 m tall</string>
+    <string name="ibp_bms_o0">None (BMg/ha &lt; 1 and BMm/ha &lt; 1) — Score 0 pt</string>
+    <string name="ibp_bms_o1pt">BMm ≥ 1/ha (BMg &lt; 1/ha) — Score 1 pt</string>
+    <string name="ibp_bms_o1">BMg ≥ 1/ha — Score 2 pts</string>
+    <string name="ibp_bms_o2">BMg ≥ 3/ha — Score 5 pts</string>
+
+    <!-- IBP Criterion D (BMC) – Bois morts au sol -->
+    <string name="ibp_bmc_title">D – Fallen dead wood</string>
+    <string name="ibp_bmc_subtitle">BMg (D &gt; 37.5 cm) and BMm (17.5–37.5 cm) fallen logs or stumps &lt; 1 m tall</string>
+    <string name="ibp_bmc_o1pt">BMm ≥ 1/ha (BMg &lt; 1/ha) — Score 1 pt</string>
+    <string name="ibp_bmc_o0">None (BMg/ha &lt; 1 and BMm/ha &lt; 1) — Score 0 pt</string>
+    <string name="ibp_bmc_o1">BMg ≥ 1/ha — Score 2 pts</string>
+    <string name="ibp_bmc_o2">BMg ≥ 3/ha — Score 5 pts</string>
+
+    <!-- IBP Criterion E (GB) – Très gros bois vivants -->
+    <string name="ibp_gb_title">E – Very large living trees (TGB/GB)</string>
+    <string name="ibp_gb_subtitle">TGB: D &gt; 67.5 cm | GB: 47.5–67.5 cm (lower thresholds on low-fertility sites)</string>
+    <string name="ibp_gb_o0">TGB &lt; 1/ha and GB &lt; 1/ha — Score 0 pt</string>
+    <string name="ibp_gb_o1pt">GB ≥ 1/ha (TGB &lt; 1/ha) — Score 1 pt</string>
+    <string name="ibp_gb_o1">TGB ≥ 1/ha — Score 2 pts</string>
+    <string name="ibp_gb_o2">TGB ≥ 5/ha — Score 5 pts</string>
+
+    <!-- IBP Criterion F (DMH) – Dendromicrohabitats -->
+    <string name="ibp_dmh_title">F – Trees bearing dendromicrohabitats (dmh)</string>
+    <string name="ibp_dmh_subtitle">Cavities, woodpecker holes, sap runs, nests, bark loss, fungi, epiphytes (15 types)</string>
+    <string name="ibp_dmh_o0">&lt; 2 dmh-bearing trees/ha — Score 0 pt</string>
+    <string name="ibp_dmh_o1pt">2 dmh-bearing trees/ha — Score 1 pt</string>
+    <string name="ibp_dmh_o1">3–4 dmh-bearing trees/ha — Score 2 pts</string>
+    <string name="ibp_dmh_o2">≥ 5 dmh-bearing trees/ha — Score 5 pts</string>
+
+    <!-- IBP Criterion G (VS) – Milieux ouverts florifères -->
+    <string name="ibp_vs_title">G – Flowering open habitats</string>
+    <string name="ibp_vs_subtitle" formatted="false">Clearings, glades, wide forest edges — % of traversed area (1–5% = optimal)</string>
+    <string name="ibp_vs_o0">0% open area — Score 0 pt</string>
+    <string name="ibp_vs_o1" formatted="false">&lt; 1% or &gt; 5% open area — Score 2 pts</string>
+    <string name="ibp_vs_o2">1–5% open flowering area — Score 5 pts</string>
+
+    <!-- IBP Criterion H (CF) – Continuité temporelle -->
+    <string name="ibp_cf_title">H – Temporal continuity of forest cover</string>
+    <string name="ibp_cf_subtitle">Based on historical maps (état-major) and site inspection</string>
+    <string name="ibp_cf_o0">Recent forest — entirely cleared then replanted (&lt;50 yrs) — Score 0 pt</string>
+    <string name="ibp_cf_o1">Partially continuous — local clearing or partial replanting — Score 2 pts</string>
+    <string name="ibp_cf_o2">Ancient forest — continuously wooded since at least 19th c. — Score 5 pts</string>
+
+    <!-- IBP Criterion I (CO) – Milieux aquatiques -->
+    <string name="ibp_co_title">I – Aquatic habitats</string>
+    <string name="ibp_co_subtitle">Streams, ponds, marshes, springs, bogs within or bordering the stand</string>
+    <string name="ibp_co_o0">No aquatic habitat type — Score 0 pt</string>
+    <string name="ibp_co_o1">1 aquatic habitat type — Score 2 pts</string>
+    <string name="ibp_co_o2">2 or more aquatic habitat types — Score 5 pts</string>
+
+    <!-- IBP Criterion J (HC) – Milieux rocheux -->
+    <string name="ibp_hc_title">J – Rocky habitats</string>
+    <string name="ibp_hc_subtitle">Cliffs, scree, outcrops, caves, boulders, gravel banks within the stand</string>
+    <string name="ibp_hc_o0">No rocky habitat type — Score 0 pt</string>
+    <string name="ibp_hc_o1">1 rocky habitat type — Score 2 pts</string>
+    <string name="ibp_hc_o2">2 or more rocky habitat types — Score 5 pts</string>
+
+    <!-- IBP Growth Conditions (IBP v3) -->
+    <string name="ibp_growth_conditions">Growth conditions</string>
+    <string name="ibp_growth_lowland">Lowland / Hill (&lt;900 m)</string>
+    <string name="ibp_growth_highland">Mountain (&gt;900 m)</string>
+    <string name="ibp_growth_subalpine">Subalpine</string>
+    <string name="ibp_growth_mediterranean">Mediterranean</string>
+
+    <!-- IBP Priority improvements -->
+    <string name="ibp_priority_improvements">Priority improvements</string>
+
+    <!-- IBP Per-criterion actionable tips -->
+    <string name="ibp_tip_e1">A: diversify with native genera (oak, alder, ash, maple…); favour natural regeneration over monocultures.</string>
+    <string name="ibp_tip_e2">B: create gaps or reduce canopy density to allow shrub and ground layers to establish.</string>
+    <string name="ibp_tip_gb">E: permanently mark TGB (D&gt;67.5 cm) and exempt them from harvest as biodiversity anchors.</string>
+    <string name="ibp_tip_bms">C: retain ≥3 BMg/ha as snags; ring-bark live trees &gt;37.5 cm to create future dead wood.</string>
+    <string name="ibp_tip_bmc">D: leave all felled trunks ≥37.5 cm on the ground; target ≥3 BMg/ha lying.</string>
+    <string name="ibp_tip_dmh">F: identify and mark dmh trees (cavities, sap runs, nests, fungi) — keep ≥5/ha intact.</string>
+    <string name="ibp_tip_vs">G: maintain or create 1–5% open glades or wide edges with flowering vegetation.</string>
+    <string name="ibp_tip_cf">H: use historical maps (état-major) to verify ancient forest status; protect old-growth patches.</string>
+    <string name="ibp_tip_co">I: protect wetland patches, springs, and stream banks; avoid drainage of moist depressions.</string>
+    <string name="ibp_tip_hc">J: preserve rocky outcrops, cliff faces, scree, and boulder accumulations from disturbance.</string>
+
+    <!-- IBP Modes -->
+    <string name="ibp_mode_label">Evaluation mode</string>
+    <string name="ibp_mode_complet">Complete (A–J)</string>
+    <string name="ibp_mode_rapide">Quick (5 criteria)</string>
+    <string name="ibp_mode_bois_mort">Dead wood (C–E)</string>
+    <string name="ibp_mode_contexte">Context (H–J)</string>
+    <string name="ibp_mode_peuplement">Stand (A–G)</string>
+
+    <!-- IBP Count panels -->
+    <string name="ibp_count_per_ha">trees/ha</string>
+    <string name="ibp_count_bmg_standing">BMg standing (∅>37.5 cm) /ha</string>
+    <string name="ibp_count_bmm_standing">BMm standing (17.5–37.5 cm) /ha</string>
+    <string name="ibp_count_bmg_ground">BMg on ground (∅>37.5 cm) /ha</string>
+    <string name="ibp_count_bmm_ground">BMm on ground (17.5–37.5 cm) /ha</string>
+    <string name="ibp_count_tgb">TGB (∅>67.5 cm) /ha</string>
+    <string name="ibp_count_gb">GB (∅ 47.5–67.5 cm) /ha</string>
+    <string name="ibp_count_dmh_trees">Trees bearing ≥1 dmh /ha</string>
+    <string name="ibp_count_open_pct">Open flowering habitat (%)</string>
+    <string name="ibp_count_terrain_title">Field count (trees/ha)</string>
+    <string name="ibp_count_living_title">Field count – live trees (trees/ha)</string>
+    <string name="ibp_auto_score">Automatically calculated score: %1$d pts</string>
+    <string name="ibp_dmh_checklist_title">DMH types observed (check those present)</string>
+
+    <!-- IBP Reference screen -->
+    <string name="ibp_reference_title">IBP Field Guide</string>
+    <string name="ibp_reference_source">Source: CNPF / IDF – IBP v3.2 (2020)</string>
+    <string name="ibp_reference_levels_title">IBP Levels</string>
+    <string name="ibp_reference_modes_title">Evaluation Modes</string>
+    <string name="ibp_reference_criteria_title">Criteria Sheets A–J</string>
+    <string name="ibp_reference_thresholds">Scoring thresholds</string>
+    <string name="ibp_reference_protocol">Field protocol</string>
+
+    <!-- IBP Projects screen -->
+    <string name="ibp_projects_title">IBP Evaluations</string>
+    <string name="ibp_projects_empty">No IBP evaluation yet</string>
+    <string name="ibp_projects_empty_hint">Open a stand (Placette) and start an IBP evaluation from the stand detail screen.</string>
+    <string name="ibp_create_select_parcelle">Select a parcel</string>
+    <string name="ibp_create_select_placette">Select a stand</string>
+    <string name="ibp_create_no_parcelle">No parcel found. Create a parcel first.</string>
+    <string name="ibp_create_no_placette">No stand in this parcel. Add a stand first.</string>
+
+    <!-- Map GPS quality warning -->
+    <string name="map_gps_poor_warning">%1$d stem(s) with poor GPS accuracy (&gt;20 m) · tap to dismiss</string>
+
+    <!-- Map measure tool -->
+    <string name="measure_tool_title">Measure</string>
+    <string name="measure_mode_distance">Distance</string>
+    <string name="measure_mode_area">Area</string>
+    <string name="measure_tap_hint">Tap the map to add points</string>
+    <string name="measure_panel_distance">Distance: %1$s</string>
+    <string name="measure_panel_area">Area: %1$s</string>
+    <string name="measure_points_count">%1$d point(s)</string>
+    <string name="measure_undo">Undo last</string>
+    <string name="measure_clear">Clear</string>
+    <string name="measure_save">Save</string>
+    <string name="measure_save_title">Save measurement</string>
+    <string name="measure_name_label">Name (optional)</string>
+    <string name="measure_saved">Measurement saved</string>
+
+    <!-- Hardcoded text extraction -->
+    <string name="unit_m2">m²</string>
+    <string name="unit_m">m</string>
+    <string name="placeholder_surface">e.g. 314</string>
+    <string name="placeholder_height">e.g. 22.5</string>
+    <string name="placeholder_height_short">e.g. 18.5</string>
+    <string name="placeholder_nha">e.g. 450</string>
+    <string name="placeholder_gha">e.g. 28.5</string>
+    <string name="gps_count_label">GPS: %1$d</string>
+    <string name="product_col_product">Product</string>
+    <string name="product_col_vol">Vol. m³</string>
+    <string name="product_col_total">Total</string>
+    <string name="price_quality_label">Quality</string>
+    <string name="price_dmin_label">D min (cm)</string>
+    <string name="price_dmax_label">D max (cm)</string>
+    <string name="map_height_label">H %1$d m</string>
+
+    <!-- Price editor labels -->
+    <string name="price_quality_all">All qualities</string>
+    <string name="price_quality_a">A — Excellent</string>
+    <string name="price_quality_b">B — Good</string>
+    <string name="price_quality_c">C — Average</string>
+    <string name="price_quality_d">D — Poor</string>
+    <string name="price_product_all">All products</string>
+    <string name="price_product_bo">Timber</string>
+    <string name="price_product_bi">Industrial wood</string>
+    <string name="price_product_bch">Firewood</string>
+    <string name="price_product_be">Energy wood</string>
+    <string name="price_product_merain">Stave wood</string>
+    <string name="price_product_tranchage">Slicing</string>
+    <string name="price_product_sciage_q">Quality sawn timber</string>
+    <string name="price_product_grume_l">Long log</string>
+    <string name="price_product_poteau">Pole</string>
+    <string name="price_product_sciage_s">Standard sawn timber</string>
+    <string name="price_product_palette">Pallet</string>
+    <string name="price_product_pate">Pulp</string>
+    <string name="price_essence_all">All species</string>
+    <string name="price_search_hint">Search species or product…</string>
+    <string name="price_error_generic">Error</string>
+
+    <!-- Onboarding updated strings -->
+    <string name="onboarding_height_title">Measure tree heights</string>
+    <string name="onboarding_height_desc">Use your phone\'s sensors to measure tree height precisely — no equipment needed. The clinometer method calculates height from tilt angle and distance.</string>
+    <string name="onboarding_height_b1">Auto-detects available sensors (rotation vector, gyro, accelerometer)</string>
+    <string name="onboarding_height_b2">Precision estimate shown for each measurement (±0.5° to ±2°)</string>
+    <string name="onboarding_height_b3">Adjustable phone height reference, waist positioning guide</string>
+
+    <!-- RGPD consent onboarding page (R-C3) -->
+    <string name="onboarding_privacy_title">Privacy &amp; Data Protection</string>
+    <string name="onboarding_privacy_desc">GeoSylva respects your privacy. All data stays on your device. Learn what data is collected and how it is protected.</string>
+    <string name="onboarding_privacy_b1">All forestry data (trees, plots, parcels, photos) is stored locally and encrypted with AES-256 (SQLCipher + Android Keystore)</string>
+    <string name="onboarding_privacy_b2">No personal data is sent to any server. Network is used for map tiles and, when enabled, price-grid synchronization. HTTPS and strict destination validation protect these exchanges.</string>
+    <string name="onboarding_privacy_b3">You control your data: export (CSV/XLSX/JSON), delete, or revoke GPS/camera permissions at any time. See the full privacy policy in Settings.</string>
+    <string name="onboarding_accept">Accept &amp; Continue</string>
+    <string name="onboarding_decline">Decline</string>
+    <string name="onboarding_decline_message">GeoSylva requires your consent to the privacy policy to function. You can close the app and come back later.</string>
+
+    <!-- i18n: currency & unit labels (I-C3) -->
+    <string name="label_eur_per_m3">€/m³</string>
+    <string name="format_price_eur">%s €</string>
+
+    <!-- i18n: StationPhotoGalleryBlock (I-C1) -->
+    <string name="photo_add_title">Add a photo</string>
+    <string name="photo_take_picture">Take a photo</string>
+    <string name="photo_import_gallery">Import from gallery</string>
+
+    <!-- i18n: DiagnosticScreen (I-C1) -->
+    <string name="diag_results_title">Diagnostic results</string>
+    <string name="diag_score_global">Global score</string>
+    <string name="diag_stand">Stand</string>
+    <string name="diag_component_scores">Component scores</string>
+    <string name="diag_component_station">Station</string>
+    <string name="diag_component_biodiversity">Biodiversity</string>
+
+    <!-- i18n: PackManagerScreen (I-C1) -->
+    <string name="packs_title">Data packs</string>
+    <string name="pack_install">Install</string>
+    <string name="pack_update_available">Update available</string>
+    <string name="pack_uninstall">Uninstall</string>
+    <string name="pack_status_installed">Installed</string>
+    <string name="pack_status_embedded">Embedded</string>
+    <string name="pack_status_available">Available</string>
+    <string name="pack_status_error">Error</string>
+
+    <!-- i18n: StationPhotoGalleryBlock (I-C1) -->
+    <string name="station_photo_photos_documents">Photos &amp; Documents</string>
+    <string name="station_photo_min_required_format">Minimum %1$d photos required to finalize the diagnostic.</string>
+    <string name="station_photo_none">No photo</string>
+    <string name="station_photo_empty_desc">Tap to take a photo or import a terrain image</string>
+    <string name="station_photo_new">New photo</string>
+    <string name="station_photo_edit">Edit photo</string>
+    <string name="station_photo_legend_optional">Caption (optional)</string>
+    <string name="station_photo_type">Photo type</string>
+
+    <!-- i18n: DiagnosticScreen extras (I-C1) -->
+    <string name="diag_not_found">Diagnostic not found</string>
+    <string name="diag_score_very_favorable">Very favorable</string>
+    <string name="diag_score_favorable">Favorable</string>
+    <string name="diag_score_medium">Medium</string>
+    <string name="diag_score_unfavorable">Unfavorable</string>
+    <string name="diag_score_unsuitable">Unsuitable</string>
+    <string name="diag_essences_adequation">Species — station suitability</string>
+    <string name="diag_recommendations">Recommendations</string>
+    <string name="diag_unit_stems_ha">stems/ha</string>
+
+    <!-- i18n: StationDiagnosticScreen (I-C1) -->
+    <string name="station_diag_releve_title">Station survey</string>
+    <string name="station_diag_brouillon">Draft</string>
+    <string name="station_diag_finalize">Finalize</string>
+    <string name="station_diag_incomplete">Incomplete</string>
+    <string name="station_diag_soil_features">Soil characteristics</string>
+    <string name="station_diag_pierrosite">Stoniness</string>
+    <string name="station_diag_hydro_tasks_cm">Mottles (cm)</string>
+    <string name="station_diag_bedrock_obs">Bedrock (obs.)</string>
+    <string name="station_diag_ecological_gradients">Ecological gradients (1 to 5)</string>
+    <string name="station_diag_hydrique_slider">Hydric (dry -&gt; waterlogged)</string>
+    <string name="station_diag_indicative_species_notes">Indicator species &amp; notes</string>
+    <string name="station_diag_indicative_species_hint">Indicator species (comma-separated)</string>
+    <string name="station_diag_xerophilous_present">Xerophilous species present</string>
+    <string name="station_diag_mesophilous_present">Mesophilous species present</string>
+    <string name="station_diag_hygrophilous_present">Hygrophilous species present</string>
+    <string name="station_diag_vegetation_notes">Additional notes on vegetation</string>
+    <string name="station_diag_ecological_profile">Ecological profile</string>
+    <string name="station_diag_identified_constraints">Identified constraints</string>
+    <string name="station_diag_inconsistency_alerts">Inconsistency alerts</string>
+    <string name="station_diag_pedological_profile">Pedological profile</string>
+    <string name="station_diag_ph_estimated">Estimated pH</string>
+    <string name="station_diag_bedrock">Bedrock</string>
+    <string name="station_diag_hydromorphie_at_cm_format">Hydromorphy at %1$d cm</string>
+
+    <!-- i18n: PackManagerScreen extras (I-C1) -->
+    <string name="pack_no_regional">No regional pack available for this selection.</string>
+    <string name="pack_installed_summary_format">%1$d pack(s) installed · %2$.1f MB</string>
+    <string name="pack_all_format">All (%1$d)</string>
+    <string name="pack_national_offline_format">National data — available offline (%1$d sp.)</string>
+    <string name="pack_national_label">National</string>
+    <string name="pack_built_format">v%1$s · built %2$s</string>
+    <string name="pack_feature_flora_format">%1$d flora species</string>
+    <string name="pack_feature_station_rules">Station rules</string>
+    <string name="pack_feature_regional_srgs">Regional SRGS</string>
+    <string name="pack_feature_drias">DRIAS projections</string>
+    <string name="pack_error_retry">Error — Retry</string>
+    <string name="pack_all">All</string>
+
+    <!-- i18n: DiagnosticPhotoCaptureSection (I-C1) -->
+    <string name="photo_choose_gallery">Choose from gallery</string>
+    <string name="photo_classify">Categorize photo</string>
+    <string name="photo_type_label">Type:</string>
+    <string name="photo_none_min_required_format">No photo — %1$d required minimum</string>
+    <string name="photo_no_legend">No caption</string>
+
+    <!-- i18n: EditableSynthesisBlock (I-C1) -->
+    <string name="synthesis_title">Diagnostic summary</string>
+    <string name="synthesis_modified">Modified</string>
+    <string name="synthesis_back_to_auto">Back to automatic</string>
+    <string name="synthesis_auto">Automatic summary</string>
+    <string name="synthesis_your_version">Your version of the summary</string>
+    <string name="synthesis_auto_btn">Auto</string>
+    <string name="synthesis_save">Save</string>
+    <string name="synthesis_personal_notes">Personal notes</string>
+    <string name="synthesis_written">Written</string>
+    <string name="synthesis_exploitation_constraints">Exploitation constraints</string>
+    <string name="synthesis_owner_note">Owner/manager note</string>
+    <string name="synthesis_free_notes">Free notes</string>
+    <string name="synthesis_notes_placeholder">Specific observations, historical context, planned monitoring…</string>
+
+    <!-- i18n: IbpEvaluationScreen extras (I-C1) -->
+    <string name="ibp_strata_present">Strata present (check those observed)</string>
+    <string name="ibp_aquatic_types">Types of aquatic habitats present</string>
+    <string name="ibp_rocky_types">Types of rocky habitats present</string>
+    <string name="ibp_temporal_continuity">Temporal continuity — observed situation</string>
+    <string name="ibp_native_species_genres">Native species genres present</string>
+    <string name="ibp_mode_eval">Evaluation mode</string>
+    <string name="ibp_field_counting">Field counting (trees/ha)</string>
+    <string name="ibp_bmg_help">BMg = snag or trunk Ø&gt;37.5 cm at base | BMm = Ø 17.5–37.5 cm</string>
+    <string name="ibp_dmh_types_observed">Types of dmh observed (check those present)</string>
+    <string name="ibp_open_habitat_surface">Surface in open floriferous habitats (% of plot)</string>
+    <string name="ibp_score_auto_format">Auto-calculated score: %1$d pts</string>
+
+    <!-- i18n: MartelageScreen extras (I-C1) -->
+    <string name="martelage_tab_management">Management</string>
+    <string name="martelage_super_correlateur">Super Correlator</string>
+    <string name="martelage_correlation_desc">Multi-source correlation · 2050 resilience · sylvicultural action plan</string>
+    <string name="martelage_quick_field_entry">Quick field entry</string>
+    <string name="martelage_quick_field_desc">G + triangle without individual stems</string>
+    <string name="martelage_basal_area_g">Basal area G</string>
+    <string name="martelage_structure_triangle" formatted="false">Structure triangle (% on pre-counted stems ≥ 17.5 cm)</string>
+    <string name="martelage_pct_normalized" formatted="false">Percentages are automatically normalized to 100%</string>
+
+    <!-- i18n: ParcellesScreen extras (I-C1) -->
+    <string name="parcelles_menu_ibp_biodiversity">IBP Biodiversity</string>
+    <string name="parcelles_menu_sylvicultural_diagnostic">Sylvicultural diagnostic</string>
+
+    <!-- ===== Content descriptions for accessibility (TalkBack) ===== -->
+    <string name="cd_back">Back</string>
+    <string name="cd_close">Close</string>
+    <string name="cd_add">Add</string>
+    <string name="cd_delete">Delete</string>
+    <string name="cd_remove">Remove</string>
+    <string name="cd_save">Save</string>
+    <string name="cd_search">Search</string>
+    <string name="cd_clear">Clear</string>
+    <string name="cd_edit">Edit</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_info">Information</string>
+    <string name="cd_more">More options</string>
+    <string name="cd_menu">Menu</string>
+    <string name="cd_expand">Expand</string>
+    <string name="cd_collapse">Collapse</string>
+    <string name="cd_layers">Map layers</string>
+    <string name="cd_zoom_in">Zoom in</string>
+    <string name="cd_zoom_out">Zoom out</string>
+    <string name="cd_north">Reset north</string>
+    <string name="cd_gps_locate">Locate me</string>
+    <string name="cd_navigate">Navigate to</string>
+    <string name="cd_export">Export</string>
+    <string name="cd_import">Import</string>
+    <string name="cd_share">Share</string>
+    <string name="cd_filter">Filter</string>
+    <string name="cd_sort">Sort</string>
+    <string name="cd_refresh">Refresh</string>
+    <string name="cd_confirm">Confirm</string>
+    <string name="cd_cancel">Cancel</string>
+    <string name="cd_play">Start</string>
+    <string name="cd_stop">Stop</string>
+    <string name="cd_upload">Upload</string>
+    <string name="cd_download">Download</string>
+    <string name="cd_calculate">Calculate</string>
+    <string name="cd_functions">Functions</string>
+    <string name="cd_straighten">Measure tool</string>
+    <string name="cd_diagnostic">Diagnostic</string>
+    <string name="cd_timeline">Timeline</string>
+    <string name="cd_guide">Guide</string>
+    <string name="cd_result">Result</string>
+    <string name="cd_pdf">Export PDF</string>
+    <string name="cd_camera">Camera</string>
+    <string name="cd_photo">Photo</string>
+    <string name="cd_height">Height measurement</string>
+    <string name="cd_ecology">Ecology</string>
+    <string name="cd_analytics">Analytics</string>
+    <string name="cd_storage">Storage</string>
+    <string name="cd_language">Language</string>
+    <string name="cd_font_size">Font size</string>
+    <string name="cd_color_theme">Color theme</string>
+    <string name="cd_background_image">Background image</string>
+    <string name="cd_forest">Forest</string>
+    <string name="cd_map">Map</string>
+    <string name="cd_quality_badge">Quality badge</string>
+    <string name="cd_color_picker">Pick color</string>
+    <string name="cd_warning">Warning</string>
+    <string name="cd_check">Check</string>
+    <string name="cd_star">Star</string>
+    <string name="cd_compatibility">Compatibility</string>
+    <string name="cd_battery">Battery</string>
+    <string name="cd_volume">Volume</string>
+    <string name="cd_vibration">Vibration</string>
+    <string name="cd_bug_report">Bug report</string>
+    <string name="cd_privacy">Privacy</string>
+    <string name="cd_block">Block</string>
+    <string name="cd_attach_money">Price</string>
+    <string name="cd_public">National</string>
+    <string name="cd_format_list">List</string>
+    <string name="cd_cloud_download">Download pack</string>
+    <string name="cd_near_me">Near me</string>
+    <string name="cd_explore">Explore map</string>
+    <string name="cd_tune">Adjust</string>
+    <string name="cd_swap">Swap</string>
+    <string name="cd_summary">Summary</string>
+
+    <!-- ===== SuperCorrelateurScreen ===== -->
+    <string name="supercorr_title">Super Correlator</string>
+    <string name="supercorr_subtitle">Multi-source forestry intelligence</string>
+    <string name="supercorr_loading">Analysis in progress…</string>
+    <string name="supercorr_error">Error during calculation</string>
+    <string name="supercorr_alertes_critiques">Critical health alerts</string>
+    <string name="supercorr_plan_action">Sylvicultural action plan</string>
+    <string name="supercorr_bilan_essence">Species assessment &amp; 2050 resilience</string>
+    <string name="supercorr_essences_recommandees">Recommended species for the future</string>
+    <string name="supercorr_risques_climatiques">Identified climate risks</string>
+    <string name="supercorr_alertes_sanitaires">Health alerts</string>
+    <string name="supercorr_ameliorer_precision">Improve accuracy</string>
+    <string name="supercorr_donnees_supplementaires">Additional data would improve diagnostic quality.</string>
+    <string name="supercorr_diag_station">Station diag.</string>
+    <string name="supercorr_diag_ripisylve">Riparian diag.</string>
+    <string name="supercorr_score_resilience">Resilience score</string>
+    <string name="supercorr_chip_dendro">Dendro</string>
+    <string name="supercorr_chip_station">Station</string>
+    <string name="supercorr_chip_ripisylve">Riparian</string>
+    <string name="supercorr_chip_climat">Climate</string>
+    <string name="supercorr_zone">Zone: %1$s</string>
+    <string name="supercorr_tiges_basal">%1$d stems (%2$d%% G)</string>
+    <string name="supercorr_cc_resilience">CC %1$d/5</string>
+    <string name="supercorr_station_compat">Station: %1$s</string>
+    <string name="supercorr_priorite_1">Priority 1</string>
+    <string name="supercorr_priorite_2">Priority 2</string>
+    <string name="supercorr_opportuniste">Opportunistic</string>
+    <string name="supercorr_resilience_cc">CC resilience: %1$d/5</string>
+    <string name="supercorr_horizon">Horizon: %1$s</string>
+    <string name="supercorr_essences_concernees">Species: %1$s</string>
+    <string name="supercorr_concerne">Concerns: %1$s</string>
+    <string name="supercorr_sources_donnees">Data sources</string>
+    <string name="supercorr_completude">Completeness: %1$d%%</string>
+    <string name="supercorr_source_tiges">Stems (%1$d)</string>
+    <string name="supercorr_source_gps">GPS</string>
+    <string name="supercorr_synthese">Summary</string>
+
+    <!-- ===== StandClassificationScreen ===== -->
+    <string name="standclass_title">Stand Classification</string>
+    <string name="standclass_no_data">No data available</string>
+    <string name="standclass_no_data_desc">Run a marking operation on this plot to get the classification.</string>
+    <string name="standclass_identified">Identified stand</string>
+    <string name="standclass_code_cnpf">CNPF code: %1$s</string>
+    <string name="standclass_triangle">Structure triangle</string>
+    <string name="standclass_triangle_desc">Regime × Capital G × Structure 1–9</string>
+    <string name="standclass_position">Position: %1$s</string>
+    <string name="standclass_gb_tgb">GB + TGB combined: %1$.0f%%</string>
+    <string name="standclass_dist_unavailable">Distribution by classes unavailable</string>
+    <string name="standclass_implications">Sylvicultural implications</string>
+    <string name="standclass_strengths">Stand strengths</string>
+    <string name="standclass_risks">Identified risks</string>
+    <string name="standclass_srgs">Regional SRGS pathway</string>
+    <string name="standclass_srgs_desc">Regional Sylvicultural Management Scheme</string>
+    <string name="standclass_regime">Regime</string>
+    <string name="standclass_structure_cnpf">CNPF structure</string>
+    <string name="standclass_objective">Suggested objective: %1$s</string>
+
+    <!-- ===== RipisylveDiagnosticScreen ===== -->
+    <string name="ripi_title">Riparian diagnostic</string>
+    <string name="ripi_calculate">Calculate</string>
+    <string name="ripi_modify">Edit observation</string>
+    <string name="ripi_section_continuite">1. Wooded continuity</string>
+    <string name="ripi_section_largeur">2. Riparian width</string>
+    <string name="ripi_section_strates">3. Vertical structure</string>
+    <string name="ripi_section_diversite">4. Species diversity</string>
+    <string name="ripi_section_penalites">5. Penalties</string>
+    <string name="ripi_continuite_label">Linear canopy cover (%)</string>
+    <string name="ripi_points">+%1$d pts</string>
+    <string name="ripi_strate_herbacee">Herbaceous stratum (≤ 70 cm)</string>
+    <string name="ripi_strate_arbustive">Shrub stratum (70 cm – 7 m)</string>
+    <string name="ripi_strate_arborescente">Tree stratum (≥ 7 m)</string>
+    <string name="ripi_nb_especes">Number of woody species observed</string>
+    <string name="ripi_tpb">Diameter classes: VSB (≤7 cm)</string>
+    <string name="ripi_petit_bois">Small wood (7–20 cm)</string>
+    <string name="ripi_moyen_bois">Medium wood (20–40 cm)</string>
+    <string name="ripi_gros_bois">Large wood (≥40 cm)</string>
+    <string name="ripi_invasives_label">Invasive species (%)</string>
+    <string name="ripi_sanitaire_label">Degraded health state (%)</string>
+    <string name="ripi_stabilite_label">Instability / scouring (%)</string>
+    <string name="ripi_score_estime">Estimated score</string>
+    <string name="ripi_positif">Positive: +%1$d</string>
+    <string name="ripi_penalite">Penalty: %1$d</string>
+    <string name="ripi_points_forts">Strengths</string>
+    <string name="ripi_points_faibles">Weaknesses</string>
+    <string name="ripi_plan_action">Action plan</string>
+    <string name="ripi_invasives_detectees">⚠ Invasive species detected</string>
+
+    <!-- i18n : IbpCompareScreen -->
+    <string name="ibpcompare_title">IBP Temporal Evolution</string>
+    <string name="ibpcompare_need_two">At least 2 evaluations are needed\nto see the evolution</string>
+    <string name="ibpcompare_by_criterion">Evolution by criterion</string>
+    <string name="ibpcompare_count">%1$d evaluations compared</string>
+    <string name="ibpcompare_delta_pts">%1$s%2$d pts</string>
+    <string name="ibpcompare_evolution">evolution</string>
+    <string name="ibpcompare_score_total">Total score /50</string>
+    <string name="ibpcompare_group_a_vs_b">Group A vs Group B</string>
+    <string name="ibpcompare_group_a_35">Group A /35</string>
+    <string name="ibpcompare_group_b_15">Group B /15</string>
+    <string name="ibpcompare_summary_table">Summary table</string>
+    <string name="ibpcompare_criterion">Criterion</string>
+    <string name="ibpcompare_total">Total</string>
+
+    <!-- i18n : IbpDiagnosticScreen -->
+    <string name="ibpdiag_title">Biodiversity Diagnostic</string>
+    <string name="ibpdiag_no_eval">No IBP evaluation\nfor this plot</string>
+    <string name="ibpdiag_score_global">Global IBP Score</string>
+    <string name="ibpdiag_completeness">Completeness</string>
+    <string name="ibpdiag_radar_profile">Radar profile A–J</string>
+    <string name="ibpdiag_criteria_detail">Criteria detail</string>
+    <string name="ibpdiag_priority_actions">Priority actions</string>
+    <string name="ibpdiag_gain_pts">+%1$d pts</string>
+    <string name="ibpdiag_potential">Improvement potential</string>
+    <string name="ibpdiag_current">Current</string>
+    <string name="ibpdiag_potential_group_a">Group A potential</string>
+    <string name="ibpdiag_potential_hint">+%1$d pts accessible through stand management (group A)</string>
+    <string name="ibpdiag_evolution_count">Evolution (%1$d evaluations)</string>
+    <string name="ibpdiag_score_initial_to_current">Initial score %1$d → current %2$d</string>
+    <string name="ibpdiag_delta_pts">%1$s%2$d pts</string>
+
+    <!-- i18n : IbpReferenceScreen -->
+    <string name="ibpref_title">Field IBP Guide</string>
+    <string name="ibpref_criteria_sheets">Criteria sheets A–J</string>
+    <string name="ibpref_ibp_full">IBP – Potential Biodiversity Index</string>
+    <string name="ibpref_method">CNPF / IDF Method – Version 3.2</string>
+    <string name="ibpref_intro">The IBP assesses the potential biodiversity of a forest stand by scoring 10 criteria split into two groups (A–G = Stand &amp; Management; H–J = Context). Each criterion scores 0, 2 or 5 points. Total score out of 50 points.</string>
+    <string name="ibpref_levels">IBP Levels</string>
+    <string name="ibpref_range_pts">%1$d–%2$d pts</string>
+    <string name="ibpref_group_a_peuplement">Group A (Stand)</string>
+    <string name="ibpref_group_b_contexte">Group B (Context)</string>
+    <string name="ibpref_modes">Evaluation modes</string>
+    <string name="ibpref_mode_complet_label">Complete (A–J)</string>
+    <string name="ibpref_mode_complet_desc">Full evaluation of all 10 criteria. Recommended for a first visit or biodiversity assessment.</string>
+    <string name="ibpref_mode_rapide_label">Quick (A,C,E,F,H)</string>
+    <string name="ibpref_mode_rapide_desc">5 essential criteria for a quick field evaluation in under 30 min.</string>
+    <string name="ibpref_mode_bois_mort_label">Deadwood (C,D,E)</string>
+    <string name="ibpref_mode_bois_mort_desc">Focus on deadwood and large tree criteria. Ideal after harvest or inventory.</string>
+    <string name="ibpref_mode_contexte_label">Context (H,I,J)</string>
+    <string name="ibpref_mode_contexte_desc">Ecological context criteria only. Can be done on map/Geoportail.</string>
+    <string name="ibpref_mode_peuplement_label">Stand (A–G)</string>
+    <string name="ibpref_mode_peuplement_desc">Group A only. For intra-stand evaluation without landscape context.</string>
+    <string name="ibpref_thresholds">Scoring thresholds</string>
+    <string name="ibpref_pts">%1$d pts</string>
+    <string name="ibpref_protocol">Field protocol</string>
+    <string name="ibpref_source">Source: CNPF / IDF – IBP v3.2 (2020)</string>
+    <string name="ibpref_references">Gurnell et al. (2009) &amp; Larrieu et al. (2012)</string>
+
+    <!-- i18n : IbpEvaluationScreen extras -->
+    <string name="ibpeval_over_50"> / 50</string>
+    <string name="ibpeval_context_vs_peuplement">IBP Context vs Stand &amp; Management</string>
+    <string name="ibpeval_peuplement_ag">Stand A–G: %1$s</string>
+    <string name="ibpeval_contexte_hj">Context H–J: %1$s</string>
+    <string name="ibpeval_peuplement_axis">← Stand &amp; Management (A–G) / 35 →</string>
+    <string name="ibpeval_big_tree_count_title">Field count – living trees (trees/ha)</string>
+    <string name="ibpeval_open_habitat_threshold" formatted="false">Cases 1/2/4: 1–5% → 5 pts. Case 3: ≥1% → 5 pts. Otherwise &gt;0% → 2 pts.</string>
+    <string name="ibpeval_tgb_subalpine">VLT (∅&gt;47.5 cm) /ha</string>
+    <string name="ibpeval_tgb_default">VLT (∅&gt;67.5 cm) /ha</string>
+    <string name="ibpeval_gb_subalpine">LT (∅ 27.5–47.5 cm) /ha</string>
+    <string name="ibpeval_gb_default">LT (∅ 47.5–67.5 cm) /ha</string>
+    <string name="ibpeval_hint_example">e.g. 5.0</string>
+    <string name="ibpeval_badge_5_pts">→ 5 pts</string>
+    <string name="ibpeval_badge_2_pts">→ 2 pts</string>
+    <string name="ibpeval_badge_1_pt">→ 1 pt</string>
+    <string name="ibpeval_badge_0_pt">→ 0 pt</string>
+    <string name="ibp_save_error">Save failed. The evaluation was not changed.</string>
+    <string name="ibp_method_current_title">IBP FR v3.2 — current protocol</string>
+    <string name="ibp_method_current_body">CNPF reference dated 2026-02-02. Observations and scores are stored with this version.</string>
+    <string name="ibp_method_history_title">History — %1$s</string>
+    <string name="ibp_method_history_body">This evaluation remains viewable and exportable, but it is locked to prevent silent recalculation with the v3.2 scale.</string>
+    <string name="ibp_start_v32">Create a new v3.2 evaluation</string>
+    <string name="ibp_read_only">Read only</string>
+    <string name="ibp_history_observations">Recorded historical observations</string>
+    <string name="ibp_history_no_details">No additional field details were stored with this version.</string>
+    <string name="ibp_dmh_v32_instruction">Enter trees/ha for each of the 15 groups. Each group contributes at most 2 to the official total.</string>
+    <string name="ibp_dmh_v32_total">Official capped total: %1$.1f</string>
+    <string name="ibp_dmh_group_count">Trees/ha</string>
+    <string name="ibp_dmh_group_capped">Retained contribution: %1$.1f / 2</string>
+    <string name="ibpeval_dmh_count_label">Trees bearing ≥1 dmh (trees/ha)</string>
+    <string name="ibpeval_zone_0">0%</string>
+    <string name="ibpeval_zone_low">&lt;1% or &gt;5%</string>
+    <string name="ibpeval_zone_optimal">1–5%</string>
+
+    <!-- DashboardScreen -->
+    <string name="dashboard_tiges_unit">stems</string>
+    <string name="dashboard_freq_dist">Frequency distribution</string>
+    <string name="dashboard_stand_structure">Stand structure</string>
+    <string name="dashboard_liocourt_coeff">Liocourt coefficient (q)</string>
+    <string name="dashboard_structure_regular">Regular (Liocourt)</string>
+    <string name="dashboard_structure_young">Young or homogeneous stand</string>
+    <string name="dashboard_structure_irregular">Strongly irregular structure</string>
+    <string name="dashboard_structure_heterogeneous">Heterogeneous structure</string>
+    <string name="dashboard_classes_diam">Diam. classes</string>
+    <string name="dashboard_diam_min">Min Ø</string>
+    <string name="dashboard_diam_max">Max Ø</string>
+    <string name="dashboard_fertility_classes">Fertility classes</string>
+    <string name="dashboard_zone_format">Zone: %1$s</string>
+    <string name="dashboard_fertility_disclaimer">Based on ONF/CNPF — indicative. Without known age, precision depends on available dendrometric measurements.</string>
+    <string name="dashboard_tree_count_format">%1$d stems</string>
+    <string name="dashboard_avg_diam_format">Ø %1$.0f cm</string>
+    <string name="dashboard_height_h0_format">H0 ~%1$.1f m</string>
+    <string name="dashboard_height_hl_format">HL ~%1$.1f m</string>
+
+    <!-- ExpertIbpExtension -->
+    <string name="expertibp_title">🎯 Expert Forestry Analysis</string>
+    <string name="expertibp_station_title">📍 Station Analysis</string>
+    <string name="expertibp_station_index">Station index (IA):</string>
+    <string name="expertibp_station_index_value">%1$d/30</string>
+    <string name="expertibp_station_class">Station class:</string>
+    <string name="expertibp_station_class_value">Station %1$s</string>
+    <string name="expertibp_fertility_class">Fertility class:</string>
+    <string name="expertibp_fertility_class_value">F%1$d</string>
+    <string name="expertibp_basal_area">Basal area:</string>
+    <string name="expertibp_basal_area_value">%1$.1f m²/ha</string>
+    <string name="expertibp_production_title">📊 ONF Production Data</string>
+    <string name="expertibp_mean_height">Mean height ONF:</string>
+    <string name="expertibp_mean_height_value">%1$.1f m</string>
+    <string name="expertibp_mean_diam">Mean diameter ONF:</string>
+    <string name="expertibp_mean_diam_value">%1$.1f cm</string>
+    <string name="expertibp_total_volume">Total volume ONF:</string>
+    <string name="expertibp_total_volume_value">%1$.0f m³/ha</string>
+    <string name="expertibp_annual_increment">Annual increment:</string>
+    <string name="expertibp_annual_increment_value">%1$.1f m³/ha/yr</string>
+    <string name="expertibp_production_unavailable">Production data unavailable for this species</string>
+    <string name="expertibp_growth_title">🌱 Growth Analysis</string>
+    <string name="expertibp_current_mean_diam">Current mean diameter:</string>
+    <string name="expertibp_current_mean_diam_value">%1$.1f cm</string>
+    <string name="expertibp_current_mean_height">Current mean height:</string>
+    <string name="expertibp_current_mean_height_value">%1$.1f m</string>
+    <string name="expertibp_mean_increment">Mean annual increment (MAI):</string>
+    <string name="expertibp_mean_increment_value">%1$.2f cm/yr</string>
+    <string name="expertibp_current_increment">Current annual increment (CAI):</string>
+    <string name="expertibp_current_increment_value">%1$.2f cm/yr</string>
+    <string name="expertibp_prediction_10y">10-year prediction:</string>
+    <string name="expertibp_prediction_10y_value">%1$.1f cm</string>
+    <string name="expertibp_optimal_harvest_diam">Optimal harvest diameter:</string>
+    <string name="expertibp_optimal_harvest_diam_value">%1$d cm</string>
+    <string name="expertibp_optimal_harvest_age">Optimal harvest age:</string>
+    <string name="expertibp_optimal_harvest_age_value">%1$d yrs</string>
+    <string name="expertibp_recommendations_title">💡 Silvicultural Recommendations</string>
+    <string name="expertibp_optimal_species">Optimal species:</string>
+    <string name="expertibp_planting_density">Planting density:</string>
+    <string name="expertibp_planting_density_value">%1$d stems/ha</string>
+    <string name="expertibp_first_thinning">First thinning:</string>
+    <string name="expertibp_first_thinning_value">%1$d yrs</string>
+    <string name="expertibp_recommendations_label">Recommendations:</string>
+    <string name="expertibp_recommendation_bullet">• %1$s</string>
+
+    <!-- TigeSylvicultureDialog -->
+    <string name="tigesyl_title">Advanced silviculture</string>
+    <string name="tigesyl_essence_diam_format">%1$s — ⌀ %2$s cm</string>
+    <string name="tigesyl_kraft_class">Kraft class (dominance)</string>
+    <string name="tigesyl_health_state">Health state</string>
+    <string name="tigesyl_health_sain">Healthy</string>
+    <string name="tigesyl_health_moyen">Medium</string>
+    <string name="tigesyl_health_mauvais">Poor</string>
+    <string name="tigesyl_health_mort">Dead</string>
+    <string name="tigesyl_vigor">Vigor</string>
+    <string name="tigesyl_vigor_forte">Strong</string>
+    <string name="tigesyl_vigor_moyenne">Medium</string>
+    <string name="tigesyl_vigor_faible">Weak</string>
+    <string name="tigesyl_origin">Origin</string>
+    <string name="tigesyl_origin_franc_pied">Standard seedling</string>
+    <string name="tigesyl_origin_taillis">Coppice</string>
+    <string name="tigesyl_origin_plantation">Plantation</string>
+    <string name="tigesyl_origin_natural">Natural regeneration</string>
+    <string name="tigesyl_habitat_tree">Habitat tree (TreM)</string>
+    <string name="tigesyl_habitat_yes">Yes — TreM potential</string>
+    <string name="tigesyl_habitat_no">No</string>
+    <string name="tigesyl_validate">Validate</string>
+    <string name="tigesyl_cancel">Cancel</string>
+    <string name="tigesyl_kraft_1">1 — Elite / Co-dominant dominant</string>
+    <string name="tigesyl_kraft_2">2 — Co-dominant</string>
+    <string name="tigesyl_kraft_3">3 — Dominated</string>
+    <string name="tigesyl_kraft_4">4 — Suppressed</string>
+    <string name="tigesyl_kraft_5">5 — Dying/dead</string>
+
+    <!-- MapScreen -->
+    <string name="map_diam_format">⌀ %1$d cm</string>
+    <string name="map_precision_format">±%1$s m</string>
+    <string name="map_no_saved_measures">No saved measurements</string>
+
+    <!-- MartelageScreen -->
+    <string name="martelage_g_per_ha_class_format">%1$.1f m²/ha  →  class %2$s</string>
+    <string name="martelage_cnpf_info">CNPF code: %1$s  ·  Structure %2$s  ·  LB+VLL = %3$d%%</string>
+
+    <!-- TarifDocumentationScreen -->
+    <string name="tarifdoc_tab_databases">Databases</string>
+    <string name="tarifdoc_tab_tarifs">Tariffs</string>
+    <string name="tarifdoc_tab_formulas">Formulas</string>
+    <string name="tarifdoc_title">Tariff Documentation</string>
+    <string name="tarifdoc_tarif_num_format">n°%1$d</string>
+    <string name="tarifdoc_db_ifn_title">IFN — National Forest Inventory</string>
+    <string name="tarifdoc_db_ifn_subtitle">National volume database</string>
+    <string name="tarifdoc_db_ifn_content">Volume tariffs established by IGN based on IFN inventories covering the entire metropolitan territory. Used for species not covered by local tariffs.</string>
+    <string name="tarifdoc_db_schaeffer1_title">Schaeffer 1 entry</string>
+    <string name="tarifdoc_db_schaeffer1_subtitle">Volume by diameter only</string>
+    <string name="tarifdoc_db_schaeffer1_content">1-entry tariff based solely on diameter at 1.30 m. Accuracy ±15–25%. Recommended when heights are not available. Valid for homogeneous stands.</string>
+    <string name="tarifdoc_db_schaeffer2_title">Schaeffer 2 entries</string>
+    <string name="tarifdoc_db_schaeffer2_subtitle">Volume by diameter and height</string>
+    <string name="tarifdoc_db_schaeffer2_content">2-entry tariff integrating diameter AND height. Accuracy ±8–12%. Recommended for precise volume assessments. Requires dominant height measurement.</string>
+    <string name="tarifdoc_db_algan_title">Algan (Regional allometry)</string>
+    <string name="tarifdoc_db_algan_subtitle">INRAE allometric equations</string>
+    <string name="tarifdoc_db_algan_content">Allometric equations developed by INRAE for the main French forest species. They integrate regional variability and tree form.</string>
+    <string name="tarifdoc_db_chaude_title">Chaudé (1991)</string>
+    <string name="tarifdoc_db_chaude_subtitle">Species group tariffs</string>
+    <string name="tarifdoc_db_chaude_content">Tariffs by species groups established by Pierre Chaudé. Widely used in French private forestry. Available for the main production species.</string>
+
+    <!-- i18n : StationDiagnosticScreen extras (I-C2) -->
+    <string name="stationdiag_title">Station Survey</string>
+    <string name="stationdiag_draft">Draft</string>
+    <string name="stationdiag_finalize_btn">Finalize</string>
+    <string name="stationdiag_commune">Municipality</string>
+    <string name="stationdiag_alt_m">Alt (m)</string>
+    <string name="stationdiag_gps_format">GPS: %1$.5f°N, %2$.5f°E</string>
+    <string name="stationdiag_slope_pct">Slope (%)</string>
+    <string name="stationdiag_water_dist_m">Dist. Water (m)</string>
+    <string name="stationdiag_exposition">Exposure</string>
+    <string name="stationdiag_position_topo">Topo Position</string>
+    <string name="stationdiag_depth_cm">Depth (cm)</string>
+    <string name="stationdiag_texture">Texture</string>
+    <string name="stationdiag_pierrosite">Stoniness</string>
+    <string name="stationdiag_humus">Humus</string>
+    <string name="stationdiag_drainage">Drainage</string>
+    <string name="stationdiag_test_hcl">HCl Test</string>
+    <string name="stationdiag_ph_est">pH (est.)</string>
+    <string name="stationdiag_tasks_cm">Mottles (cm)</string>
+    <string name="stationdiag_bedrock_obs">Bedrock (obs.)</string>
+    <string name="stationdiag_report_validation">Report Validation</string>
+    <string name="stationdiag_photos_required_format">At least %1$d photos required to finalize (e.g. soil profile, landscape, vegetation). %2$d/%1$d added.</string>
+    <string name="stationdiag_station_diagnosis">STATION DIAGNOSIS</string>
+    <string name="stationdiag_confidence_format">Confidence: %1$s</string>
+    <string name="stationdiag_engorgement_warning">⚠ Waterlogging</string>
+    <string name="stationdiag_depiecement_warning">⚠ Rooting restriction</string>
+    <string name="stationdiag_assets">Assets</string>
+    <string name="stationdiag_constraints">Constraints</string>
+    <string name="stationdiag_history_format">History (%1$d surveys)</string>
+    <string name="stationdiag_unknown_location">Unknown location</string>
+    <string name="stationdiag_history_location_format">%1$s — Alt. %2$s m</string>
+    <string name="stationdiag_forest_station">FOREST STATION</string>
+    <string name="stationdiag_hcl_format">HCl: %1$s</string>
+    <string name="stationdiag_species_outside_db">Species outside database (comma-separated)</string>
+    <string name="stationdiag_observed_categories">Observed categories</string>
+    <string name="stationdiag_vegetation_notes">Vegetation notes</string>
+    <string name="stationdiag_suggested_observations">Suggested observations</string>
+    <string name="stationdiag_gradient_evolution_format">Gradient evolution (%1$d surveys)</string>
+    <string name="stationdiag_identified_risks">Identified risks</string>
+    <string name="stationdiag_drought_resistant_essences_format">Drought-resistant species — %1$s</string>
+    <string name="stationdiag_climate_vulnerability_score">Climate vulnerability score</string>
+    <string name="stationdiag_score_over_100_format">%1$d / 100</string>
+    <string name="stationdiag_essence_compatibility_format">Species compatibility (%1$d)</string>
+    <string name="stationdiag_tap_for_details">Tap for details</string>
+    <string name="stationdiag_auto_deductions">Automatic deductions</string>
+    <string name="stationdiag_coherence_taxons_format">%1$s — %2$d taxa analyzed</string>
+    <string name="stationdiag_advice_format">Tip: %1$s</string>
+    <string name="stationdiag_cross_deductions_format">Cross-deductions (%1$d)</string>
+
+    <!-- i18n : DiagnosticMenuScreen (I-C2) -->
+    <string name="diagmenu_title">Sylvicultural diagnosis</string>
+    <string name="diagmenu_analysis_in_progress">Analysis in progress…</string>
+    <string name="diagmenu_launch_diagnostic">Run diagnosis</string>
+    <string name="diagmenu_relaunch_analysis">Re-run analysis</string>
+    <string name="diagmenu_ser_format">SER %1$s — %2$s</string>
+    <string name="diagmenu_ser_unresolved">SER unresolved — location required</string>
+    <string name="diagmenu_prerequisites">Prerequisites</string>
+    <string name="diagmenu_last_diagnostic">Last diagnosis</string>
+    <string name="diagmenu_algo_cnpf">Deterministic CNPF algorithm</string>
+    <string name="diagmenu_algo_description">Multi-criteria scoring: SER fertility × 40%%, climate suitability × 20%%, soil × 20%%, CC2050 resilience × 10%%, health risks × 10%%. 20 species evaluated.</string>
+    <string name="diagmenu_prereq_station">Environmental station (soil, climate, SER)</string>
+    <string name="diagmenu_prereq_stand">Stand (plots &amp; inventoried stems)</string>
+    <string name="diagmenu_error_format">Error: %1$s</string>
+    <string name="diagmenu_error_unknown">unknown</string>
+
+    <!-- i18n : DiagnosticScreen extras (I-C2) -->
+    <string name="diagscreen_not_found">Diagnosis not found</string>
+    <string name="diagscreen_essences_adequation">Species — station suitability</string>
+    <string name="diagscreen_recommendations">Recommendations</string>
+
+    <!-- i18n : StationHeaderCard (I-C2) -->
+    <string name="stationheader_parcelle_format">Plot %1$s</string>
+    <string name="stationheader_gps_coords_format">%1$.4f°N  %2$.4f°E  %3$s</string>
+    <string name="stationheader_altitude_m_format">• %1$d m</string>
+    <string name="stationheader_gps_not_captured">GPS not captured</string>
+    <string name="stationheader_draft_badge">DRAFT</string>
+    <string name="stationheader_forest_station">FOREST STATION</string>
+    <string name="stationheader_finalize">Finalize</string>
+    <string name="stationheader_action_photo">Photo</string>
+    <string name="stationheader_action_export">Export</string>
+    <string name="stationheader_action_draft">Draft</string>
+
+    <!-- i18n : CortegeQualityBlock (I-C2) -->
+    <string name="cortege_taxons_analyzed_format">%1$d taxa analyzed / %2$d total</string>
+    <string name="cortege_credibility_gradients">Gradient credibility</string>
+    <string name="cortege_conflicts_detected">Conflicts detected</string>
+    <string name="cortege_conflict_format">%1$s : %2$s ↔ %3$s</string>
+    <string name="cortege_direction_dry">→ Dry</string>
+    <string name="cortege_direction_fresh">→ Fresh/wet</string>
+
+    <!-- i18n : FloraFamilyBrowserSheet (I-C2) -->
+    <string name="flora_select_species">Select species</string>
+
+    <!-- i18n : MartelageSummaryCards -->
+    <string name="martelage_elancement_hd">Slenderness H/D (conifers)</string>
+    <string name="martelage_surface_terriere">Basal area G/ha</string>
+    <string name="martelage_densite_nha">Density N/ha</string>
+
+    <!-- i18n : MapScreen -->
+    <string name="map_mesures_sauvegardees">Saved measurements</string>
+
+    <!-- i18n : OnboardingScreen -->
+    <string name="onboarding_version_info">Version 2.1 · Offline-first · CNPF</string>
+
+    <!-- i18n : ProductBreakdownCard -->
+    <string name="product_qualite">Quality %1$s</string>
+
+    <string name="station_diag_title">Station Diagnosis</string>
+    <string name="station_diag_export_pdf">Export PDF</string>
+    <string name="station_diag_topo_sol">Topography &amp; Soil</string>
+    <string name="station_diag_manual_gradients">Manual gradients</string>
+    <string name="station_diag_photos_validation">Photos &amp; Validation</string>
+    <string name="station_diag_auto_context">Auto-deduced context</string>
+    <string name="station_diag_gps_coords">GPS coordinates</string>
+    <string name="station_diag_altitude">Altitude</string>
+    <string name="station_diag_slope">Slope</string>
+    <string name="station_diag_points_to_verify">Points to verify / observe</string>
+    <string name="station_diag_flora_cortege">Flora assemblage</string>
+    <string name="station_diag_flora_placeholder">e.g. fern, oxalis, bramble, lily of the valley…</string>
+    <string name="station_diag_computed_gradients">Computed gradients (flora)</string>
+    <string name="station_diag_conflits">Detected conflicts (%1$d)</string>
+    <string name="station_diag_climate_future">Climate Future (DRIAS 2021)</string>
+    <string name="station_diag_zone">Zone %1$s</string>
+    <string name="station_diag_warming_2050">Warming 2050\n(SSP8.5)</string>
+    <string name="station_diag_summer_precip_2050">Summer precip. 2050\n(SSP8.5)</string>
+    <string name="station_diag_drought_per_year_2050">Drought/year\n2050</string>
+
+    <!-- i18n : CortegeQualityBlock titles -->
+    <string name="cortege_suffisant">Sufficient flora set</string>
+    <string name="cortege_partiel">Partial flora set</string>
+    <string name="cortege_contradictoire">Contradictory flora set</string>
+    <string name="cortege_trop_pauvre">Flora set too poor</string>
+
+    <!-- i18n : SmartSummaryCard -->
+    <string name="smart_facteur_limitant">Limiting factor</string>
+    <string name="smart_hydrique">Water</string>
+    <string name="smart_trophique">Trophic</string>
+    <string name="smart_station_terrain">Field station</string>
+    <string name="smart_flore_ellenberg">Flora (Ellenberg)</string>
+
+    <!-- i18n : DiagnosticComponents -->
+    <string name="diag_photos_terrain">Field photos (%1$d%2$s)</string>
+    <string name="diag_ajouter_photo">Add a photo</string>
+    <string name="diag_compris">Got it</string>
+
+    <!-- i18n : RipisylveFunctionalDiagBlock -->
+    <string name="ripi_func_title">Riparian Functional Diagnosis</string>
+    <string name="ripi_func_strates">strata</string>
+    <string name="ripi_func_microhabitats">microhabitats</string>
+    <string name="ripi_func_classes_diam">diameter class(es)</string>
+
+    <!-- i18n : TipCard -->
+    <string name="tip_close">Close</string>
+
+    <!-- i18n : ConfidenceCard -->
+    <string name="conf_points_forts">Strengths (%1$d)</string>
+    <string name="conf_limites">Limitations (%1$d)</string>
+    <string name="conf_contradictions">Contradictions (%1$d)</string>
+
+    <!-- i18n : StationDiagTheme -->
+    <string name="station_theme_corriger">Correct</string>
+
+    <!-- i18n : StandClassificationBannerCard -->
+    <string name="standclass_typologique_cnpf">CNPF Typology</string>
+
+    <!-- i18n : IbpTremPanel -->
+    <string name="ibp_foret_ancienne_db">Ancient forest confirmed in DB</string>
+    <string name="ibp_anciennete_estimee">Estimated age</string>
+    <string name="ibp_connectivite_spatiale">Spatial connectivity</string>
+
+    <!-- i18n : SmartPlantInputField -->
+    <string name="smart_parcourir">Browse</string>
+
+    <!-- i18n : TreeHeightMeasureDialog -->
+    <string name="tree_height_placeholder">e.g.: 15</string>
+
+    <!-- Quintessences identity and developer diagnostics -->
+    <string name="settings_section_quintessences">Quintessences account</string>
+    <string name="settings_account_title">My Quintessences account</string>
+    <string name="settings_account_signed_out">Not signed in — field features remain available</string>
+    <string name="settings_account_signed_in">Connected to the GSIE ecosystem</string>
+    <string name="settings_developer_options">Developer options</string>
+    <string name="settings_developer_options_desc">GSIE connection and app diagnostics</string>
+    <string name="developer_taps_remaining">%1$d more taps to enable developer options</string>
+    <string name="developer_mode_enabled_message">Developer options enabled</string>
+
+    <string name="identity_login_title">Connect GeoSylva</string>
+    <string name="identity_login_subtitle">One Quintessences account for GeoSylva and the entire environmental ecosystem.</string>
+    <string name="identity_google_continue">Continue with Google</string>
+    <string name="identity_google_unavailable">Google sign-in is not configured yet</string>
+    <string name="identity_or">or</string>
+    <string name="identity_email">Email address</string>
+    <string name="identity_password">Password</string>
+    <string name="identity_password_confirmation">Confirm password</string>
+    <string name="identity_display_name">Display name (optional)</string>
+    <string name="identity_sign_in">Sign in</string>
+    <string name="identity_create_account">Create my account</string>
+    <string name="identity_mode_sign_in">Sign in</string>
+    <string name="identity_mode_register">Create account</string>
+    <string name="identity_professional">Professional sign-in</string>
+    <string name="identity_in_development">In development</string>
+    <string name="identity_welcome">Welcome</string>
+    <string name="identity_no_account">No account yet?</string>
+    <string name="identity_signup_web">Create an account</string>
+    <string name="identity_mfa_title">Two-step verification</string>
+    <string name="identity_mfa_hint">Enter the code shown by your authenticator app.</string>
+    <string name="identity_mfa_hint_recovery">Enter one of your recovery codes.</string>
+    <string name="identity_mfa_code">6-digit code</string>
+    <string name="identity_mfa_recovery_code">Recovery code</string>
+    <string name="identity_mfa_use_recovery">Use a recovery code</string>
+    <string name="identity_mfa_use_totp">Use the authenticator app</string>
+    <string name="identity_mfa_verify">Verify</string>
+    <string name="identity_mfa_cancel">Back to sign-in</string>
+    <string name="identity_mfa_setup_required">This account must first set up two-factor authentication from the web interface.</string>
+    <string name="identity_continue_offline">Continue offline</string>
+    <string name="identity_server_not_configured">The GSIE server is not configured in this build.</string>
+    <string name="identity_server_unavailable">The GSIE server is currently unreachable.</string>
+    <string name="identity_retry">Retry</string>
+    <string name="identity_password_hint">12 to 128 characters</string>
+    <string name="identity_session_secured">The session is encrypted on this device. Your field data remains available offline.</string>
+    <string name="identity_error_invalid_input">Check the email address, password and confirmation.</string>
+    <string name="identity_error_invalid_credentials">Email address or password is incorrect.</string>
+    <string name="identity_error_account_exists">An account already exists for this email address.</string>
+    <string name="identity_error_link_required">This Google identity must be explicitly linked to the existing account.</string>
+    <string name="identity_error_secure_storage">Secure session storage is unavailable on this device.</string>
+    <string name="identity_error_google_config">Google sign-in is not configured for this build.</string>
+    <string name="identity_error_network">Check your internet connection and try again.</string>
+    <string name="identity_error_generic">Authentication could not be completed.</string>
+    <string name="identity_show_password">Show password</string>
+    <string name="identity_hide_password">Hide password</string>
+    <string name="identity_forgot_password">Forgot password?</string>
+    <string name="identity_error_action_code">The code is invalid or has expired.</string>
+    <string name="identity_error_email_delivery">The email service is temporarily unavailable.</string>
+
+    <string name="account_title">Quintessences account</string>
+    <string name="account_ecosystem">Your shared identity for GeoSylva, GSIE and future Quintessences applications.</string>
+    <string name="account_not_connected">No account connected</string>
+    <string name="account_not_connected_desc">Sign in to synchronize with GSIE while keeping all field tools available offline.</string>
+    <string name="account_login_action">Sign in or create an account</string>
+    <string name="account_connected">Connected</string>
+    <string name="account_expired">Session expired</string>
+    <string name="account_identifier">Quintessences identifier</string>
+    <string name="account_provider">Current sign-in method</string>
+    <string name="account_roles">GSIE roles</string>
+    <string name="account_expires">Session expires</string>
+    <string name="account_provider_local">Email and password</string>
+    <string name="account_provider_google">Google</string>
+    <string name="account_provider_enterprise">Professional account</string>
+    <string name="account_provider_unknown">Unknown</string>
+    <string name="account_security_title">Security</string>
+    <string name="account_security_desc">Tokens are stored in the Android encrypted vault and never displayed.</string>
+    <string name="account_providers_title">Available sign-in methods</string>
+    <string name="account_provider_available">Available</string>
+    <string name="account_provider_not_configured">Not configured</string>
+    <string name="account_logout">Sign out</string>
+    <string name="account_logout_local_warning">The local session is removed even if the server cannot be reached.</string>
+    <string name="account_profile_title">Profile</string>
+    <string name="account_edit_profile">Edit display name</string>
+    <string name="account_email_status">Email status</string>
+    <string name="account_email_verified">Verified</string>
+    <string name="account_email_not_verified">Not verified</string>
+    <string name="account_verify_email_title">Verify email address</string>
+    <string name="account_verify_email_desc">Request a code by email, then enter it below.</string>
+    <string name="account_send_verification_code">Send verification code</string>
+    <string name="account_verification_code">Eight-character code</string>
+    <string name="account_confirm_verification">Verify my address</string>
+    <string name="account_notice_profile_updated">Profile updated.</string>
+    <string name="account_notice_verification_sent">Verification code sent. Check your inbox.</string>
+    <string name="account_notice_email_verified">Email address verified.</string>
+
+    <string name="recovery_title">Reset password</string>
+    <string name="recovery_request_desc">Enter your email address. The response is identical whether or not an account exists.</string>
+    <string name="recovery_confirm_desc">Enter the code received by email and choose a new password.</string>
+    <string name="recovery_send_code">Send a reset code</string>
+    <string name="recovery_new_password">New password</string>
+    <string name="recovery_reset_password">Set the new password</string>
+    <string name="recovery_change_email">Use another email address</string>
+    <string name="recovery_completed">Password updated. You can now sign in.</string>
+    <string name="recovery_back_to_login">Back to sign in</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+
+    <string name="developer_options_title">Developer options</string>
+    <string name="developer_read_only_notice">Les diagnostics sont locaux et n’accordent aucun privilège serveur. La synchronisation ne démarre qu’après votre action explicite.</string>
+    <string name="developer_refresh">Refresh diagnostics</string>
+    <string name="developer_section_api">GSIE API connection</string>
+    <string name="developer_api_url">Configured endpoint</string>
+    <string name="developer_not_configured">Not configured</string>
+    <string name="developer_api_status">Status</string>
+    <string name="developer_status_connected">Connected</string>
+    <string name="developer_status_degraded">Degraded</string>
+    <string name="developer_status_unreachable">Unreachable</string>
+    <string name="developer_status_not_configured">Not configured</string>
+    <string name="developer_latency">Round-trip latency</string>
+    <string name="developer_latency_value">%1$d ms</string>
+    <string name="developer_http_code">HTTP code</string>
+    <string name="developer_server_version">GSIE version</string>
+    <string name="developer_environment">Environment</string>
+    <string name="developer_dependencies">Server dependencies</string>
+    <string name="developer_no_dependencies">No dependency details published</string>
+    <string name="developer_section_identity">Identity</string>
+    <string name="developer_session_active">Local session active</string>
+    <string name="developer_session_inactive">No local session</string>
+    <string name="developer_providers">Published providers</string>
+    <string name="developer_section_build">Application build</string>
+    <string name="developer_app_version">GeoSylva version</string>
+    <string name="developer_build_id">Build ID</string>
+    <string name="developer_build_timestamp">Build timestamp</string>
+    <string name="developer_not_timestamped">Not timestamped</string>
+    <string name="developer_section_device">Device</string>
+    <string name="developer_device_model">Manufacturer and model</string>
+    <string name="developer_android_version">Android</string>
+    <string name="developer_sdk_version">API level</string>
+    <string name="developer_primary_abi">Primary ABI</string>
+    <string name="developer_disable">Disable developer options</string>
+    <string name="developer_disable_desc">The diagnostic entry will disappear from settings.</string>
+    <string name="developer_section_parcel_sync">Synchronisation des parcelles</string>
+    <string name="developer_sync_pending">En attente</string>
+    <string name="developer_sync_in_progress">En cours</string>
+    <string name="developer_sync_synced">Synchronisées</string>
+    <string name="developer_sync_conflicts">Conflits à résoudre</string>
+    <string name="developer_sync_errors">Erreurs</string>
+    <string name="developer_sync_last_success">Dernier succès</string>
+    <string name="developer_sync_all_parcels">Activer et synchroniser les parcelles</string>
+    <string name="developer_sync_queued_result">%1$d parcelle(s) placée(s) dans la file chiffrée</string>
+    <string name="developer_sync_requires_account">Un compte connecté est nécessaire.</string>
+    <string name="developer_sync_pull_parcels">Récupérer depuis le serveur</string>
+    <string name="developer_sync_pull_result">%1$d ajoutée(s), %2$d mise(s) à jour, %3$d supprimée(s), %4$d ignorée(s) (modification locale non synchronisée)</string>
+    <string name="developer_sync_pull_error">Échec de la récupération — vérifie la connexion.</string>
+
+</resources>

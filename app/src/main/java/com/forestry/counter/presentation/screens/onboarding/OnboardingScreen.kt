@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.forestry.counter.R
+import com.forestry.counter.presentation.theme.Primary
 import kotlinx.coroutines.launch
 
 private enum class PageCategory(val labelFr: String, val color: Color) {
@@ -72,7 +73,9 @@ private data class OnboardingPage(
     val titleRes: Int,
     val descRes: Int,
     val bulletResIds: List<Int> = emptyList(),
-    val accentColor: Color = Color(0xFF4CAF50),
+    // Couleur de marque du thème, et non un vert littéral : la palette est la
+    // seule source de vérité (voir `theme/Color.kt`).
+    val accentColor: Color = Primary,
     val category: PageCategory = PageCategory.INVENTORY,
     val isHero: Boolean = false
 )
@@ -504,7 +507,10 @@ private fun HeroWelcomeContent(page: OnboardingPage) {
     )
     Spacer(modifier = Modifier.height(4.dp))
     Text(
-        text = stringResource(page.titleRes).substringAfter(" "),
+        // Auparavant `stringResource(page.titleRes).substringAfter(" ")`, qui
+        // amputait le titre du premier mot et affichait « sur GeoSylva » sous
+        // « GeoSylva ». Le sous-titre est désormais une chaîne à part entière.
+        text = stringResource(R.string.onboarding_welcome_tagline),
         style = MaterialTheme.typography.headlineSmall,
         fontWeight = FontWeight.Medium,
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
