@@ -72,6 +72,32 @@ val OnSurfaceVariantDark = Color(0xFFC3C8BC)
 val OutlineDark = Color(0xFF8D9387)
 val OutlineVariantDark = Color(0xFF424940)
 
+// ── Surfaces conteneurs Material 3 ───────────────────────────────────────────
+// Material 3 a introduit une famille `surfaceContainer*` distincte de
+// `surface`. Sans valeurs explicites, la bibliothèque les dérive de sa teinte
+// par défaut — d'où la barre de navigation lavande observée sous des tuiles
+// vertes. Ces neutres sont légèrement chauds et teintés vert, comme le reste
+// de la palette : ils ne sont pas des gris purs.
+val SurfaceDim = Color(0xFFDBDBD3)
+val SurfaceBright = Color(0xFFFBFAF7)
+val SurfaceContainerLowest = Color(0xFFFFFFFF)
+val SurfaceContainerLow = Color(0xFFF5F4EF)
+val SurfaceContainer = Color(0xFFEFEEE9)
+val SurfaceContainerHigh = Color(0xFFEAE8E3)
+val SurfaceContainerHighest = Color(0xFFE4E3DE)
+val InverseSurface = Color(0xFF2E322C)
+val InverseOnSurface = Color(0xFFF0F1EB)
+
+val SurfaceDimDark = Color(0xFF12140F)
+val SurfaceBrightDark = Color(0xFF383B34)
+val SurfaceContainerLowestDark = Color(0xFF0D0F0A)
+val SurfaceContainerLowDark = Color(0xFF1A1D17)
+val SurfaceContainerDark = Color(0xFF1E211B)
+val SurfaceContainerHighDark = Color(0xFF292C25)
+val SurfaceContainerHighestDark = Color(0xFF343730)
+val InverseSurfaceDark = Color(0xFFE2E3DC)
+val InverseOnSurfaceDark = Color(0xFF2E322C)
+
 // ── Couleurs posées sur un média (vidéo ou photo) ────────────────────────────
 // Le vert de marque #2D5F3F est calibré pour du texte sur fond clair : sur une
 // vidéo de sous-bois, il se noie dans l'image. Cette variante claire — le vert
