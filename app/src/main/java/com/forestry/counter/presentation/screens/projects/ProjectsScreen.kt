@@ -1,5 +1,7 @@
 package com.forestry.counter.presentation.screens.projects
 
+import com.forestry.counter.R
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +20,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -55,7 +58,7 @@ fun ProjectsScreen(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
-                title = { Text("Projets") },
+                title = { Text(stringResource(R.string.projects_title)) },
                 scrollBehavior = scrollBehavior,
             )
         },
@@ -68,7 +71,7 @@ fun ProjectsScreen(
         when (val s = state) {
             is ProjectsUiState.Loading -> {
                 Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Chargement…", modifier = Modifier.padding(innerPadding))
+                    Text(stringResource(R.string.home_loading), modifier = Modifier.padding(innerPadding))
                 }
             }
             is ProjectsUiState.Empty -> {
@@ -83,7 +86,7 @@ fun ProjectsScreen(
                         modifier = Modifier.padding(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     )
-                    Text("Aucun projet", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.projects_empty), style = MaterialTheme.typography.titleMedium)
                     Text(
                         "Créez un projet pour organiser vos forêts.",
                         style = MaterialTheme.typography.bodyMedium,
@@ -181,19 +184,19 @@ private fun CreateProjectDialog(
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nouveau projet") },
+        title = { Text(stringResource(R.string.projects_new)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Nom du projet") },
+                    label = { Text(stringResource(R.string.projects_name)) },
                     singleLine = true,
                 )
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Description (optionnel)") },
+                    label = { Text(stringResource(R.string.projects_description_optional)) },
                     minLines = 2,
                 )
             }
@@ -202,10 +205,10 @@ private fun CreateProjectDialog(
             TextButton(
                 onClick = { onCreate(name.trim(), description.trim().ifEmpty { null }) },
                 enabled = name.isNotBlank(),
-            ) { Text("Créer") }
+            ) { Text(stringResource(R.string.create)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Annuler") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         }
     )
 }

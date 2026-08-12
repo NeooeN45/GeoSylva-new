@@ -23,6 +23,34 @@
     <string name="counter_target">Objectif</string>
 
     <!-- Actions -->
+    <string name="create_parcelle_title">Nouvelle parcelle</string>
+    <string name="create_placette_title">Nouvelle placette</string>
+    <string name="create_wizard_section_info">Informations</string>
+    <string name="create_parcelle_name">Nom de la parcelle *</string>
+    <string name="create_parcelle_surface_ha">Surface (ha)</string>
+    <string name="create_parcelle_slope_pct">Pente (%)</string>
+    <string name="create_parcelle_altitude_m">Altitude (m)</string>
+    <string name="create_placette_name">Nom de la placette</string>
+    <string name="create_placette_radius_m">Rayon (m) *</string>
+    <string name="projects_title">Projets</string>
+    <string name="projects_empty">Aucun projet</string>
+    <string name="projects_new">Nouveau projet</string>
+    <string name="projects_name">Nom du projet</string>
+    <string name="projects_description_optional">Description (optionnel)</string>
+    <string name="create_forest_title">Nouvelle forêt (%1$d/%2$d)</string>
+    <string name="create_forest_step_identity">Identité</string>
+    <string name="create_forest_step_owner">Propriétaire</string>
+    <string name="create_forest_step_management">Gestion</string>
+    <string name="create_forest_name">Nom de la forêt *</string>
+    <string name="create_forest_department">Département</string>
+    <string name="create_forest_owner_name">Nom du propriétaire *</string>
+    <string name="create_forest_owner_email">Email du propriétaire</string>
+    <string name="create_forest_manager_name">Nom du gestionnaire</string>
+    <string name="create_forest_type">Type de forêt</string>
+    <string name="create_forest_objective">Objectif de gestion</string>
+    <string name="create_forest_psg_number">N° PSG</string>
+    <string name="create_forest_remarks">Remarques</string>
+    <string name="create_parcelle_placette_type_hint">Type * (circulaire, carrée, etc.)</string>
     <string name="create">Créer</string>
     <string name="add">Ajouter</string>
     <string name="cancel">Annuler</string>
@@ -2197,6 +2225,10 @@
     <string name="identity_signup_web">Créer un compte</string>
     <!-- Site public Quintessences (DEC-000057) — page src/pages/compte/inscription.astro -->
     <string name="identity_signup_url" translatable="false">https://quintessences-platform.com/compte/inscription</string>
+    <string name="language_suggestion_title">Passer en français ?</string>
+    <string name="language_suggestion_body">Votre téléphone semble localisé en France. GeoSylva peut s’afficher en français.</string>
+    <string name="language_suggestion_accept">Passer en français</string>
+    <string name="language_suggestion_decline">Garder l’anglais</string>
     <string name="identity_mfa_title">Vérification en deux étapes</string>
     <string name="identity_mfa_hint">Saisissez le code affiché par votre application d’authentification.</string>
     <string name="identity_mfa_hint_recovery">Saisissez l’un de vos codes de récupération.</string>

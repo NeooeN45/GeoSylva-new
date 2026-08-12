@@ -95,6 +95,7 @@ fun TopLevelTabContent(
     onNavigateToForets: () -> Unit,
     onNavigateToProjects: () -> Unit,
     onNavigateToLogin: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onCreateForest: () -> Unit,
     onCategoryClick: (ExplorerCategory) -> Unit,
     modifier: Modifier = Modifier,
@@ -131,6 +132,7 @@ fun TopLevelTabContent(
             AccountScreen(
                 repository = app.identityRepository,
                 onNavigateToLogin = onNavigateToLogin,
+                onNavigateToSettings = onNavigateToSettings,
                 onNavigateBack = null,
                 modifier = modifier,
             )

@@ -3,6 +3,13 @@ package com.forestry.counter.presentation.screens.account
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.core.os.LocaleListCompat
+import com.forestry.counter.data.preferences.UserPreferencesManager
+import com.forestry.counter.presentation.components.LanguageSuggestionDialog
+import com.forestry.counter.presentation.components.shouldSuggestFrench
+import kotlinx.coroutines.launch
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.PaddingValues
@@ -120,6 +127,7 @@ fun LoginScreen(
     onContinueOffline: () -> Unit,
     onForgotPassword: () -> Unit,
     animationsEnabled: Boolean = true,
+    preferencesManager: UserPreferencesManager? = null,
 ) {
     val factory = remember(repository) { GeoSylvaViewModelFactory { LoginViewModel(repository) } }
     val viewModel: LoginViewModel = viewModel(factory = factory)
@@ -133,6 +141,10 @@ fun LoginScreen(
 
     // L'écran ne propose que la connexion : la création de compte part sur le web.
     LaunchedEffect(Unit) { viewModel.setMode(LoginMode.SIGN_IN) }
+
+    if (preferencesManager != null) {
+        LanguageSuggestionHost(preferencesManager)
+    }
 
     VideoBackdrop(animationsEnabled = animationsEnabled) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -188,6 +200,37 @@ fun LoginScreen(
                 )
             }
         }
+    }
+}
+
+/**
+ * Déclenche [LanguageSuggestionDialog] une fois, au tout premier lancement,
+ * si le téléphone est localisé en France sans que l'application affiche déjà
+ * le français. GeoSylva force le français par défaut : ce cas ne se présente
+ * donc que si l'utilisateur a explicitement choisi une autre langue.
+ */
+@Composable
+private fun LanguageSuggestionHost(preferencesManager: UserPreferencesManager) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val appLanguage by preferencesManager.appLanguage.collectAsStateWithLifecycle(initialValue = "fr")
+    val answered by preferencesManager.languageSuggestionAnswered.collectAsStateWithLifecycle(initialValue = true)
+
+    val shouldShow = !answered && shouldSuggestFrench(context, appLanguage)
+
+    if (shouldShow) {
+        LanguageSuggestionDialog(
+            onAccept = {
+                scope.launch {
+                    preferencesManager.setAppLanguage("fr")
+                    AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("fr"))
+                    preferencesManager.setLanguageSuggestionAnswered(true)
+                }
+            },
+            onDecline = {
+                scope.launch { preferencesManager.setLanguageSuggestionAnswered(true) }
+            },
+        )
     }
 }
 

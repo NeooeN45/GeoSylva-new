@@ -24,6 +24,34 @@
     <string name="target_value">Target: %1$d</string>
     
     <!-- Actions -->
+    <string name="create_parcelle_title">New plot</string>
+    <string name="create_placette_title">New sample plot</string>
+    <string name="create_wizard_section_info">Information</string>
+    <string name="create_parcelle_name">Plot name *</string>
+    <string name="create_parcelle_surface_ha">Area (ha)</string>
+    <string name="create_parcelle_slope_pct">Slope (%)</string>
+    <string name="create_parcelle_altitude_m">Altitude (m)</string>
+    <string name="create_placette_name">Sample plot name</string>
+    <string name="create_placette_radius_m">Radius (m) *</string>
+    <string name="projects_title">Projects</string>
+    <string name="projects_empty">No project yet</string>
+    <string name="projects_new">New project</string>
+    <string name="projects_name">Project name</string>
+    <string name="projects_description_optional">Description (optional)</string>
+    <string name="create_forest_title">New forest (%1$d/%2$d)</string>
+    <string name="create_forest_step_identity">Identity</string>
+    <string name="create_forest_step_owner">Owner</string>
+    <string name="create_forest_step_management">Management</string>
+    <string name="create_forest_name">Forest name *</string>
+    <string name="create_forest_department">Department</string>
+    <string name="create_forest_owner_name">Owner name *</string>
+    <string name="create_forest_owner_email">Owner email</string>
+    <string name="create_forest_manager_name">Manager name</string>
+    <string name="create_forest_type">Forest type</string>
+    <string name="create_forest_objective">Management objective</string>
+    <string name="create_forest_psg_number">Management plan no.</string>
+    <string name="create_forest_remarks">Remarks</string>
+    <string name="create_parcelle_placette_type_hint">Type * (circular, square, etc.)</string>
     <string name="create">Create</string>
     <string name="add">Add</string>
     <string name="cancel">Cancel</string>
@@ -2204,6 +2232,10 @@
     <string name="identity_welcome">Welcome</string>
     <string name="identity_no_account">No account yet?</string>
     <string name="identity_signup_web">Create an account</string>
+    <string name="language_suggestion_title">Switch to French?</string>
+    <string name="language_suggestion_body">Your phone appears to be set to France. GeoSylva can display in French.</string>
+    <string name="language_suggestion_accept">Switch to French</string>
+    <string name="language_suggestion_decline">Keep English</string>
     <string name="identity_mfa_title">Two-step verification</string>
     <string name="identity_mfa_hint">Enter the code shown by your authenticator app.</string>
     <string name="identity_mfa_hint_recovery">Enter one of your recovery codes.</string>

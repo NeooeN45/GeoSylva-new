@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -76,6 +77,7 @@ import java.util.Date
 fun AccountScreen(
     repository: IdentityRepository,
     onNavigateToLogin: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onNavigateBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -98,6 +100,18 @@ fun AccountScreen(
                                 stringResource(R.string.cd_back),
                             )
                         }
+                    }
+                },
+                actions = {
+                    // Seul point d'entrée vers Réglages depuis l'onglet Compte :
+                    // l'écran existait déjà (thème, langue, exports, sauvegardes…)
+                    // mais n'était accessible par aucun chemin depuis la barre
+                    // de navigation du bas.
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = stringResource(R.string.settings),
+                        )
                     }
                 },
             )

@@ -39,6 +39,7 @@ class UserPreferencesManager(private val context: Context) {
         val DYNAMIC_COLOR_ENABLED = booleanPreferencesKey("dynamic_color_enabled")
         val GLASS_BLUR_ENABLED = booleanPreferencesKey("glass_blur_enabled")
         val APP_LANGUAGE = stringPreferencesKey("app_language")
+        val LANGUAGE_SUGGESTION_ANSWERED = booleanPreferencesKey("language_suggestion_answered")
         val TILT_DEG = floatPreferencesKey("tilt_deg")
         val PRESS_SCALE = floatPreferencesKey("press_scale")
         val HALO_ALPHA = floatPreferencesKey("halo_alpha")
@@ -208,6 +209,23 @@ class UserPreferencesManager(private val context: Context) {
     suspend fun setAppLanguage(tag: String) {
         dataStore.edit { prefs ->
             prefs[APP_LANGUAGE] = tag
+        }
+    }
+
+    /**
+     * La suggestion de langue régionale (« votre téléphone est localisé en
+     * France, passer en français ? ») ne doit apparaître qu'une fois — que
+     * l'utilisateur accepte ou refuse. Ce drapeau est distinct de
+     * [appLanguage] : refuser la suggestion ne change pas la langue, mais ne
+     * doit plus jamais redéclencher la question.
+     */
+    val languageSuggestionAnswered: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[LANGUAGE_SUGGESTION_ANSWERED] ?: false
+    }
+
+    suspend fun setLanguageSuggestionAnswered(answered: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[LANGUAGE_SUGGESTION_ANSWERED] = answered
         }
     }
 

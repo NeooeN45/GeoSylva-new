@@ -153,6 +153,7 @@ fun NavGraphBuilder.settingsNavGraph(
         AccountScreen(
             repository = app.identityRepository,
             onNavigateToLogin = { navController.navigate(Screen.Login.route) },
+            onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
             onNavigateBack = { navController.popBackStack() },
         )
     }

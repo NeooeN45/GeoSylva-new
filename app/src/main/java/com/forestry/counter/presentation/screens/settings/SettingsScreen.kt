@@ -647,10 +647,15 @@ fun SettingsScreen(
                 Text(text = stringResource(R.string.accent_color), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
                 var showMoreAccent by remember { mutableStateOf(false) }
                 FlowRow(modifier = Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Palette dérivée de « Forêt tempérée » (Color.kt) : verts
+                    // et neutres du thème, quelques accents chauds cohérents
+                    // (ambre de marque, terre cuite). L'ancienne liste était un
+                    // copier-coller du vert néon d'origine — même après son
+                    // retrait de la palette par défaut, elle resurgissait ici.
                     val options = listOf(
-                        "#00E676", "#00C853", "#64FFDA", "#1DE9B6", "#A5FF8B", "#B9F6CA", "#69F0AE", "#18FFFF", "#00BFA5", "#00FF88",
-                        "#00FF66", "#00FFA2", "#00FFC6", "#66FF99", "#33FFAA", "#00FFD1", "#11FFEE", "#22E3B3", "#49FFDF", "#5BFFB5",
-                        "#C6FF00", "#AEEA00", "#00BCD4", "#00E5FF", "#2979FF", "#00B0FF", "#7C4DFF", "#E040FB", "#FFC400", "#FFAB00", "#FF5252", "#FF6E6E"
+                        "#2D5F3F", "#8FD1A4", "#4A6B58", "#B1CCBB", "#1B4430",
+                        "#0F6B45", "#9CE8BE", "#4E5B31", "#8FC24E", "#3E6B52",
+                        "#B26A00", "#FFB95C", "#A85218", "#73796E", "#191C17",
                     )
                     val list = if (showMoreAccent) options else options.take(10)
                     list.forEach { hex ->
@@ -1002,7 +1007,16 @@ fun SettingsScreen(
                         }
                     }
 
-                    Row(modifier = Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // FlowRow et non Row : quatre libellés (« CSV Tiges »,
+                    // « GeoJSON », « GPX », « Excel forestry ») forcés à
+                    // weight(1f) dans une seule ligne se tronquaient en
+                    // « CSV … », « Geo… », « Exce… ». Les boutons gardent leur
+                    // largeur naturelle et se répartissent sur deux lignes.
+                    FlowRow(
+                        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
                         val exportCsv = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
                             if (uri != null) {
                                 scope.launch {
@@ -1063,7 +1077,7 @@ fun SettingsScreen(
                                 }
                             }
                         }
-                        Button(onClick = { exportCsv.launch("tiges.csv") }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.settings_export_csv_tiges), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                        Button(onClick = { exportCsv.launch("tiges.csv") }) { Text(stringResource(R.string.settings_export_csv_tiges), maxLines = 1, overflow = TextOverflow.Ellipsis) }
 
                         val exportGeo = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/geo+json")) { uri ->
                             if (uri != null) {
@@ -1102,7 +1116,7 @@ fun SettingsScreen(
                                 }
                             }
                         }
-                        Button(onClick = { exportGeo.launch("tiges.geojson") }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.settings_export_geojson), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                        Button(onClick = { exportGeo.launch("tiges.geojson") }) { Text(stringResource(R.string.settings_export_geojson), maxLines = 1, overflow = TextOverflow.Ellipsis) }
 
                         val exportGpx = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/gpx+xml")) { uri ->
                             if (uri != null) {
@@ -1169,7 +1183,7 @@ fun SettingsScreen(
                                 }
                             }
                         }
-                        Button(onClick = { exportGpx.launch("tiges.gpx") }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.settings_export_gpx), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                        Button(onClick = { exportGpx.launch("tiges.gpx") }) { Text(stringResource(R.string.settings_export_gpx), maxLines = 1, overflow = TextOverflow.Ellipsis) }
 
                         val exportExcelForestry = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) { uri ->
                             if (uri != null) {
@@ -1278,7 +1292,7 @@ fun SettingsScreen(
                                 }
                             }
                         }
-                        Button(onClick = { exportExcelForestry.launch("forestry.xlsx") }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.settings_export_excel_forestry), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                        Button(onClick = { exportExcelForestry.launch("forestry.xlsx") }) { Text(stringResource(R.string.settings_export_excel_forestry), maxLines = 1, overflow = TextOverflow.Ellipsis) }
                     }
 
                     val exportProfile = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->

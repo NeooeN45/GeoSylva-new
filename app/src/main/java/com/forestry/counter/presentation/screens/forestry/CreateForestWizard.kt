@@ -1,5 +1,7 @@
 package com.forestry.counter.presentation.screens.forestry
 
+import com.forestry.counter.R
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,6 +32,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -63,10 +66,10 @@ fun CreateForestWizard(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text("Nouvelle forêt (${currentStep + 1}/$totalSteps)") },
+                title = { Text(stringResource(R.string.create_forest_title, currentStep + 1, totalSteps)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Annuler")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cancel))
                     }
                 }
             )
@@ -112,10 +115,10 @@ fun CreateForestWizard(
             ) {
                 if (currentStep > 0) {
                     OutlinedButton(onClick = { currentStep-- }) {
-                        Text("Précédent")
+                        Text(stringResource(R.string.previous))
                     }
                 } else {
-                    TextButton(onClick = onNavigateBack) { Text("Annuler") }
+                    TextButton(onClick = onNavigateBack) { Text(stringResource(R.string.cancel)) }
                 }
 
                 if (currentStep < totalSteps - 1) {
@@ -128,7 +131,7 @@ fun CreateForestWizard(
                         onClick = { currentStep++ },
                         enabled = canAdvance,
                     ) {
-                        Text("Suivant")
+                        Text(stringResource(R.string.next))
                         Icon(Icons.Filled.NavigateNext, contentDescription = null)
                     }
                 } else {
@@ -137,7 +140,7 @@ fun CreateForestWizard(
                         enabled = form.isValid,
                     ) {
                         Icon(Icons.Filled.Check, contentDescription = null)
-                        Text("Créer")
+                        Text(stringResource(R.string.create))
                     }
                 }
             }
@@ -156,18 +159,18 @@ private fun StepIdentity(
     onNomChange: (String) -> Unit,
     onDepartementChange: (String) -> Unit,
 ) {
-    StepTitle("Identité")
+    StepTitle(stringResource(R.string.create_forest_step_identity))
     OutlinedTextField(
         value = form.nom,
         onValueChange = onNomChange,
-        label = { Text("Nom de la forêt *") },
+        label = { Text(stringResource(R.string.create_forest_name)) },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
     )
     OutlinedTextField(
         value = form.departement ?: "",
         onValueChange = onDepartementChange,
-        label = { Text("Département") },
+        label = { Text(stringResource(R.string.create_forest_department)) },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
     )
@@ -180,25 +183,25 @@ private fun StepOwner(
     onProprietaireEmailChange: (String) -> Unit,
     onGestionnaireNomChange: (String) -> Unit,
 ) {
-    StepTitle("Propriétaire")
+    StepTitle(stringResource(R.string.create_forest_step_owner))
     OutlinedTextField(
         value = form.proprietaireNom,
         onValueChange = onProprietaireNomChange,
-        label = { Text("Nom du propriétaire *") },
+        label = { Text(stringResource(R.string.create_forest_owner_name)) },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
     )
     OutlinedTextField(
         value = form.proprietaireEmail ?: "",
         onValueChange = onProprietaireEmailChange,
-        label = { Text("Email du propriétaire") },
+        label = { Text(stringResource(R.string.create_forest_owner_email)) },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
     )
     OutlinedTextField(
         value = form.gestionnaireNom ?: "",
         onValueChange = onGestionnaireNomChange,
-        label = { Text("Nom du gestionnaire") },
+        label = { Text(stringResource(R.string.create_forest_manager_name)) },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
     )
@@ -212,31 +215,31 @@ private fun StepManagement(
     onPsgNumeroChange: (String) -> Unit,
     onRemarquesChange: (String) -> Unit,
 ) {
-    StepTitle("Gestion")
+    StepTitle(stringResource(R.string.create_forest_step_management))
     OutlinedTextField(
         value = form.typeForet ?: "",
         onValueChange = onTypeForetChange,
-        label = { Text("Type de forêt") },
+        label = { Text(stringResource(R.string.create_forest_type)) },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
     )
     OutlinedTextField(
         value = form.objectifGestion ?: "",
         onValueChange = onObjectifGestionChange,
-        label = { Text("Objectif de gestion") },
+        label = { Text(stringResource(R.string.create_forest_objective)) },
         modifier = Modifier.fillMaxWidth(),
     )
     OutlinedTextField(
         value = form.psgNumero ?: "",
         onValueChange = onPsgNumeroChange,
-        label = { Text("N° PSG") },
+        label = { Text(stringResource(R.string.create_forest_psg_number)) },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
     )
     OutlinedTextField(
         value = form.remarques ?: "",
         onValueChange = onRemarquesChange,
-        label = { Text("Remarques") },
+        label = { Text(stringResource(R.string.create_forest_remarks)) },
         minLines = 3,
         modifier = Modifier.fillMaxWidth(),
     )

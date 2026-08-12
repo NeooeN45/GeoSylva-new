@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Variante sombre de l'icône — mode nuit système (mipmap-anydpi-v26-night).
+  Même feuille, fond remplacé par diffusion depuis les coins avec
+  BackgroundDark (#12140F, Color.kt) : cohérent avec le thème sombre de
+  l'application plutôt qu'une teinte choisie pour l'occasion.
+-->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/app_icon_dark"
+    android:insetLeft="12dp"
+    android:insetRight="12dp"
+    android:insetTop="12dp"
+    android:insetBottom="12dp" />

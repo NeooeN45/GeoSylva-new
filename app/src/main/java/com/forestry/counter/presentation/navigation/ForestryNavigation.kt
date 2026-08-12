@@ -247,6 +247,7 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                     onContinueOffline = goToOnboarding,
                     onForgotPassword = { navController.navigate(Screen.PasswordRecovery.route) },
                     animationsEnabled = animationsEnabled,
+                    preferencesManager = app.userPreferences,
                 )
             }
 
@@ -280,6 +281,9 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                         },
                         onNavigateToLogin = {
                             navController.navigate(Screen.Login.route)
+                        },
+                        onNavigateToSettings = {
+                            navController.navigate(Screen.Settings.route)
                         },
                         onCreateForest = {
                             navController.navigate(Screen.CreateForest.route)
