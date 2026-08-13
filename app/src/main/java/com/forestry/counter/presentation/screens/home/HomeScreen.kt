@@ -32,22 +32,24 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.forestry.counter.R
+import com.forestry.counter.data.preferences.UserPreferencesManager
 import com.forestry.counter.domain.model.Foret
-import com.forestry.counter.presentation.theme.Backdrop
 import com.forestry.counter.presentation.theme.Elevation
 import com.forestry.counter.presentation.theme.GsShape
 import com.forestry.counter.presentation.theme.Space
@@ -112,12 +114,50 @@ private fun HomeContent(
     onCreateForest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = Space.xxl),
-        verticalArrangement = Arrangement.spacedBy(Space.md),
-    ) {
-        item { HomeHeader(state) }
+    val preferencesManager = LocalContext.current.let { remember(it) { UserPreferencesManager(it) } }
+    val backgroundImageEnabled by preferencesManager.backgroundImageEnabled.collectAsStateWithLifecycle(initialValue = true)
+    val backgroundImageUri by preferencesManager.backgroundImageUri.collectAsStateWithLifecycle(initialValue = null)
+
+    Box(modifier = modifier.fillMaxSize()) {
+        if (backgroundImageEnabled) {
+            val uriString = backgroundImageUri
+            if (uriString != null) {
+                AsyncImage(
+                    model = uriString,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.forest_background),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            }
+            // La photo reste visible en haut de l'écran (identité du registre
+            // consultation) puis s'efface en dégradé vers le fond plein pour
+            // que les cartes et le texte hors carte restent lisibles au scroll.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0f to MaterialTheme.colorScheme.background.copy(alpha = 0.35f),
+                            0.55f to MaterialTheme.colorScheme.background,
+                            1f to MaterialTheme.colorScheme.background,
+                        )
+                    ),
+            )
+        }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = Space.xxl),
+            verticalArrangement = Arrangement.spacedBy(Space.md),
+        ) {
+            item { HomeHeader(state) }
 
         item {
             SectionTitle(stringResource(R.string.home_quick_access))
@@ -135,48 +175,28 @@ private fun HomeContent(
         // L'entrée « Carte » a été retirée tant qu'elle n'ouvre rien : un
         // raccourci qui ne mène nulle part coûte plus qu'il ne rassure.
 
-        if (state.recentForets.isEmpty()) {
-            item { EmptyForestsCard(onCreateForest) }
-        } else {
-            item { SectionTitle(stringResource(R.string.home_recent_forests)) }
-            items(state.recentForets, key = { it.foretId }) { foret ->
-                RecentForetCard(foret) { onNavigateToForet(foret.foretId) }
+            if (state.recentForets.isEmpty()) {
+                item { EmptyForestsCard(onCreateForest) }
+            } else {
+                item { SectionTitle(stringResource(R.string.home_recent_forests)) }
+                items(state.recentForets, key = { it.foretId }) { foret ->
+                    RecentForetCard(foret) { onNavigateToForet(foret.foretId) }
+                }
             }
         }
     }
 }
 
 /**
- * En-tête sur texture.
+ * En-tête d'accueil.
  *
- * L'image de fond est poussée à 6 % d'opacité — presque subliminale. Elle
- * donne de la matière sans jamais entrer en concurrence avec les chiffres,
- * qui restent le sujet de l'écran.
+ * La photo de fond est portée par [HomeContent] (registre consultation,
+ * pleine page comme sur les autres écrans) : ce composant ne pose plus que
+ * le texte, en confiance sur le dégradé de légibilité déjà posé derrière.
  */
 @Composable
 private fun HomeHeader(state: HomeUiState.Success) {
     Box {
-        Image(
-            painter = painterResource(R.drawable.forest_background),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .matchParentSize()
-                .alpha(Backdrop.TEXTURE_ALPHA),
-        )
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.background.copy(alpha = 0f),
-                            MaterialTheme.colorScheme.background,
-                        )
-                    )
-                ),
-        )
-
         Column(
             modifier = Modifier.padding(
                 start = Space.screenH,

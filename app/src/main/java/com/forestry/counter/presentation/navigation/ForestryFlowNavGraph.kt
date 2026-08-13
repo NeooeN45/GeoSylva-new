@@ -41,7 +41,7 @@ fun NavGraphBuilder.forestryFlowNavGraph(
             onNavigateToGroup = { groupId ->
                 navController.navigate(Screen.Parcelles.createRoute(groupId))
             },
-            onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+            onNavigateToSettings = { navController.navigate(Screen.SettingsHome.route) },
             preferencesManager = app.userPreferences,
             onNavigateToMartelage = { groupIdOrNull ->
                 if (groupIdOrNull == null) {
@@ -273,7 +273,7 @@ fun NavGraphBuilder.forestryFlowNavGraph(
             parcelleRepository = app.parcelleRepository,
             forestryCalculator = app.forestryCalculator,
             userPreferences = app.userPreferences,
-            onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+            onNavigateToSettings = { navController.navigate(Screen.SettingsHome.route) },
             onNavigateToPriceTablesEditor = { navController.navigate(Screen.PriceTablesEditor.route) },
             onNavigateToMap = { pid -> navController.navigate(Screen.Map.createRoute(pid)) },
             ibpRepository = app.ibpRepository,

@@ -3,6 +3,7 @@ package com.forestry.counter.presentation.screens.settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +16,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -96,6 +99,16 @@ fun SettingsScreen(
     onNavigateToAccount: () -> Unit = {},
     onNavigateToDeveloperOptions: () -> Unit = {},
     onNavigateToPrivacyPolicy: () -> Unit = {},
+    targetSection: String? = null,
+    /**
+     * Restreint l'affichage à un sous-ensemble d'ids de section — c'est ce
+     * qui transforme cet écran unique en « sous-page » dédiée (Apparence,
+     * Terrain & forêt…) sans dupliquer 1900 lignes de logique déjà éprouvée
+     * (dialogues de tarif, lanceurs d'export, WorkManager…) dans cinq
+     * fichiers séparés. `null` = comportement historique, tout affiché.
+     */
+    categoryFilter: Set<String>? = null,
+    screenTitle: String? = null,
     onNavigateBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -103,6 +116,28 @@ fun SettingsScreen(
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
     val developerUnlocker = remember { DeveloperModeUnlocker() }
+
+    // Défilement direct vers une section — arrivée depuis SettingsHomeScreen
+    // (catégorie ou résultat de recherche). Chaque position est capturée
+    // relative au Column défilant puis normalisée par le décalage de scroll
+    // courant, seule façon fiable d'obtenir une position stable dans un
+    // Modifier.verticalScroll (voir SettingsSectionAnchor plus bas).
+    //
+    // Un seul saut : sans le garde `hasScrolledToTarget`, chaque frame de
+    // l'animation de scroll fait réémettre onGloballyPositioned pour la
+    // section cible avec une position légèrement différente, ce qui relance
+    // LaunchedEffect (clé = valeur de l'ancre) et redémarre l'animation vers
+    // une nouvelle cible à chaque frame — la boucle ne converge jamais là où
+    // elle devrait et l'utilisateur atterrit bien plus bas que prévu.
+    val settingsScrollState = rememberScrollState()
+    val sectionAnchors = remember { mutableStateMapOf<String, Float>() }
+    var hasScrolledToTarget by remember { mutableStateOf(false) }
+    LaunchedEffect(targetSection, sectionAnchors[targetSection]) {
+        if (hasScrolledToTarget) return@LaunchedEffect
+        val y = targetSection?.let { sectionAnchors[it] } ?: return@LaunchedEffect
+        hasScrolledToTarget = true
+        settingsScrollState.animateScrollTo(y.toInt().coerceIn(0, settingsScrollState.maxValue.coerceAtLeast(0)))
+    }
 
     fun xmlEscape(s: String): String = buildString {
         s.forEach { ch ->
@@ -388,7 +423,7 @@ fun SettingsScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.settings)) },
+                title = { Text(screenTitle ?: stringResource(R.string.settings)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
@@ -401,9 +436,12 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(settingsScrollState)
         ) {
-            SettingsSection(title = stringResource(R.string.settings_section_quintessences)) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_quintessences),
+                id = "compte", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.settings_account_title)) },
                     supportingContent = {
@@ -422,7 +460,10 @@ fun SettingsScreen(
             }
 
             // Appearance Section
-            SettingsSection(title = stringResource(R.string.appearance)) {
+            SettingsSection(
+                title = stringResource(R.string.appearance),
+                id = "apparence", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 SettingsItem(
                     icon = Icons.Default.Palette,
                     title = stringResource(R.string.theme),
@@ -728,10 +769,13 @@ fun SettingsScreen(
                 
             }
 
-            HorizontalDivider()
+            if (categoryFilter == null) HorizontalDivider()
 
             // Tarifs de cubage
-            SettingsSection(title = stringResource(R.string.settings_section_tarifs)) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_tarifs),
+                id = "tarifs", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 val tarifLabelRes = when (currentTarifMethod) {
                     TarifMethod.SCHAEFFER_1E -> R.string.tarif_method_schaeffer_1e
                     TarifMethod.SCHAEFFER_2E -> R.string.tarif_method_schaeffer_2e
@@ -810,10 +854,13 @@ fun SettingsScreen(
                 )
             }
 
-            HorizontalDivider()
+            if (categoryFilter == null) HorizontalDivider()
 
             // Produits & Prix
-            SettingsSection(title = stringResource(R.string.settings_section_products_prices)) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_products_prices),
+                id = "produits_prix", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.settings_edit_price_tables)) },
                     supportingContent = { Text(stringResource(R.string.settings_edit_price_tables_desc)) },
@@ -822,7 +869,7 @@ fun SettingsScreen(
                 )
             }
 
-            HorizontalDivider()
+            if (categoryFilter == null) HorizontalDivider()
 
             // Carte hors-ligne
             if (offlineTileManager != null) {
@@ -835,7 +882,10 @@ fun SettingsScreen(
                     }
                 }
 
-                SettingsSection(title = stringResource(R.string.settings_section_offline_map)) {
+                SettingsSection(
+                    title = stringResource(R.string.settings_section_offline_map),
+                    id = "carte_hors_ligne", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+                ) {
                     val stats = cacheStats
                     val tileCount = stats?.first ?: 0
                     val sizeMb = stats?.second?.let { String.format("%.1f", it / 1_048_576.0) } ?: "0"
@@ -890,13 +940,16 @@ fun SettingsScreen(
                     )
                 }
 
-                HorizontalDivider()
+                if (categoryFilter == null) HorizontalDivider()
             }
 
 
             // Exports Forestry
             if (tigeRepository != null && forestryCalculator != null) {
-                SettingsSection(title = stringResource(R.string.settings_section_forestry_exports)) {
+                SettingsSection(
+                    title = stringResource(R.string.settings_section_forestry_exports),
+                    id = "exports", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+                ) {
                     var exportScope by remember { mutableStateOf("PROJECT") }
                     
                     val exportScopes = listOf("PROJECT", "PARCELLE", "PLACETTE")
@@ -1337,7 +1390,10 @@ fun SettingsScreen(
             }
 
             // Interaction Section
-            SettingsSection(title = stringResource(R.string.settings_section_interaction)) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_interaction),
+                id = "interaction", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.animations)) },
                     supportingContent = { Text(stringResource(R.string.settings_animations_desc)) },
@@ -1398,10 +1454,13 @@ fun SettingsScreen(
                 }
             }
 
-            HorizontalDivider()
+            if (categoryFilter == null) HorizontalDivider()
 
             // Data Section
-            SettingsSection(title = stringResource(R.string.settings_section_data)) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_data),
+                id = "donnees", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.settings_csv_separator)) },
                     supportingContent = { Text(stringResource(R.string.settings_csv_current, csvSeparator)) },
@@ -1412,10 +1471,13 @@ fun SettingsScreen(
                 )
             }
 
-            HorizontalDivider()
+            if (categoryFilter == null) HorizontalDivider()
 
             // Privacy Section
-            SettingsSection(title = stringResource(R.string.settings_section_privacy)) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_privacy),
+                id = "confidentialite", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.no_ads)) },
                     supportingContent = { Text(stringResource(R.string.settings_no_ads_desc)) },
@@ -1583,10 +1645,13 @@ fun SettingsScreen(
                 }
             }
 
-            HorizontalDivider()
+            if (categoryFilter == null) HorizontalDivider()
 
             // Backup Section
-            SettingsSection(title = stringResource(R.string.settings_section_backups)) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_backups),
+                id = "sauvegardes", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 val autoBackupEnabled by preferencesManager.autoBackupEnabled.collectAsStateWithLifecycle(initialValue = false)
                 val backupDays by preferencesManager.backupFrequencyDays.collectAsStateWithLifecycle(initialValue = 7)
 
@@ -1651,7 +1716,10 @@ fun SettingsScreen(
             }
 
             // About Section
-            SettingsSection(title = stringResource(R.string.settings_section_about)) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_about),
+                id = "a_propos", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.version)) },
                     supportingContent = { Text(versionDisplay) },
@@ -1724,9 +1792,26 @@ private fun parseWktPointZ(wkt: String?): Triple<Double?, Double?, Double?> =
 @Composable
 fun SettingsSection(
     title: String,
+    id: String? = null,
+    anchors: MutableMap<String, Float>? = null,
+    scrollState: ScrollState? = null,
+    categoryFilter: Set<String>? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column {
+    if (categoryFilter != null && id !in categoryFilter) return
+
+    // Position capturée pour SettingsHomeScreen : recherche et catégories y
+    // sautent directement plutôt que de laisser l'utilisateur dérouler à la
+    // main. Position relative au Column défilant, normalisée par le décalage
+    // de scroll courant — seule façon stable dans un Modifier.verticalScroll.
+    val anchorModifier = if (id != null && anchors != null && scrollState != null) {
+        Modifier.onGloballyPositioned { coordinates ->
+            anchors[id] = coordinates.positionInParent().y + scrollState.value
+        }
+    } else {
+        Modifier
+    }
+    Column(modifier = anchorModifier) {
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,

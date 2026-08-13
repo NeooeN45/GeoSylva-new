@@ -35,7 +35,11 @@ sealed class Screen(val route: String) {
     object Calculator : Screen("group/{groupId}/calculator") {
         fun createRoute(groupId: String) = "group/$groupId/calculator"
     }
-    object Settings : Screen("settings")
+    object SettingsHome : Screen("settings_home")
+    object Settings : Screen("settings?section={section}") {
+        fun createRoute(section: String? = null) =
+            if (section != null) "settings?section=$section" else "settings"
+    }
     object Account : Screen("settings/account")
     object Login : Screen("settings/account/login")
     object PasswordRecovery : Screen("settings/account/password-recovery")
@@ -283,7 +287,17 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                             navController.navigate(Screen.Login.route)
                         },
                         onNavigateToSettings = {
-                            navController.navigate(Screen.Settings.route)
+                            navController.navigate(Screen.SettingsHome.route)
+                        },
+                        onNavigateToSettingsCategory = { category ->
+                            // Même logique que SettingsHomeScreen poussé en pile
+                            // (SettingsNavGraph) : « compte » ouvre l'espace Compte
+                            // lui-même, les autres catégories filtrent Réglages.
+                            if (category == "compte") {
+                                navController.navigate(Screen.Account.route)
+                            } else {
+                                navController.navigate(Screen.Settings.createRoute(category))
+                            }
                         },
                         onCreateForest = {
                             navController.navigate(Screen.CreateForest.route)

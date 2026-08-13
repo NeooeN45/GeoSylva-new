@@ -5,6 +5,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import androidx.compose.ui.res.stringResource
 import com.forestry.counter.ForestryCounterApplication
 import com.forestry.counter.presentation.screens.calculator.CalculatorScreen
 import com.forestry.counter.presentation.screens.forestry.TarifDocumentationScreen
@@ -13,6 +14,7 @@ import com.forestry.counter.presentation.screens.group.GroupScreen
 import com.forestry.counter.presentation.screens.groups.GroupsScreen
 import com.forestry.counter.presentation.screens.packs.PackManagerScreen
 import com.forestry.counter.presentation.screens.settings.PriceTablesEditorScreen
+import com.forestry.counter.presentation.screens.settings.SettingsHomeScreen
 import com.forestry.counter.presentation.screens.settings.SettingsScreen
 import com.forestry.counter.presentation.screens.settings.PrivacyPolicyScreen
 import com.forestry.counter.presentation.screens.account.AccountScreen
@@ -45,7 +47,7 @@ fun NavGraphBuilder.settingsNavGraph(
                 navController.navigate(Screen.GroupDetail.createRoute(groupId))
             },
             onNavigateToSettings = {
-                navController.navigate(Screen.Settings.route)
+                navController.navigate(Screen.SettingsHome.route)
             },
             preferencesManager = app.userPreferences,
             onNavigateToIbp = { navController.navigate(Screen.IbpProjects.route) }
@@ -113,13 +115,60 @@ fun NavGraphBuilder.settingsNavGraph(
     }
 
     composable(
-        route = Screen.Settings.route,
+        route = Screen.SettingsHome.route,
         enterTransition = transitions.enter,
         exitTransition = transitions.exit,
         popEnterTransition = transitions.popEnter,
         popExitTransition = transitions.popExit,
     ) {
+        SettingsHomeScreen(
+            onNavigateToSection = { section ->
+                // « Compte » n'est pas une sous-page filtrée de Réglages : c'est
+                // l'écran Compte lui-même, ré-utilisé tel quel (ID-F-013).
+                if (section == "compte") {
+                    navController.navigate(Screen.Account.route)
+                } else {
+                    navController.navigate(Screen.Settings.createRoute(section))
+                }
+            },
+            onNavigateBack = { navController.popBackStack() },
+        )
+    }
+
+    composable(
+        route = Screen.Settings.route,
+        arguments = listOf(
+            navArgument("section") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            }
+        ),
+        enterTransition = transitions.enter,
+        exitTransition = transitions.exit,
+        popEnterTransition = transitions.popEnter,
+        popExitTransition = transitions.popExit,
+    ) { backStackEntry ->
+        val category = backStackEntry.arguments?.getString("section")
+        val categoryFilter = when (category) {
+            "apparence" -> setOf("apparence")
+            "foret" -> setOf("tarifs", "produits_prix", "carte_hors_ligne", "exports")
+            "interaction" -> setOf("interaction")
+            "donnees" -> setOf("donnees", "confidentialite", "sauvegardes")
+            "a_propos" -> setOf("a_propos")
+            else -> null
+        }
+        val screenTitle = when (category) {
+            "apparence" -> stringResource(com.forestry.counter.R.string.settings_category_appearance)
+            "foret" -> stringResource(com.forestry.counter.R.string.settings_category_forestry)
+            "interaction" -> stringResource(com.forestry.counter.R.string.settings_category_interaction)
+            "donnees" -> stringResource(com.forestry.counter.R.string.settings_category_data)
+            "a_propos" -> stringResource(com.forestry.counter.R.string.settings_category_about)
+            else -> null
+        }
         SettingsScreen(
+            categoryFilter = categoryFilter,
+            screenTitle = screenTitle,
             preferencesManager = app.userPreferences,
             exportDataUseCase = app.exportDataUseCase,
             parameterRepository = app.parameterRepository,
@@ -153,7 +202,7 @@ fun NavGraphBuilder.settingsNavGraph(
         AccountScreen(
             repository = app.identityRepository,
             onNavigateToLogin = { navController.navigate(Screen.Login.route) },
-            onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+            onNavigateToSettings = { navController.navigate(Screen.SettingsHome.route) },
             onNavigateBack = { navController.popBackStack() },
         )
     }

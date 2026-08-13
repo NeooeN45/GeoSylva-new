@@ -45,19 +45,23 @@ val Outline = Color(0xFF73796E)
 val OutlineVariant = Color(0xFFC3C8BC)
 
 // ── Thème sombre ─────────────────────────────────────────────────────────────
+// Neutres vraiment neutres (R=G=B) : la version précédente teintait fond et
+// surfaces vers le vert-jaune (ex. #12140F, G>R>B), perceptible comme un noir
+// « sale ». Seuls les accents (Primary, Tertiary) portent la couleur de
+// marque ; le fond reste un noir gris neutre, proche d'un noir OLED.
 val PrimaryDark = Color(0xFF8FD1A4)       // Vert clair lisible sur fond sombre
-val PrimaryVariantDark = Color(0xFF1B4430)
+val PrimaryVariantDark = Color(0xFF1B3D2C)
 val SecondaryDark = Color(0xFFB1CCBB)
-val SecondaryVariantDark = Color(0xFF334B3D)
+val SecondaryVariantDark = Color(0xFF2E3F35)
 
-val BackgroundDark = Color(0xFF12140F)    // Presque noir, teinté vert chaud
-val SurfaceDark = Color(0xFF1B1E18)
+val BackgroundDark = Color(0xFF0E0F0E)    // Quasi noir, neutre — plus de teinte jaune
+val SurfaceDark = Color(0xFF171817)
 val ErrorDark = Color(0xFFFFB4AB)
 
 val OnPrimaryDark = Color(0xFF0B2417)
 val OnSecondaryDark = Color(0xFF1D3527)
-val OnBackgroundDark = Color(0xFFE2E3DC)
-val OnSurfaceDark = Color(0xFFE2E3DC)
+val OnBackgroundDark = Color(0xFFE4E4E2)
+val OnSurfaceDark = Color(0xFFE4E4E2)
 val OnErrorDark = Color(0xFF690005)
 
 val TertiaryDark = Color(0xFFFFB95C)
@@ -67,10 +71,10 @@ val OnTertiaryContainerDark = Color(0xFFFFDDB3)
 
 val OnPrimaryContainerDark = Color(0xFFB8E6C5)
 val OnSecondaryContainerDark = Color(0xFFCDE8D8)
-val SurfaceVariantDark = Color(0xFF424940)
-val OnSurfaceVariantDark = Color(0xFFC3C8BC)
-val OutlineDark = Color(0xFF8D9387)
-val OutlineVariantDark = Color(0xFF424940)
+val SurfaceVariantDark = Color(0xFF3A3B3A)
+val OnSurfaceVariantDark = Color(0xFFC4C5C2)
+val OutlineDark = Color(0xFF8E8F8C)
+val OutlineVariantDark = Color(0xFF3A3B3A)
 
 // ── Surfaces conteneurs Material 3 ───────────────────────────────────────────
 // Material 3 a introduit une famille `surfaceContainer*` distincte de
@@ -88,15 +92,15 @@ val SurfaceContainerHighest = Color(0xFFE4E3DE)
 val InverseSurface = Color(0xFF2E322C)
 val InverseOnSurface = Color(0xFFF0F1EB)
 
-val SurfaceDimDark = Color(0xFF12140F)
-val SurfaceBrightDark = Color(0xFF383B34)
-val SurfaceContainerLowestDark = Color(0xFF0D0F0A)
-val SurfaceContainerLowDark = Color(0xFF1A1D17)
-val SurfaceContainerDark = Color(0xFF1E211B)
-val SurfaceContainerHighDark = Color(0xFF292C25)
-val SurfaceContainerHighestDark = Color(0xFF343730)
-val InverseSurfaceDark = Color(0xFFE2E3DC)
-val InverseOnSurfaceDark = Color(0xFF2E322C)
+val SurfaceDimDark = Color(0xFF0E0F0E)
+val SurfaceBrightDark = Color(0xFF313231)
+val SurfaceContainerLowestDark = Color(0xFF090A09)
+val SurfaceContainerLowDark = Color(0xFF161716)
+val SurfaceContainerDark = Color(0xFF1B1C1B)
+val SurfaceContainerHighDark = Color(0xFF252625)
+val SurfaceContainerHighestDark = Color(0xFF303130)
+val InverseSurfaceDark = Color(0xFFE4E4E2)
+val InverseOnSurfaceDark = Color(0xFF2E2F2E)
 
 // ── Couleurs posées sur un média (vidéo ou photo) ────────────────────────────
 // Le vert de marque #2D5F3F est calibré pour du texte sur fond clair : sur une
@@ -127,7 +131,7 @@ val FieldOnSurface = Color(0xFF000000)
 val FieldOutline = Color(0xFF2D5F3F)
 
 val FieldBackgroundDark = Color(0xFF000000)
-val FieldSurfaceDark = Color(0xFF0A0D08)
+val FieldSurfaceDark = Color(0xFF0A0A0A)
 val FieldOnSurfaceDark = Color(0xFFFFFFFF)
 val FieldOutlineDark = Color(0xFF8FD1A4)
 

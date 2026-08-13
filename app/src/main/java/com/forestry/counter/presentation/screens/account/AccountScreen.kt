@@ -1,18 +1,24 @@
 package com.forestry.counter.presentation.screens.account
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Edit
@@ -22,6 +28,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -30,6 +37,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -40,6 +48,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -52,6 +62,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import com.forestry.counter.data.remote.identity.GoogleCredentialClient
+import com.forestry.counter.presentation.theme.Motion
+import com.forestry.counter.presentation.theme.GsShape
+import com.forestry.counter.presentation.theme.Space
+import com.forestry.counter.presentation.theme.Touch
 import com.forestry.counter.domain.model.IdentityProvider
 import com.forestry.counter.domain.model.ProviderAvailability
 import com.forestry.counter.domain.model.AccountSession
@@ -120,6 +134,7 @@ fun AccountScreen(
         AccountContent(
             state = state,
             onLogin = onNavigateToLogin,
+            onNavigateToSettings = onNavigateToSettings,
             onLogout = viewModel::logout,
             onUpdateDisplayName = viewModel::updateDisplayName,
             onVerificationCodeChange = viewModel::setVerificationCode,
@@ -136,6 +151,7 @@ fun AccountScreen(
 private fun AccountContent(
     state: AccountUiState,
     onLogin: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     onLogout: () -> Unit,
     onUpdateDisplayName: (String?) -> Unit,
     onVerificationCodeChange: (String) -> Unit,
@@ -151,6 +167,7 @@ private fun AccountContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item { AccountHero(state.session) }
+        item { SettingsEntryCard(onClick = onNavigateToSettings) }
         state.error?.let { error -> item { IdentityErrorBanner(error) } }
         state.notice?.let { notice -> item { AccountNoticeCard(notice) } }
         if (state.session == null) {
@@ -182,6 +199,78 @@ private fun AccountContent(
             item { LogoutCard(state.isLoggingOut, onLogout) }
         }
         item { ProviderCapabilitiesCard(state.providers, state.isLoadingProviders) }
+    }
+}
+
+/**
+ * Point d'entrée principal vers les Réglages.
+ *
+ * La seule autre entrée était une icône de 24dp dans la barre du haut —
+ * quasi invisible et sans aucun contexte. Cette carte est le premier élément
+ * sous l'en-tête : impossible à manquer, avec un intitulé et un sous-titre
+ * qui expliquent ce qu'on y trouve avant même d'appuyer.
+ */
+@Composable
+private fun SettingsEntryCard(onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) Motion.PRESS_SCALE else 1f,
+        animationSpec = Motion.springSnappy(),
+        label = "settingsEntryScale",
+    )
+
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale),
+        shape = GsShape.lg,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
+        interactionSource = interactionSource,
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(Space.md)
+                .heightIn(min = Touch.min),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.md),
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.size(48.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.settings),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stringResource(R.string.settings_entry_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

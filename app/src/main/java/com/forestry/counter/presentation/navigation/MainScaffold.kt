@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.forestry.counter.ForestryCounterApplication
-import com.forestry.counter.presentation.screens.account.AccountScreen
+import com.forestry.counter.presentation.screens.settings.SettingsHomeScreen
 import com.forestry.counter.presentation.screens.common.ComingSoonScreen
 import com.forestry.counter.presentation.screens.explorer.ExplorerCategory
 import com.forestry.counter.presentation.screens.explorer.ExplorerScreen
@@ -96,6 +96,7 @@ fun TopLevelTabContent(
     onNavigateToProjects: () -> Unit,
     onNavigateToLogin: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToSettingsCategory: (String) -> Unit,
     onCreateForest: () -> Unit,
     onCategoryClick: (ExplorerCategory) -> Unit,
     modifier: Modifier = Modifier,
@@ -125,15 +126,14 @@ fun TopLevelTabContent(
         BottomNavDestination.CARTE.route -> {
             ComingSoonScreen("Carte", modifier)
         }
-        BottomNavDestination.COMPTE.route -> {
-            // L'écran existait déjà mais n'était atteignable que par les
-            // réglages — l'onglet affichait « À venir ». ID-F-013 impose un
-            // espace compte distinct de la page de connexion.
-            AccountScreen(
-                repository = app.identityRepository,
-                onNavigateToLogin = onNavigateToLogin,
-                onNavigateToSettings = onNavigateToSettings,
-                onNavigateBack = null,
+        BottomNavDestination.PARAMETRES.route -> {
+            // L'onglet portait Compte jusqu'ici — un simple bouton engrenage
+            // minuscule dans sa barre du haut était le seul accès aux
+            // réglages. L'onglet héberge maintenant directement l'accueil
+            // Réglages (recherche + catégories) ; Compte reste à une carte
+            // de distance via la catégorie « Compte ».
+            SettingsHomeScreen(
+                onNavigateToSection = onNavigateToSettingsCategory,
                 modifier = modifier,
             )
         }

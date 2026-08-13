@@ -4,19 +4,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Map
-import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
  * Destinations de la bottom navigation principale — spec GEOSYLVA-003 §29.3.
  *
- * 5 entrées : Accueil, Explorer, Missions, Carte, Compte.
+ * 5 entrées : Accueil, Explorer, Missions, Carte, Paramètres.
  *
- * Pendant Lot 1, Missions / Carte / Compte sont des stubs "À venir".
+ * Pendant Lot 1, Missions / Carte sont des stubs "À venir". Paramètres
+ * héberge l'accueil Réglages (recherche + catégories) ; Compte reste
+ * atteignable via sa catégorie dédiée, à une carte de distance.
  * Accueil et Explorer sont implémentés respectivement en Sprint 3.2 et 3.3.
  */
 enum class BottomNavDestination(
@@ -53,12 +55,11 @@ enum class BottomNavDestination(
         unselectedIcon = Icons.Outlined.Map,
         isImplemented = false,
     ),
-    COMPTE(
-        route = "compte",
-        label = "Compte",
-        selectedIcon = Icons.Filled.Person,
-        unselectedIcon = Icons.Outlined.Person,
-        isImplemented = false,
+    PARAMETRES(
+        route = "parametres",
+        label = "Paramètres",
+        selectedIcon = Icons.Filled.Settings,
+        unselectedIcon = Icons.Outlined.Settings,
     );
 
     companion object {

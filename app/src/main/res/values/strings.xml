@@ -66,6 +66,22 @@
 
     <!-- Settings -->
     <string name="settings">Paramètres</string>
+    <string name="settings_entry_subtitle">Thème, langue, exports, sauvegardes…</string>
+    <string name="settings_search_placeholder">Rechercher un réglage…</string>
+    <string name="settings_search_voice_cd">Recherche vocale</string>
+    <string name="settings_search_empty">Aucun réglage ne correspond à cette recherche.</string>
+    <string name="settings_category_account">Compte</string>
+    <string name="settings_category_account_sub">Connexion, Quintessences, Google</string>
+    <string name="settings_category_appearance">Apparence</string>
+    <string name="settings_category_appearance_sub">Thème, langue, couleurs, police</string>
+    <string name="settings_category_forestry">Terrain &amp; forêt</string>
+    <string name="settings_category_forestry_sub">Tarifs, prix, carte, exports</string>
+    <string name="settings_category_interaction">Interaction</string>
+    <string name="settings_category_interaction_sub">Vibrations, sons, animations</string>
+    <string name="settings_category_data">Données &amp; confidentialité</string>
+    <string name="settings_category_data_sub">Sauvegardes, export, RGPD</string>
+    <string name="settings_category_about">À propos</string>
+    <string name="settings_category_about_sub">Version, mentions légales</string>
     <string name="appearance">Apparence</string>
     <string name="language">Langue</string>
     <string name="system">Système</string>
