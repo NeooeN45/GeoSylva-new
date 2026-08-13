@@ -3,18 +3,18 @@ package com.forestry.counter.presentation.navigation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
@@ -137,9 +137,12 @@ fun MainScaffold(
  * Mini-navigation repliée — remplace l'ancienne barre complète "révélée"
  * qui, une fois ouverte, ne pouvait plus se refermer et masquait le FAB de
  * l'écran (ex. "Créer un groupe"). Centrée, légèrement surélevée par
- * rapport au bord ; repliée par défaut sur une simple icône, elle se
- * déplie vers le haut sur les 5 destinations et se referme du même tap
- * qui l'a ouverte.
+ * rapport au bord ; repliée par défaut sur une simple icône. Le bouton
+ * bascule reste ancré au centre — l'ouverture est horizontale et
+ * symétrique de part et d'autre : la pastille entière est centrée
+ * (`Alignment.BottomCenter`), donc en grandissant vers la largeur des 5
+ * destinations, elle s'étend d'autant à gauche qu'à droite plutôt que de
+ * déraper d'un côté.
  */
 @Composable
 private fun CollapsedMiniNav(
@@ -159,18 +162,16 @@ private fun CollapsedMiniNav(
         tonalElevation = 3.dp,
         shadowElevation = 2.dp,
     ) {
-        Column(
-            modifier = Modifier.width(56.dp).padding(vertical = Space.xs),
-            horizontalAlignment = Alignment.CenterHorizontally,
+        Row(
+            modifier = Modifier.height(56.dp).padding(horizontal = Space.xs),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Les destinations apparaissent au-dessus du bouton bascule —
-            // le déploiement se fait donc vers le haut, pas sur le côté.
             AnimatedVisibility(
                 visible = expanded,
-                enter = fadeIn(tween(180)) + expandVertically(tween(180), expandFrom = Alignment.Bottom),
-                exit = fadeOut(tween(140)) + shrinkVertically(tween(140), shrinkTowards = Alignment.Bottom),
+                enter = fadeIn(tween(180)) + expandHorizontally(tween(180)),
+                exit = fadeOut(tween(140)) + shrinkHorizontally(tween(140)),
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     BottomNavDestination.entries.forEach { destination ->
                         IconButton(onClick = { onNavigateToTab(destination.route) }, modifier = Modifier.size(48.dp)) {
                             Icon(
@@ -183,7 +184,7 @@ private fun CollapsedMiniNav(
                     }
                 }
             }
-            IconButton(onClick = { expanded = !expanded }, modifier = Modifier.size(56.dp)) {
+            IconButton(onClick = { expanded = !expanded }, modifier = Modifier.size(48.dp)) {
                 Icon(
                     imageVector = if (expanded) Icons.Filled.Close else Icons.Filled.Apps,
                     contentDescription = if (expanded) "Fermer la navigation" else "Ouvrir la navigation",
