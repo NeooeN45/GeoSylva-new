@@ -105,6 +105,11 @@
     <string name="dynamic_color">Dynamic Color</string>
     <string name="use_system_palette">Use system-derived color palette</string>
     <string name="accent_color">Accent Color</string>
+    <string name="container_accent_color">Highlighted block color</string>
+    <string name="container_accent_color_desc">Stat tiles and other highlighted blocks — independent from the accent color above.</string>
+    <string name="default_color">Default color</string>
+    <string name="custom_color">Custom color</string>
+    <string name="custom_color_hex_label">Hex code</string>
     <string name="glass_blur">Glassmorphism (blur)</string>
     <string name="glass_blur_desc">Enable backdrop blur in dark mode (Android 12+)</string>
     

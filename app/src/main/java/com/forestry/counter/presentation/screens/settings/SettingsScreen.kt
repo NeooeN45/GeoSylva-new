@@ -180,6 +180,7 @@ fun SettingsScreen(
     val hapticEnabled by preferencesManager.hapticEnabled.collectAsStateWithLifecycle(initialValue = true)
     val csvSeparator by preferencesManager.csvSeparator.collectAsStateWithLifecycle(initialValue = ",")
     val accentColor by preferencesManager.accentColor.collectAsStateWithLifecycle(initialValue = "#4CAF50")
+    val containerAccentColor by preferencesManager.containerAccentColor.collectAsStateWithLifecycle(initialValue = null)
     val dynamicColorEnabled by preferencesManager.dynamicColorEnabled.collectAsStateWithLifecycle(initialValue = true)
     val backgroundImageEnabled by preferencesManager.backgroundImageEnabled.collectAsStateWithLifecycle(initialValue = true)
     val soundEnabled by preferencesManager.soundEnabled.collectAsStateWithLifecycle(initialValue = true)
@@ -673,48 +674,61 @@ fun SettingsScreen(
                             }
                         },
                         label = { Text(stringResource(R.string.settings_background_default_forest)) },
-                        leadingIcon = { Icon(Icons.Default.Forest, contentDescription = stringResource(R.string.cd_forest)) }
+                        leadingIcon = { Icon(Icons.Default.Forest, contentDescription = stringResource(R.string.cd_forest)) },
+                        border = null,
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            leadingIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
                     )
                     AssistChip(
                         onClick = {
                             backgroundImagePickerLauncher.launch(arrayOf("image/*"))
                         },
                         label = { Text(stringResource(R.string.settings_background_personal_photo)) },
-                        leadingIcon = { Icon(Icons.Default.Photo, contentDescription = null) }
+                        leadingIcon = { Icon(Icons.Default.Photo, contentDescription = null) },
+                        border = null,
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            leadingIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
                     )
                 }
 
-                // Accent Color chips (neon green/teal palette) with selection ring
+                // Couleur d'accent — boutons et icônes. Palette large (39 teintes
+                // sur tout le cercle chromatique, plus une entrée personnalisée)
+                // : la précédente ne proposait que des verts et neutres, jugée
+                // trop pauvre.
                 Text(text = stringResource(R.string.accent_color), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-                var showMoreAccent by remember { mutableStateOf(false) }
-                FlowRow(modifier = Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Palette dérivée de « Forêt tempérée » (Color.kt) : verts
-                    // et neutres du thème, quelques accents chauds cohérents
-                    // (ambre de marque, terre cuite). L'ancienne liste était un
-                    // copier-coller du vert néon d'origine — même après son
-                    // retrait de la palette par défaut, elle resurgissait ici.
-                    val options = listOf(
-                        "#2D5F3F", "#8FD1A4", "#4A6B58", "#B1CCBB", "#1B4430",
-                        "#0F6B45", "#9CE8BE", "#4E5B31", "#8FC24E", "#3E6B52",
-                        "#B26A00", "#FFB95C", "#A85218", "#73796E", "#191C17",
-                    )
-                    val list = if (showMoreAccent) options else options.take(10)
-                    list.forEach { hex ->
-                        val col = try { androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(hex)) } catch (e: Exception) { MaterialTheme.colorScheme.primary }
-                        val selected = accentColor.equals(hex, true)
-                        Surface(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clickable { scope.launch { preferencesManager.setAccentColor(hex) } },
-                            color = col,
-                            shape = MaterialTheme.shapes.small,
-                            border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.onSurface) else BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-                        ) {}
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
-                    TextButton(onClick = { showMoreAccent = !showMoreAccent }) { Text(stringResource(if (showMoreAccent) R.string.less_colors else R.string.more_colors)) }
-                }
+                ColorPickerRow(
+                    current = accentColor,
+                    onPick = { hex -> scope.launch { preferencesManager.setAccentColor(hex) } },
+                    allowReset = false,
+                )
+
+                // Couleur des blocs mis en avant (tuiles de statistiques…) —
+                // distincte de la couleur d'accent ci-dessus : elle restait
+                // figée au vert de marque quel que soit l'accent choisi.
+                Text(
+                    text = stringResource(R.string.container_accent_color),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+                Text(
+                    text = stringResource(R.string.container_accent_color_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                ColorPickerRow(
+                    current = containerAccentColor,
+                    onPick = { hex -> scope.launch { preferencesManager.setContainerAccentColor(hex) } },
+                    allowReset = true,
+                    onReset = { scope.launch { preferencesManager.setContainerAccentColor(null) } },
+                )
 
                 // Keep screen on
                 ListItem(
@@ -984,21 +998,33 @@ fun SettingsScreen(
                                 onClick = {
                                     exportScope = "PROJECT"
                                 },
-                                label = { Text(stringResource(R.string.settings_export_scope_project), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                                label = { Text(stringResource(R.string.settings_export_scope_project), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                border = null,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                ),
                             )
                             FilterChip(
                                 selected = exportScope == "PARCELLE",
                                 onClick = {
                                     exportScope = "PARCELLE"
                                 },
-                                label = { Text(stringResource(R.string.settings_export_scope_parcelle), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                                label = { Text(stringResource(R.string.settings_export_scope_parcelle), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                border = null,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                ),
                             )
                             FilterChip(
                                 selected = exportScope == "PLACETTE",
                                 onClick = {
                                     exportScope = "PLACETTE"
                                 },
-                                label = { Text(stringResource(R.string.settings_export_scope_placette), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                                label = { Text(stringResource(R.string.settings_export_scope_placette), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                border = null,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                ),
                             )
                         }
 
@@ -1784,6 +1810,147 @@ fun SettingsScreen(
         }
     }
 
+}
+
+// Palette large — tout le cercle chromatique plutôt que les seuls verts et
+// neutres de marque, pour que « plus de couleurs » veuille vraiment dire
+// quelque chose. Chaque teinte reste assez saturée pour rester lisible en
+// primaire (texte blanc dessus) comme en conteneur (texte contrastant calculé
+// par ColorUtils.getContrastingTextColor).
+private val EXTENDED_COLOR_PALETTE = listOf(
+    "#2D5F3F", "#8FD1A4", "#4A6B58", "#B1CCBB", "#1B4430",
+    "#0F6B45", "#9CE8BE", "#4E5B31", "#8FC24E", "#3E6B52",
+    "#00897B", "#4DB6AC", "#0097A7", "#4DD0E1",
+    "#1565C0", "#64B5F6", "#3949AB", "#7986CB",
+    "#6A1B9A", "#BA68C8", "#4527A0",
+    "#AD1457", "#F06292", "#C62828", "#E57373",
+    "#D84315", "#EF6C00", "#FFB74D", "#FF8F00",
+    "#B26A00", "#FFB95C", "#A85218",
+    "#9E9D24", "#AFB42B",
+    "#6D4C41", "#A1887F",
+    "#455A64", "#90A4AE", "#73796E", "#616161", "#9E9E9E", "#191C17",
+)
+
+/**
+ * Sélecteur de couleur partagé — accent (boutons/icônes) et couleur des
+ * blocs mis en avant utilisent la même palette large, avec repli sur une
+ * couleur personnalisée en hexadécimal pour une liberté totale.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ColorPickerRow(
+    current: String?,
+    onPick: (String) -> Unit,
+    allowReset: Boolean,
+    onReset: () -> Unit = {},
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var showCustomDialog by remember { mutableStateOf(false) }
+    val visible = if (expanded) EXTENDED_COLOR_PALETTE else EXTENDED_COLOR_PALETTE.take(15)
+
+    FlowRow(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (allowReset) {
+            Surface(
+                modifier = Modifier.size(32.dp).clickable { onReset() },
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                shape = MaterialTheme.shapes.small,
+                border = if (current == null) BorderStroke(2.dp, MaterialTheme.colorScheme.onSurface) else null,
+            ) {
+                Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
+                    Icon(
+                        Icons.Default.RestartAlt,
+                        contentDescription = stringResource(R.string.default_color),
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        visible.forEach { hex ->
+            val col = try {
+                androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(hex))
+            } catch (e: Exception) {
+                MaterialTheme.colorScheme.primary
+            }
+            val selected = current?.equals(hex, true) == true
+            Surface(
+                modifier = Modifier.size(32.dp).clickable { onPick(hex) },
+                color = col,
+                shape = MaterialTheme.shapes.small,
+                border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.onSurface) else null,
+            ) {}
+        }
+        // Couleur personnalisée — la palette, même large, ne couvre jamais
+        // tous les cas ; un champ hexadécimal ouvre le choix en entier.
+        Surface(
+            modifier = Modifier.size(32.dp).clickable { showCustomDialog = true },
+            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            shape = MaterialTheme.shapes.small,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+        ) {
+            Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
+                Icon(
+                    Icons.Default.Colorize,
+                    contentDescription = stringResource(R.string.custom_color),
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+    Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+        TextButton(onClick = { expanded = !expanded }) {
+            Text(stringResource(if (expanded) R.string.less_colors else R.string.more_colors))
+        }
+    }
+
+    if (showCustomDialog) {
+        var hexInput by remember { mutableStateOf(current?.removePrefix("#") ?: "2D5F3F") }
+        val previewColor = try {
+            androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor("#$hexInput"))
+        } catch (e: Exception) {
+            null
+        }
+        AlertDialog(
+            onDismissRequest = { showCustomDialog = false },
+            title = { Text(stringResource(R.string.custom_color)) },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = hexInput,
+                        onValueChange = { hexInput = it.filter { c -> c.isLetterOrDigit() }.take(6) },
+                        label = { Text(stringResource(R.string.custom_color_hex_label)) },
+                        leadingIcon = { Text("#", style = MaterialTheme.typography.bodyLarge) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        color = previewColor ?: MaterialTheme.colorScheme.surfaceContainerHighest,
+                        shape = MaterialTheme.shapes.small,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)),
+                    ) {}
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = previewColor != null,
+                    onClick = {
+                        onPick("#$hexInput")
+                        showCustomDialog = false
+                    },
+                ) { Text(stringResource(R.string.save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCustomDialog = false }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
 }
 
 private fun parseWktPointZ(wkt: String?): Triple<Double?, Double?, Double?> =

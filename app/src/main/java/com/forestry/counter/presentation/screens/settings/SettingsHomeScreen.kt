@@ -18,11 +18,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items as lazyColumnItems
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -48,8 +52,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -63,6 +65,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -233,22 +236,61 @@ fun SettingsHomeScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
+            // Pill compacte plutôt qu'un OutlinedTextField Material standard :
+            // celui-ci réserve une hauteur pensée pour un libellé flottant
+            // (~64dp) même réduit au seul placeholder — bien plus que
+            // nécessaire pour une simple recherche, et perçu comme
+            // disproportionné par rapport au reste de l'écran.
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = Space.screenH, vertical = Space.sm),
-                placeholder = { Text(stringResource(R.string.settings_search_placeholder)) },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                trailingIcon = {
-                    Row {
-                        if (query.isNotEmpty()) {
-                            IconButton(onClick = { query = "" }) {
-                                Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.cd_clear))
-                            }
+                    .padding(horizontal = Space.screenH, vertical = Space.xs)
+                    .height(48.dp),
+                shape = GsShape.pill,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = Space.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Filled.Search,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(modifier = Modifier.width(Space.xs))
+                    Box(modifier = Modifier.weight(1f)) {
+                        if (query.isEmpty()) {
+                            Text(
+                                stringResource(R.string.settings_search_placeholder),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
-                        IconButton(onClick = {
+                        BasicTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurface,
+                            ),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    if (query.isNotEmpty()) {
+                        IconButton(onClick = { query = "" }, modifier = Modifier.size(36.dp)) {
+                            Icon(
+                                Icons.Filled.Clear,
+                                contentDescription = stringResource(R.string.cd_clear),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                    IconButton(
+                        modifier = Modifier.size(36.dp),
+                        onClick = {
                             val intent = android.content.Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                                 putExtra(
                                     RecognizerIntent.EXTRA_LANGUAGE_MODEL,
@@ -262,17 +304,16 @@ fun SettingsHomeScreen(
                                 // Aucun moteur de reconnaissance vocale installé — dégradation
                                 // silencieuse, la recherche texte reste pleinement utilisable.
                             }
-                        }) {
-                            Icon(Icons.Filled.Mic, contentDescription = stringResource(R.string.settings_search_voice_cd))
-                        }
+                        },
+                    ) {
+                        Icon(
+                            Icons.Filled.Mic,
+                            contentDescription = stringResource(R.string.settings_search_voice_cd),
+                            modifier = Modifier.size(20.dp),
+                        )
                     }
-                },
-                singleLine = true,
-                shape = GsShape.pill,
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                ),
-            )
+                }
+            }
 
             AnimatedContent(
                 targetState = query.isBlank(),

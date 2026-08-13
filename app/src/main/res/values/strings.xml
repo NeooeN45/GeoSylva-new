@@ -97,6 +97,11 @@
     <string name="dynamic_color">Couleurs dynamiques</string>
     <string name="use_system_palette">Utiliser la palette du système</string>
     <string name="accent_color">Couleur d’accent</string>
+    <string name="container_accent_color">Couleur des blocs mis en avant</string>
+    <string name="container_accent_color_desc">Tuiles de statistiques et autres blocs — indépendante de la couleur d’accent ci-dessus.</string>
+    <string name="default_color">Couleur par défaut</string>
+    <string name="custom_color">Couleur personnalisée</string>
+    <string name="custom_color_hex_label">Code hexadécimal</string>
     <string name="glass_blur">Effet verre (flou)</string>
     <string name="glass_blur_desc">Activer le flou en mode sombre (Android 12+)</string>
 

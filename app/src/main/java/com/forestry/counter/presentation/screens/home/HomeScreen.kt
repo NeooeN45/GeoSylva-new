@@ -36,7 +36,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -136,20 +135,13 @@ private fun HomeContent(
                     contentScale = ContentScale.Crop,
                 )
             }
-            // La photo reste visible en haut de l'écran (identité du registre
-            // consultation) puis s'efface en dégradé vers le fond plein pour
-            // que les cartes et le texte hors carte restent lisibles au scroll.
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            0f to MaterialTheme.colorScheme.background.copy(alpha = 0.35f),
-                            0.55f to MaterialTheme.colorScheme.background,
-                            1f to MaterialTheme.colorScheme.background,
-                        )
-                    ),
-            )
+            // Photo plein écran, sans dégradé qui l'efface vers le bas — même
+            // traitement que Groupes/Martelage/Parcelles/Placettes (registre
+            // consultation, doctrine deux registres). Un essai précédent
+            // assombrissait la moitié basse en un aplat uni (« carré noir »)
+            // et, en clair, la lavait d'un voile blanchâtre : la lisibilité du
+            // texte hors carte repose sur les cartes elles-mêmes, pas sur un
+            // scrim qui masque la photo.
         }
 
         LazyColumn(

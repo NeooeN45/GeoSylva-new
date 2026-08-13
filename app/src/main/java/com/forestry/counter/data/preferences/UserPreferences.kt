@@ -23,6 +23,7 @@ class UserPreferencesManager(private val context: Context) {
         // Theme preferences
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
+        val CONTAINER_ACCENT_COLOR = stringPreferencesKey("container_accent_color")
         val BACKGROUND_TYPE = stringPreferencesKey("background_type")
         val BACKGROUND_IMAGE_ENABLED = booleanPreferencesKey("background_image_enabled")
         val BACKGROUND_IMAGE_URI = stringPreferencesKey("background_image_uri")
@@ -111,6 +112,19 @@ class UserPreferencesManager(private val context: Context) {
     suspend fun setAccentColor(color: String) {
         dataStore.edit { prefs ->
             prefs[ACCENT_COLOR] = color
+        }
+    }
+
+    // Couleur des blocs mis en avant (ex. tuiles de statistiques) — distincte
+    // de l'accent des boutons/icônes (ACCENT_COLOR). `null` = dérivée du
+    // thème par défaut (PrimaryVariant / PrimaryVariantDark, Color.kt).
+    val containerAccentColor: Flow<String?> = dataStore.data.map { prefs ->
+        prefs[CONTAINER_ACCENT_COLOR]
+    }
+
+    suspend fun setContainerAccentColor(color: String?) {
+        dataStore.edit { prefs ->
+            if (color == null) prefs.remove(CONTAINER_ACCENT_COLOR) else prefs[CONTAINER_ACCENT_COLOR] = color
         }
     }
 

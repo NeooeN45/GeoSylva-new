@@ -91,6 +91,11 @@ private val DarkColorScheme = darkColorScheme(
 fun ForestryCounterTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
     accentColor: Color = Primary,
+    // Couleur des blocs mis en avant (tuiles de statistiques, etc.) —
+    // demandée séparément de `accentColor` : elle ne pilotait jusqu'ici que
+    // les boutons/icônes, jamais ces blocs, restés au vert de marque fixe
+    // quel que soit l'accent choisi. `null` = comportement historique.
+    containerAccentColor: Color? = null,
     // Défaut à `false` : sur Android 12+, la palette Material You dérivée du
     // fond d'écran de l'utilisateur écrase entièrement l'identité GeoSylva.
     // C'est acceptable pour une application système, pas pour un outil métier.
@@ -113,10 +118,26 @@ fun ForestryCounterTheme(
         // L'accent personnalisé n'écrase la couleur de marque que si
         // l'utilisateur en a explicitement choisi un autre. Sinon une couleur
         // pensée pour le thème clair se retrouverait appliquée au thème sombre.
-        darkTheme -> if (accentColor == Primary) DarkColorScheme
-                     else DarkColorScheme.copy(primary = accentColor)
-        else -> if (accentColor == Primary) LightColorScheme
-                else LightColorScheme.copy(primary = accentColor)
+        darkTheme -> {
+            var scheme = if (accentColor == Primary) DarkColorScheme else DarkColorScheme.copy(primary = accentColor)
+            if (containerAccentColor != null) {
+                scheme = scheme.copy(
+                    primaryContainer = containerAccentColor,
+                    onPrimaryContainer = com.forestry.counter.presentation.utils.ColorUtils.getContrastingTextColor(containerAccentColor),
+                )
+            }
+            scheme
+        }
+        else -> {
+            var scheme = if (accentColor == Primary) LightColorScheme else LightColorScheme.copy(primary = accentColor)
+            if (containerAccentColor != null) {
+                scheme = scheme.copy(
+                    primaryContainer = containerAccentColor,
+                    onPrimaryContainer = com.forestry.counter.presentation.utils.ColorUtils.getContrastingTextColor(containerAccentColor),
+                )
+            }
+            scheme
+        }
     }
 
     val scale = fontSize.scale
