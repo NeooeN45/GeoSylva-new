@@ -57,7 +57,10 @@ enum class BottomNavDestination(
     ),
     PARAMETRES(
         route = "parametres",
-        label = "Paramètres",
+        // « Paramètres » (10 caractères, contre 5-8 pour les autres onglets)
+        // était le seul libellé à passer sur deux lignes dans la barre du
+        // bas. « Réglages » tient sur une ligne, comme ses voisins.
+        label = "Réglages",
         selectedIcon = Icons.Filled.Settings,
         unselectedIcon = Icons.Outlined.Settings,
     );

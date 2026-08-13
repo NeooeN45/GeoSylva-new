@@ -1811,14 +1811,34 @@ fun SettingsSection(
     } else {
         Modifier
     }
-    Column(modifier = anchorModifier) {
+    // Chaque section est sa propre carte — la version précédente posait
+    // les ListItem directement sur le fond de l'écran, sans regroupement
+    // visuel. La séparation entre sections vient maintenant de l'espace
+    // entre les cartes, pas d'un simple trait fin (HorizontalDivider).
+    Column(
+        modifier = anchorModifier
+            .padding(horizontal = com.forestry.counter.presentation.theme.Space.screenH)
+            .padding(top = com.forestry.counter.presentation.theme.Space.md),
+    ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier.padding(
+                start = com.forestry.counter.presentation.theme.Space.xs,
+                bottom = com.forestry.counter.presentation.theme.Space.xs,
+            ),
         )
-        content()
+        Surface(
+            shape = com.forestry.counter.presentation.theme.GsShape.lg,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = com.forestry.counter.presentation.theme.Elevation.card,
+        ) {
+            Column(modifier = Modifier.padding(vertical = com.forestry.counter.presentation.theme.Space.xxs)) {
+                content()
+            }
+        }
     }
 }
 

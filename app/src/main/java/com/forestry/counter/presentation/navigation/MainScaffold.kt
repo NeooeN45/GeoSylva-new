@@ -68,7 +68,13 @@ fun MainScaffold(
                                     contentDescription = destination.label,
                                 )
                             },
-                            label = { Text(destination.label) },
+                            label = {
+                                Text(
+                                    destination.label,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                )
+                            },
                         )
                     }
                 }

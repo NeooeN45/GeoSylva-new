@@ -82,16 +82,17 @@ import java.util.Date
 /**
  * Espace compte (exigence ID-F-013 de `IDENTITE_001`).
  *
- * Deux points d'entrée : l'onglet « Compte » de la barre de navigation, et
- * les réglages. Dans le premier cas [onNavigateBack] vaut `null` — un onglet
- * de premier niveau n'a pas de flèche retour.
+ * Point d'entrée : la catégorie « Compte » de l'onglet Réglages. Un simple
+ * push de pile, donc toujours avec flèche retour — plus d'usage en onglet
+ * de premier niveau depuis que Réglages a pris cette place dans la barre du
+ * bas, donc plus de lien vers Réglages ici : il ferait double emploi avec
+ * le chemin qui mène déjà à cet écran.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountScreen(
     repository: IdentityRepository,
     onNavigateToLogin: () -> Unit,
-    onNavigateToSettings: () -> Unit,
     onNavigateBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -116,25 +117,12 @@ fun AccountScreen(
                         }
                     }
                 },
-                actions = {
-                    // Seul point d'entrée vers Réglages depuis l'onglet Compte :
-                    // l'écran existait déjà (thème, langue, exports, sauvegardes…)
-                    // mais n'était accessible par aucun chemin depuis la barre
-                    // de navigation du bas.
-                    IconButton(onClick = onNavigateToSettings) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = stringResource(R.string.settings),
-                        )
-                    }
-                },
             )
         },
     ) { padding ->
         AccountContent(
             state = state,
             onLogin = onNavigateToLogin,
-            onNavigateToSettings = onNavigateToSettings,
             onLogout = viewModel::logout,
             onUpdateDisplayName = viewModel::updateDisplayName,
             onVerificationCodeChange = viewModel::setVerificationCode,
@@ -151,7 +139,6 @@ fun AccountScreen(
 private fun AccountContent(
     state: AccountUiState,
     onLogin: () -> Unit,
-    onNavigateToSettings: () -> Unit,
     onLogout: () -> Unit,
     onUpdateDisplayName: (String?) -> Unit,
     onVerificationCodeChange: (String) -> Unit,
@@ -167,7 +154,6 @@ private fun AccountContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item { AccountHero(state.session) }
-        item { SettingsEntryCard(onClick = onNavigateToSettings) }
         state.error?.let { error -> item { IdentityErrorBanner(error) } }
         state.notice?.let { notice -> item { AccountNoticeCard(notice) } }
         if (state.session == null) {
@@ -199,78 +185,6 @@ private fun AccountContent(
             item { LogoutCard(state.isLoggingOut, onLogout) }
         }
         item { ProviderCapabilitiesCard(state.providers, state.isLoadingProviders) }
-    }
-}
-
-/**
- * Point d'entrée principal vers les Réglages.
- *
- * La seule autre entrée était une icône de 24dp dans la barre du haut —
- * quasi invisible et sans aucun contexte. Cette carte est le premier élément
- * sous l'en-tête : impossible à manquer, avec un intitulé et un sous-titre
- * qui expliquent ce qu'on y trouve avant même d'appuyer.
- */
-@Composable
-private fun SettingsEntryCard(onClick: () -> Unit) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) Motion.PRESS_SCALE else 1f,
-        animationSpec = Motion.springSnappy(),
-        label = "settingsEntryScale",
-    )
-
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .scale(scale),
-        shape = GsShape.lg,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ),
-        interactionSource = interactionSource,
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(Space.md)
-                .heightIn(min = Touch.min),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Space.md),
-        ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(48.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                }
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.settings),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = stringResource(R.string.settings_entry_subtitle),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
     }
 }
 
