@@ -33,6 +33,7 @@ fun NavGraphBuilder.projectsNavGraph(
             onNavigateToProjectDetail = { projectId ->
                 navController.navigate(Screen.ProjectDetail.createRoute(projectId))
             },
+            onNavigateBack = { navController.popBackStack() },
         )
     }
 

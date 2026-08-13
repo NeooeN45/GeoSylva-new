@@ -1,6 +1,10 @@
 package com.forestry.counter.presentation.screens.explorer
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -15,7 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountTree
@@ -39,9 +43,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +69,8 @@ import com.forestry.counter.presentation.components.CompactPageHeader
 import com.forestry.counter.presentation.theme.GsShape
 import com.forestry.counter.presentation.theme.Motion
 import com.forestry.counter.presentation.theme.Space
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Écran Explorer — 13 catégories de données forestières.
@@ -70,7 +81,8 @@ import com.forestry.counter.presentation.theme.Space
  * Refondu dans le style de l'accueil Réglages (cartes arrondies sur
  * `surfaceContainerHigh`, icône en pastille de couleur, pression animée) —
  * même fond d'écran par défaut que l'Accueil pour rester le même produit
- * d'un onglet à l'autre.
+ * d'un onglet à l'autre. Entrée en cascade et tirer-pour-actualiser en plus,
+ * couleurs de l'indicateur adaptées au thème.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,6 +95,8 @@ fun ExplorerScreen(
     val preferencesManager = LocalContext.current.let { remember(it) { UserPreferencesManager(it) } }
     val backgroundImageEnabled by preferencesManager.backgroundImageEnabled.collectAsStateWithLifecycle(initialValue = true)
     val backgroundImageUri by preferencesManager.backgroundImageUri.collectAsStateWithLifecycle(initialValue = null)
+    var isRefreshing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     Box(modifier = modifier.fillMaxSize()) {
         if (backgroundImageEnabled) {
@@ -108,38 +122,72 @@ fun ExplorerScreen(
             containerColor = androidx.compose.ui.graphics.Color.Transparent,
             topBar = { CompactPageHeader(title = stringResource(R.string.explorer_title)) },
         ) { innerPadding ->
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = {
+                    // Rien à recharger tant que les catégories restent des
+                    // compteurs statiques (Lot 1) — le geste reste branché
+                    // pour les écrans à données réelles à mesure qu'ils
+                    // arrivent, sans revenir modifier cet écran plus tard.
+                    isRefreshing = true
+                    scope.launch {
+                        delay(700)
+                        isRefreshing = false
+                    }
+                },
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    start = Space.screenH,
-                    end = Space.screenH,
-                    top = innerPadding.calculateTopPadding() + Space.sm,
-                    bottom = innerPadding.calculateBottomPadding() + Space.xxl,
-                ),
-                horizontalArrangement = Arrangement.spacedBy(Space.sm),
-                verticalArrangement = Arrangement.spacedBy(Space.sm),
-            ) {
-                items(ExplorerCategory.entries) { category ->
-                    ExplorerCategoryCard(
-                        category = category,
-                        onClick = {
-                            when (category) {
-                                ExplorerCategory.FORETS -> onNavigateToForets()
-                                ExplorerCategory.PROJECTS -> onNavigateToProjects()
-                                else -> onCategoryClick(category)
-                            }
-                        },
+                indicator = {
+                    // Noir + bleu en sombre, blanc + bleu en clair — demandé
+                    // explicitement, délibérément hors de la palette verte de
+                    // marque pour cette seule interaction.
+                    PullToRefreshDefaults.Indicator(
+                        state = androidx.compose.material3.pulltorefresh.rememberPullToRefreshState(),
+                        isRefreshing = isRefreshing,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                        containerColor = MaterialTheme.colorScheme.background,
+                        color = ExplorerRefreshBlue,
                     )
+                },
+            ) {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = Space.screenH,
+                        end = Space.screenH,
+                        top = innerPadding.calculateTopPadding() + Space.sm,
+                        bottom = innerPadding.calculateBottomPadding() + Space.xxl,
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(Space.sm),
+                    verticalArrangement = Arrangement.spacedBy(Space.sm),
+                ) {
+                    itemsIndexed(ExplorerCategory.entries) { index, category ->
+                        ExplorerCategoryCard(
+                            category = category,
+                            index = index,
+                            onClick = {
+                                when (category) {
+                                    ExplorerCategory.FORETS -> onNavigateToForets()
+                                    ExplorerCategory.PROJECTS -> onNavigateToProjects()
+                                    else -> onCategoryClick(category)
+                                }
+                            },
+                        )
+                    }
                 }
             }
         }
     }
 }
 
+// Bleu volontairement hors palette de marque — demandé pour l'indicateur
+// de tirer-pour-actualiser uniquement, identique dans les deux thèmes.
+private val ExplorerRefreshBlue = androidx.compose.ui.graphics.Color(0xFF1E88E5)
+
 @Composable
 private fun ExplorerCategoryCard(
     category: ExplorerCategory,
+    index: Int,
     onClick: () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -150,44 +198,58 @@ private fun ExplorerCategoryCard(
         label = "explorerCardScale",
     )
 
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(1f)
-            .scale(scale),
-        shape = GsShape.lg,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+    // Entrée en cascade — chaque carte apparaît légèrement après la
+    // précédente plutôt que toutes d'un coup, sans dépendance externe.
+    var visible by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        delay(index * 35L)
+        visible = true
+    }
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(320)) + slideInVertically(tween(320)) { it / 4 },
     ) {
-        Column(
-            modifier = Modifier.padding(Space.md).fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween,
+        Card(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .scale(scale),
+            shape = GsShape.lg,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            interactionSource = interactionSource,
         ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(44.dp),
+            Column(
+                modifier = Modifier.padding(Space.md).fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween,
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = category.icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(44.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = category.icon,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
                 }
-            }
-            Column {
-                Text(
-                    text = category.label,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                if (!category.isImplemented) {
+                Column {
                     Text(
-                        text = stringResource(R.string.explorer_coming_soon),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = category.label,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
                     )
+                    if (!category.isImplemented) {
+                        Text(
+                            text = stringResource(R.string.explorer_coming_soon),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }

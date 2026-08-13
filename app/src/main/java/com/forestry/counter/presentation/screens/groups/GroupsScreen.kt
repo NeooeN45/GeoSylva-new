@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.animation.core.*
@@ -70,7 +71,8 @@ fun GroupsScreen(
     preferencesManager: UserPreferencesManager,
     onNavigateToMartelage: ((String?) -> Unit)? = null,
     onNavigateToMap: ((String) -> Unit)? = null,
-    onNavigateToIbp: (() -> Unit)? = null
+    onNavigateToIbp: (() -> Unit)? = null,
+    onNavigateBack: (() -> Unit)? = null,
 ) {
     val viewModel = remember { GroupsViewModel(groupRepository) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -150,6 +152,16 @@ fun GroupsScreen(
                     TopAppBar(
                         title = { Text(stringResource(R.string.groups_title), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         colors = TopAppBarDefaults.topAppBarColors(containerColor = if (useBlurTop) Color.Transparent else MaterialTheme.colorScheme.surface),
+                        navigationIcon = {
+                            if (onNavigateBack != null) {
+                                IconButton(onClick = onNavigateBack) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = stringResource(R.string.cd_back),
+                                    )
+                                }
+                            }
+                        },
                         actions = {
                             if (hasSelection) {
                                 IconButton(onClick = {

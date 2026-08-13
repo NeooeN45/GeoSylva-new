@@ -49,17 +49,20 @@ fun ProjectsScreen(
     viewModel: ProjectsViewModel,
     onNavigateToProjectDetail: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onNavigateBack: (() -> Unit)? = null,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showCreateDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = modifier,
         topBar = {
-            LargeTopAppBar(
-                title = { Text(stringResource(R.string.projects_title)) },
-                scrollBehavior = scrollBehavior,
+            // Poussé depuis Explorer (catégorie « Projets ») : sans flèche
+            // retour, c'était une impasse. LargeTopAppBar remplacé au passage
+            // par l'en-tête compact, comme le reste de l'app.
+            com.forestry.counter.presentation.components.CompactPageHeader(
+                title = stringResource(R.string.projects_title),
+                onBack = onNavigateBack,
             )
         },
         floatingActionButton = {
