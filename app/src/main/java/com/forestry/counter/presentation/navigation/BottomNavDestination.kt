@@ -1,10 +1,12 @@
 package com.forestry.counter.presentation.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Map
@@ -44,8 +46,11 @@ enum class BottomNavDestination(
     MISSIONS(
         route = "missions",
         label = "Missions",
-        selectedIcon = Icons.Filled.Map,
-        unselectedIcon = Icons.Outlined.Map,
+        // Partageait Icons.Filled.Map avec Carte — les deux étaient
+        // strictement identiques dans la barre du bas comme dans le
+        // mini-menu des sous-pages.
+        selectedIcon = Icons.Filled.Checklist,
+        unselectedIcon = Icons.Outlined.Checklist,
         isImplemented = false,
     ),
     CARTE(
