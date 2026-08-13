@@ -96,6 +96,11 @@ fun ForestryCounterTheme(
     // les boutons/icônes, jamais ces blocs, restés au vert de marque fixe
     // quel que soit l'accent choisi. `null` = comportement historique.
     containerAccentColor: Color? = null,
+    // Couleur des cartes et menus (surfaceContainerHigh/Highest) — le
+    // « verre foncé » signalé en thème sombre sur les lignes Thème, Langue,
+    // Taille de police… de la page Apparence, entre autres. `null` = teinte
+    // dérivée du thème (comportement historique).
+    cardAccentColor: Color? = null,
     // Défaut à `false` : sur Android 12+, la palette Material You dérivée du
     // fond d'écran de l'utilisateur écrase entièrement l'identité GeoSylva.
     // C'est acceptable pour une application système, pas pour un outil métier.
@@ -126,6 +131,12 @@ fun ForestryCounterTheme(
                     onPrimaryContainer = com.forestry.counter.presentation.utils.ColorUtils.getContrastingTextColor(containerAccentColor),
                 )
             }
+            if (cardAccentColor != null) {
+                scheme = scheme.copy(
+                    surfaceContainerHigh = cardAccentColor,
+                    surfaceContainerHighest = cardAccentColor,
+                )
+            }
             scheme
         }
         else -> {
@@ -134,6 +145,12 @@ fun ForestryCounterTheme(
                 scheme = scheme.copy(
                     primaryContainer = containerAccentColor,
                     onPrimaryContainer = com.forestry.counter.presentation.utils.ColorUtils.getContrastingTextColor(containerAccentColor),
+                )
+            }
+            if (cardAccentColor != null) {
+                scheme = scheme.copy(
+                    surfaceContainerHigh = cardAccentColor,
+                    surfaceContainerHighest = cardAccentColor,
                 )
             }
             scheme

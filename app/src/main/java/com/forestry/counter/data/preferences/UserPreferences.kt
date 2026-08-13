@@ -24,6 +24,7 @@ class UserPreferencesManager(private val context: Context) {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
         val CONTAINER_ACCENT_COLOR = stringPreferencesKey("container_accent_color")
+        val CARD_ACCENT_COLOR = stringPreferencesKey("card_accent_color")
         val BACKGROUND_TYPE = stringPreferencesKey("background_type")
         val BACKGROUND_IMAGE_ENABLED = booleanPreferencesKey("background_image_enabled")
         val BACKGROUND_IMAGE_URI = stringPreferencesKey("background_image_uri")
@@ -125,6 +126,19 @@ class UserPreferencesManager(private val context: Context) {
     suspend fun setContainerAccentColor(color: String?) {
         dataStore.edit { prefs ->
             if (color == null) prefs.remove(CONTAINER_ACCENT_COLOR) else prefs[CONTAINER_ACCENT_COLOR] = color
+        }
+    }
+
+    // Couleur des cartes et menus (surfaceContainerHigh) — le "verre foncé"
+    // signalé en thème sombre sur les lignes Thème/Langue/Taille de police
+    // de la page Apparence, entre autres. `null` = dérivée du thème.
+    val cardAccentColor: Flow<String?> = dataStore.data.map { prefs ->
+        prefs[CARD_ACCENT_COLOR]
+    }
+
+    suspend fun setCardAccentColor(color: String?) {
+        dataStore.edit { prefs ->
+            if (color == null) prefs.remove(CARD_ACCENT_COLOR) else prefs[CARD_ACCENT_COLOR] = color
         }
     }
 

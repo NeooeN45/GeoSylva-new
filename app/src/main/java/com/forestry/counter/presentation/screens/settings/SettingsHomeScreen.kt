@@ -73,6 +73,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.forestry.counter.R
+import com.forestry.counter.presentation.components.CompactPageHeader
 import com.forestry.counter.presentation.theme.GsShape
 import com.forestry.counter.presentation.theme.Motion
 import com.forestry.counter.presentation.theme.Space
@@ -223,15 +224,9 @@ fun SettingsHomeScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.settings)) },
-                navigationIcon = {
-                    if (onNavigateBack != null) {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
-                        }
-                    }
-                },
+            CompactPageHeader(
+                title = stringResource(R.string.settings),
+                onBack = onNavigateBack,
             )
         }
     ) { padding ->

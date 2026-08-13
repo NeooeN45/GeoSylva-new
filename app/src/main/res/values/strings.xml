@@ -99,6 +99,8 @@
     <string name="accent_color">Couleur d’accent</string>
     <string name="container_accent_color">Couleur des blocs mis en avant</string>
     <string name="container_accent_color_desc">Tuiles de statistiques et autres blocs — indépendante de la couleur d’accent ci-dessus.</string>
+    <string name="card_accent_color">Couleur des cartes et menus</string>
+    <string name="card_accent_color_desc">Fond des lignes de réglages ci-dessus et des autres cartes de l’app.</string>
     <string name="default_color">Couleur par défaut</string>
     <string name="custom_color">Couleur personnalisée</string>
     <string name="custom_color_hex_label">Code hexadécimal</string>
@@ -2235,6 +2237,8 @@
     <string name="home_stat_parcelles">Parcelles</string>
     <string name="home_quick_access">Accès rapide</string>
     <string name="home_explore">Explorer</string>
+    <string name="explorer_title">Explorer</string>
+    <string name="explorer_coming_soon">À venir</string>
     <string name="home_explore_sub">Parcourir forêts, parcelles et observations</string>
     <string name="home_recent_forests">Forêts récentes</string>
     <string name="home_empty_title">Aucune forêt enregistrée</string>

@@ -181,6 +181,7 @@ fun SettingsScreen(
     val csvSeparator by preferencesManager.csvSeparator.collectAsStateWithLifecycle(initialValue = ",")
     val accentColor by preferencesManager.accentColor.collectAsStateWithLifecycle(initialValue = "#4CAF50")
     val containerAccentColor by preferencesManager.containerAccentColor.collectAsStateWithLifecycle(initialValue = null)
+    val cardAccentColor by preferencesManager.cardAccentColor.collectAsStateWithLifecycle(initialValue = null)
     val dynamicColorEnabled by preferencesManager.dynamicColorEnabled.collectAsStateWithLifecycle(initialValue = true)
     val backgroundImageEnabled by preferencesManager.backgroundImageEnabled.collectAsStateWithLifecycle(initialValue = true)
     val soundEnabled by preferencesManager.soundEnabled.collectAsStateWithLifecycle(initialValue = true)
@@ -423,13 +424,9 @@ fun SettingsScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text(screenTitle ?: stringResource(R.string.settings)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
-                    }
-                }
+            com.forestry.counter.presentation.components.CompactPageHeader(
+                title = screenTitle ?: stringResource(R.string.settings),
+                onBack = onNavigateBack,
             )
         }
     ) { paddingValues ->
@@ -728,6 +725,28 @@ fun SettingsScreen(
                     onPick = { hex -> scope.launch { preferencesManager.setContainerAccentColor(hex) } },
                     allowReset = true,
                     onReset = { scope.launch { preferencesManager.setContainerAccentColor(null) } },
+                )
+
+                // Couleur des cartes et menus — le fond des lignes ci-dessus
+                // (Thème, Langue, Taille de police…) elles-mêmes. Signalée en
+                // thème sombre comme un « verre foncé » peu agréable.
+                Text(
+                    text = stringResource(R.string.card_accent_color),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+                Text(
+                    text = stringResource(R.string.card_accent_color_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                ColorPickerRow(
+                    current = cardAccentColor,
+                    onPick = { hex -> scope.launch { preferencesManager.setCardAccentColor(hex) } },
+                    allowReset = true,
+                    onReset = { scope.launch { preferencesManager.setCardAccentColor(null) } },
                 )
 
                 // Keep screen on

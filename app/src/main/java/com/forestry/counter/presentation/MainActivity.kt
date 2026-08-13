@@ -55,16 +55,19 @@ class MainActivity : AppCompatActivity() {
             val themeMode by prefsManager.themeMode.collectAsStateWithLifecycle(initialValue = com.forestry.counter.data.preferences.ThemeMode.SYSTEM)
             val accentColorString by prefsManager.accentColor.collectAsStateWithLifecycle(initialValue = "#2D5F3F")
             val containerAccentColorString by prefsManager.containerAccentColor.collectAsStateWithLifecycle(initialValue = null)
+            val cardAccentColorString by prefsManager.cardAccentColor.collectAsStateWithLifecycle(initialValue = null)
             val dynamicColorEnabled by prefsManager.dynamicColorEnabled.collectAsStateWithLifecycle(initialValue = false)
             val keepOn by prefsManager.keepScreenOn.collectAsStateWithLifecycle(initialValue = false)
             val fontSize by prefsManager.fontSize.collectAsStateWithLifecycle(initialValue = FontSize.MEDIUM)
             val accentColor = parseAccentColor(accentColorString)
             val containerAccentColor = containerAccentColorString?.let { parseAccentColor(it) }
+            val cardAccentColor = cardAccentColorString?.let { parseAccentColor(it) }
 
             ForestryCounterTheme(
                 themeMode = themeMode,
                 accentColor = accentColor,
                 containerAccentColor = containerAccentColor,
+                cardAccentColor = cardAccentColor,
                 dynamicColor = dynamicColorEnabled,
                 fontSize = fontSize
             ) {

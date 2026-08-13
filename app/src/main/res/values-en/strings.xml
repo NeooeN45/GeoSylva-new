@@ -107,6 +107,8 @@
     <string name="accent_color">Accent Color</string>
     <string name="container_accent_color">Highlighted block color</string>
     <string name="container_accent_color_desc">Stat tiles and other highlighted blocks — independent from the accent color above.</string>
+    <string name="card_accent_color">Cards and menus color</string>
+    <string name="card_accent_color_desc">Background of the settings rows above, and other cards across the app.</string>
     <string name="default_color">Default color</string>
     <string name="custom_color">Custom color</string>
     <string name="custom_color_hex_label">Hex code</string>
@@ -2244,6 +2246,8 @@
     <string name="home_stat_parcelles">Plots</string>
     <string name="home_quick_access">Quick access</string>
     <string name="home_explore">Explore</string>
+    <string name="explorer_title">Explore</string>
+    <string name="explorer_coming_soon">Coming soon</string>
     <string name="home_explore_sub">Browse forests, plots and observations</string>
     <string name="home_recent_forests">Recent forests</string>
     <string name="home_empty_title">No forest yet</string>

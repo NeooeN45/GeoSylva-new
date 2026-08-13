@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -198,18 +199,32 @@ private fun HomeHeader(state: HomeUiState.Success) {
             ),
             verticalArrangement = Arrangement.spacedBy(Space.lg),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(Space.xxs)) {
-                Text(
-                    text = stringResource(R.string.home_greeting),
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Text(
-                    text = stringResource(R.string.home_subtitle),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            // Fondu localisé au seul bloc de texte — pas la pleine page (voir
+            // la note plus haut) : sur une photo claire, "Bonjour" devient
+            // illisible sans un minimum de contraste derrière. Un pavé
+            // arrondi cadré au texte (même traitement que "Accès rapide"
+            // plus bas) plutôt qu'un dégradé radial, qui rendait un bord
+            // rectangulaire dur au lieu d'un fondu.
+            Surface(
+                color = MaterialTheme.colorScheme.background.copy(alpha = 0.55f),
+                shape = GsShape.md,
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(Space.xxs),
+                    modifier = Modifier.padding(horizontal = Space.sm, vertical = Space.xs),
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_greeting),
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Text(
+                        text = stringResource(R.string.home_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
@@ -277,12 +292,20 @@ private fun StatTile(
 
 @Composable
 private fun SectionTitle(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
+    // Fondu léger, cadré au texte (pas pleine largeur) : "Accès rapide"
+    // pose directement sur la photo, sans carte opaque pour le porter.
+    Surface(
+        color = MaterialTheme.colorScheme.background.copy(alpha = 0.55f),
+        shape = GsShape.sm,
         modifier = Modifier.padding(horizontal = Space.screenH),
-    )
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = Space.xs, vertical = Space.xxs),
+        )
+    }
 }
 
 @Composable
