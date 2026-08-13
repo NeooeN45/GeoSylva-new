@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +23,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AccountTree
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Biotech
@@ -217,36 +219,64 @@ private fun ExplorerCategoryCard(
                 .aspectRatio(1f)
                 .scale(scale),
             shape = GsShape.lg,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f)),
             interactionSource = interactionSource,
         ) {
-            Column(
-                modifier = Modifier.padding(Space.md).fillMaxSize(),
-                verticalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(44.dp),
+            Box(modifier = Modifier.fillMaxSize()) {
+                // Icône fantôme — grande, très pâle, en fond de carte : une
+                // touche de profondeur sans surcharger le badge, qui reste
+                // seul repère net à l'échelle de lecture.
+                Icon(
+                    imageVector = category.icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
+                    modifier = Modifier
+                        .size(96.dp)
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 4.dp, bottom = 4.dp),
+                )
+
+                Column(
+                    modifier = Modifier.padding(Space.md).fillMaxSize(),
+                    verticalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = category.icon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = category.icon,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                        }
                     }
-                }
-                Column {
-                    Text(
-                        text = category.label,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    if (!category.isImplemented) {
-                        Text(
-                            text = stringResource(R.string.explorer_coming_soon),
-                            style = MaterialTheme.typography.bodySmall,
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(Space.xxs),
+                        ) {
+                            Text(
+                                text = category.label,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                            if (category.isImplemented) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                        if (!category.isImplemented) {
+                            Text(
+                                text = stringResource(R.string.explorer_coming_soon),
+                                style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -254,6 +284,7 @@ private fun ExplorerCategoryCard(
             }
         }
     }
+}
 }
 
 /**

@@ -434,7 +434,13 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(settingsScrollState)
+                .verticalScroll(settingsScrollState),
+            // Une sous-page filtrée à une seule petite section (Interaction,
+            // par ex.) laissait tout son contenu collé en haut, un grand vide
+            // en dessous. `Center` ne change rien pour une liste longue —
+            // elle remplit déjà tout l'écran — mais recentre les listes
+            // courtes verticalement, plus équilibré visuellement.
+            verticalArrangement = if (categoryFilter != null) Arrangement.Center else Arrangement.Top,
         ) {
             SettingsSection(
                 title = stringResource(R.string.settings_section_quintessences),

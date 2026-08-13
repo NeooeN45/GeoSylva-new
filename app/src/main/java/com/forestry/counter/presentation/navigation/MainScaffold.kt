@@ -1,21 +1,28 @@
 package com.forestry.counter.presentation.navigation
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -41,17 +48,21 @@ import com.forestry.counter.presentation.screens.explorer.ExplorerCategory
 import com.forestry.counter.presentation.screens.explorer.ExplorerScreen
 import com.forestry.counter.presentation.screens.home.HomeScreen
 import com.forestry.counter.presentation.screens.home.HomeViewModel
+import com.forestry.counter.presentation.theme.Motion
 import com.forestry.counter.presentation.theme.Space
 
 /**
  * Scaffold principal avec bottom navigation 5 entrées — spec GEOSYLVA-003 §29.3.
  *
- * Sur les 5 destinations de premier niveau (Accueil, Explorer, Missions,
- * Carte, Réglages), la barre reste affichée en permanence. Sur une
- * sous-page (Forêts, Projets, fiche forêt…), elle se replie automatiquement
- * avec une animation — plus d'espace pour le contenu — et une petite
- * poignée en bas de l'écran permet de la faire réapparaître d'un geste.
- * Elle se replie de nouveau dès qu'on change de route.
+ * Sur les 5 destinations de premier niveau, la barre complète reste
+ * affichée en permanence. Sur une sous-page (Forêts, Projets, fiche
+ * forêt…), elle disparaît entièrement — plus de FAB masqué, plus de menu
+ * qu'on ne peut pas refermer — remplacée par [CollapsedMiniNav], une
+ * pastille compacte en bas à gauche, à l'écart de tout FAB, qui se déplie
+ * sur place et se referme d'un tap.
+ *
+ * Un essai a rendu la barre repliable même sur les onglets de premier
+ * niveau ; revenu en arrière sur demande — la barre y reste permanente.
  */
 @Composable
 fun MainScaffold(
@@ -64,15 +75,25 @@ fun MainScaffold(
     val currentDestination = BottomNavDestination.fromRoute(currentRoute)
     val isTopLevel = currentDestination != null
 
-    var manuallyRevealed by remember { mutableStateOf(false) }
-    LaunchedEffect(currentRoute) { manuallyRevealed = false }
-    val barVisible = isTopLevel || manuallyRevealed
+    fun navigateToTab(route: String) {
+        navController.navigate(route) {
+            // `saveState`/`restoreState` mémorisaient l'état de toute la
+            // portion de pile entre le départ et l'onglet quitté — y compris
+            // les sous-pages poussées par-dessus (Forêts, Projets...).
+            // Revenir sur Explorer rouvrait alors la dernière sous-page
+            // visitée au lieu de la grille. Toujours repartir propre.
+            popUpTo(navController.graph.startDestinationId) {
+                inclusive = false
+            }
+            launchSingleTop = true
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             bottomBar = {
                 AnimatedVisibility(
-                    visible = barVisible,
+                    visible = isTopLevel,
                     enter = slideInVertically(animationSpec = tween(220)) { it } + fadeIn(tween(220)),
                     exit = slideOutVertically(animationSpec = tween(180)) { it } + fadeOut(tween(180)),
                 ) {
@@ -80,18 +101,7 @@ fun MainScaffold(
                         BottomNavDestination.entries.forEach { destination ->
                             NavigationBarItem(
                                 selected = currentRoute == destination.route,
-                                onClick = {
-                                    if (currentRoute != destination.route) {
-                                        navController.navigate(destination.route) {
-                                            // Évite la pile de destinations de premier niveau
-                                            popUpTo(navController.graph.startDestinationId) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    }
-                                },
+                                onClick = { navigateToTab(destination.route) },
                                 icon = {
                                     Icon(
                                         imageVector = if (currentRoute == destination.route)
@@ -115,35 +125,72 @@ fun MainScaffold(
             content(Modifier.padding(innerPadding))
         }
 
-        // Poignée de réouverture — visible uniquement sur une sous-page dont
-        // la barre est repliée. Le tap suffit ; à la différence d'un simple
-        // "plus d'espace, plus de navigation", elle reste accessible d'un
-        // geste, jamais à plus d'un tap.
-        AnimatedVisibility(
-            visible = !isTopLevel && !manuallyRevealed,
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(120)),
-            modifier = Modifier.align(Alignment.BottomCenter),
+        if (!isTopLevel) {
+            CollapsedMiniNav(
+                currentRoute = currentRoute,
+                onNavigateToTab = ::navigateToTab,
+                modifier = Modifier.align(Alignment.BottomStart),
+            )
+        }
+    }
+}
+
+/**
+ * Mini-navigation repliée — remplace l'ancienne barre complète "révélée"
+ * qui, une fois ouverte, ne pouvait plus se refermer et masquait le FAB de
+ * l'écran (ex. "Créer un groupe"). En bas à gauche, jamais sous un FAB
+ * (toujours en bas à droite dans l'app) ; repliée par défaut sur une simple
+ * icône, elle se déplie sur place vers les 5 destinations et se referme du
+ * même tap qui l'a ouverte.
+ */
+@Composable
+private fun CollapsedMiniNav(
+    currentRoute: String?,
+    onNavigateToTab: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    LaunchedEffect(currentRoute) { expanded = false }
+
+    Surface(
+        modifier = modifier
+            // 16dp de chaque bord — même marge que le FAB par défaut de
+            // Scaffold (FabPosition.End), pour que les deux s'alignent sur
+            // la même ligne au lieu d'une pastille visiblement plus basse.
+            .padding(start = 16.dp, bottom = 16.dp)
+            .animateContentSize(animationSpec = Motion.springSnappy()),
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f),
+        tonalElevation = 3.dp,
+        shadowElevation = 2.dp,
+    ) {
+        Row(
+            modifier = Modifier.height(56.dp).padding(horizontal = Space.xs),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Surface(
-                onClick = { manuallyRevealed = true },
-                modifier = Modifier.padding(bottom = Space.sm),
-                shape = RoundedCornerShape(50),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f),
-                tonalElevation = 3.dp,
+            IconButton(onClick = { expanded = !expanded }, modifier = Modifier.size(48.dp)) {
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.Close else Icons.Filled.Apps,
+                    contentDescription = if (expanded) "Fermer la navigation" else "Ouvrir la navigation",
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+            AnimatedVisibility(
+                visible = expanded,
+                enter = fadeIn(tween(180)) + expandHorizontally(tween(180)),
+                exit = fadeOut(tween(140)) + shrinkHorizontally(tween(140)),
             ) {
-                Box(
-                    modifier = Modifier
-                        .width(56.dp)
-                        .height(22.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.KeyboardArrowUp,
-                        contentDescription = "Afficher la navigation",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    BottomNavDestination.entries.forEach { destination ->
+                        IconButton(onClick = { onNavigateToTab(destination.route) }, modifier = Modifier.size(48.dp)) {
+                            Icon(
+                                imageVector = if (currentRoute == destination.route)
+                                    destination.selectedIcon else destination.unselectedIcon,
+                                contentDescription = destination.label,
+                                modifier = Modifier.size(26.dp),
+                            )
+                        }
+                    }
                 }
             }
         }

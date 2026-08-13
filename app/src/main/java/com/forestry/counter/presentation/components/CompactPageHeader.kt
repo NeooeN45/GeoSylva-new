@@ -30,9 +30,9 @@ import com.forestry.counter.presentation.theme.Space
  * En-tête de page compact — le titre seul porte un fondu (pastille arrondie
  * translucide), sans barre pleine largeur derrière : c'est le traitement
  * "Bonjour" / "Accès rapide" de l'Accueil, jugé très réussi, étendu ici.
- * Une première version posait le titre sur une barre `background` pleine
- * largeur — jugée toujours trop massive malgré ses 52dp (contre 64-152dp
- * pour les composants Material par défaut).
+ * Centré sur toute la largeur (indépendamment de la présence d'une flèche
+ * retour ou d'actions) et un cran plus grand — la première version, alignée
+ * à gauche en `titleLarge`, restait perçue comme trop petite et décentrée.
  */
 @Composable
 fun CompactPageHeader(
@@ -40,18 +40,17 @@ fun CompactPageHeader(
     onBack: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.statusBars)
-            .padding(horizontal = Space.sm, vertical = Space.xs),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(horizontal = Space.sm, vertical = Space.sm),
     ) {
         if (onBack != null) {
             Surface(
                 color = MaterialTheme.colorScheme.background.copy(alpha = 0.55f),
                 shape = CircleShape,
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(44.dp).align(Alignment.CenterStart),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     IconButton(onClick = onBack) {
@@ -59,20 +58,21 @@ fun CompactPageHeader(
                     }
                 }
             }
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(start = Space.xs))
         }
         Surface(
             color = MaterialTheme.colorScheme.background.copy(alpha = 0.55f),
             shape = GsShape.md,
+            modifier = Modifier.align(Alignment.Center),
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(horizontal = Space.sm, vertical = Space.xxs),
+                modifier = Modifier.padding(horizontal = Space.md, vertical = Space.xs),
             )
         }
-        androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
-        actions()
+        Row(modifier = Modifier.align(Alignment.CenterEnd)) {
+            actions()
+        }
     }
 }
