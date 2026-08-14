@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Navigation
@@ -26,7 +25,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.forestry.counter.R
+import com.forestry.counter.presentation.theme.GsShape
+import com.forestry.counter.presentation.theme.Elevation
 import com.forestry.counter.presentation.theme.SemanticInfo
+import com.forestry.counter.presentation.theme.Space
+import com.forestry.counter.presentation.theme.Touch
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -52,10 +55,10 @@ internal fun MapTigeInfoPanel(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
         ),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        shape = GsShape.md,
+        elevation = CardDefaults.cardElevation(defaultElevation = Elevation.overlay)
     ) {
-        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(modifier = Modifier.padding(Space.sm), verticalArrangement = Arrangement.spacedBy(Space.xxs)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -80,12 +83,12 @@ internal fun MapTigeInfoPanel(
                 }
                 IconButton(
                     onClick = onDismiss,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(Touch.field)
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(Space.md))
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
                 currentTapped.diamCm?.let {
                     Text(stringResource(R.string.map_diam_format, it.roundToInt()), style = MaterialTheme.typography.bodySmall)
                 }
@@ -107,14 +110,14 @@ internal fun MapTigeInfoPanel(
                 },
                 containerColor = SemanticInfo,
                 contentColor = Color.White,
-                shape = RoundedCornerShape(12.dp)
+                shape = GsShape.sm
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.padding(horizontal = 12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(Space.xs),
+                    modifier = Modifier.padding(horizontal = Space.sm)
                 ) {
-                    Icon(Icons.Default.Navigation, contentDescription = stringResource(R.string.cd_navigate), modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Navigation, contentDescription = stringResource(R.string.cd_navigate), modifier = Modifier.size(Space.md))
                     Text(stringResource(R.string.nav_navigate_to), style = MaterialTheme.typography.labelMedium)
                 }
             }

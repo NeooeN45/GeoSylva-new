@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -32,8 +31,12 @@ import androidx.compose.ui.unit.dp
 import com.forestry.counter.R
 import com.forestry.counter.domain.location.GpsParcelTracer
 import com.forestry.counter.presentation.theme.AccentGreen
+import com.forestry.counter.presentation.theme.Elevation
+import com.forestry.counter.presentation.theme.GsShape
 import com.forestry.counter.presentation.theme.SemanticError
 import com.forestry.counter.presentation.theme.SemanticSuccess
+import com.forestry.counter.presentation.theme.Space
+import com.forestry.counter.presentation.theme.Touch
 import java.util.Locale
 
 /**
@@ -59,12 +62,12 @@ internal fun MapTraceControlPanel(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
             ),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            shape = GsShape.md,
+            elevation = CardDefaults.cardElevation(defaultElevation = Elevation.overlay)
         ) {
             Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                modifier = Modifier.padding(Space.sm),
+                verticalArrangement = Arrangement.spacedBy(Space.xs)
             ) {
                 Text(
                     stringResource(R.string.trace_title),
@@ -113,34 +116,34 @@ private fun TraceActionButtons(
     onSaveTrace: () -> Unit,
     onClearTrace: () -> Unit
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
         if (traceState.isRecording) {
             SmallFloatingActionButton(
                 onClick = onAddManualPoint,
                 containerColor = AccentGreen,
                 contentColor = Color.White,
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.size(36.dp)
+                shape = GsShape.sm,
+                modifier = Modifier.size(Touch.field)
             ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.trace_add_point), modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.trace_add_point), modifier = Modifier.size(Space.md))
             }
             SmallFloatingActionButton(
                 onClick = onUndoLastPoint,
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.size(36.dp)
+                shape = GsShape.sm,
+                modifier = Modifier.size(Touch.field)
             ) {
-                Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.trace_undo), modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.trace_undo), modifier = Modifier.size(Space.md))
             }
             SmallFloatingActionButton(
                 onClick = onStopRecording,
                 containerColor = SemanticError,
                 contentColor = Color.White,
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.size(36.dp)
+                shape = GsShape.sm,
+                modifier = Modifier.size(Touch.field)
             ) {
-                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.trace_stop), modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.trace_stop), modifier = Modifier.size(Space.md))
             }
         } else if (traceState.points.isNotEmpty()) {
             if (traceState.points.size >= 3) {
@@ -148,20 +151,20 @@ private fun TraceActionButtons(
                     onClick = onSaveTrace,
                     containerColor = SemanticSuccess,
                     contentColor = Color.White,
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.size(36.dp)
+                    shape = GsShape.sm,
+                    modifier = Modifier.size(Touch.field)
                 ) {
-                    Icon(Icons.Default.LocationOn, contentDescription = stringResource(R.string.trace_save), modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.LocationOn, contentDescription = stringResource(R.string.trace_save), modifier = Modifier.size(Space.md))
                 }
             }
             SmallFloatingActionButton(
                 onClick = onClearTrace,
                 containerColor = MaterialTheme.colorScheme.errorContainer,
                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.size(36.dp)
+                shape = GsShape.sm,
+                modifier = Modifier.size(Touch.field)
             ) {
-                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.trace_clear), modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.trace_clear), modifier = Modifier.size(Space.md))
             }
         }
     }

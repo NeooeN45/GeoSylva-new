@@ -9,14 +9,23 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material3.Card
@@ -33,9 +42,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.forestry.counter.R
 import com.forestry.counter.domain.model.Essence
+import com.forestry.counter.presentation.theme.Elevation
+import com.forestry.counter.presentation.theme.GsShape
+import com.forestry.counter.presentation.theme.Space
+import com.forestry.counter.presentation.theme.Touch
 
 /**
  * Légende cliquable des essences affichées sur la carte.
@@ -60,21 +72,21 @@ internal fun MapLegendPanel(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f)
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-            shape = RoundedCornerShape(14.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = Elevation.overlay),
+            shape = GsShape.field
         ) {
             Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(5.dp)
+                modifier = Modifier.padding(Space.sm),
+                verticalArrangement = Arrangement.spacedBy(Space.xxs)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(Space.xs)
                 ) {
                     Icon(
                         Icons.Default.Forest,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(Space.md),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
@@ -115,12 +127,14 @@ private fun LegendRow(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.clickable(onClick = onClick)
+        horizontalArrangement = Arrangement.spacedBy(Space.xs),
+        modifier = Modifier
+            .heightIn(min = Touch.field)
+            .clickable(onClick = onClick)
     ) {
         Box(
             modifier = Modifier
-                .size(14.dp)
+                .size(Space.sm)
                 .clip(CircleShape)
                 .background(if (isHidden) Color.LightGray else Color(color))
                 .border(1.5.dp, Color.White, CircleShape)

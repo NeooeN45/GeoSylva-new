@@ -17,6 +17,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import com.forestry.counter.presentation.theme.Elevation
+import com.forestry.counter.presentation.theme.GsShape
+import com.forestry.counter.presentation.theme.Space
+import com.forestry.counter.presentation.theme.Touch
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.LocationOn
@@ -64,21 +68,21 @@ internal fun MapGpsCoverageOverlay(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            shape = RoundedCornerShape(12.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = Elevation.raised),
+            shape = GsShape.sm
         ) {
             Column(
-                modifier = Modifier.padding(10.dp).widthIn(max = 160.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                modifier = Modifier.padding(Space.sm).widthIn(max = 160.dp),
+                verticalArrangement = Arrangement.spacedBy(Space.xxs)
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Space.xs),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         Icons.Default.GpsFixed,
                         contentDescription = null,
-                        modifier = Modifier.size(14.dp),
+                        modifier = Modifier.size(Space.md),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
@@ -121,20 +125,20 @@ internal fun MapGpsWarningBanner(
         modifier = modifier
     ) {
         Surface(
-            shape = RoundedCornerShape(10.dp),
+            shape = GsShape.sm,
             color = GpsModere.copy(alpha = 0.82f),
             modifier = Modifier.clickable(onClick = onDismiss)
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                modifier = Modifier.padding(horizontal = Space.sm, vertical = Space.xxs),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(Space.xs)
             ) {
                 Icon(
                     Icons.Default.GpsFixed,
                     contentDescription = stringResource(R.string.cd_gps_locate),
                     tint = Color.White,
-                    modifier = Modifier.size(13.dp)
+                    modifier = Modifier.size(Space.sm)
                 )
                 Text(
                     stringResource(R.string.map_gps_poor_warning, poorGpsTiges),
@@ -166,11 +170,11 @@ internal fun MapCoordsOverlay(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.inverseSurface.copy(alpha = 0.88f)
             ),
-            shape = RoundedCornerShape(20.dp)
+            shape = GsShape.lg
         ) {
             Text(
                 coordsText,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                modifier = Modifier.padding(horizontal = Space.md, vertical = Space.xs),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.inverseOnSurface,
                 fontWeight = FontWeight.Medium
@@ -195,9 +199,9 @@ internal fun MapOfflineProgressBar(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)
         ),
-        shape = RoundedCornerShape(12.dp)
+        shape = GsShape.sm
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(Space.sm)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -220,14 +224,14 @@ internal fun MapOfflineProgressBar(
                 if (progress.isComplete) {
                     IconButton(
                         onClick = onClearProgress,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(Touch.field)
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(Space.md))
                     }
                 }
             }
             if (!progress.isComplete) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(Space.xxs))
                 LinearProgressIndicator(
                     progress = { (progress.progressPct / 100.0).toFloat().coerceIn(0f, 1f) },
                     modifier = Modifier.fillMaxWidth(),
@@ -239,7 +243,7 @@ internal fun MapOfflineProgressBar(
                     "${progress.completedResources}/${progress.requiredResources} tuiles · $sizeMbDl Mo (${String.format("%.0f", progress.progressPct)}%)",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp)
+                    modifier = Modifier.padding(top = Space.xxs)
                 )
             }
         }
@@ -274,25 +278,25 @@ internal fun MapNoGpsMessage(
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = bannerBg),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        shape = RoundedCornerShape(20.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = Elevation.overlay),
+        shape = GsShape.lg
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             IconButton(
                 onClick = onDismiss,
-                modifier = Modifier.align(Alignment.TopEnd).size(32.dp)
+                modifier = Modifier.align(Alignment.TopEnd).size(Touch.field)
             ) {
-                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(Space.md))
             }
             Column(
-                modifier = Modifier.padding(28.dp),
+                modifier = Modifier.padding(Space.xl),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(Space.sm)
             ) {
                 Icon(
                     Icons.Default.LocationOn,
                     contentDescription = null,
-                    modifier = Modifier.size(40.dp),
+                    modifier = Modifier.size(Space.xxl),
                     tint = bannerIcon
                 )
                 Text(
@@ -327,25 +331,25 @@ internal fun MapEmptyMessage(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        shape = RoundedCornerShape(20.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = Elevation.overlay),
+        shape = GsShape.lg
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             IconButton(
                 onClick = onDismiss,
-                modifier = Modifier.align(Alignment.TopEnd).size(32.dp)
+                modifier = Modifier.align(Alignment.TopEnd).size(Touch.field)
             ) {
-                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(Space.md))
             }
             Column(
-                modifier = Modifier.padding(28.dp),
+                modifier = Modifier.padding(Space.xl),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(Space.sm)
             ) {
                 Icon(
                     Icons.Default.LocationOn,
                     contentDescription = null,
-                    modifier = Modifier.size(40.dp),
+                    modifier = Modifier.size(Space.xxl),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(

@@ -16,11 +16,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Layers
@@ -44,6 +44,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.forestry.counter.R
 import com.forestry.counter.domain.location.OfflineTileManager
+import com.forestry.counter.presentation.theme.Elevation
+import com.forestry.counter.presentation.theme.GsShape
+import com.forestry.counter.presentation.theme.Space
+import com.forestry.counter.presentation.theme.Touch
 
 /**
  * Panneau flottant de sélection de couche cartographique.
@@ -68,10 +72,10 @@ internal fun MapLayerPicker(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f)
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
-            shape = RoundedCornerShape(18.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = Elevation.overlay),
+            shape = GsShape.field
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
+            Column(modifier = Modifier.padding(Space.md)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -79,12 +83,12 @@ internal fun MapLayerPicker(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(Space.xs)
                     ) {
                         Icon(
                             Icons.Default.Layers,
                             contentDescription = stringResource(R.string.cd_layers),
-                            modifier = Modifier.size(20.dp),
+                            modifier = Modifier.size(Space.lg),
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Text(
@@ -95,16 +99,16 @@ internal fun MapLayerPicker(
                     }
                     IconButton(
                         onClick = onDismiss,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(Touch.field)
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(Space.md))
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Space.xs))
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(Space.xs)
                 ) {
                     MAP_LAYERS.forEachIndexed { index, layer ->
                         if (layer.key == "OFFLINE_LOCAL") return@forEachIndexed
@@ -134,14 +138,14 @@ internal fun MapLayerPicker(
                             if (tileCount > 0) {
                                 Surface(
                                     color = MaterialTheme.colorScheme.primary,
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = GsShape.field,
                                     modifier = Modifier
                                         .align(Alignment.TopEnd)
-                                        .padding(2.dp)
+                                        .padding(Space.xxs)
                                 ) {
                                     Text(
                                         "$tileCount",
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                        modifier = Modifier.padding(horizontal = Space.xxs, vertical = 1.dp),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onPrimary,
                                         fontSize = 8.sp
@@ -173,22 +177,23 @@ internal fun LayerChip(
 
     Card(
         modifier = Modifier
-            .width(72.dp)
+            .width(Space.xxl + Space.lg)
+            .heightIn(min = Touch.fieldPrimary)
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
                 color = borderColor,
-                shape = RoundedCornerShape(12.dp)
+                shape = GsShape.sm
             )
-            .clip(RoundedCornerShape(12.dp))
+            .clip(GsShape.sm)
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = bgColor),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 1.dp)
+        shape = GsShape.sm,
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) Elevation.raised else Elevation.card)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 4.dp),
+                .padding(vertical = Space.xs, horizontal = Space.xxs),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -196,7 +201,7 @@ internal fun LayerChip(
                 layer.emoji,
                 fontSize = 24.sp
             )
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(Space.xxs))
             Text(
                 stringResource(layer.labelResId),
                 style = MaterialTheme.typography.labelSmall,

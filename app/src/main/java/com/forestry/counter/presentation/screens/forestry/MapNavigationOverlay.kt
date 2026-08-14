@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
@@ -29,8 +28,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.forestry.counter.R
 import com.forestry.counter.domain.location.TreeNavigator
+import com.forestry.counter.presentation.theme.Elevation
+import com.forestry.counter.presentation.theme.GsShape
 import com.forestry.counter.presentation.theme.SemanticInfo
 import com.forestry.counter.presentation.theme.SemanticSuccess
+import com.forestry.counter.presentation.theme.Space
+import com.forestry.counter.presentation.theme.Touch
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -51,13 +54,13 @@ internal fun MapNavigationOverlay(
             containerColor = if (navState.arrived) SemanticSuccess.copy(alpha = 0.95f)
             else MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
         ),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+        shape = GsShape.lg,
+        elevation = CardDefaults.cardElevation(defaultElevation = Elevation.overlay)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            modifier = Modifier.padding(Space.md).fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(Space.xs)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -72,12 +75,12 @@ internal fun MapNavigationOverlay(
                 )
                 IconButton(
                     onClick = onStopNavigation,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(Touch.field)
                 ) {
                     Icon(
                         Icons.Default.Close,
                         contentDescription = stringResource(R.string.nav_stop),
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(Space.md),
                         tint = if (navState.arrived) Color.White else MaterialTheme.colorScheme.onSurface
                     )
                 }

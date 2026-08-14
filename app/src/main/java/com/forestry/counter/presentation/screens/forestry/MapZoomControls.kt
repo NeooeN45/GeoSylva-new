@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Explore
@@ -18,8 +17,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.forestry.counter.R
+import com.forestry.counter.presentation.theme.Elevation
+import com.forestry.counter.presentation.theme.GsShape
+import com.forestry.counter.presentation.theme.Space
+import com.forestry.counter.presentation.theme.Touch
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory
 import com.mapbox.mapboxsdk.maps.MapboxMap
 
@@ -33,7 +35,7 @@ internal fun MapZoomControls(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(Space.xxs),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         MapToolButton(
@@ -41,22 +43,22 @@ internal fun MapZoomControls(
                 val map = mapLibreMap ?: return@MapToolButton
                 map.animateCamera(CameraUpdateFactory.zoomIn(), 200)
             },
-            icon = { Icon(Icons.Default.Add, contentDescription = stringResource(R.string.map_zoom_in), modifier = Modifier.size(20.dp)) }
+            icon = { Icon(Icons.Default.Add, contentDescription = stringResource(R.string.map_zoom_in), modifier = Modifier.size(Space.lg)) }
         )
         MapToolButton(
             onClick = {
                 val map = mapLibreMap ?: return@MapToolButton
                 map.animateCamera(CameraUpdateFactory.zoomOut(), 200)
             },
-            icon = { Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.map_zoom_out), modifier = Modifier.size(20.dp)) }
+            icon = { Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.map_zoom_out), modifier = Modifier.size(Space.lg)) }
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(Space.xs))
         MapToolButton(
             onClick = {
                 val map = mapLibreMap ?: return@MapToolButton
                 map.animateCamera(CameraUpdateFactory.bearingTo(0.0), 400)
             },
-            icon = { Icon(Icons.Default.Explore, contentDescription = stringResource(R.string.map_north), modifier = Modifier.size(20.dp)) }
+            icon = { Icon(Icons.Default.Explore, contentDescription = stringResource(R.string.map_north), modifier = Modifier.size(Space.lg)) }
         )
     }
 }
@@ -71,10 +73,10 @@ internal fun MapToolButton(
 ) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.size(48.dp),
-        shape = RoundedCornerShape(10.dp),
+        modifier = Modifier.size(Touch.field),
+        shape = GsShape.field,
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-        shadowElevation = 3.dp,
+        shadowElevation = Elevation.raised,
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         Box(contentAlignment = Alignment.Center) {
