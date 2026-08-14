@@ -1,21 +1,17 @@
 package com.forestry.counter.presentation.screens.forestry
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.TravelExplore
@@ -32,7 +28,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import com.forestry.counter.R
+import com.forestry.counter.presentation.theme.Elevation
 import com.forestry.counter.presentation.theme.GsShape
 import com.forestry.counter.presentation.theme.SemanticInfo
 import com.forestry.counter.presentation.theme.SemanticSuccess
@@ -49,6 +47,8 @@ enum class CarteMode { MAPS, RECHERCHE, LIBRE }
  * Écran d'accueil de l'onglet Carte : sélection du mode, rien d'autre.
  * Toujours le premier écran affiché en arrivant sur l'onglet (l'onglet ne
  * mémorise pas le dernier mode utilisé — voir MainScaffold.navigateToTab).
+ * Seuls 3 choix existent : chaque bouton occupe un tiers de la hauteur
+ * disponible, pas de défilement.
  */
 @Composable
 fun CarteModeSelectorScreen(
@@ -62,33 +62,29 @@ fun CarteModeSelectorScreen(
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
         )
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Space.screenH, vertical = Space.xl),
-        ) {
-            Surface(
-                color = MaterialTheme.colorScheme.background.copy(alpha = 0.72f),
-                shape = GsShape.lg,
+        Column(modifier = Modifier.fillMaxSize().padding(Space.screenH)) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(top = Space.xl, bottom = Space.lg),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Column(modifier = Modifier.padding(Space.md)) {
-                    Text(
-                        stringResource(R.string.carte_mode_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        stringResource(R.string.carte_mode_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = Space.xxs),
-                    )
-                }
+                Text(
+                    stringResource(R.string.carte_mode_title),
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    stringResource(R.string.carte_mode_subtitle),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = Space.xs),
+                )
             }
             Column(
-                modifier = Modifier.padding(top = Space.lg),
-                verticalArrangement = Arrangement.spacedBy(Space.sm),
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(Space.md),
             ) {
                 CarteModeCard(
                     icon = Icons.Default.Map,
@@ -96,6 +92,7 @@ fun CarteModeSelectorScreen(
                     description = stringResource(R.string.carte_mode_maps_desc),
                     accent = SemanticInfo,
                     onClick = { onSelectMode(CarteMode.MAPS) },
+                    modifier = Modifier.weight(1f),
                 )
                 CarteModeCard(
                     icon = Icons.Default.TravelExplore,
@@ -103,6 +100,7 @@ fun CarteModeSelectorScreen(
                     description = stringResource(R.string.carte_mode_recherche_desc),
                     accent = SemanticSuccess,
                     onClick = { onSelectMode(CarteMode.RECHERCHE) },
+                    modifier = Modifier.weight(1f),
                 )
                 CarteModeCard(
                     icon = Icons.Default.Public,
@@ -110,6 +108,7 @@ fun CarteModeSelectorScreen(
                     description = stringResource(R.string.carte_mode_libre_desc),
                     accent = MaterialTheme.colorScheme.primary,
                     onClick = { onSelectMode(CarteMode.LIBRE) },
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
@@ -123,41 +122,50 @@ private fun CarteModeCard(
     description: String,
     accent: Color,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f),
-        shape = GsShape.lg,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f),
+        shape = GsShape.xl,
+        shadowElevation = Elevation.overlay,
     ) {
-        Row(
-            modifier = Modifier.padding(Space.md),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Space.md),
+        Column(
+            modifier = Modifier.fillMaxSize().padding(horizontal = Space.lg, vertical = Space.sm),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
             Surface(
                 shape = CircleShape,
                 color = accent.copy(alpha = 0.16f),
                 modifier = Modifier.size(Touch.fieldPrimary),
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null, tint = accent)
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        icon,
+                        contentDescription = null,
+                        tint = accent,
+                        modifier = Modifier.size(Space.lg),
+                    )
                 }
             }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(
-                    description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = Space.xxs),
-                )
-            }
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            Text(
+                title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = Space.xs),
+            )
+            Text(
+                description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = Space.xxs),
             )
         }
     }

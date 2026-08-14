@@ -327,10 +327,12 @@ fun TopLevelTabContent(
                     modifier = modifier,
                 )
                 com.forestry.counter.presentation.screens.forestry.CarteMode.RECHERCHE -> {
-                    // Écran Carte existant (tuiles offline, mesures, tracé
-                    // GPS, shapefile) — "mode Recherche" façon QField. Scope
-                    // "all" pour voir toutes les tiges tous forêts confondus.
-                    com.forestry.counter.presentation.screens.forestry.MapScreen(
+                    // Nouvelle base "mode Recherche" (esprit QField) : moteur
+                    // MapLibre repris de MapScreen mais interface repensée
+                    // (barre d'outils unique). Scope "all" pour voir toutes
+                    // les tiges tous forêts confondus. MapScreen reste
+                    // intact par ailleurs pour Forêts→Parcelle→carte.
+                    com.forestry.counter.presentation.screens.forestry.MapRechercheScreen(
                         parcelleId = "all",
                         tigeRepository = app.tigeRepository,
                         essenceRepository = app.essenceRepository,
