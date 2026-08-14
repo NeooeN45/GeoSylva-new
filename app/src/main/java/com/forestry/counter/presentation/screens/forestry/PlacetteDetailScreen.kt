@@ -416,10 +416,13 @@ fun PlacetteDetailScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                playClickFeedback()
-                showAddDialog = true
-            }) {
+            FloatingActionButton(
+                onClick = {
+                    playClickFeedback()
+                    showAddDialog = true
+                },
+                modifier = Modifier.offset(x = 8.dp),
+            ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add))
             }
         }

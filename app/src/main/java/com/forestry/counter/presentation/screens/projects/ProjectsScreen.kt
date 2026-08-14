@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -66,7 +67,12 @@ fun ProjectsScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showCreateDialog = true }) {
+            FloatingActionButton(
+                onClick = { showCreateDialog = true },
+                // Léger décalage vers la droite, demandé sur tous les FAB
+                // de l'app — au-delà de la marge standard de 16dp.
+                modifier = Modifier.offset(x = 8.dp),
+            ) {
                 Icon(Icons.Filled.Add, contentDescription = "Nouveau projet")
             }
         }

@@ -106,7 +106,10 @@ fun IbpHistoryScreen(
         },
         floatingActionButton = {
             if (placetteId != null) {
-                FloatingActionButton(onClick = { onOpenEvaluation(parcelleId, placetteId, null) }) {
+                FloatingActionButton(
+                    onClick = { onOpenEvaluation(parcelleId, placetteId, null) },
+                    modifier = Modifier.offset(x = 8.dp),
+                ) {
                     Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_add))
                 }
             }

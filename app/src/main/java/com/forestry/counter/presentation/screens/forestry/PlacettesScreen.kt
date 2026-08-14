@@ -238,13 +238,16 @@ fun PlacettesScreen(
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(onClick = {
-                    if (onNavigateToCreatePlacette != null) {
-                        onNavigateToCreatePlacette(parcelleId)
-                    } else {
-                        addPlacette()
-                    }
-                }) {
+                FloatingActionButton(
+                    onClick = {
+                        if (onNavigateToCreatePlacette != null) {
+                            onNavigateToCreatePlacette(parcelleId)
+                        } else {
+                            addPlacette()
+                        }
+                    },
+                    modifier = Modifier.offset(x = 8.dp),
+                ) {
                     Icon(Icons.Default.Add, contentDescription = stringResource(R.string.create_placette))
                 }
             },

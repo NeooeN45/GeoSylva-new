@@ -253,13 +253,16 @@ fun ParcellesScreen(
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(onClick = {
-                    if (onNavigateToCreateParcelle != null && forestId != null) {
-                        onNavigateToCreateParcelle(forestId)
-                    } else {
-                        addParcelle()
-                    }
-                }) {
+                FloatingActionButton(
+                    onClick = {
+                        if (onNavigateToCreateParcelle != null && forestId != null) {
+                            onNavigateToCreateParcelle(forestId)
+                        } else {
+                            addParcelle()
+                        }
+                    },
+                    modifier = Modifier.offset(x = 8.dp),
+                ) {
                     Icon(Icons.Default.Add, contentDescription = stringResource(R.string.create_parcelle))
                 }
             },

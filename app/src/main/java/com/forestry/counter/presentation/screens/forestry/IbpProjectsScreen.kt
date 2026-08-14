@@ -147,7 +147,10 @@ fun IbpProjectsScreen(
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
             if (parcelleRepository != null && placetteRepository != null) {
-                FloatingActionButton(onClick = { showCreateDialog = true }) {
+                FloatingActionButton(
+                    onClick = { showCreateDialog = true },
+                    modifier = Modifier.offset(x = 8.dp),
+                ) {
                     Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_add))
                 }
             }
