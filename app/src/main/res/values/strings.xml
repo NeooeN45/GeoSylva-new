@@ -335,6 +335,16 @@
 
     <string name="map_parcelle_title">Carte (parcelle)</string>
     <string name="map_global_title">Carte</string>
+    <string name="carte_mode_title">Carte</string>
+    <string name="carte_mode_subtitle">Choisissez un mode selon votre usage.</string>
+    <string name="carte_mode_maps_title">Maps</string>
+    <string name="carte_mode_maps_desc">Navigation en temps réel, qualité et confort d\'usage comparables à Google Maps.</string>
+    <string name="carte_mode_maps_stub_desc">Navigation temps réel qualité Google Maps — en construction.</string>
+    <string name="carte_mode_recherche_title">Recherche</string>
+    <string name="carte_mode_recherche_desc">Inventaire terrain : mesures, tiges géolocalisées, tracé de parcelle, imports shapefile.</string>
+    <string name="carte_mode_libre_title">Libre</string>
+    <string name="carte_mode_libre_desc">Cartographie avancée : chargez et enregistrez vos propres projets cartographiques.</string>
+    <string name="carte_mode_libre_stub_desc">Projets cartographiques avancés — en construction.</string>
     <string name="map_subtitle_stems_format">%1$d tiges géolocalisées / %2$d</string>
     <string name="gps_coverage">Couverture GPS</string>
     <string name="gps_points_format">Points GPS : %1$d / %2$d</string>

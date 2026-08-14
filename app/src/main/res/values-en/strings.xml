@@ -335,6 +335,16 @@
 
     <string name="map_parcelle_title">Map (parcel)</string>
     <string name="map_global_title">Map</string>
+    <string name="carte_mode_title">Map</string>
+    <string name="carte_mode_subtitle">Choose a mode based on what you need.</string>
+    <string name="carte_mode_maps_title">Maps</string>
+    <string name="carte_mode_maps_desc">Real-time navigation, quality and comfort on par with Google Maps.</string>
+    <string name="carte_mode_maps_stub_desc">Google Maps-quality real-time navigation — coming soon.</string>
+    <string name="carte_mode_recherche_title">Research</string>
+    <string name="carte_mode_recherche_desc">Field inventory: measurements, geolocated trees, plot tracing, shapefile imports.</string>
+    <string name="carte_mode_libre_title">Free</string>
+    <string name="carte_mode_libre_desc">Advanced mapping: load and save your own mapping projects.</string>
+    <string name="carte_mode_libre_stub_desc">Advanced mapping projects — coming soon.</string>
     <string name="map_subtitle_stems_format">%1$d geolocated stems / %2$d</string>
     <string name="gps_coverage">GPS coverage</string>
     <string name="gps_points_format">GPS points: %1$d / %2$d</string>

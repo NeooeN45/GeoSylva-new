@@ -17,12 +17,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -52,8 +52,12 @@ import com.forestry.counter.R
 import com.forestry.counter.domain.geo.LabelField
 import com.forestry.counter.domain.geo.ShapefileOverlay
 import com.forestry.counter.domain.geo.ShapefileOverlayManager
+import com.forestry.counter.presentation.theme.Elevation
+import com.forestry.counter.presentation.theme.GsShape
 import com.forestry.counter.presentation.theme.SemanticError
 import com.forestry.counter.presentation.theme.SemanticSuccess
+import com.forestry.counter.presentation.theme.Space
+import com.forestry.counter.presentation.theme.Touch
 import java.util.Locale
 
 /**
@@ -98,12 +102,12 @@ internal fun MapShapefilePanel(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f)
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
-            shape = RoundedCornerShape(18.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = Elevation.overlay),
+            shape = GsShape.md
         ) {
             Column(
                 modifier = Modifier
-                    .padding(14.dp)
+                    .padding(Space.md)
                     .verticalScroll(rememberScrollState())
             ) {
                 // En-tête
@@ -114,17 +118,17 @@ internal fun MapShapefilePanel(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(Space.xs)
                     ) {
-                        Icon(Icons.Default.Map, contentDescription = stringResource(R.string.cd_map), modifier = Modifier.size(20.dp), tint = SemanticSuccess)
+                        Icon(Icons.Default.Map, contentDescription = stringResource(R.string.cd_map), modifier = Modifier.size(Space.lg), tint = SemanticSuccess)
                         Text(stringResource(R.string.shp_overlay), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     }
-                    IconButton(onClick = onDismissPanel, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(18.dp))
+                    IconButton(onClick = onDismissPanel, modifier = Modifier.size(Touch.field)) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(Space.md))
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Space.xs))
 
                 if (state.overlay == null) {
                     Text(
@@ -132,18 +136,18 @@ internal fun MapShapefilePanel(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Space.xs))
                     Surface(
                         onClick = onImportRequest,
                         color = SemanticSuccess,
-                        shape = RoundedCornerShape(10.dp)
+                        shape = GsShape.sm
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                            modifier = Modifier.padding(horizontal = Space.md, vertical = Space.sm),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(Space.xs)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_add), tint = Color.White, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_add), tint = Color.White, modifier = Modifier.size(Space.md))
                             Text(stringResource(R.string.shp_import), color = Color.White, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelLarge)
                         }
                     }
@@ -171,19 +175,19 @@ internal fun MapShapefilePanel(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(Space.sm))
                     Surface(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), modifier = Modifier.fillMaxWidth().height(1.dp)) {}
 
                     // ── REMPLISSAGE ──
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Space.xs))
                     Text(stringResource(R.string.shp_fill_color), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Spacer(modifier = Modifier.height(Space.xxs))
+                    Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
                         SHP_COLOR_PALETTE.forEach { c ->
                             val isSelected = (ov.fillColor and 0x00FFFFFF) == (c and 0x00FFFFFF)
                             Box(
                                 modifier = Modifier
-                                    .size(28.dp)
+                                    .size(Space.lg)
                                     .clip(CircleShape)
                                     .background(Color(c))
                                     .then(
@@ -199,7 +203,7 @@ internal fun MapShapefilePanel(
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(Space.xxs))
                     Text(stringResource(R.string.shp_fill_opacity, (ov.fillOpacity * 100).toInt()), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Slider(
                         value = ov.fillOpacity,
@@ -215,17 +219,17 @@ internal fun MapShapefilePanel(
                     )
 
                     // ── CONTOUR ──
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(Space.xxs))
                     Surface(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), modifier = Modifier.fillMaxWidth().height(1.dp)) {}
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Space.xs))
                     Text(stringResource(R.string.shp_border_color), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Spacer(modifier = Modifier.height(Space.xxs))
+                    Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
                         SHP_COLOR_PALETTE.forEach { c ->
                             val isSelected = (ov.borderColor and 0x00FFFFFF) == (c and 0x00FFFFFF)
                             Box(
                                 modifier = Modifier
-                                    .size(28.dp)
+                                    .size(Space.lg)
                                     .clip(CircleShape)
                                     .background(Color(c))
                                     .then(
@@ -241,7 +245,7 @@ internal fun MapShapefilePanel(
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(Space.xxs))
                     Text(stringResource(R.string.shp_border_opacity, (ov.borderOpacity * 100).toInt()), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Slider(
                         value = ov.borderOpacity,
@@ -274,11 +278,11 @@ internal fun MapShapefilePanel(
                     )
 
                     // ── ÉTIQUETTES ──
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(Space.xxs))
                     Surface(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), modifier = Modifier.fillMaxWidth().height(1.dp)) {}
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Space.xs))
                     Text(stringResource(R.string.shp_labels_title), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(Space.xxs))
 
                     val isFr = Locale.getDefault().language == "fr"
                     LabelField.entries.forEach { field ->
@@ -294,7 +298,8 @@ internal fun MapShapefilePanel(
                                     shpManager.updateOverlay(updated)
                                     onApplyOverlay()
                                 }
-                                .padding(vertical = 1.dp)
+                                .heightIn(min = Touch.field)
+                                .padding(vertical = Space.xxs)
                         ) {
                             Checkbox(
                                 checked = checked,
@@ -304,10 +309,9 @@ internal fun MapShapefilePanel(
                                     onEvent(MapShapefilePanelEvent.SetOverlay(updated))
                                     shpManager.updateOverlay(updated)
                                     onApplyOverlay()
-                                },
-                                modifier = Modifier.size(32.dp)
+                                }
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(Space.xxs))
                             Text(
                                 if (isFr) field.frLabel else field.enLabel,
                                 style = MaterialTheme.typography.bodySmall
@@ -327,7 +331,8 @@ internal fun MapShapefilePanel(
                                     shpManager.updateOverlay(updated)
                                     onApplyOverlay()
                                 }
-                                .padding(vertical = 2.dp)
+                                .heightIn(min = Touch.field)
+                                .padding(vertical = Space.xxs)
                         ) {
                             Switch(
                                 checked = ov.combineLabels,
@@ -338,7 +343,7 @@ internal fun MapShapefilePanel(
                                     onApplyOverlay()
                                 }
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(Space.xs))
                             Text(stringResource(R.string.shp_combine_labels), style = MaterialTheme.typography.bodySmall)
                         }
                     }
@@ -365,22 +370,22 @@ internal fun MapShapefilePanel(
                     }
 
                     // ── ACTIONS ──
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(Space.xs))
                     Surface(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), modifier = Modifier.fillMaxWidth().height(1.dp)) {}
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Space.xs))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(Space.xs)
                     ) {
                         Surface(
                             onClick = onImportRequest,
                             color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f)
+                            shape = GsShape.field,
+                            modifier = Modifier.weight(1f).heightIn(min = Touch.field)
                         ) {
                             Text(
                                 stringResource(R.string.shp_replace),
-                                modifier = Modifier.padding(vertical = 8.dp),
+                                modifier = Modifier.padding(vertical = Space.xs),
                                 textAlign = TextAlign.Center,
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
@@ -394,12 +399,12 @@ internal fun MapShapefilePanel(
                                 onApplyOverlay()
                             },
                             color = MaterialTheme.colorScheme.errorContainer,
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f)
+                            shape = GsShape.field,
+                            modifier = Modifier.weight(1f).heightIn(min = Touch.field)
                         ) {
                             Text(
                                 stringResource(R.string.shp_delete),
-                                modifier = Modifier.padding(vertical = 8.dp),
+                                modifier = Modifier.padding(vertical = Space.xs),
                                 textAlign = TextAlign.Center,
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
@@ -411,14 +416,14 @@ internal fun MapShapefilePanel(
 
                 // Indicateur d'import en cours
                 if (shpImporting) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Space.xs))
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                     Text(stringResource(R.string.shp_importing), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
 
                 // Message d'erreur d'import
                 if (!shpErrorMessage.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Space.xs))
                     Text(
                         text = shpErrorMessage,
                         style = MaterialTheme.typography.bodySmall,

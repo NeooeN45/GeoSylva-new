@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.forestry.counter.R
 import com.forestry.counter.domain.location.GpsParcelTracer
 import com.forestry.counter.presentation.theme.MartelageEnlever
+import com.forestry.counter.presentation.theme.Space
 import com.mapbox.mapboxsdk.geometry.LatLng
 import java.io.File
 import java.util.Locale
@@ -42,7 +43,7 @@ internal fun MapMeasureSaveDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.measure_save_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
                 if (measureMode == MeasureMode.DISTANCE && measurePoints.size >= 2) {
                     val dist = measurePolylineM(measurePoints)
                     val t = if (dist >= 1000.0) String.format(Locale.getDefault(), "%.3f km", dist / 1000.0)
@@ -136,7 +137,7 @@ internal fun MapTraceSaveDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.trace_save_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Space.xs)) {
                 traceState.surfaceHa?.let { ha ->
                     Text(
                         stringResource(R.string.trace_surface_ha, String.format(Locale.getDefault(), "%.4f", ha)),

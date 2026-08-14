@@ -19,6 +19,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +38,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -311,20 +314,52 @@ fun TopLevelTabContent(
             ComingSoonScreen("Missions", modifier)
         }
         BottomNavDestination.CARTE.route -> {
-            // Écran déjà complet (tuiles offline, mesures, shapefile) —
-            // scope "all" pour voir toutes les tiges tous forêts confondus.
-            // Sans flèche retour (onNavigateBack = null) : c'est un onglet
-            // permanent, pas une sous-page.
-            com.forestry.counter.presentation.screens.forestry.MapScreen(
-                parcelleId = "all",
-                tigeRepository = app.tigeRepository,
-                essenceRepository = app.essenceRepository,
-                parcelleRepository = app.parcelleRepository,
-                preferencesManager = app.userPreferences,
-                offlineTileManager = app.offlineTileManager,
-                onNavigateBack = null,
-                modifier = modifier,
-            )
+            // Taper l'onglet Carte n'affiche jamais directement une carte :
+            // on choisit d'abord un mode (Maps/Recherche/Libre), chacun une
+            // page distincte. `navigateToTab` ne restaure pas l'état d'un
+            // onglet quitté (pas de saveState/restoreState) : ce sélecteur
+            // réapparaît donc à chaque fois qu'on revient sur l'onglet,
+            // comme voulu — pas besoin de le forcer explicitement ici.
+            var carteMode by remember { mutableStateOf<com.forestry.counter.presentation.screens.forestry.CarteMode?>(null) }
+            when (carteMode) {
+                null -> com.forestry.counter.presentation.screens.forestry.CarteModeSelectorScreen(
+                    onSelectMode = { carteMode = it },
+                    modifier = modifier,
+                )
+                com.forestry.counter.presentation.screens.forestry.CarteMode.RECHERCHE -> {
+                    // Écran Carte existant (tuiles offline, mesures, tracé
+                    // GPS, shapefile) — "mode Recherche" façon QField. Scope
+                    // "all" pour voir toutes les tiges tous forêts confondus.
+                    com.forestry.counter.presentation.screens.forestry.MapScreen(
+                        parcelleId = "all",
+                        tigeRepository = app.tigeRepository,
+                        essenceRepository = app.essenceRepository,
+                        parcelleRepository = app.parcelleRepository,
+                        preferencesManager = app.userPreferences,
+                        offlineTileManager = app.offlineTileManager,
+                        onNavigateBack = { carteMode = null },
+                        modifier = modifier,
+                    )
+                }
+                com.forestry.counter.presentation.screens.forestry.CarteMode.MAPS -> {
+                    com.forestry.counter.presentation.screens.forestry.CarteModeStubScreen(
+                        title = stringResource(com.forestry.counter.R.string.carte_mode_maps_title),
+                        description = stringResource(com.forestry.counter.R.string.carte_mode_maps_stub_desc),
+                        icon = Icons.Default.Map,
+                        onBack = { carteMode = null },
+                        modifier = modifier,
+                    )
+                }
+                com.forestry.counter.presentation.screens.forestry.CarteMode.LIBRE -> {
+                    com.forestry.counter.presentation.screens.forestry.CarteModeStubScreen(
+                        title = stringResource(com.forestry.counter.R.string.carte_mode_libre_title),
+                        description = stringResource(com.forestry.counter.R.string.carte_mode_libre_stub_desc),
+                        icon = Icons.Default.Public,
+                        onBack = { carteMode = null },
+                        modifier = modifier,
+                    )
+                }
+            }
         }
         BottomNavDestination.PARAMETRES.route -> {
             // L'onglet portait Compte jusqu'ici — un simple bouton engrenage
