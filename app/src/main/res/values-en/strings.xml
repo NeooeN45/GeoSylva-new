@@ -1085,6 +1085,18 @@
     <string name="onboarding_start">Get started</string>
     <string name="onboarding_next">Next</string>
     <string name="onboarding_skip">Skip</string>
+    <string name="coachmark_accueil_title">Your dashboard</string>
+    <string name="coachmark_accueil_desc">An overview of your forests and plots, and quick access to your current tasks.</string>
+    <string name="coachmark_explorer_title">Explore</string>
+    <string name="coachmark_explorer_desc">Browse the 13 data categories: forests, species, projects, measurements…</string>
+    <string name="coachmark_missions_title">Missions</string>
+    <string name="coachmark_missions_desc">Track your field tasks (coming soon).</string>
+    <string name="coachmark_carte_title">Map</string>
+    <string name="coachmark_carte_desc">View your trees with IGN, cadastre and forest map layers (coming soon).</string>
+    <string name="coachmark_parametres_title">Settings</string>
+    <string name="coachmark_parametres_desc">Customize the app and manage your data and account.</string>
+    <string name="coachmark_skip">Skip tour</string>
+    <string name="coachmark_finish">Finish</string>
 
     <!-- Contextual tips -->
     <string name="tip_parcelles_title">Getting started</string>

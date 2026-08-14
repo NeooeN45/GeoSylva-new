@@ -33,15 +33,19 @@ fun NavGraphBuilder.onboardingNavGraph(
         val permissionsLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions()
         ) { _ ->
-            navController.navigate(Screen.Forets.route) {
-                popUpTo(Screen.Onboarding.route) { inclusive = true }
+            // Le callback n'est invoqué qu'après la réponse à toutes les
+            // autorisations. L'écriture atomique précède immédiatement la
+            // navigation dans la même coroutine : l'écran principal ne peut
+            // donc pas observer un onboarding terminé sans visite planifiée.
+            coroutineScope.launch {
+                app.userPreferences.completeOnboardingAndScheduleCoachMarkTour()
+                navController.navigate(Screen.Forets.route) {
+                    popUpTo(Screen.Onboarding.route) { inclusive = true }
+                }
             }
         }
         OnboardingScreen(
             onComplete = {
-                coroutineScope.launch {
-                    app.userPreferences.setOnboardingCompleted(true)
-                }
                 val permissions = buildList {
                     add(Manifest.permission.ACCESS_FINE_LOCATION)
                     add(Manifest.permission.CAMERA)

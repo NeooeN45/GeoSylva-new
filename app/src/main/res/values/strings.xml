@@ -1076,6 +1076,18 @@
     <string name="onboarding_start">Commencer</string>
     <string name="onboarding_next">Suivant</string>
     <string name="onboarding_skip">Passer</string>
+    <string name="coachmark_accueil_title">Votre tableau de bord</string>
+    <string name="coachmark_accueil_desc">Vue d\'ensemble de vos forêts et parcelles, et accès rapide à vos actions du moment.</string>
+    <string name="coachmark_explorer_title">Explorer</string>
+    <string name="coachmark_explorer_desc">Parcourez les 13 catégories de données : forêts, essences, projets, mesures…</string>
+    <string name="coachmark_missions_title">Missions</string>
+    <string name="coachmark_missions_desc">Suivez vos tâches de terrain (à venir).</string>
+    <string name="coachmark_carte_title">Carte</string>
+    <string name="coachmark_carte_desc">Visualisez vos tiges avec les couches IGN, cadastre et cartes forestières (à venir).</string>
+    <string name="coachmark_parametres_title">Réglages</string>
+    <string name="coachmark_parametres_desc">Personnalisez l\'application, gérez vos données et votre compte.</string>
+    <string name="coachmark_skip">Passer la visite</string>
+    <string name="coachmark_finish">Terminer</string>
 
     <!-- Contextual tips -->
     <string name="tip_parcelles_title">Pour bien démarrer</string>

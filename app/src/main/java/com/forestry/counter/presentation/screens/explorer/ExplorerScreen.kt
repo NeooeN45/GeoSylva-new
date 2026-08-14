@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -63,7 +64,6 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.forestry.counter.R
 import com.forestry.counter.data.preferences.UserPreferencesManager
-import com.forestry.counter.presentation.components.CompactPageHeader
 import com.forestry.counter.presentation.theme.GsShape
 import com.forestry.counter.presentation.theme.Motion
 import com.forestry.counter.presentation.theme.Space
@@ -118,7 +118,6 @@ fun ExplorerScreen(
 
         Scaffold(
             containerColor = androidx.compose.ui.graphics.Color.Transparent,
-            topBar = { CompactPageHeader(title = stringResource(R.string.explorer_title)) },
         ) { innerPadding ->
             PullToRefreshBox(
                 isRefreshing = isRefreshing,
@@ -159,6 +158,24 @@ fun ExplorerScreen(
                     horizontalArrangement = Arrangement.spacedBy(Space.sm),
                     verticalArrangement = Arrangement.spacedBy(Space.sm),
                 ) {
+                    // Titre collé au fond de la page, scrollant avec les
+                    // cartes — pas de barre séparée qui se replie à son
+                    // propre rythme : le défilement doit rester aussi fluide
+                    // que pour n'importe quelle carte de la grille.
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.background.copy(alpha = 0.55f),
+                            shape = GsShape.md,
+                            modifier = Modifier.padding(bottom = Space.sm),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.explorer_title),
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = Space.md, vertical = Space.xs),
+                            )
+                        }
+                    }
                     itemsIndexed(ExplorerCategory.entries) { index, category ->
                         ExplorerCategoryCard(
                             category = category,

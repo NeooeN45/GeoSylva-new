@@ -32,14 +32,21 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.forestry.counter.ForestryCounterApplication
+import com.forestry.counter.presentation.coachmark.CoachMarkOverlay
+import com.forestry.counter.presentation.coachmark.coachMarkAnchor
+import com.forestry.counter.presentation.coachmark.rememberCoachMarkAnchorRegistry
+import com.forestry.counter.presentation.coachmark.rememberCoachMarkController
+import com.forestry.counter.presentation.coachmark.shouldStartCoachMarkTour
 import com.forestry.counter.presentation.screens.settings.SettingsHomeScreen
 import com.forestry.counter.presentation.screens.common.ComingSoonScreen
 import com.forestry.counter.presentation.screens.explorer.ExplorerCategory
@@ -48,6 +55,7 @@ import com.forestry.counter.presentation.screens.home.HomeScreen
 import com.forestry.counter.presentation.screens.home.HomeViewModel
 import com.forestry.counter.presentation.theme.Motion
 import com.forestry.counter.presentation.theme.Space
+import kotlinx.coroutines.launch
 
 /**
  * Scaffold principal avec bottom navigation 5 entrées — spec GEOSYLVA-003 §29.3.
@@ -85,6 +93,35 @@ fun MainScaffold(
         Screen.PasswordRecovery.route,
     )
 
+    // Visite guidée (coachmarks) des 5 onglets — se déclenche une seule
+    // fois, dès qu'on atteint un écran de premier niveau après que
+    // `coachMarkTourPending` a été armé (juste après les autorisations
+    // GPS/caméra/galerie qui suivent l'onboarding, voir OnboardingNavGraph).
+    val coachMarkController = rememberCoachMarkController()
+    val coachMarkAnchors = rememberCoachMarkAnchorRegistry()
+    val coachMarkPending by app.userPreferences.coachMarkTourPending.collectAsStateWithLifecycle(initialValue = false)
+    val coachMarkCompleted by app.userPreferences.coachMarkTourCompleted.collectAsStateWithLifecycle(initialValue = false)
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(coachMarkPending, coachMarkCompleted, isTopLevel) {
+        if (coachMarkCompleted && coachMarkPending) {
+            // Répare un éventuel état hérité incohérent sans relancer une
+            // visite déjà terminée.
+            app.userPreferences.setCoachMarkTourPending(false)
+        } else if (shouldStartCoachMarkTour(
+                pending = coachMarkPending,
+                completed = coachMarkCompleted,
+                isTopLevel = isTopLevel,
+                isActive = coachMarkController.isActive,
+            )
+        ) {
+            // `pending` reste durablement vrai pendant toute la visite. En
+            // cas de recréation ou de mort du processus, elle reprend au
+            // prochain écran de premier niveau au lieu d'être perdue.
+            coachMarkController.start()
+        }
+    }
+
     fun navigateToTab(route: String) {
         navController.navigate(route) {
             // `saveState`/`restoreState` mémorisaient l'état de toute la
@@ -112,6 +149,10 @@ fun MainScaffold(
                             NavigationBarItem(
                                 selected = currentRoute == destination.route,
                                 onClick = { navigateToTab(destination.route) },
+                                modifier = Modifier.coachMarkAnchor(
+                                    registry = coachMarkAnchors,
+                                    key = "nav_${destination.route}",
+                                ),
                                 icon = {
                                     Icon(
                                         imageVector = if (currentRoute == destination.route)
@@ -142,6 +183,23 @@ fun MainScaffold(
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
+
+        CoachMarkOverlay(
+            anchors = coachMarkAnchors,
+            step = coachMarkController.currentStep,
+            stepIndex = coachMarkController.stepIndex ?: 0,
+            totalSteps = com.forestry.counter.presentation.coachmark.COACH_MARK_STEPS.size,
+            onNext = {
+                coachMarkController.next()
+                if (!coachMarkController.isActive) {
+                    scope.launch { app.userPreferences.setCoachMarkTourCompleted(true) }
+                }
+            },
+            onSkip = {
+                coachMarkController.stop()
+                scope.launch { app.userPreferences.setCoachMarkTourCompleted(true) }
+            },
+        )
     }
 }
 
@@ -167,7 +225,7 @@ private fun CollapsedMiniNav(
 
     Surface(
         modifier = modifier
-            .padding(bottom = 28.dp)
+            .padding(bottom = 36.dp)
             .animateContentSize(animationSpec = Motion.springSnappy()),
         shape = RoundedCornerShape(50),
         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f),

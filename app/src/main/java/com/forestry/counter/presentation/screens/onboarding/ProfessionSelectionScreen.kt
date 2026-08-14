@@ -186,12 +186,20 @@ fun ProfessionSelectionScreen(
                     )
                 }
 
-                Text(
-                    text = stringResource(R.string.profession_privacy_note),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = Space.md),
-                )
+                Surface(
+                    color = MaterialTheme.colorScheme.background.copy(alpha = 0.72f),
+                    shape = GsShape.md,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = Space.md),
+                ) {
+                    Text(
+                        text = stringResource(R.string.profession_privacy_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = Space.md, vertical = Space.sm),
+                    )
+                }
 
                 Button(
                     onClick = {

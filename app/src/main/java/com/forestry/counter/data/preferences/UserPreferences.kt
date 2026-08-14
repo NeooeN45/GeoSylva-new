@@ -92,6 +92,12 @@ class UserPreferencesManager(private val context: Context) {
         val PROFESSION_SELECTION_COMPLETED = booleanPreferencesKey("profession_selection_completed")
         val PROFESSION_PENDING_SYNC = booleanPreferencesKey("profession_pending_sync")
 
+        // Visite guidée (coachmarks) des 5 onglets principaux — se déclenche
+        // une fois, juste après la réponse aux autorisations GPS/caméra/
+        // galerie qui suivent l'onboarding.
+        val COACH_MARK_TOUR_PENDING = booleanPreferencesKey("coach_mark_tour_pending")
+        val COACH_MARK_TOUR_COMPLETED = booleanPreferencesKey("coach_mark_tour_completed")
+
         // Options développeur locales — ne confèrent aucun rôle GSIE
         val DEVELOPER_MODE_ENABLED = booleanPreferencesKey("developer_mode_enabled")
     }
@@ -657,6 +663,19 @@ class UserPreferencesManager(private val context: Context) {
         }
     }
 
+    /**
+     * Termine l'onboarding et programme sa visite guidée dans une transaction
+     * unique. Aucun état intermédiaire « onboarding terminé sans visite » ne
+     * peut ainsi être observé si la composition ou le processus est interrompu.
+     */
+    suspend fun completeOnboardingAndScheduleCoachMarkTour() {
+        dataStore.edit { prefs ->
+            prefs[ONBOARDING_COMPLETED] = true
+            prefs[COACH_MARK_TOUR_PENDING] = true
+            prefs[COACH_MARK_TOUR_COMPLETED] = false
+        }
+    }
+
     // ── Métier de l'utilisateur ──────────────────────────────────────────
     // `userProfession` porte un code stable (ex. "forestier_onf") pour les
     // choix de la liste prédéfinie, ou "autre" quand seul le texte libre
@@ -696,6 +715,26 @@ class UserPreferencesManager(private val context: Context) {
     suspend fun setProfessionSelectionCompleted(completed: Boolean) {
         dataStore.edit { prefs ->
             prefs[PROFESSION_SELECTION_COMPLETED] = completed
+        }
+    }
+
+    // ── Visite guidée (coachmarks) ───────────────────────────────────────
+    val coachMarkTourPending: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[COACH_MARK_TOUR_PENDING] ?: false
+    }
+
+    val coachMarkTourCompleted: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[COACH_MARK_TOUR_COMPLETED] ?: false
+    }
+
+    suspend fun setCoachMarkTourPending(pending: Boolean) {
+        dataStore.edit { prefs -> prefs[COACH_MARK_TOUR_PENDING] = pending }
+    }
+
+    suspend fun setCoachMarkTourCompleted(completed: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[COACH_MARK_TOUR_COMPLETED] = completed
+            prefs[COACH_MARK_TOUR_PENDING] = false
         }
     }
 
