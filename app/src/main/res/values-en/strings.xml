@@ -345,6 +345,7 @@
     <string name="map_recenter">View trees</string>
     <string name="map_my_location">My location</string>
     <string name="map_empty">No stems in this plot.</string>
+    <string name="map_empty_global">No stems recorded yet.</string>
     <string name="map_view">Map</string>
     <string name="dashboard_title">Dashboard</string>
     <string name="dashboard_total_stems">Total stems</string>
@@ -2133,7 +2134,7 @@
     <string name="diagmenu_prerequisites">Prerequisites</string>
     <string name="diagmenu_last_diagnostic">Last diagnosis</string>
     <string name="diagmenu_algo_cnpf">Deterministic CNPF algorithm</string>
-    <string name="diagmenu_algo_description">Multi-criteria scoring: SER fertility × 40%%, climate suitability × 20%%, soil × 20%%, CC2050 resilience × 10%%, health risks × 10%%. 20 species evaluated.</string>
+    <string name="diagmenu_algo_description">Multi-criteria scoring: SER fertility × 40%, climate suitability × 20%, soil × 20%, CC2050 resilience × 10%, health risks × 10%. 20 species evaluated.</string>
     <string name="diagmenu_prereq_station">Environmental station (soil, climate, SER)</string>
     <string name="diagmenu_prereq_stand">Stand (plots &amp; inventoried stems)</string>
     <string name="diagmenu_error_format">Error: %1$s</string>

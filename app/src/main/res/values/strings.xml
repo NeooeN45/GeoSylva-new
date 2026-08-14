@@ -345,6 +345,7 @@
     <string name="map_recenter">Voir les arbres</string>
     <string name="map_my_location">Ma position</string>
     <string name="map_empty">Aucune tige dans cette parcelle.</string>
+    <string name="map_empty_global">Aucune tige enregistrée pour le moment.</string>
     <string name="map_view">Carte</string>
     <string name="dashboard_title">Tableau de bord</string>
     <string name="dashboard_total_stems">Nb de tiges</string>
@@ -2029,7 +2030,7 @@
     <string name="diagmenu_prerequisites">Pré-requis</string>
     <string name="diagmenu_last_diagnostic">Dernier diagnostic</string>
     <string name="diagmenu_algo_cnpf">Algorithme CNPF déterministe</string>
-    <string name="diagmenu_algo_description">Scoring multi-critères : fertilité SER × 40%%, adéquation climatique × 20%%, sol × 20%%, résilience CC2050 × 10%%, risques sanitaires × 10%%. 20 essences évaluées.</string>
+    <string name="diagmenu_algo_description">Scoring multi-critères : fertilité SER × 40%, adéquation climatique × 20%, sol × 20%, résilience CC2050 × 10%, risques sanitaires × 10%. 20 essences évaluées.</string>
     <string name="diagmenu_prereq_station">Station environnementale (sol, climat, SER)</string>
     <string name="diagmenu_prereq_stand">Peuplement (placettes &amp; tiges inventoriées)</string>
     <string name="diagmenu_error_format">Erreur : %1$s</string>

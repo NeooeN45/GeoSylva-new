@@ -317,7 +317,8 @@ internal fun MapNoGpsMessage(
 internal fun MapEmptyMessage(
     total: Int,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isGlobalScope: Boolean = false,
 ) {
     if (total != 0) return
 
@@ -348,7 +349,9 @@ internal fun MapEmptyMessage(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = stringResource(R.string.map_empty),
+                    text = stringResource(
+                        if (isGlobalScope) R.string.map_empty_global else R.string.map_empty
+                    ),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center

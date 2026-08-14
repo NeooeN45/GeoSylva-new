@@ -882,6 +882,7 @@ fun MapScreen(
             MapEmptyMessage(
                 total = total,
                 onDismiss = { dismissedGpsBanner = true },
+                isGlobalScope = parcelleId == "all",
                 modifier = Modifier
                     .align(Alignment.Center)
                     .padding(32.dp)
