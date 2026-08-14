@@ -301,8 +301,13 @@ enum class ExplorerCategory(
     val isImplemented: Boolean = false,
 ) {
     FORETS("Forêts", Icons.Filled.Forest, isImplemented = true),
-    PARCELLES("Parcelles", Icons.Filled.Park),
-    PLACETTES("Placettes", Icons.Filled.Map),
+    // Parcelles/Placettes/Diagnostics mènent toutes à la liste globale des
+    // parcelles (scope "all", même écran que Forêts → parcelle) : c'est le
+    // seul point d'entrée cohérent pour des données qui n'existent que
+    // rattachées à une parcelle — pas de vue "toutes placettes" ou "tous
+    // diagnostics" indépendante à construire.
+    PARCELLES("Parcelles", Icons.Filled.Park, isImplemented = true),
+    PLACETTES("Placettes", Icons.Filled.Map, isImplemented = true),
     ARBRES("Arbres", Icons.Filled.Category),
     OBSERVATIONS("Observations", Icons.Filled.Biotech),
     MESURES("Mesures", Icons.Filled.Straighten),
@@ -310,7 +315,7 @@ enum class ExplorerCategory(
     PREUVES("Preuves", Icons.Filled.PhotoLibrary),
     ESSENCES("Essences", Icons.Filled.Hub, isImplemented = true),
     STATIONS("Stations", Icons.Filled.Science),
-    DIAGNOSTICS("Diagnostics", Icons.Filled.BarChart),
+    DIAGNOSTICS("Diagnostics", Icons.Filled.BarChart, isImplemented = true),
     PROJECTS("Projets", Icons.Filled.AccountTree, isImplemented = true),
     EVENEMENTS("Événements", Icons.Filled.Event),
 }

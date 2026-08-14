@@ -269,8 +269,9 @@ private fun CollapsedMiniNav(
  * Contenu des 5 onglets de premier niveau.
  *
  * Accueil affiche [HomeScreen] (tableau de bord).
- * Explorer est un placeholder en attendant Sprint 3.3.
- * Missions, Carte, Compte affichent [ComingSoonScreen].
+ * Explorer liste les catégories de données.
+ * Carte affiche la carte globale (scope "all", toutes forêts confondues).
+ * Missions affiche encore [ComingSoonScreen] (aucune donnée métier dédiée).
  */
 @Composable
 fun TopLevelTabContent(
@@ -310,7 +311,20 @@ fun TopLevelTabContent(
             ComingSoonScreen("Missions", modifier)
         }
         BottomNavDestination.CARTE.route -> {
-            ComingSoonScreen("Carte", modifier)
+            // Écran déjà complet (tuiles offline, mesures, shapefile) —
+            // scope "all" pour voir toutes les tiges tous forêts confondus.
+            // Sans flèche retour (onNavigateBack = null) : c'est un onglet
+            // permanent, pas une sous-page.
+            com.forestry.counter.presentation.screens.forestry.MapScreen(
+                parcelleId = "all",
+                tigeRepository = app.tigeRepository,
+                essenceRepository = app.essenceRepository,
+                parcelleRepository = app.parcelleRepository,
+                preferencesManager = app.userPreferences,
+                offlineTileManager = app.offlineTileManager,
+                onNavigateBack = null,
+                modifier = modifier,
+            )
         }
         BottomNavDestination.PARAMETRES.route -> {
             // L'onglet portait Compte jusqu'ici — un simple bouton engrenage

@@ -21,6 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.forestry.counter.ForestryCounterApplication
 import com.forestry.counter.presentation.screens.account.LoginScreen
+import com.forestry.counter.presentation.screens.explorer.ExplorerCategory
 import kotlinx.coroutines.launch
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
@@ -331,9 +332,21 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                             navController.navigate(Screen.CreateForest.route)
                         },
                         onCategoryClick = { category ->
-                            // Lot 1 : les catégories non implémentées n'ont pas encore
-                            // d'écran dédié. Navigation vers les écrans existants quand
-                            // disponible, sinon rien.
+                            when (category) {
+                                // Placettes et Diagnostics n'ont pas de vue globale
+                                // propre : elles n'existent que rattachées à une
+                                // parcelle. La liste globale des parcelles (déjà
+                                // câblée vers Placettes/Diagnostic/Carte/Martelage/
+                                // IBP par parcelle) est le point d'entrée commun.
+                                ExplorerCategory.PARCELLES,
+                                ExplorerCategory.PLACETTES,
+                                ExplorerCategory.DIAGNOSTICS -> {
+                                    navController.navigate(Screen.Parcelles.createRoute(null))
+                                }
+                                // Le reste n'a encore ni écran ni entrée dédiée
+                                // (Lot 1) : rien à faire.
+                                else -> {}
+                            }
                         },
                         modifier = innerModifier,
                     )

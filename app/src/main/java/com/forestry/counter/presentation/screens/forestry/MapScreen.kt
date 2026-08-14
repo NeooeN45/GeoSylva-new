@@ -125,11 +125,16 @@ fun MapScreen(
     parcelleRepository: ParcelleRepository? = null,
     preferencesManager: UserPreferencesManager,
     offlineTileManager: OfflineTileManager? = null,
-    onNavigateBack: () -> Unit,
+    // `null` quand la carte est un onglet de premier niveau (bottom nav) :
+    // il n'y a alors nulle part où "revenir", donc pas de flèche retour —
+    // voir MainScaffold.TopLevelTabContent (scope "all"). Les usages en
+    // sous-page (ForestryFlowNavGraph) continuent de fournir une lambda.
+    onNavigateBack: (() -> Unit)? = null,
     initialNavLat: Double? = null,
     initialNavLon: Double? = null,
     initialNavEssence: String? = null,
-    initialNavDiam: Double? = null
+    initialNavDiam: Double? = null,
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
 
@@ -393,12 +398,14 @@ fun MapScreen(
     }
 
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
                     Column {
                         Text(
-                            stringResource(R.string.map_parcelle_title),
+                            if (parcelleId == "all") stringResource(R.string.map_global_title)
+                            else stringResource(R.string.map_parcelle_title),
                             style = MaterialTheme.typography.titleMedium
                         )
                         if (withGps > 0) {
@@ -411,8 +418,10 @@ fun MapScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                    onNavigateBack?.let { goBack ->
+                        IconButton(onClick = goBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        }
                     }
                 },
                 actions = {

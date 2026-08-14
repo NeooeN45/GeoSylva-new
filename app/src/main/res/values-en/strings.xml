@@ -334,6 +334,7 @@
     <string name="martelage">Marking</string>
 
     <string name="map_parcelle_title">Map (parcel)</string>
+    <string name="map_global_title">Map</string>
     <string name="map_subtitle_stems_format">%1$d geolocated stems / %2$d</string>
     <string name="gps_coverage">GPS coverage</string>
     <string name="gps_points_format">GPS points: %1$d / %2$d</string>
