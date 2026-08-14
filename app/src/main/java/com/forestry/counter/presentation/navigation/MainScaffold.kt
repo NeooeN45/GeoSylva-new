@@ -72,6 +72,18 @@ fun MainScaffold(
     val currentRoute = backStackEntry?.destination?.route
     val currentDestination = BottomNavDestination.fromRoute(currentRoute)
     val isTopLevel = currentDestination != null
+    // Écrans d'avant-entrée dans l'app (connexion, sélection du métier,
+    // onboarding) : ni barre complète, ni mini-menu. Le mini-menu
+    // s'affichait par-dessus le bouton "Suivant" de l'onboarding — un tap
+    // dessus faisait sauter directement dans l'app, sautant le reste du
+    // parcours de bienvenue.
+    val isPreEntry = currentRoute in setOf(
+        Screen.Welcome.route,
+        Screen.ProfessionSelection.route,
+        Screen.Onboarding.route,
+        Screen.Login.route,
+        Screen.PasswordRecovery.route,
+    )
 
     fun navigateToTab(route: String) {
         navController.navigate(route) {
@@ -123,7 +135,7 @@ fun MainScaffold(
             content(Modifier.padding(innerPadding))
         }
 
-        if (!isTopLevel) {
+        if (!isTopLevel && !isPreEntry) {
             CollapsedMiniNav(
                 currentRoute = currentRoute,
                 onNavigateToTab = ::navigateToTab,

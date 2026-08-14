@@ -1,10 +1,6 @@
 package com.forestry.counter.presentation.screens.explorer
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -200,29 +196,22 @@ private fun ExplorerCategoryCard(
         label = "explorerCardScale",
     )
 
-    // Entrée en cascade — chaque carte apparaît légèrement après la
-    // précédente plutôt que toutes d'un coup, sans dépendance externe.
-    var visible by remember { mutableStateOf(false) }
-    androidx.compose.runtime.LaunchedEffect(Unit) {
-        delay(index * 35L)
-        visible = true
-    }
-
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(tween(320)) + slideInVertically(tween(320)) { it / 4 },
+    // Pas d'entrée en cascade ici : `LazyVerticalGrid` dispose et recompose
+    // les cartes hors-écran, donc une animation basée sur `index` rejouait
+    // à chaque défilement — la carte n'existait pas encore (alpha 0, non
+    // cliquable) le temps du délai. Les cartes doivent être disponibles
+    // immédiatement dès qu'elles entrent dans le viewport.
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .scale(scale),
+        shape = GsShape.lg,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f)),
+        interactionSource = interactionSource,
     ) {
-        Card(
-            onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .scale(scale),
-            shape = GsShape.lg,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.9f)),
-            interactionSource = interactionSource,
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize()) {
                 // Icône fantôme — grande, très pâle, en fond de carte : une
                 // touche de profondeur sans surcharger le badge, qui reste
                 // seul repère net à l'échelle de lecture.
@@ -284,7 +273,6 @@ private fun ExplorerCategoryCard(
             }
         }
     }
-}
 }
 
 /**

@@ -54,6 +54,22 @@
     <string name="create">Créer</string>
     <string name="add">Ajouter</string>
     <string name="cancel">Annuler</string>
+    <string name="continue_label">Continuer</string>
+
+    <!-- Sélection du métier -->
+    <string name="profession_title">Quel est votre métier ?</string>
+    <string name="profession_subtitle">Cela nous aide à adapter l’application à votre usage. Vous pourrez le modifier plus tard dans les réglages.</string>
+    <string name="profession_forestier_public">Forestier (ONF, CNPF…)</string>
+    <string name="profession_expert_forestier">Expert forestier indépendant</string>
+    <string name="profession_exploitant">Exploitant forestier</string>
+    <string name="profession_technicien">Technicien forestier</string>
+    <string name="profession_proprietaire">Propriétaire forestier</string>
+    <string name="profession_etudiant">Étudiant en foresterie</string>
+    <string name="profession_chercheur">Chercheur / Enseignant</string>
+    <string name="profession_autre">Autre</string>
+    <string name="profession_custom_label">Votre métier</string>
+    <string name="profession_custom_placeholder">Précisez votre métier</string>
+    <string name="profession_privacy_note">Cette information reste sur votre appareil pour le moment ; elle nous aidera à orienter les prochaines évolutions de GeoSylva.</string>
     <string name="delete">Supprimer</string>
     <string name="duplicate">Dupliquer</string>
     <string name="rename_project">Renommer le projet</string>
@@ -1050,6 +1066,13 @@
     <string name="onboarding_flora_b1">Base de 500+ espèces vasculaires avec valeurs d\'Ellenberg</string>
     <string name="onboarding_flora_b2">Inférence automatique du pH, de l\'humidité et du niveau trophique du sol</string>
     <string name="onboarding_flora_b3">Navigateur par famille et recherche floue avec autocomplétion</string>
+    <string name="onboarding_group_collecte_title">Collecte terrain</string>
+    <string name="onboarding_group_collecte_desc">Structurez vos forêts, mesurez vos tiges et localisez-les avec précision — tout tient dans la poche, même hors-ligne.</string>
+    <string name="onboarding_group_analyse_title">Analyse &amp; martelage</string>
+    <string name="onboarding_group_analyse_desc">Transformez vos mesures en décisions : tableaux de bord dendrométriques et simulation de martelage.</string>
+    <string name="onboarding_group_ecologie_title">Écologie &amp; biodiversité</string>
+    <string name="onboarding_group_ecologie_desc">Diagnostiquez la station, anticipez le climat 2050 et évaluez la biodiversité avec le protocole CNPF.</string>
+    <string name="onboarding_group_hint">Touchez une carte pour en savoir plus</string>
     <string name="onboarding_start">Commencer</string>
     <string name="onboarding_next">Suivant</string>
     <string name="onboarding_skip">Passer</string>

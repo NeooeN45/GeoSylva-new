@@ -55,6 +55,22 @@
     <string name="create">Create</string>
     <string name="add">Add</string>
     <string name="cancel">Cancel</string>
+    <string name="continue_label">Continue</string>
+
+    <!-- Profession selection -->
+    <string name="profession_title">What is your profession?</string>
+    <string name="profession_subtitle">This helps us adapt the app to your use. You can change it later in settings.</string>
+    <string name="profession_forestier_public">Forester (public agency)</string>
+    <string name="profession_expert_forestier">Independent forestry expert</string>
+    <string name="profession_exploitant">Logging contractor</string>
+    <string name="profession_technicien">Forestry technician</string>
+    <string name="profession_proprietaire">Forest owner</string>
+    <string name="profession_etudiant">Forestry student</string>
+    <string name="profession_chercheur">Researcher / Teacher</string>
+    <string name="profession_autre">Other</string>
+    <string name="profession_custom_label">Your profession</string>
+    <string name="profession_custom_placeholder">Tell us your profession</string>
+    <string name="profession_privacy_note">This stays on your device for now; it will help guide GeoSylva’s future development.</string>
     <string name="delete">Delete</string>
     <string name="duplicate">Duplicate</string>
     <string name="rename_project">Rename project</string>
@@ -1059,6 +1075,13 @@
     <string name="onboarding_flora_b2">Automatic inference of soil pH, moisture and trophic level</string>
     <string name="onboarding_flora_b3">Family browser and fuzzy-search autocomplete</string>
 
+    <string name="onboarding_group_collecte_title">Field data collection</string>
+    <string name="onboarding_group_collecte_desc">Structure your forests, measure your trees and locate them precisely — it all fits in your pocket, even offline.</string>
+    <string name="onboarding_group_analyse_title">Analysis &amp; marking</string>
+    <string name="onboarding_group_analyse_desc">Turn your measurements into decisions: dendrometric dashboards and marking simulation.</string>
+    <string name="onboarding_group_ecologie_title">Ecology &amp; biodiversity</string>
+    <string name="onboarding_group_ecologie_desc">Diagnose the site, anticipate 2050 climate conditions, and assess biodiversity with the CNPF protocol.</string>
+    <string name="onboarding_group_hint">Tap a card to learn more</string>
     <string name="onboarding_start">Get started</string>
     <string name="onboarding_next">Next</string>
     <string name="onboarding_skip">Skip</string>

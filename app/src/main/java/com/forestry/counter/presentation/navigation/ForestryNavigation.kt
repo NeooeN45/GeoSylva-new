@@ -13,6 +13,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
@@ -20,6 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.forestry.counter.ForestryCounterApplication
 import com.forestry.counter.presentation.screens.account.LoginScreen
+import kotlinx.coroutines.launch
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
@@ -116,6 +118,12 @@ sealed class Screen(val route: String) {
      * rester pleinement utilisable sans compte ni réseau.
      */
     object Welcome : Screen("welcome")
+    /**
+     * Sélection du métier — juste après connexion ou "Continuer hors
+     * ligne", avant l'onboarding. Vue une seule fois par installation,
+     * comme Welcome dont elle hérite la place dans le parcours.
+     */
+    object ProfessionSelection : Screen("profession_selection")
     object RipisylveDiagnostic : Screen("ripisylve/diagnostic/{parcelleId}") {
         fun createRoute(parcelleId: String) = "ripisylve/diagnostic/$parcelleId"
     }
@@ -240,18 +248,38 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                 popEnterTransition = transitions.popEnter,
                 popExitTransition = transitions.popExit,
             ) {
-                val goToOnboarding = {
-                    navController.navigate(Screen.Onboarding.route) {
+                val goToProfessionSelection = {
+                    navController.navigate(Screen.ProfessionSelection.route) {
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
                 }
                 LoginScreen(
                     repository = app.identityRepository,
-                    onAuthenticated = goToOnboarding,
-                    onContinueOffline = goToOnboarding,
+                    onAuthenticated = goToProfessionSelection,
+                    onContinueOffline = goToProfessionSelection,
                     onForgotPassword = { navController.navigate(Screen.PasswordRecovery.route) },
                     animationsEnabled = animationsEnabled,
                     preferencesManager = app.userPreferences,
+                )
+            }
+
+            composable(
+                route = Screen.ProfessionSelection.route,
+                enterTransition = transitions.enter,
+                exitTransition = transitions.exit,
+                popEnterTransition = transitions.popEnter,
+                popExitTransition = transitions.popExit,
+            ) {
+                val scope = rememberCoroutineScope()
+                com.forestry.counter.presentation.screens.onboarding.ProfessionSelectionScreen(
+                    onComplete = { code, customText ->
+                        scope.launch {
+                            app.userPreferences.setUserProfession(code, customText)
+                        }
+                        navController.navigate(Screen.Onboarding.route) {
+                            popUpTo(Screen.ProfessionSelection.route) { inclusive = true }
+                        }
+                    },
                 )
             }
 

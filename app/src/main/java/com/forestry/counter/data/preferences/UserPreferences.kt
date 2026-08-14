@@ -83,6 +83,15 @@ class UserPreferencesManager(private val context: Context) {
         val IBP_ONBOARDING_SEEN = booleanPreferencesKey("ibp_onboarding_seen")
         val STATION_TUTORIAL_COMPLETED = booleanPreferencesKey("station_tutorial_completed")
 
+        // Métier de l'utilisateur — choisi juste après connexion, avant
+        // l'onboarding. Stocké localement (offline-first) ; PENDING_SYNC
+        // marque une valeur pas encore remontée au serveur GSIE, pour le
+        // jour où l'API d'identité exposera ce champ.
+        val USER_PROFESSION = stringPreferencesKey("user_profession")
+        val USER_PROFESSION_CUSTOM_TEXT = stringPreferencesKey("user_profession_custom_text")
+        val PROFESSION_SELECTION_COMPLETED = booleanPreferencesKey("profession_selection_completed")
+        val PROFESSION_PENDING_SYNC = booleanPreferencesKey("profession_pending_sync")
+
         // Options développeur locales — ne confèrent aucun rôle GSIE
         val DEVELOPER_MODE_ENABLED = booleanPreferencesKey("developer_mode_enabled")
     }
@@ -645,6 +654,48 @@ class UserPreferencesManager(private val context: Context) {
     suspend fun setOnboardingCompleted(completed: Boolean) {
         dataStore.edit { prefs ->
             prefs[ONBOARDING_COMPLETED] = completed
+        }
+    }
+
+    // ── Métier de l'utilisateur ──────────────────────────────────────────
+    // `userProfession` porte un code stable (ex. "forestier_onf") pour les
+    // choix de la liste prédéfinie, ou "autre" quand seul le texte libre
+    // est renseigné (`userProfessionCustomText`). `professionPendingSync`
+    // reste à `true` tant qu'aucun canal de synchronisation serveur
+    // n'existe côté GSIE — mis à `false` par ce futur appel, pas avant.
+
+    val userProfession: Flow<String?> = dataStore.data.map { prefs ->
+        prefs[USER_PROFESSION]
+    }
+
+    val userProfessionCustomText: Flow<String?> = dataStore.data.map { prefs ->
+        prefs[USER_PROFESSION_CUSTOM_TEXT]
+    }
+
+    val professionSelectionCompleted: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[PROFESSION_SELECTION_COMPLETED] ?: false
+    }
+
+    val professionPendingSync: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[PROFESSION_PENDING_SYNC] ?: false
+    }
+
+    suspend fun setUserProfession(code: String, customText: String? = null) {
+        dataStore.edit { prefs ->
+            prefs[USER_PROFESSION] = code
+            if (customText != null) {
+                prefs[USER_PROFESSION_CUSTOM_TEXT] = customText
+            } else {
+                prefs.remove(USER_PROFESSION_CUSTOM_TEXT)
+            }
+            prefs[PROFESSION_SELECTION_COMPLETED] = true
+            prefs[PROFESSION_PENDING_SYNC] = true
+        }
+    }
+
+    suspend fun setProfessionSelectionCompleted(completed: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[PROFESSION_SELECTION_COMPLETED] = completed
         }
     }
 
