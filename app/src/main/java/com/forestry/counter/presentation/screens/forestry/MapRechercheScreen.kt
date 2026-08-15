@@ -438,11 +438,6 @@ fun MapRechercheScreen(
             onDismiss = { dismissedGpsBanner = true },
             modifier = Modifier.align(Alignment.Center).padding(Space.xl),
         )
-        MapEmptyMessage(
-            total = total, onDismiss = { dismissedGpsBanner = true }, isGlobalScope = parcelleId == "all",
-            modifier = Modifier.align(Alignment.Center).padding(Space.xl),
-        )
-
         // ── Panneau mesure (au-dessus de la barre d'outils, un seul endroit) ──
         AnimatedVisibility(
             visible = measureActive || measurePoints.isNotEmpty(),
