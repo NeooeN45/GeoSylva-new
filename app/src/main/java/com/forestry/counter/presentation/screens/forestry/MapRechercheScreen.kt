@@ -68,9 +68,14 @@ import com.forestry.counter.domain.repository.EssenceRepository
 import com.forestry.counter.domain.repository.ParcelleRepository
 import com.forestry.counter.domain.repository.TigeRepository
 import com.forestry.counter.presentation.theme.Elevation
+import com.forestry.counter.presentation.theme.GpsBon
+import com.forestry.counter.presentation.theme.GpsExcellent
+import com.forestry.counter.presentation.theme.GpsMauvais
+import com.forestry.counter.presentation.theme.GpsModere
 import com.forestry.counter.presentation.theme.GsShape
 import com.forestry.counter.presentation.theme.Space
 import com.forestry.counter.presentation.theme.Touch
+import androidx.compose.ui.graphics.toArgb
 import com.mapbox.mapboxsdk.Mapbox
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory
 import com.mapbox.mapboxsdk.geometry.LatLng
@@ -80,6 +85,7 @@ import com.mapbox.mapboxsdk.maps.Style
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 private const val TAG = "MapRechercheScreen"
@@ -199,6 +205,7 @@ fun MapRechercheScreen(
     var showLayerPicker by remember { mutableStateOf(false) }
     var showLegend by remember { mutableStateOf(false) }
     var tigeTapAttached by remember { mutableStateOf(false) }
+    var is3DActive by remember { mutableStateOf(false) }
     var tappedTree by remember { mutableStateOf<TappedTreeInfo?>(null) }
     var dismissedGpsBanner by remember { mutableStateOf(false) }
 
@@ -224,6 +231,23 @@ fun MapRechercheScreen(
     val gpsTracer = remember(context) { com.forestry.counter.domain.location.GpsParcelTracer(context) }
     val traceState by gpsTracer.state.collectAsStateWithLifecycle()
 
+    // vectorStyleSimple() (MapLayers.kt) renvoie une URL de style.json distante pour
+    // certains fonds de carte (Satellite/Streets/Dark) plutôt que du JSON inline —
+    // fromJson() sur une URL échoue silencieusement, d'où ce garde-fou.
+    fun styleBuilderFor(styleJson: String): Style.Builder =
+        if (styleJson.startsWith("http")) Style.Builder().fromUri(styleJson)
+        else Style.Builder().fromJson(styleJson)
+
+    fun toggle3D() {
+        val map = mapLibreMap ?: return
+        is3DActive = !is3DActive
+        val targetTilt = if (is3DActive) 55.0 else 0.0
+        val newPosition = com.mapbox.mapboxsdk.camera.CameraPosition.Builder(map.cameraPosition)
+            .tilt(targetTilt)
+            .build()
+        map.animateCameraSmooth(CameraUpdateFactory.newCameraPosition(newPosition))
+    }
+
     fun switchLayer(index: Int) {
         currentLayerIdx = index
         val map = mapLibreMap ?: return
@@ -233,7 +257,7 @@ fun MapRechercheScreen(
             offlineTileManager.buildOfflineStyle(offlineTileManager.downloadedLayerCount().coerceAtLeast(1))
         } else layer.styleJson
         try {
-            map.setStyle(Style.Builder().fromJson(styleJson)) { style ->
+            map.setStyle(styleBuilderFor(styleJson)) { style ->
                 enableLocationComponent(map, style, context)
                 renderTigesOnMap(style, filteredGeoTiges, essenceMap, essenceColors)
             }
@@ -282,7 +306,7 @@ fun MapRechercheScreen(
                                     val initStyleJson = if (selectedLayer.key == "OFFLINE_LOCAL" && offlineTileManager.hasOfflineTiles()) {
                                         offlineTileManager.buildOfflineStyle(offlineTileManager.downloadedLayerCount().coerceAtLeast(1))
                                     } else selectedLayer.styleJson
-                                    map.setStyle(Style.Builder().fromJson(initStyleJson)) { style ->
+                                    map.setStyle(styleBuilderFor(initStyleJson)) { style ->
                                         mapLibreMap = map
                                         mapReady = true
                                         enableLocationComponent(map, style, context)
@@ -303,7 +327,7 @@ fun MapRechercheScreen(
                                         isRotateGesturesEnabled = true
                                         isZoomGesturesEnabled = true
                                         isScrollGesturesEnabled = true
-                                        isTiltGesturesEnabled = selectedLayer.hasTerrain
+                                        isTiltGesturesEnabled = true
                                         setAttributionMargins(16, 0, 0, 16)
                                     }
                                 } catch (e: Throwable) {
@@ -346,6 +370,40 @@ fun MapRechercheScreen(
             measureColor = measureColor,
         )
 
+        // Recolore le cercle de précision du point GPS selon la qualité du signal
+        // (mêmes seuils que GpsAverager.GpsQuality) — sondage léger plutôt qu'un
+        // second listener de localisation en parallèle de celui de MapLibre.
+        LaunchedEffect(mapReady, hasLocationPermission) {
+            if (!mapReady || !hasLocationPermission) return@LaunchedEffect
+            var lastColor: Int? = null
+            while (isActive) {
+                val map = mapLibreMap
+                if (map != null) {
+                    try {
+                        val accuracy = map.locationComponent.lastKnownLocation?.accuracy
+                        if (accuracy != null) {
+                            val color = when {
+                                accuracy <= 3f -> GpsExcellent
+                                accuracy <= 6f -> GpsBon
+                                accuracy <= 12f -> GpsModere
+                                else -> GpsMauvais
+                            }.toArgb()
+                            if (color != lastColor) {
+                                val options = map.locationComponent.locationComponentOptions
+                                    .toBuilder()
+                                    .accuracyColor(color)
+                                    .pulseColor(color)
+                                    .build()
+                                map.locationComponent.applyStyle(options)
+                                lastColor = color
+                            }
+                        }
+                    } catch (e: Throwable) { Log.w(TAG, "puck accuracy recolor failed", e) }
+                }
+                kotlinx.coroutines.delay(2000)
+            }
+        }
+
         // ── En-tête compact ──
         Surface(
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
@@ -382,6 +440,8 @@ fun MapRechercheScreen(
             offlineTileManager = offlineTileManager,
             onLayerSelected = { index -> switchLayer(index); showLayerPicker = false },
             onDismiss = { showLayerPicker = false },
+            is3DActive = is3DActive,
+            onToggle3D = { toggle3D() },
             modifier = Modifier.align(Alignment.TopCenter).padding(top = Touch.fieldPrimary + Space.xl, start = Space.xs, end = Space.xs),
         )
 
@@ -492,7 +552,7 @@ fun MapRechercheScreen(
                 try {
                     val loc = map.locationComponent.lastKnownLocation
                     if (loc != null) {
-                        map.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(loc.latitude, loc.longitude), 18.0), 600)
+                        map.animateCameraSmooth(CameraUpdateFactory.newLatLngZoom(LatLng(loc.latitude, loc.longitude), 18.0))
                     }
                 } catch (e: Throwable) { Log.w(TAG, "animateCamera to GPS location failed", e) }
             },

@@ -354,6 +354,7 @@
     <string name="map_style">Map style</string>
     <string name="map_recenter">View trees</string>
     <string name="map_my_location">My location</string>
+    <string name="map_toggle_3d">Toggle 2D/3D</string>
     <string name="map_empty">No stems in this plot.</string>
     <string name="map_empty_global">No stems recorded yet.</string>
     <string name="map_view">Map</string>

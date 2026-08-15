@@ -145,6 +145,55 @@ internal fun vectorStyleWithTerrain(
       }
     }"""
 
+    // Contenu de base du fond de carte (schéma vectoriel OpenMapTiles) : sans ces
+    // couches, seuls le fond et le relief ombré s'affichaient — la couche vecteur
+    // "maptiler" n'était référencée que par les bâtiments 3D, jamais dessinée.
+    val baseContentLayers = """
+    { "id": "landcover-wood", "type": "fill", "source": "maptiler", "source-layer": "landcover",
+      "filter": ["in", "class", "wood", "forest", "grass"],
+      "paint": { "fill-color": "${if (isDark) "#1f2e22" else "#c8dbb8"}", "fill-opacity": 0.6 } },
+    { "id": "landuse-park", "type": "fill", "source": "maptiler", "source-layer": "landuse",
+      "filter": ["==", "class", "park"],
+      "paint": { "fill-color": "${if (isDark) "#243523" else "#c9e2b3"}", "fill-opacity": 0.5 } },
+    { "id": "water", "type": "fill", "source": "maptiler", "source-layer": "water",
+      "paint": { "fill-color": "${if (isDark) "#16334d" else "#a3ccf0"}" } },
+    { "id": "roads-major", "type": "line", "source": "maptiler", "source-layer": "transportation",
+      "filter": ["in", "class", "motorway", "trunk", "primary"],
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": { "line-color": "${if (isDark) "#5a4a3a" else "#e8a94f"}", "line-width": ["interpolate", ["linear"], ["zoom"], 8, 1, 16, 4] } },
+    { "id": "roads-minor", "type": "line", "source": "maptiler", "source-layer": "transportation",
+      "filter": ["in", "class", "secondary", "tertiary", "minor", "service"],
+      "minzoom": 11,
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": { "line-color": "${if (isDark) "#4a4a4a" else "#ffffff"}", "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.5, 16, 2.5], "line-opacity": 0.9 } },
+    { "id": "place-labels", "type": "symbol", "source": "maptiler", "source-layer": "place",
+      "filter": ["in", "class", "city", "town", "village"],
+      "layout": { "text-field": ["get", "name"], "text-font": ["Noto Sans Regular"], "text-size": ["interpolate", ["linear"], ["zoom"], 6, 10, 14, 16] },
+      "paint": { "text-color": "${if (isDark) "#e0e0e0" else "#3a3a3a"}", "text-halo-color": "${if (isDark) "#1a1a2e" else "#f5f5f0"}", "text-halo-width": 1.2 } }"""
+
+    // Ambiance atmosphérique quand la carte est inclinée (bascule 2D/3D).
+    val skyLayer = """
+    { "id": "sky", "type": "sky",
+      "paint": {
+        "sky-type": "atmosphere",
+        "sky-atmosphere-sun": [0, 0],
+        "sky-atmosphere-sun-intensity": 15
+      }
+    }"""
+
+    // Bâtiments extrudés en 3D (schéma OpenMapTiles, source-layer "building").
+    // minzoom élevé : coût de rendu nul tant qu'on n'est pas proche du sol.
+    val buildingsExtrusionLayer = """
+    { "id": "buildings-3d", "type": "fill-extrusion", "source": "maptiler", "source-layer": "building",
+      "minzoom": 15,
+      "paint": {
+        "fill-extrusion-color": "${if (isDark) "#3a3a4e" else "#d9d3c8"}",
+        "fill-extrusion-height": ["coalesce", ["get", "render_height"], ["*", ["coalesce", ["get", "levels"], 2], 3]],
+        "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+        "fill-extrusion-opacity": 0.85
+      }
+    }"""
+
     return """{
   "version": 8,
   "name": "$displayName",
@@ -163,7 +212,10 @@ internal fun vectorStyleWithTerrain(
   "layers": [
     { "id": "background", "type": "background",
       "paint": { "background-color": "${if (isDark) "#1a1a2e" else "#f5f5f0"}" } },
-    $hillshadeLayer
+    $hillshadeLayer,
+    $baseContentLayers,
+    $buildingsExtrusionLayer,
+    $skyLayer
   ]
 }"""
 }

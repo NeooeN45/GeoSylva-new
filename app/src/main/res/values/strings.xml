@@ -354,6 +354,7 @@
     <string name="map_style">Fond de carte</string>
     <string name="map_recenter">Voir les arbres</string>
     <string name="map_my_location">Ma position</string>
+    <string name="map_toggle_3d">Basculer 2D/3D</string>
     <string name="map_empty">Aucune tige dans cette parcelle.</string>
     <string name="map_empty_global">Aucune tige enregistrée pour le moment.</string>
     <string name="map_view">Carte</string>

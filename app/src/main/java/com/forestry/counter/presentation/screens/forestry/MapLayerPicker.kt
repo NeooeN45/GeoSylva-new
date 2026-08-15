@@ -21,8 +21,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Landscape
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -60,7 +63,9 @@ internal fun MapLayerPicker(
     offlineTileManager: OfflineTileManager,
     onLayerSelected: (Int) -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    is3DActive: Boolean = false,
+    onToggle3D: (() -> Unit)? = null,
 ) {
     AnimatedVisibility(
         visible = visible,
@@ -153,6 +158,34 @@ internal fun MapLayerPicker(
                                 }
                             }
                         }
+                    }
+                }
+
+                if (onToggle3D != null) {
+                    Spacer(modifier = Modifier.height(Space.xs))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = Touch.field)
+                            .clip(GsShape.sm)
+                            .selectable(selected = is3DActive, onClick = onToggle3D)
+                            .padding(horizontal = Space.sm),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Space.xs),
+                    ) {
+                        Icon(
+                            Icons.Default.Landscape,
+                            contentDescription = null,
+                            modifier = Modifier.size(Space.md),
+                            tint = if (is3DActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            stringResource(R.string.map_toggle_3d),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = if (is3DActive) FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier.weight(1f),
+                        )
+                        androidx.compose.material3.Switch(checked = is3DActive, onCheckedChange = { onToggle3D() })
                     }
                 }
             }
