@@ -350,6 +350,12 @@ fun MapRechercheScreen(
                                     }
                                     map.uiSettings.apply {
                                         isCompassEnabled = true
+                                        // Par défaut la boussole se place en haut à droite,
+                                        // exactement derrière la pastille de qualité GPS
+                                        // (elle aussi TopEnd) — déplacée en bas à droite,
+                                        // zone libre de tout autre contrôle flottant.
+                                        compassGravity = android.view.Gravity.BOTTOM or android.view.Gravity.END
+                                        setCompassMargins(0, 0, 16, 16)
                                         isRotateGesturesEnabled = true
                                         isZoomGesturesEnabled = true
                                         isScrollGesturesEnabled = true
@@ -408,8 +414,13 @@ fun MapRechercheScreen(
                 if (map != null) {
                     try {
                         val accuracy = map.locationComponent.lastKnownLocation?.accuracy
-                        gpsAccuracyM = accuracy
+                        // Ne pas écraser la dernière précision connue par un null
+                        // transitoire (le composant peut renvoyer une position
+                        // nulle entre deux fix) — sinon la pastille clignote au
+                        // gris "inconnu" en boucle, donnant une impression de
+                        // signal peu fiable alors que le GPS fonctionne.
                         if (accuracy != null) {
+                            gpsAccuracyM = accuracy
                             val color = when {
                                 accuracy <= 3f -> GpsExcellent
                                 accuracy <= 6f -> GpsBon
@@ -427,7 +438,7 @@ fun MapRechercheScreen(
                         }
                     } catch (e: Throwable) { Log.w(TAG, "puck accuracy recolor failed", e) }
                 }
-                kotlinx.coroutines.delay(2000)
+                kotlinx.coroutines.delay(1000)
             }
         }
 

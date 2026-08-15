@@ -67,20 +67,30 @@ fun CarteModeSelectorScreen(
                 modifier = Modifier.fillMaxWidth().padding(top = Space.xl, bottom = Space.lg),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    stringResource(R.string.carte_mode_title),
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Text(
-                    stringResource(R.string.carte_mode_subtitle),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = Space.xs),
-                )
+                Surface(
+                    color = MaterialTheme.colorScheme.background.copy(alpha = 0.55f),
+                    shape = GsShape.md,
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = Space.lg, vertical = Space.sm),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            stringResource(R.string.carte_mode_title),
+                            style = MaterialTheme.typography.displaySmall,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        Text(
+                            stringResource(R.string.carte_mode_subtitle),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = Space.xs),
+                        )
+                    }
+                }
             }
             Column(
                 modifier = Modifier.fillMaxSize(),

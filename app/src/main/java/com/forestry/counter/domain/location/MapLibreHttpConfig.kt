@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.mapbox.mapboxsdk.module.http.HttpRequestUtil
 import okhttp3.Cache
+import okhttp3.Dispatcher
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
@@ -45,8 +46,19 @@ object MapLibreHttpConfig {
             val cacheDir = File(context.cacheDir, CACHE_DIR)
             val cache = Cache(cacheDir, CACHE_SIZE_BYTES)
 
+            // Une même source de tuiles est un seul host (data.geopf.fr,
+            // tile.opentopomap.org…) : la limite OkHttp par défaut de 5
+            // requêtes simultanées par host bride artificiellement le
+            // chargement d'un pan/zoom qui doit récupérer des dizaines de
+            // tuiles d'un coup. La relever accélère nettement l'affichage.
+            val dispatcher = Dispatcher().apply {
+                maxRequestsPerHost = 16
+                maxRequests = 32
+            }
+
             val client = OkHttpClient.Builder()
                 .cache(cache)
+                .dispatcher(dispatcher)
                 .connectTimeout(15, TimeUnit.SECONDS)
                 .readTimeout(20, TimeUnit.SECONDS)
                 .callTimeout(30, TimeUnit.SECONDS)
