@@ -417,6 +417,12 @@
     <string name="map_layer_picker_title">Fonds de carte</string>
     <string name="map_layer_osm">OSM</string>
     <string name="offline_download">Télécharger les tuiles hors-ligne</string>
+    <string name="offline_regions_title">Zones hors-ligne</string>
+    <string name="offline_regions_subtitle">Cartes téléchargées pour une utilisation sans réseau.</string>
+    <string name="offline_download_current_view">Télécharger la zone visible</string>
+    <string name="offline_regions_empty">Aucune zone téléchargée pour le moment.</string>
+    <string name="offline_download_confirm_title">Télécharger cette zone ?</string>
+    <string name="offline_download_confirm_body">%1$d tuiles, environ %2$s Mo. Le téléchargement continue en arrière-plan.</string>
     <string name="settings_section_offline_map">Carte hors-ligne</string>
     <string name="offline_cache_title">Cache de tuiles</string>
     <string name="offline_cache_stats_format">%1$d tuiles en cache (%2$s Mo)</string>

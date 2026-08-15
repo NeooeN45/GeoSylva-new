@@ -15,6 +15,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -65,6 +69,25 @@ class OfflineTileManager(private val context: Context) {
             get() = if (requiredResources > 0) completedResources.toDouble() / requiredResources * 100.0 else 0.0
     }
 
+    /** Une zone hors-ligne nommée, téléchargée par l'utilisateur. */
+    @Serializable
+    data class RegionMeta(
+        val id: String,
+        val name: String,
+        val latSouth: Double,
+        val latNorth: Double,
+        val lonWest: Double,
+        val lonEast: Double,
+        val minZoom: Int,
+        val maxZoom: Int,
+        val layerCount: Int,
+        val sizeBytes: Long,
+        val downloadedAtMs: Long,
+    )
+
+    @Serializable
+    private data class RegionCatalog(val regions: List<RegionMeta> = emptyList())
+
     private val _downloadProgress = MutableStateFlow<DownloadProgress?>(null)
     val downloadProgress: StateFlow<DownloadProgress?> = _downloadProgress
 
@@ -74,6 +97,37 @@ class OfflineTileManager(private val context: Context) {
     /** Dossier racine des tuiles hors-ligne */
     private val tilesRoot: File
         get() = File(context.filesDir, TILES_DIR)
+
+    private val catalogFile: File
+        get() = File(context.filesDir, "offline_regions_catalog.json")
+
+    private fun readCatalog(): RegionCatalog {
+        return try {
+            if (!catalogFile.exists()) RegionCatalog()
+            else Json.decodeFromString(catalogFile.readText())
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to read offline regions catalog", e)
+            RegionCatalog()
+        }
+    }
+
+    private fun writeCatalog(catalog: RegionCatalog) {
+        try {
+            catalogFile.writeText(Json.encodeToString(catalog))
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to write offline regions catalog", e)
+        }
+    }
+
+    /** Liste des zones hors-ligne téléchargées, les plus récentes en premier. */
+    fun listRegions(): List<RegionMeta> = readCatalog().regions.sortedByDescending { it.downloadedAtMs }
+
+    /** Supprime une zone hors-ligne précise (ses tuiles + son entrée de catalogue). */
+    fun deleteRegion(regionId: String) {
+        File(tilesRoot, regionId).deleteRecursively()
+        val catalog = readCatalog()
+        writeCatalog(catalog.copy(regions = catalog.regions.filterNot { it.id == regionId }))
+    }
 
     // ─── Conversion coordonnées → indices de tuiles ───
 
@@ -118,10 +172,10 @@ class OfflineTileManager(private val context: Context) {
     }
 
     /**
-     * Chemin local du fichier tuile (relatif à tilesRoot).
+     * Chemin local du fichier tuile, à l'intérieur du dossier de la région.
      */
-    private fun tileFile(layerIndex: Int, z: Int, x: Int, y: Int): File {
-        return File(tilesRoot, "layer$layerIndex/$z/$x/$y.png")
+    private fun tileFile(regionId: String, layerIndex: Int, z: Int, x: Int, y: Int): File {
+        return File(tilesRoot, "$regionId/layer$layerIndex/$z/$x/$y.png")
     }
 
     /**
@@ -230,6 +284,8 @@ class OfflineTileManager(private val context: Context) {
             completedSize = 0, isComplete = false
         )
 
+        val regionId = "region_${System.currentTimeMillis()}"
+
         currentJob = scope.launch {
             val completedAtomic = AtomicLong(0)
             val totalSizeAtomic = AtomicLong(0)
@@ -247,7 +303,7 @@ class OfflineTileManager(private val context: Context) {
                 for (x in xMin..xMax) {
                     for (y in yMin..yMax) {
                         tileUrlTemplates.forEachIndexed { layerIdx, template ->
-                            val dest = tileFile(layerIdx, z, x, y)
+                            val dest = tileFile(regionId, layerIdx, z, x, y)
                             if (dest.exists()) {
                                 completedAtomic.incrementAndGet()
                                 totalSizeAtomic.addAndGet(dest.length())
@@ -298,43 +354,65 @@ class OfflineTileManager(private val context: Context) {
                 isComplete = true,
                 error = errorMsg
             )
+            if (completedAtomic.get() > 0) {
+                val catalog = readCatalog()
+                writeCatalog(catalog.copy(regions = catalog.regions + RegionMeta(
+                    id = regionId, name = name,
+                    latSouth = latSouth, latNorth = latNorth, lonWest = lonWest, lonEast = lonEast,
+                    minZoom = minZoom, maxZoom = maxZoom, layerCount = tileUrlTemplates.size,
+                    sizeBytes = totalSizeAtomic.get(), downloadedAtMs = System.currentTimeMillis(),
+                )))
+            }
             Log.i(TAG, "Download complete: $name — ${completedAtomic.get()} tiles, ${totalSizeAtomic.get() / 1024} KB, $errors errors")
         }
     }
 
+    /** Estimation (nombre de tuiles, taille approx.) avant de lancer un téléchargement. */
+    fun estimateDownload(
+        latSouth: Double, latNorth: Double, lonWest: Double, lonEast: Double,
+        minZoom: Int, maxZoom: Int, layerCount: Int,
+    ): Pair<Long, Long> {
+        val tiles = countTiles(latSouth, latNorth, lonWest, lonEast, minZoom, maxZoom, layerCount)
+        // ~18 Ko/tuile raster en moyenne (estimation grossière, affinée par le téléchargement réel).
+        return tiles to tiles * 18_000L
+    }
+
     /**
-     * Génère un style MapLibre JSON qui référence les tuiles locales.
-     * À utiliser comme style pour la couche "Offline Local".
+     * Génère un style MapLibre JSON qui référence toutes les zones hors-ligne
+     * téléchargées (une par une, empilées — les zones sont choisies par
+     * l'utilisateur et ne se chevauchent en général pas). Pas de `glyphs` :
+     * les couches raster hors-ligne n'affichent pas de texte, et pointer vers
+     * une police distante casserait l'usage vraiment hors-ligne.
      */
-    fun buildOfflineStyle(layerCount: Int = 1): String {
+    fun buildOfflineStyle(@Suppress("UNUSED_PARAMETER") layerCount: Int = 1): String {
         val root = tilesRoot.absolutePath
         val sources = StringBuilder()
         val layers = StringBuilder()
+        var first = true
 
-        for (i in 0 until layerCount) {
-            if (i > 0) sources.append(",")
-            sources.append(""""layer$i":{"type":"raster","tiles":["file://$root/layer$i/{z}/{x}/{y}.png"],"tileSize":256,"maxzoom":17,"attribution":"Tuiles mises en cache depuis leur source d'origine (IGN Géoportail / OpenStreetMap / etc.) — voir licences respectives"}""")
-
-            if (i > 0) layers.append(",")
-            if (i == 0) {
-                layers.append("""{"id":"layer$i","type":"raster","source":"layer$i"}""")
-            } else {
-                layers.append("""{"id":"layer$i","type":"raster","source":"layer$i","paint":{"raster-opacity":0.7}}""")
+        listRegions().forEach { region ->
+            for (i in 0 until region.layerCount) {
+                if (!first) { sources.append(","); layers.append(",") }
+                first = false
+                val sourceId = "${region.id}_layer$i"
+                sources.append(
+                    """"$sourceId":{"type":"raster","tiles":["file://$root/${region.id}/layer$i/{z}/{x}/{y}.png"],"tileSize":256,"maxzoom":${region.maxZoom},"attribution":"Tuiles mises en cache depuis leur source d'origine (IGN Géoportail / OpenStreetMap / etc.) — voir licences respectives"}"""
+                )
+                val opacity = if (i == 0) "" else ""","paint":{"raster-opacity":0.7}"""
+                layers.append("""{"id":"$sourceId","type":"raster","source":"$sourceId"$opacity}""")
             }
         }
 
-        return """{"version":8,"name":"Offline Local","glyphs":"https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf","sources":{$sources},"layers":[$layers]}"""
+        return """{"version":8,"name":"Offline Local","sources":{$sources},"layers":[$layers]}"""
     }
 
     /**
      * Vérifie si des tuiles hors-ligne existent.
      */
-    fun hasOfflineTiles(): Boolean {
-        return tilesRoot.exists() && tilesRoot.walkTopDown().any { it.extension == "png" }
-    }
+    fun hasOfflineTiles(): Boolean = listRegions().isNotEmpty()
 
     /**
-     * Compte le nombre de tuiles en cache et la taille totale.
+     * Compte le nombre de tuiles en cache et la taille totale, toutes zones confondues.
      */
     fun cacheStats(): Pair<Int, Long> {
         if (!tilesRoot.exists()) return 0 to 0L
@@ -348,20 +426,19 @@ class OfflineTileManager(private val context: Context) {
     }
 
     /**
-     * Supprime toutes les tuiles hors-ligne.
+     * Supprime toutes les zones hors-ligne (tuiles + catalogue).
      */
     fun clearCache() {
         tilesRoot.deleteRecursively()
+        writeCatalog(RegionCatalog())
         Log.i(TAG, "Offline tile cache cleared")
     }
 
     /**
-     * Nombre de couches (layers) téléchargées.
+     * Nombre de couches (layers) de la zone hors-ligne la plus récente —
+     * conservé pour compatibilité de l'appelant existant (MapScreen).
      */
-    fun downloadedLayerCount(): Int {
-        if (!tilesRoot.exists()) return 0
-        return tilesRoot.listFiles()?.count { it.isDirectory && it.name.startsWith("layer") } ?: 0
-    }
+    fun downloadedLayerCount(): Int = listRegions().firstOrNull()?.layerCount ?: 0
 
     fun clearProgress() {
         _downloadProgress.value = null

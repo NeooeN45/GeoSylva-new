@@ -417,6 +417,12 @@
     <string name="gps_periodic_poor">⚠ Poor GPS accuracy (±%1$.0f m) — threshold is ±%2$.0f m. Move to an open area for better signal.</string>
     <string name="map_gps_filtered_out">%1$d stems have GPS but precision exceeds %2$d m threshold.\nDisable the precision filter or move to open sky.</string>
     <string name="offline_download">Download tiles for offline</string>
+    <string name="offline_regions_title">Offline areas</string>
+    <string name="offline_regions_subtitle">Maps downloaded for use without network.</string>
+    <string name="offline_download_current_view">Download visible area</string>
+    <string name="offline_regions_empty">No area downloaded yet.</string>
+    <string name="offline_download_confirm_title">Download this area?</string>
+    <string name="offline_download_confirm_body">%1$d tiles, about %2$s MB. The download continues in the background.</string>
     <string name="settings_section_offline_map">Offline map</string>
     <string name="offline_cache_title">Tile cache</string>
     <string name="offline_cache_stats_format">%1$d tiles cached (%2$s MB)</string>

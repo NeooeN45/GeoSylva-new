@@ -164,9 +164,14 @@ fun MapRechercheScreen(
     val offlineTileManager = offlineTileManager ?: remember(context) { OfflineTileManager(context) }
     val offlineProgress by offlineTileManager.downloadProgress.collectAsStateWithLifecycle()
     var hasOfflineTilesState by remember { mutableStateOf(offlineTileManager.hasOfflineTiles()) }
+    var offlineRegions by remember { mutableStateOf(offlineTileManager.listRegions()) }
+    var showOfflineSheet by remember { mutableStateOf(false) }
+    var offlineEstimate by remember { mutableStateOf<Pair<Long, Long>?>(null) }
+    var pendingDownloadBounds by remember { mutableStateOf<com.mapbox.mapboxsdk.geometry.LatLngBounds?>(null) }
     LaunchedEffect(offlineProgress) {
         if (offlineProgress?.isComplete == true && offlineProgress?.error == null) {
             hasOfflineTilesState = offlineTileManager.hasOfflineTiles()
+            offlineRegions = offlineTileManager.listRegions()
         }
     }
 
@@ -556,20 +561,54 @@ fun MapRechercheScreen(
                     }
                 } catch (e: Throwable) { Log.w(TAG, "animateCamera to GPS location failed", e) }
             },
-            onDownloadOffline = {
-                val map = mapLibreMap ?: return@RechercheToolbar
+            onDownloadOffline = { offlineRegions = offlineTileManager.listRegions(); showOfflineSheet = true },
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = Space.lg),
+        )
+    }
+
+    if (showOfflineSheet) {
+        MapOfflineRegionsSheet(
+            regions = offlineRegions,
+            estimate = offlineEstimate,
+            onRequestDownloadCurrentView = {
+                val map = mapLibreMap ?: return@MapOfflineRegionsSheet
                 val bounds = map.projection.visibleRegion.latLngBounds
                 val layer = MAP_LAYERS.getOrElse(currentLayerIdx) { MAP_LAYERS[0] }
-                offlineTileManager.downloadRegion(
-                    name = parcelleId,
+                val minZoom = map.cameraPosition.zoom.toInt().coerceAtLeast(8)
+                val maxZoom = (map.cameraPosition.zoom.toInt() + 4).coerceAtMost(17)
+                pendingDownloadBounds = bounds
+                offlineEstimate = offlineTileManager.estimateDownload(
                     latSouth = bounds.southWest.latitude, latNorth = bounds.northEast.latitude,
                     lonWest = bounds.southWest.longitude, lonEast = bounds.northEast.longitude,
-                    tileUrlTemplates = layer.tileUrls,
-                    minZoom = map.cameraPosition.zoom.toInt().coerceAtLeast(8),
-                    maxZoom = (map.cameraPosition.zoom.toInt() + 4).coerceAtMost(17),
+                    minZoom = minZoom, maxZoom = maxZoom, layerCount = layer.tileUrls.size.coerceAtLeast(1),
                 )
             },
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = Space.lg),
+            onConfirmDownload = {
+                val bounds = pendingDownloadBounds
+                val layer = MAP_LAYERS.getOrElse(currentLayerIdx) { MAP_LAYERS[0] }
+                val map = mapLibreMap
+                if (bounds != null && map != null) {
+                    val minZoom = map.cameraPosition.zoom.toInt().coerceAtLeast(8)
+                    val maxZoom = (map.cameraPosition.zoom.toInt() + 4).coerceAtMost(17)
+                    offlineTileManager.downloadRegion(
+                        name = "$parcelleId · ${MAP_LAYERS.getOrElse(currentLayerIdx) { MAP_LAYERS[0] }.key}",
+                        latSouth = bounds.southWest.latitude, latNorth = bounds.northEast.latitude,
+                        lonWest = bounds.southWest.longitude, lonEast = bounds.northEast.longitude,
+                        tileUrlTemplates = layer.tileUrls,
+                        minZoom = minZoom, maxZoom = maxZoom,
+                    )
+                }
+                offlineEstimate = null
+                pendingDownloadBounds = null
+                showOfflineSheet = false
+            },
+            onCancelEstimate = { offlineEstimate = null; pendingDownloadBounds = null },
+            onDeleteRegion = { id ->
+                offlineTileManager.deleteRegion(id)
+                offlineRegions = offlineTileManager.listRegions()
+                hasOfflineTilesState = offlineTileManager.hasOfflineTiles()
+            },
+            onDismiss = { showOfflineSheet = false },
         )
     }
 
