@@ -111,7 +111,8 @@ object SecureHttpClient {
         "server.arcgisonline.com",
         "data.geopf.fr",
         "api.maptiler.com",
-        "tiles.maptiler.com"
+        "tiles.maptiler.com",
+        "tile.openstreetmap.org"
     )
 
     /**

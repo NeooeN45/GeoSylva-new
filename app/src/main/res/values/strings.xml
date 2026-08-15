@@ -442,6 +442,10 @@
     <string name="map_preview_ortho_cadastre">Satellite + Cadastre</string>
     <string name="map_preview_relief">Relief</string>
     <string name="map_preview_satellite_monde">Satellite Monde</string>
+    <string name="map_layer_carto_light">Carto Clair</string>
+    <string name="map_layer_carto_dark">Carto Sombre</string>
+    <string name="map_preview_carto_light">Clair</string>
+    <string name="map_preview_carto_dark">Sombre</string>
     <string name="map_layer_search_placeholder">Rechercher un fond de carte</string>
     <string name="map_layer_osm">OSM</string>
     <string name="offline_download">Télécharger les tuiles hors-ligne</string>

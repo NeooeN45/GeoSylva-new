@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.Public
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -377,11 +376,17 @@ fun TopLevelTabContent(
                     )
                 }
                 com.forestry.counter.presentation.screens.forestry.CarteMode.LIBRE -> {
-                    com.forestry.counter.presentation.screens.forestry.CarteModeStubScreen(
-                        title = stringResource(com.forestry.counter.R.string.carte_mode_libre_title),
-                        description = stringResource(com.forestry.counter.R.string.carte_mode_libre_stub_desc),
-                        icon = Icons.Default.Public,
-                        onBack = { onCarteModeChange(null) },
+                    // Même base que le mode Recherche (moteur MapLibre, calques,
+                    // mesure, zoom), mais sans le sélecteur de zone préalable et
+                    // sans tiges : parcelleId="none" fait déjà tourner
+                    // tigesFlow à emptyList() dans MapRechercheScreen — aucune
+                    // logique de filtrage ou de rendu de tiges à dupliquer ici.
+                    com.forestry.counter.presentation.screens.forestry.MapRechercheScreen(
+                        parcelleId = "none",
+                        tigeRepository = app.tigeRepository,
+                        preferencesManager = app.userPreferences,
+                        offlineTileManager = app.offlineTileManager,
+                        onNavigateBack = { onCarteModeChange(null) },
                         modifier = modifier,
                     )
                 }

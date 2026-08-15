@@ -269,50 +269,58 @@ data class MapLayerDef(
 // ── Liste des couches disponibles ───────────────────────────────────────────
 
 internal val MAP_LAYERS: List<MapLayerDef> = buildList {
-    // ── Couches vectorielles MapTiler (qualité supérieure) ──
-    add(MapLayerDef(
-        key = "MAPTILER_TOPO",
-        labelResId = R.string.map_layer_topo,
-        emoji = "⛰️",
-        styleJson = vectorStyleWithTerrain("topo", "topo-v2", "MapTiler Topo 3D"),
-        isVector = true,
-        hasTerrain = true,
-        category = LayerCategory.GENERAL,
-        tileUrls = listOf(maptilerTilesUrl("topo-v2")),
-        previewLabelResId = R.string.map_preview_maptiler_topo,
-    ))
-    add(MapLayerDef(
-        key = "MAPTILER_SATELLITE",
-        labelResId = R.string.map_layer_satellite,
-        emoji = "🛰️",
-        styleJson = vectorStyleSimple("hybrid", "MapTiler Satellite"),
-        isVector = true,
-        isDark = true,
-        category = LayerCategory.GENERAL,
-        tileUrls = listOf(maptilerTilesUrl("hybrid")),
-        previewLabelResId = R.string.map_preview_maptiler_satellite,
-    ))
-    add(MapLayerDef(
-        key = "MAPTILER_STREETS",
-        labelResId = R.string.map_layer_carto,
-        emoji = "🧭",
-        styleJson = vectorStyleSimple("streets-v2", "MapTiler Streets"),
-        isVector = true,
-        category = LayerCategory.GENERAL,
-        tileUrls = listOf(maptilerTilesUrl("streets-v2")),
-        previewLabelResId = R.string.map_preview_streets,
-    ))
-    add(MapLayerDef(
-        key = "MAPTILER_DARK",
-        labelResId = R.string.map_layer_dark,
-        emoji = "🌙",
-        styleJson = vectorStyleSimple("dark-v2", "MapTiler Dark Matter"),
-        isVector = true,
-        isDark = true,
-        category = LayerCategory.GENERAL,
-        tileUrls = listOf(maptilerTilesUrl("dark-v2")),
-        previewLabelResId = R.string.map_preview_dark,
-    ))
+    // ── Couches vectorielles MapTiler (qualité supérieure) ── Nécessitent
+    // MAPTILER_KEY (local.properties / variable d'environnement) : sans clé,
+    // vectorStyleWithTerrain()/vectorStyleSimple() replient silencieusement
+    // sur le Plan IGN, rendant ces 4 entrées indiscernables les unes des
+    // autres et de PLAN_IGN — on ne les propose donc que si la clé existe,
+    // remplacées sinon par les couches OSM/CARTO ci-dessous (gratuites, sans
+    // clé, couverture mondiale).
+    if (BuildConfig.MAPTILER_KEY.isNotBlank()) {
+        add(MapLayerDef(
+            key = "MAPTILER_TOPO",
+            labelResId = R.string.map_layer_topo,
+            emoji = "⛰️",
+            styleJson = vectorStyleWithTerrain("topo", "topo-v2", "MapTiler Topo 3D"),
+            isVector = true,
+            hasTerrain = true,
+            category = LayerCategory.GENERAL,
+            tileUrls = listOf(maptilerTilesUrl("topo-v2")),
+            previewLabelResId = R.string.map_preview_maptiler_topo,
+        ))
+        add(MapLayerDef(
+            key = "MAPTILER_SATELLITE",
+            labelResId = R.string.map_layer_satellite,
+            emoji = "🛰️",
+            styleJson = vectorStyleSimple("hybrid", "MapTiler Satellite"),
+            isVector = true,
+            isDark = true,
+            category = LayerCategory.GENERAL,
+            tileUrls = listOf(maptilerTilesUrl("hybrid")),
+            previewLabelResId = R.string.map_preview_maptiler_satellite,
+        ))
+        add(MapLayerDef(
+            key = "MAPTILER_STREETS",
+            labelResId = R.string.map_layer_carto,
+            emoji = "🧭",
+            styleJson = vectorStyleSimple("streets-v2", "MapTiler Streets"),
+            isVector = true,
+            category = LayerCategory.GENERAL,
+            tileUrls = listOf(maptilerTilesUrl("streets-v2")),
+            previewLabelResId = R.string.map_preview_streets,
+        ))
+        add(MapLayerDef(
+            key = "MAPTILER_DARK",
+            labelResId = R.string.map_layer_dark,
+            emoji = "🌙",
+            styleJson = vectorStyleSimple("dark-v2", "MapTiler Dark Matter"),
+            isVector = true,
+            isDark = true,
+            category = LayerCategory.GENERAL,
+            tileUrls = listOf(maptilerTilesUrl("dark-v2")),
+            previewLabelResId = R.string.map_preview_dark,
+        ))
+    }
 
     // ── Couches IGN (raster — hybride) ──
     add(MapLayerDef(
@@ -391,6 +399,31 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
         isDark = true,
         tileUrls = listOf("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"),
         previewLabelResId = R.string.map_preview_satellite_monde,
+    ))
+    add(MapLayerDef(
+        key = "OSM_STANDARD",
+        labelResId = R.string.map_layer_osm,
+        emoji = "🗺️",
+        styleJson = rasterStyle("OpenStreetMap", "https://tile.openstreetmap.org/{z}/{x}/{y}.png", maxZoom = 19, attribution = ATTR_OSM),
+        tileUrls = listOf("https://tile.openstreetmap.org/{z}/{x}/{y}.png"),
+        previewLabelResId = R.string.map_layer_osm,
+    ))
+    add(MapLayerDef(
+        key = "CARTO_LIGHT",
+        labelResId = R.string.map_layer_carto_light,
+        emoji = "☀️",
+        styleJson = rasterStyle("CARTO Positron", "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", maxZoom = 20, attribution = ATTR_CARTO),
+        tileUrls = listOf("https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"),
+        previewLabelResId = R.string.map_preview_carto_light,
+    ))
+    add(MapLayerDef(
+        key = "CARTO_DARK",
+        labelResId = R.string.map_layer_carto_dark,
+        emoji = "🌑",
+        styleJson = rasterStyle("CARTO Dark Matter", "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", maxZoom = 20, attribution = ATTR_CARTO),
+        isDark = true,
+        tileUrls = listOf("https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"),
+        previewLabelResId = R.string.map_preview_carto_dark,
     ))
 
     // ── Couche hors-ligne locale ──
