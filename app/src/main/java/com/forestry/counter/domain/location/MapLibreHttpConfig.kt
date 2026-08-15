@@ -64,6 +64,15 @@ object MapLibreHttpConfig {
                 .callTimeout(30, TimeUnit.SECONDS)
                 .addInterceptor(UserAgentInterceptor(USER_AGENT))
                 .addInterceptor(RetryInterceptor(MAX_RETRIES, BACKOFF_BASE_MS))
+                // Réponse réseau (pas application) : seule addNetworkInterceptor
+                // voit les en-têtes bruts avant que le cache disque OkHttp ne
+                // décide de stocker ou non. La plupart des serveurs de tuiles
+                // (WMTS IGN notamment) ne renvoient aucun Cache-Control — sans
+                // cet en-tête, OkHttp considère la réponse non cacheable et
+                // retélécharge chaque tuile à chaque affichage, même déjà vue :
+                // c'est la cause la plus probable d'un chargement "toujours
+                // lent" malgré les 50 Mo de cache déjà configurés.
+                .addNetworkInterceptor(ForceCacheableInterceptor())
                 .build()
 
             HttpRequestUtil.setOkHttpClient(client)
@@ -72,6 +81,25 @@ object MapLibreHttpConfig {
         } catch (e: Throwable) {
             Log.w(TAG, "Failed to configure OkHttp for MapLibre", e)
         }
+    }
+}
+
+/**
+ * Impose un Cache-Control public sur les réponses de tuiles qui n'en
+ * déclarent aucun, pour que le cache disque OkHttp puisse effectivement
+ * les servir sans nouvelle requête réseau. 7 jours : les fonds de carte
+ * (relief, cadastre, imagerie) ne changent pas d'une session à l'autre.
+ */
+private class ForceCacheableInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val response = chain.proceed(chain.request())
+        if (!response.isSuccessful) return response
+        val existing = response.header("Cache-Control")
+        if (existing != null && !existing.contains("no-store", ignoreCase = true)) return response
+        return response.newBuilder()
+            .removeHeader("Pragma")
+            .header("Cache-Control", "public, max-age=604800")
+            .build()
     }
 }
 

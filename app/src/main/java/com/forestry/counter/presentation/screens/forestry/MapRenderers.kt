@@ -576,10 +576,20 @@ internal fun enableLocationComponent(map: com.mapbox.mapboxsdk.maps.MapboxMap, s
             .pulseEnabled(true)
             .pulseColor(baseColor)
             .build()
+        // Sans requête explicite, le moteur de localisation par défaut peut
+        // retenir un intervalle/priorité économe en énergie (mise à jour
+        // toutes les quelques secondes) — haute précision + 1s/500ms demandés
+        // explicitement pour un puck qui suit vraiment la position terrain.
+        val locationEngineRequest = com.mapbox.mapboxsdk.location.engine.LocationEngineRequest
+            .Builder(1000L)
+            .setFastestInterval(500L)
+            .setPriority(com.mapbox.mapboxsdk.location.engine.LocationEngineRequest.PRIORITY_HIGH_ACCURACY)
+            .build()
         val activationOptions = com.mapbox.mapboxsdk.location.LocationComponentActivationOptions
             .builder(context, style)
             .locationComponentOptions(locationOptions)
             .useDefaultLocationEngine(true)
+            .locationEngineRequest(locationEngineRequest)
             .build()
         locationComponent.activateLocationComponent(activationOptions)
         locationComponent.isLocationComponentEnabled = true

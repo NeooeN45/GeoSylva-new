@@ -107,12 +107,17 @@ fun RechercheScopeSelectorScreen(
                 }
                 if (groups.isEmpty()) {
                     item {
-                        Text(
-                            stringResource(R.string.recherche_scope_empty),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(Space.md),
-                        )
+                        Surface(
+                            color = MaterialTheme.colorScheme.background.copy(alpha = 0.55f),
+                            shape = GsShape.md,
+                        ) {
+                            Text(
+                                stringResource(R.string.recherche_scope_empty),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(Space.md),
+                            )
+                        }
                     }
                 }
             }
