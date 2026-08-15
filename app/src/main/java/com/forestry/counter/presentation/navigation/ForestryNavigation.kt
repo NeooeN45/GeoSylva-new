@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -159,6 +160,12 @@ sealed class Screen(val route: String) {
 @Composable
 fun ForestryNavigation(app: ForestryCounterApplication) {
     val navController = rememberNavController()
+    // Remonté depuis TopLevelTabContent (branche Carte) pour piloter le
+    // masquage plein écran de la bottom nav sur les modes Maps/Recherche/
+    // Libre — voir MainScaffold(hideBottomBar).
+    var carteMode by androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf<com.forestry.counter.presentation.screens.forestry.CarteMode?>(null)
+    }
 
     val animationsEnabled by app.userPreferences.animationsEnabled.collectAsStateWithLifecycle(initialValue = true)
     val onboardingCompleted by app.userPreferences.onboardingCompleted.collectAsStateWithLifecycle(initialValue = true)
@@ -237,7 +244,7 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
     // par installation, ce qui justifie d'y placer la vidéo de présentation.
     val startDest = if (onboardingCompleted) BottomNavDestination.startRoute else Screen.Welcome.route
 
-    MainScaffold(navController = navController, app = app) { innerModifier ->
+    MainScaffold(navController = navController, app = app, hideBottomBar = carteMode != null) { innerModifier ->
         NavHost(
             navController = navController,
             startDestination = startDest,
@@ -296,6 +303,8 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
                     TopLevelTabContent(
                         route = destination.route,
                         app = app,
+                        carteMode = carteMode,
+                        onCarteModeChange = { carteMode = it },
                         onNavigateToExplorer = {
                             navController.navigate(BottomNavDestination.EXPLORER.route) {
                                 popUpTo(navController.graph.startDestinationId) { saveState = true }

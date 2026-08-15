@@ -572,7 +572,7 @@ internal fun enableLocationComponent(map: com.mapbox.mapboxsdk.maps.MapboxMap, s
         val baseColor = com.forestry.counter.presentation.theme.GpsBon.toArgb()
         val locationOptions = com.mapbox.mapboxsdk.location.LocationComponentOptions.builder(context)
             .accuracyColor(baseColor)
-            .accuracyAlpha(0.25f)
+            .accuracyAlpha(0f)
             .pulseEnabled(true)
             .pulseColor(baseColor)
             .build()

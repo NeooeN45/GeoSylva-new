@@ -12,6 +12,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,10 +23,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -73,6 +76,7 @@ import com.forestry.counter.presentation.theme.GpsExcellent
 import com.forestry.counter.presentation.theme.GpsMauvais
 import com.forestry.counter.presentation.theme.GpsModere
 import com.forestry.counter.presentation.theme.GsShape
+import com.forestry.counter.presentation.theme.Motion
 import com.forestry.counter.presentation.theme.Space
 import com.forestry.counter.presentation.theme.Touch
 import androidx.compose.ui.graphics.toArgb
@@ -129,6 +133,7 @@ fun MapRechercheScreen(
                     }
                 } else flowOf(emptyList())
             }
+            parcelleId.startsWith("placette_") -> tigeRepository.getTigesByPlacette(parcelleId.removePrefix("placette_"))
             else -> tigeRepository.getTigesByParcelle(parcelleId)
         }
     }
@@ -211,6 +216,9 @@ fun MapRechercheScreen(
     var showLegend by remember { mutableStateOf(false) }
     var tigeTapAttached by remember { mutableStateOf(false) }
     var is3DActive by remember { mutableStateOf(false) }
+    var gpsAccuracyM by remember { mutableStateOf<Float?>(null) }
+    var showGpsPrecisionDialog by remember { mutableStateOf(false) }
+    var toolbarExpanded by remember { mutableStateOf(false) }
     var tappedTree by remember { mutableStateOf<TappedTreeInfo?>(null) }
     var dismissedGpsBanner by remember { mutableStateOf(false) }
 
@@ -383,9 +391,10 @@ fun MapRechercheScreen(
             measureColor = measureColor,
         )
 
-        // Recolore le cercle de précision du point GPS selon la qualité du signal
-        // (mêmes seuils que GpsAverager.GpsQuality) — sondage léger plutôt qu'un
-        // second listener de localisation en parallèle de celui de MapLibre.
+        // Sonde légère de la précision GPS courante (mêmes seuils que
+        // GpsAverager.GpsQuality) — alimente la pastille de fiabilité en
+        // haut à droite et la couleur de pulsation du puck. Pas de second
+        // listener de localisation en parallèle de celui de MapLibre.
         LaunchedEffect(mapReady, hasLocationPermission) {
             if (!mapReady || !hasLocationPermission) return@LaunchedEffect
             var lastColor: Int? = null
@@ -394,21 +403,21 @@ fun MapRechercheScreen(
                 if (map != null) {
                     try {
                         val accuracy = map.locationComponent.lastKnownLocation?.accuracy
+                        gpsAccuracyM = accuracy
                         if (accuracy != null) {
                             val color = when {
                                 accuracy <= 3f -> GpsExcellent
                                 accuracy <= 6f -> GpsBon
                                 accuracy <= 12f -> GpsModere
                                 else -> GpsMauvais
-                            }.toArgb()
-                            if (color != lastColor) {
+                            }
+                            if (color.toArgb() != lastColor) {
                                 val options = map.locationComponent.locationComponentOptions
                                     .toBuilder()
-                                    .accuracyColor(color)
-                                    .pulseColor(color)
+                                    .pulseColor(color.toArgb())
                                     .build()
                                 map.locationComponent.applyStyle(options)
-                                lastColor = color
+                                lastColor = color.toArgb()
                             }
                         }
                     } catch (e: Throwable) { Log.w(TAG, "puck accuracy recolor failed", e) }
@@ -417,33 +426,91 @@ fun MapRechercheScreen(
             }
         }
 
-        // ── En-tête compact ──
+        // ── Bouton retour minimal ──
         Surface(
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
-            shape = GsShape.field,
+            onClick = onNavigateBack,
+            shape = androidx.compose.foundation.shape.CircleShape,
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
             shadowElevation = Elevation.overlay,
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(Space.sm),
+                .padding(Space.sm)
+                .size(Touch.min),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = Space.sm)) {
-                IconButton(onClick = onNavigateBack, modifier = Modifier.size(Touch.field)) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                }
-                Column {
-                    Text(stringResource(R.string.carte_mode_recherche_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    if (withGps > 0) {
-                        Text(
-                            stringResource(R.string.map_subtitle_stems_format, withGps, total),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-                if (offlineProgress != null && offlineProgress?.isComplete != true) {
-                    CircularProgressIndicator(modifier = Modifier.size(Space.lg).padding(start = Space.xs))
-                }
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.back),
+                    modifier = Modifier.size(Space.md),
+                )
             }
+        }
+
+        if (offlineProgress != null && offlineProgress?.isComplete != true) {
+            Surface(
+                shape = androidx.compose.foundation.shape.CircleShape,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                shadowElevation = Elevation.overlay,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = Space.sm, start = Touch.min + Space.md),
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(Touch.min).padding(Space.xs))
+            }
+        }
+
+        // ── Pastille de fiabilité GPS ──
+        val gpsQualityColor = when {
+            gpsAccuracyM == null -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+            gpsAccuracyM!! <= 6f -> GpsExcellent
+            gpsAccuracyM!! <= 12f -> GpsModere
+            else -> GpsMauvais
+        }
+        Surface(
+            onClick = { showGpsPrecisionDialog = true },
+            shape = androidx.compose.foundation.shape.CircleShape,
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+            shadowElevation = Elevation.overlay,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(Space.sm)
+                .size(Touch.min),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .size(Space.sm)
+                        .background(gpsQualityColor, androidx.compose.foundation.shape.CircleShape),
+                )
+            }
+        }
+
+        if (showGpsPrecisionDialog) {
+            val qualityLabel = when {
+                gpsAccuracyM == null -> stringResource(R.string.gps_quality_unknown)
+                gpsAccuracyM!! <= 3f -> stringResource(R.string.gps_quality_excellent)
+                gpsAccuracyM!! <= 6f -> stringResource(R.string.gps_quality_good)
+                gpsAccuracyM!! <= 12f -> stringResource(R.string.gps_quality_moderate)
+                else -> stringResource(R.string.gps_quality_poor)
+            }
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showGpsPrecisionDialog = false },
+                title = { Text(stringResource(R.string.gps_precision_dialog_title)) },
+                text = {
+                    Text(
+                        if (gpsAccuracyM != null) {
+                            stringResource(R.string.gps_precision_dialog_body, qualityLabel, gpsAccuracyM!!)
+                        } else {
+                            stringResource(R.string.gps_precision_dialog_unknown)
+                        }
+                    )
+                },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(onClick = { showGpsPrecisionDialog = false }) {
+                        Text(stringResource(R.string.ok))
+                    }
+                },
+            )
         }
 
         MapLayerPicker(
@@ -544,8 +611,10 @@ fun MapRechercheScreen(
             )
         }
 
-        // ── Barre d'outils unique, grande, centrée en bas ──
+        // ── Barre d'outils verticale, ancrée à droite, repliable ──
         RechercheToolbar(
+            expanded = toolbarExpanded,
+            onToggleExpanded = { toolbarExpanded = !toolbarExpanded },
             measureActive = measureActive,
             layersActive = showLayerPicker,
             legendActive = showLegend,
@@ -570,7 +639,7 @@ fun MapRechercheScreen(
                 } catch (e: Throwable) { Log.w(TAG, "animateCamera to GPS location failed", e) }
             },
             onDownloadOffline = { offlineRegions = offlineTileManager.listRegions(); showOfflineSheet = true },
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = Space.lg),
+            modifier = Modifier.align(Alignment.CenterEnd).padding(end = Space.sm),
         )
     }
 
@@ -632,13 +701,14 @@ fun MapRechercheScreen(
 }
 
 /**
- * Barre d'outils unique du mode Recherche : une seule rangée de grands
- * boutons (Touch.fieldPrimary), plus de FABs éparpillés ni de contrôles
- * de zoom séparés — le pincer-zoomer sur la carte suffit, comme sur
- * n'importe quelle appli de carte moderne.
+ * Barre d'outils verticale du mode Recherche, ancrée à droite : un bouton
+ * principal toujours visible qui déplie/replie les 4 autres — gagne de la
+ * place sur un écran désormais plein écran (plus de bottom nav dessous).
  */
 @Composable
 private fun RechercheToolbar(
+    expanded: Boolean,
+    onToggleExpanded: () -> Unit,
     measureActive: Boolean,
     layersActive: Boolean,
     legendActive: Boolean,
@@ -650,22 +720,47 @@ private fun RechercheToolbar(
     onDownloadOffline: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
+    Column(
         modifier = modifier,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f),
-        shape = GsShape.pill,
-        shadowElevation = Elevation.overlay,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Space.xs),
     ) {
-        Row(
-            modifier = Modifier.padding(Space.xs),
-            horizontalArrangement = Arrangement.spacedBy(Space.xs),
-            verticalAlignment = Alignment.CenterVertically,
+        androidx.compose.animation.AnimatedVisibility(
+            visible = expanded,
+            enter = androidx.compose.animation.expandVertically(tween(Motion.NORMAL)) + fadeIn(tween(Motion.NORMAL)),
+            exit = androidx.compose.animation.shrinkVertically(tween(Motion.FAST)) + fadeOut(tween(Motion.FAST)),
         ) {
-            RechercheToolbarButton(Icons.Default.Layers, stringResource(R.string.map_style), layersActive, onToggleLayers)
-            RechercheToolbarButton(Icons.Default.Straighten, stringResource(R.string.measure_tool_title), measureActive, onToggleMeasure)
-            RechercheToolbarButton(Icons.AutoMirrored.Filled.FormatListBulleted, stringResource(R.string.map_legend), legendActive, onToggleLegend, enabled = hasGeoTiges)
-            RechercheToolbarButton(Icons.Default.GpsFixed, stringResource(R.string.map_my_location), false, onLocate)
-            RechercheToolbarButton(Icons.Default.CloudDownload, stringResource(R.string.offline_download), false, onDownloadOffline)
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f),
+                shape = GsShape.pill,
+                shadowElevation = Elevation.overlay,
+            ) {
+                Column(
+                    modifier = Modifier.padding(Space.xs),
+                    verticalArrangement = Arrangement.spacedBy(Space.xs),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    RechercheToolbarButton(Icons.Default.Layers, stringResource(R.string.map_style), layersActive, onToggleLayers)
+                    RechercheToolbarButton(Icons.Default.Straighten, stringResource(R.string.measure_tool_title), measureActive, onToggleMeasure)
+                    RechercheToolbarButton(Icons.AutoMirrored.Filled.FormatListBulleted, stringResource(R.string.map_legend), legendActive, onToggleLegend, enabled = hasGeoTiges)
+                    RechercheToolbarButton(Icons.Default.GpsFixed, stringResource(R.string.map_my_location), false, onLocate)
+                    RechercheToolbarButton(Icons.Default.CloudDownload, stringResource(R.string.offline_download), false, onDownloadOffline)
+                }
+            }
+        }
+        Surface(
+            onClick = onToggleExpanded,
+            modifier = Modifier.size(Touch.fieldPrimary),
+            shape = GsShape.pill,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f),
+            shadowElevation = Elevation.overlay,
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    if (expanded) Icons.Default.Close else Icons.Default.Menu,
+                    contentDescription = stringResource(if (expanded) R.string.cd_close else R.string.map_toolbar_expand),
+                )
+            }
         }
     }
 }

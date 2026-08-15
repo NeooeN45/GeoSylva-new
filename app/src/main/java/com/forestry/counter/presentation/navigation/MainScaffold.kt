@@ -77,6 +77,7 @@ import kotlinx.coroutines.launch
 fun MainScaffold(
     navController: NavHostController,
     app: ForestryCounterApplication,
+    hideBottomBar: Boolean = false,
     content: @Composable (Modifier) -> Unit,
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -143,7 +144,7 @@ fun MainScaffold(
         Scaffold(
             bottomBar = {
                 AnimatedVisibility(
-                    visible = isTopLevel,
+                    visible = isTopLevel && !hideBottomBar,
                     enter = slideInVertically(animationSpec = tween(220)) { it } + fadeIn(tween(220)),
                     exit = slideOutVertically(animationSpec = tween(180)) { it } + fadeOut(tween(180)),
                 ) {
@@ -280,6 +281,8 @@ private fun CollapsedMiniNav(
 fun TopLevelTabContent(
     route: String,
     app: ForestryCounterApplication,
+    carteMode: com.forestry.counter.presentation.screens.forestry.CarteMode?,
+    onCarteModeChange: (com.forestry.counter.presentation.screens.forestry.CarteMode?) -> Unit,
     onNavigateToExplorer: () -> Unit,
     onNavigateToForet: (String) -> Unit,
     onNavigateToForets: () -> Unit,
@@ -320,35 +323,56 @@ fun TopLevelTabContent(
             // onglet quitté (pas de saveState/restoreState) : ce sélecteur
             // réapparaît donc à chaque fois qu'on revient sur l'onglet,
             // comme voulu — pas besoin de le forcer explicitement ici.
-            var carteMode by remember { mutableStateOf<com.forestry.counter.presentation.screens.forestry.CarteMode?>(null) }
+            // `carteMode` est remonté jusqu'à `ForestryNavigation` (pour
+            // piloter le masquage plein écran de la bottom nav) ; on le
+            // réinitialise ici au démontage de la branche, quand on quitte
+            // l'onglet Carte, pour conserver ce même comportement.
+            androidx.compose.runtime.DisposableEffect(Unit) {
+                onDispose { onCarteModeChange(null) }
+            }
             when (carteMode) {
                 null -> com.forestry.counter.presentation.screens.forestry.CarteModeSelectorScreen(
-                    onSelectMode = { carteMode = it },
+                    onSelectMode = onCarteModeChange,
                     modifier = modifier,
                 )
                 com.forestry.counter.presentation.screens.forestry.CarteMode.RECHERCHE -> {
                     // Nouvelle base "mode Recherche" (esprit QField) : moteur
                     // MapLibre repris de MapScreen mais interface repensée
-                    // (barre d'outils unique). Scope "all" pour voir toutes
-                    // les tiges tous forêts confondus. MapScreen reste
-                    // intact par ailleurs pour Forêts→Parcelle→carte.
-                    com.forestry.counter.presentation.screens.forestry.MapRechercheScreen(
-                        parcelleId = "all",
-                        tigeRepository = app.tigeRepository,
-                        essenceRepository = app.essenceRepository,
-                        parcelleRepository = app.parcelleRepository,
-                        preferencesManager = app.userPreferences,
-                        offlineTileManager = app.offlineTileManager,
-                        onNavigateBack = { carteMode = null },
-                        modifier = modifier,
-                    )
+                    // (barre d'outils unique). MapScreen reste intact par
+                    // ailleurs pour Forêts→Parcelle→carte. Un choix de zone
+                    // (forêt/parcelle/placette) précède l'ouverture de la
+                    // carte elle-même — état imbriqué, même pattern que
+                    // `carteMode`, réinitialisé à la sortie de la branche.
+                    var rechercheScope by androidx.compose.runtime.remember {
+                        androidx.compose.runtime.mutableStateOf<String?>(null)
+                    }
+                    when (rechercheScope) {
+                        null -> com.forestry.counter.presentation.screens.forestry.RechercheScopeSelectorScreen(
+                            groupRepository = app.groupRepository,
+                            parcelleRepository = app.parcelleRepository,
+                            placetteRepository = app.placetteRepository,
+                            onSelectScope = { rechercheScope = it },
+                            onBack = { onCarteModeChange(null) },
+                            modifier = modifier,
+                        )
+                        else -> com.forestry.counter.presentation.screens.forestry.MapRechercheScreen(
+                            parcelleId = rechercheScope!!,
+                            tigeRepository = app.tigeRepository,
+                            essenceRepository = app.essenceRepository,
+                            parcelleRepository = app.parcelleRepository,
+                            preferencesManager = app.userPreferences,
+                            offlineTileManager = app.offlineTileManager,
+                            onNavigateBack = { rechercheScope = null },
+                            modifier = modifier,
+                        )
+                    }
                 }
                 com.forestry.counter.presentation.screens.forestry.CarteMode.MAPS -> {
                     com.forestry.counter.presentation.screens.forestry.CarteModeStubScreen(
                         title = stringResource(com.forestry.counter.R.string.carte_mode_maps_title),
                         description = stringResource(com.forestry.counter.R.string.carte_mode_maps_stub_desc),
                         icon = Icons.Default.Map,
-                        onBack = { carteMode = null },
+                        onBack = { onCarteModeChange(null) },
                         modifier = modifier,
                     )
                 }
@@ -357,7 +381,7 @@ fun TopLevelTabContent(
                         title = stringResource(com.forestry.counter.R.string.carte_mode_libre_title),
                         description = stringResource(com.forestry.counter.R.string.carte_mode_libre_stub_desc),
                         icon = Icons.Default.Public,
-                        onBack = { carteMode = null },
+                        onBack = { onCarteModeChange(null) },
                         modifier = modifier,
                     )
                 }
