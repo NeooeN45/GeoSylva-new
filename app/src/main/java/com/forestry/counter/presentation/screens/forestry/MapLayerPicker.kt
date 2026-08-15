@@ -197,17 +197,28 @@ internal fun MapLayerPicker(
     }
 }
 
-/** Coordonnée fixe (Web Mercator, zoom 6) centrée sur la France pour l'aperçu. */
+/**
+ * Coordonnée fixe (Web Mercator, zoom 6) centrée sur la France pour l'aperçu.
+ * Uniquement pour les sources raster (PNG/JPEG) : les tuiles vectorielles
+ * MapTiler (.pbf) ne sont pas des images décodables par Coil et n'ont donc
+ * jamais d'aperçu réel — repli direct sur le dégradé + emoji pour elles.
+ */
 private fun previewTileUrl(layer: MapLayerDef): String? {
     val template = layer.tileUrls.firstOrNull() ?: return null
+    if (template.contains(".pbf")) return null
     val url = template.replace("{z}", "6").replace("{x}", "32").replace("{y}", "22")
     return if (SecureHttpClient.isSecureDomain(url)) url else null
 }
 
+/** Même en-tête que le client HTTP MapLibre — certains serveurs de tuiles
+ * (IGN notamment) rejettent les requêtes sans User-Agent identifiable. */
+private const val PREVIEW_USER_AGENT = "GeoSylva/2.3.0 (+https://geosylva.fr; contact: contact@geosylva.fr)"
+
 /**
- * Grande tuile illustrée d'un fond de carte : aperçu réel (Coil) en fond,
- * nom adapté superposé avec un scrim, repli en dégradé + emoji si pas
- * d'aperçu disponible (couche hors-ligne, URL non sécurisée).
+ * Grande tuile illustrée d'un fond de carte : dégradé + emoji toujours en
+ * fond (lisible immédiatement, jamais "cassé"), aperçu réel (Coil) superposé
+ * par-dessus quand disponible — s'il échoue, le dégradé reste visible en
+ * dessous au lieu d'un rendu vide.
  */
 @Composable
 private fun LayerTile(
@@ -229,29 +240,33 @@ private fun LayerTile(
             )
             .clickable(onClick = onClick),
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            MaterialTheme.colorScheme.tertiaryContainer,
+                        )
+                    )
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(layer.emoji, style = MaterialTheme.typography.displaySmall)
+        }
         if (previewUrl != null) {
+            val request = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                .data(previewUrl)
+                .setHeader("User-Agent", PREVIEW_USER_AGENT)
+                .crossfade(true)
+                .build()
             AsyncImage(
-                model = previewUrl,
+                model = request,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                MaterialTheme.colorScheme.primaryContainer,
-                                MaterialTheme.colorScheme.tertiaryContainer,
-                            )
-                        )
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(layer.emoji, style = MaterialTheme.typography.displaySmall)
-            }
         }
 
         // Scrim bas pour la lisibilité du libellé.

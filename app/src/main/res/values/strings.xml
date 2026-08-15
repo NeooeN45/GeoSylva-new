@@ -368,6 +368,10 @@
     <string name="recherche_scope_all">Toutes les forêts</string>
     <string name="recherche_scope_empty">Aucune forêt enregistrée pour le moment.</string>
     <string name="recherche_scope_placette_unnamed">Placette sans nom</string>
+    <string name="measure_go_to_map">Mesurer sur la carte</string>
+    <string name="measure_share">Partager</string>
+    <string name="measure_reopen_panel">Rouvrir la mesure</string>
+    <string name="measure_save_floating">Enregistrer la mesure</string>
     <string name="map_empty">Aucune tige dans cette parcelle.</string>
     <string name="map_empty_global">Aucune tige enregistrée pour le moment.</string>
     <string name="map_view">Carte</string>

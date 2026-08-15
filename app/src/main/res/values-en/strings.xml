@@ -368,6 +368,10 @@
     <string name="recherche_scope_all">All forests</string>
     <string name="recherche_scope_empty">No forest saved yet.</string>
     <string name="recherche_scope_placette_unnamed">Unnamed plot</string>
+    <string name="measure_go_to_map">Measure on the map</string>
+    <string name="measure_share">Share</string>
+    <string name="measure_reopen_panel">Reopen measurement</string>
+    <string name="measure_save_floating">Save measurement</string>
     <string name="map_empty">No stems in this plot.</string>
     <string name="map_empty_global">No stems recorded yet.</string>
     <string name="map_view">Map</string>

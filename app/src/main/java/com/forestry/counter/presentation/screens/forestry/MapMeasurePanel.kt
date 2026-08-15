@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -83,43 +85,75 @@ internal sealed class MapMeasurePanelEvent {
 
 /**
  * Tiroir de mesure distance / surface et mesures sauvegardées.
+ *
+ * La visibilité du tiroir (`sheetVisible`) est distincte de l'état "mesure
+ * en cours" (`state.isActive`) : le bouton "Mesurer sur la carte" ferme le
+ * tiroir sans arrêter la mesure, pour laisser l'utilisateur taper des
+ * points sur la carte (un `ModalBottomSheet` ouvert intercepte les taps
+ * derrière lui). Un bouton flottant dans `MapRechercheScreen` rouvre le
+ * tiroir ensuite.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun MapMeasurePanel(
     state: MapMeasurePanelState,
-    traceHasContent: Boolean,
+    sheetVisible: Boolean,
     context: Context,
     onEvent: (MapMeasurePanelEvent) -> Unit,
+    onRequestHideSheet: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (!state.isActive && state.points.isEmpty()) return
+    if (!sheetVisible) return
     ModalBottomSheet(
-        onDismissRequest = { onEvent(MapMeasurePanelEvent.SetActive(false)) },
+        onDismissRequest = onRequestHideSheet,
         modifier = modifier,
         shape = RoundedCornerShape(topStart = Radius.lg, topEnd = Radius.lg),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = Space.md, vertical = Space.sm),
-            verticalArrangement = Arrangement.spacedBy(Space.sm)
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Space.md, vertical = Space.xs),
+            verticalArrangement = Arrangement.spacedBy(Space.xs)
         ) {
             MeasurePanelHeader()
-            MeasureModeSelector(state = state, onEvent = onEvent)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                MeasureModeSelector(state = state, onEvent = onEvent)
+                MeasureUnitSelector(state = state, onEvent = onEvent)
+            }
             if (state.isActive && state.points.isEmpty()) {
                 Text(
                     stringResource(R.string.measure_tap_hint),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            MeasureUnitSelector(state = state, onEvent = onEvent)
             MeasureResults(state = state)
+            if (state.mode == MeasureMode.DISTANCE && state.points.size >= 2) {
+                MeasureSegmentBreakdown(state = state)
+            }
             MeasureColorPalette(state = state, onEvent = onEvent)
-            MeasureActionButtons(state = state, onEvent = onEvent)
+            Surface(
+                onClick = onRequestHideSheet,
+                color = state.color,
+                shape = GsShape.field,
+                modifier = Modifier.fillMaxWidth().height(Touch.field),
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Text(
+                        stringResource(R.string.measure_go_to_map),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                    )
+                }
+            }
+            MeasureActionButtons(state = state, context = context, onEvent = onEvent)
             if (state.showSavedPanel) {
                 SavedMeasuresPanel(context = context, onEvent = onEvent)
             }
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(Space.sm))
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(Space.xs))
         }
     }
 }
@@ -150,7 +184,7 @@ private fun MeasureModeSelector(
     state: MapMeasurePanelState,
     onEvent: (MapMeasurePanelEvent) -> Unit
 ) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Space.xxs)) {
         listOf(MeasureMode.DISTANCE to R.string.measure_mode_distance,
             MeasureMode.AREA to R.string.measure_mode_area).forEach { (mode, resId) ->
             val sel = state.mode == mode
@@ -162,13 +196,14 @@ private fun MeasureModeSelector(
                     }
                 },
                 color = if (sel) MartelageEnlever else MaterialTheme.colorScheme.surfaceVariant,
-                shape = GsShape.field,
-                modifier = Modifier.weight(1f).height(Touch.field)
+                shape = GsShape.sm,
+                modifier = Modifier.height(Touch.min)
             ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.wrapContentSize()) {
                     Text(
                         stringResource(resId),
-                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(horizontal = Space.sm),
+                        style = MaterialTheme.typography.bodySmall,
                         color = if (sel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
                         maxLines = 1,
@@ -186,7 +221,7 @@ private fun MeasureUnitSelector(
     onEvent: (MapMeasurePanelEvent) -> Unit
 ) {
     if (state.mode == MeasureMode.DISTANCE) {
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.xxs)) {
             listOf(MeasureDistUnit.M to "m", MeasureDistUnit.KM to "km").forEach { (unit, label) ->
                 val sel = state.distUnit == unit
                 Surface(
@@ -198,8 +233,8 @@ private fun MeasureUnitSelector(
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.wrapContentSize()) {
                         Text(
                             label,
-                            modifier = Modifier.padding(horizontal = Space.md),
-                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(horizontal = Space.sm),
+                            style = MaterialTheme.typography.bodySmall,
                             color = if (sel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
                             maxLines = 1,
@@ -210,7 +245,7 @@ private fun MeasureUnitSelector(
             }
         }
     } else {
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.xxs)) {
             listOf(MeasureAreaUnit.M2 to "m²", MeasureAreaUnit.ARES to "ares", MeasureAreaUnit.HA to "ha").forEach { (unit, label) ->
                 val sel = state.areaUnit == unit
                 Surface(
@@ -222,8 +257,8 @@ private fun MeasureUnitSelector(
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.wrapContentSize()) {
                         Text(
                             label,
-                            modifier = Modifier.padding(horizontal = Space.md),
-                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(horizontal = Space.sm),
+                            style = MaterialTheme.typography.bodySmall,
                             color = if (sel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
                             maxLines = 1,
@@ -246,7 +281,7 @@ private fun MeasureResults(state: MapMeasurePanelState) {
         }
         Text(
             stringResource(R.string.measure_panel_distance, t),
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = state.color
         )
@@ -260,7 +295,7 @@ private fun MeasureResults(state: MapMeasurePanelState) {
         }
         Text(
             stringResource(R.string.measure_panel_area, t),
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = state.color
         )
@@ -268,9 +303,38 @@ private fun MeasureResults(state: MapMeasurePanelState) {
     if (state.points.isNotEmpty()) {
         Text(
             stringResource(R.string.measure_points_count, state.points.size),
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+/**
+ * Détail segment par segment (mode Distance, ≥2 points) — chips défilables
+ * horizontalement, une par tronçon entre deux points consécutifs.
+ */
+@Composable
+private fun MeasureSegmentBreakdown(state: MapMeasurePanelState) {
+    Row(
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(Space.xxs),
+    ) {
+        state.points.zipWithNext().forEachIndexed { index, (a, b) ->
+            val segM = haversineM(a.latitude, a.longitude, b.latitude, b.longitude)
+            val t = if (segM >= 1000.0) String.format(Locale.getDefault(), "%.2f km", segM / 1000.0)
+            else String.format(Locale.getDefault(), "%.0f m", segM)
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = GsShape.xs,
+            ) {
+                Text(
+                    "${index + 1}: $t",
+                    modifier = Modifier.padding(horizontal = Space.xs, vertical = Space.xxs),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 
@@ -279,15 +343,15 @@ private fun MeasureColorPalette(
     state: MapMeasurePanelState,
     onEvent: (MapMeasurePanelEvent) -> Unit
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
         MEASURE_COLORS.forEach { c ->
             val isSelected = c == state.color
             Box(
                 modifier = Modifier
-                    .size(if (isSelected) Touch.min else Space.xl)
+                    .size(if (isSelected) Space.lg else Space.md)
                     .clip(CircleShape)
                     .background(c)
-                    .border(if (isSelected) 3.dp else 0.dp, Color.White, CircleShape)
+                    .border(if (isSelected) 2.dp else 0.dp, Color.White, CircleShape)
                     .clickable { onEvent(MapMeasurePanelEvent.SetColor(c)) }
             )
         }
@@ -297,9 +361,11 @@ private fun MeasureColorPalette(
 @Composable
 private fun MeasureActionButtons(
     state: MapMeasurePanelState,
+    context: Context,
     onEvent: (MapMeasurePanelEvent) -> Unit
 ) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
+    val shareText = measureShareText(state)
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
         if (state.points.isNotEmpty()) {
             MeasureActionButton(
                 icon = Icons.Default.Remove,
@@ -315,6 +381,23 @@ private fun MeasureActionButtons(
                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
                 onClick = { onEvent(MapMeasurePanelEvent.SetPoints(emptyList())) },
             )
+            if (shareText != null) {
+                MeasureActionButton(
+                    icon = Icons.Default.Share,
+                    contentDescription = stringResource(R.string.measure_share),
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    onClick = {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(android.content.Intent.EXTRA_TEXT, shareText)
+                        }
+                        try {
+                            context.startActivity(android.content.Intent.createChooser(intent, null))
+                        } catch (e: Throwable) { Log.w("MapMeasurePanel", "share intent failed", e) }
+                    },
+                )
+            }
             if (state.points.size >= 2) {
                 MeasureActionButton(
                     icon = Icons.Default.LocationOn,
@@ -335,6 +418,23 @@ private fun MeasureActionButtons(
     }
 }
 
+/** Texte de partage ("Distance : 152 m" / "Surface : 0,42 ha"), null si rien à partager. */
+private fun measureShareText(state: MapMeasurePanelState): String? {
+    return when {
+        state.mode == MeasureMode.DISTANCE && state.points.size >= 2 -> {
+            val dist = measurePolylineM(state.points)
+            val t = if (dist >= 1000.0) String.format(Locale.getDefault(), "%.3f km", dist / 1000.0)
+            else String.format(Locale.getDefault(), "%.1f m", dist)
+            "Distance mesurée (GeoSylva) : $t"
+        }
+        state.mode == MeasureMode.AREA && state.points.size >= 3 -> {
+            val ha = measureAreaM2(state.points) / 10_000.0
+            "Surface mesurée (GeoSylva) : ${String.format(Locale.getDefault(), "%.4f ha", ha)}"
+        }
+        else -> null
+    }
+}
+
 @Composable
 private fun androidx.compose.foundation.layout.RowScope.MeasureActionButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -348,10 +448,10 @@ private fun androidx.compose.foundation.layout.RowScope.MeasureActionButton(
         color = containerColor,
         contentColor = contentColor,
         shape = GsShape.md,
-        modifier = Modifier.weight(1f).height(Touch.fieldPrimary),
+        modifier = Modifier.weight(1f).height(Touch.field),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-            Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(Space.lg))
+            Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(Space.md))
         }
     }
 }

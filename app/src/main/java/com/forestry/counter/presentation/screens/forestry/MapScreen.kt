@@ -296,6 +296,7 @@ fun MapScreen(
     // ── Measure tool state ──
     val measureActiveState: androidx.compose.runtime.MutableState<Boolean> = remember { mutableStateOf(false) }
     var measureActive by measureActiveState
+    var showMeasureSheet by remember { mutableStateOf(false) }
     val measurePointsState: androidx.compose.runtime.MutableState<List<LatLng>> = remember { mutableStateOf(emptyList()) }
     var measurePoints by measurePointsState
     var measureMode by remember { mutableStateOf(MeasureMode.DISTANCE) }
@@ -772,7 +773,7 @@ fun MapScreen(
                     color = measureColor,
                     showSavedPanel = showSavedMeasuresPanel
                 ),
-                traceHasContent = traceState.isRecording || traceState.points.isNotEmpty(),
+                sheetVisible = showMeasureSheet,
                 context = context,
                 onEvent = { event ->
                     when (event) {
@@ -791,6 +792,7 @@ fun MapScreen(
                         }
                     }
                 },
+                onRequestHideSheet = { showMeasureSheet = false },
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(
@@ -808,8 +810,14 @@ fun MapScreen(
                 hasLocationPermission = hasLocationPermission,
                 displayedGeoTiges = displayedGeoTiges,
                 onToggleMeasure = {
-                    measureActive = !measureActive
-                    if (!measureActive) measurePoints = emptyList()
+                    if (measureActive) {
+                        measureActive = false
+                        showMeasureSheet = false
+                        measurePoints = emptyList()
+                    } else {
+                        measureActive = true
+                        showMeasureSheet = true
+                    }
                 },
                 onGpsLocate = {
                     val map = mapLibreMap ?: return@MapMainFABs
