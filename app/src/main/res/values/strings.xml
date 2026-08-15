@@ -428,6 +428,17 @@
     <string name="gps_periodic_poor">⚠ Précision GPS faible (±%1$.0f m) — seuil : ±%2$.0f m. Déplacez-vous en zone dégagée.</string>
     <string name="map_gps_filtered_out">%1$d tiges ont un GPS mais la précision dépasse le seuil de %2$d m.\nDésactivez le filtre de précision ou allez en zone dégagée.</string>
     <string name="map_layer_picker_title">Fonds de carte</string>
+    <string name="map_preview_maptiler_topo">Topo 3D</string>
+    <string name="map_preview_maptiler_satellite">Satellite</string>
+    <string name="map_preview_streets">Rues</string>
+    <string name="map_preview_dark">Sombre</string>
+    <string name="map_preview_plan_ign">Plan IGN</string>
+    <string name="map_preview_ortho_ign">Satellite 20cm</string>
+    <string name="map_preview_plan_cadastre">Plan + Cadastre</string>
+    <string name="map_preview_ortho_cadastre">Satellite + Cadastre</string>
+    <string name="map_preview_relief">Relief</string>
+    <string name="map_preview_satellite_monde">Satellite Monde</string>
+    <string name="map_layer_search_placeholder">Rechercher un fond de carte</string>
     <string name="map_layer_osm">OSM</string>
     <string name="offline_download">Télécharger les tuiles hors-ligne</string>
     <string name="offline_regions_title">Zones hors-ligne</string>

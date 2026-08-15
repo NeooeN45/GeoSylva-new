@@ -522,7 +522,6 @@ fun MapRechercheScreen(
             onDismiss = { showLayerPicker = false },
             is3DActive = is3DActive,
             onToggle3D = { toggle3D() },
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = Touch.fieldPrimary + Space.xl, start = Space.xs, end = Space.xs),
         )
 
         MapLegendPanel(
@@ -578,13 +577,8 @@ fun MapRechercheScreen(
             onDismiss = { dismissedGpsBanner = true },
             modifier = Modifier.align(Alignment.Center).padding(Space.xl),
         )
-        // ── Panneau mesure (au-dessus de la barre d'outils, un seul endroit) ──
-        AnimatedVisibility(
-            visible = measureActive || measurePoints.isNotEmpty(),
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = Touch.fieldPrimary + Space.xl),
-            enter = fadeIn(tween(200)) + slideInVertically(tween(250)) { it / 2 },
-            exit = fadeOut(tween(150)) + slideOutVertically(tween(200)) { it / 2 },
-        ) {
+        // ── Tiroir de mesure (gère lui-même sa visibilité/animation) ──
+        run {
             MapMeasurePanel(
                 state = MapMeasurePanelState(
                     isActive = measureActive, points = measurePoints, mode = measureMode,

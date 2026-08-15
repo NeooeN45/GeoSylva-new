@@ -59,6 +59,13 @@ private fun MapInitialGpsEffect(
                         LatLng(lastLoc.latitude, lastLoc.longitude), 13.0
                     ), 1000
                 )
+            } else {
+                // Ni tige ni fix GPS : repli sur un cadrage France plutôt
+                // que la position par défaut de MapLibre, qui peut tomber
+                // hors de la couverture des fonds de carte IGN (fond noir).
+                map.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(LatLng(46.6, 2.5), 5.0), 800
+                )
             }
         } catch (_: Throwable) { /* permission pas encore accordée */ }
     }

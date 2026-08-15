@@ -425,6 +425,17 @@
     <string name="sanity_revenue_ha_negative">Revenue/ha is negative — check price tables</string>
     <string name="sanity_revenue_ha_very_high">Revenue/ha = %.0f € is very high — verify</string>
     <string name="map_layer_picker_title">Base maps</string>
+    <string name="map_preview_maptiler_topo">Topo 3D</string>
+    <string name="map_preview_maptiler_satellite">Satellite</string>
+    <string name="map_preview_streets">Streets</string>
+    <string name="map_preview_dark">Dark</string>
+    <string name="map_preview_plan_ign">IGN Map</string>
+    <string name="map_preview_ortho_ign">Satellite 20cm</string>
+    <string name="map_preview_plan_cadastre">Map + Cadastre</string>
+    <string name="map_preview_ortho_cadastre">Satellite + Cadastre</string>
+    <string name="map_preview_relief">Relief</string>
+    <string name="map_preview_satellite_monde">World Satellite</string>
+    <string name="map_layer_search_placeholder">Search a base map</string>
     <string name="map_layer_osm">OSM</string>
     <string name="gps_periodic_unavailable">⚠ GPS signal unavailable — location capture may fail</string>
     <string name="gps_periodic_poor">⚠ Poor GPS accuracy (±%1$.0f m) — threshold is ±%2$.0f m. Move to an open area for better signal.</string>

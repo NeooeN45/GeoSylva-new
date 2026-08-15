@@ -78,6 +78,7 @@ internal fun rasterStyle(
     }
   },
   "layers": [
+    { "id": "background", "type": "background", "paint": { "background-color": "#EFF5EC" } },
     { "id": "tiles", "type": "raster", "source": "tiles" }
   ]
 }"""
@@ -96,6 +97,7 @@ internal fun rasterStyleMulti(
     val layers = mutableListOf<String>()
     val baseAttrField = if (baseAttribution.isNotEmpty()) ""","attribution":"$baseAttribution"""" else ""
     sources += """"base":{"type":"raster","tiles":["$baseTileUrl"],"tileSize":$tileSize,"maxzoom":$maxZoom$baseAttrField}"""
+    layers += """{ "id": "background", "type": "background", "paint": { "background-color": "#EFF5EC" } }"""
     layers += """{ "id": "base", "type": "raster", "source": "base" }"""
     overlayTileUrls.forEachIndexed { i, url ->
         val ovAttr = overlayAttributions.getOrNull(i) ?: ""
@@ -259,7 +261,9 @@ data class MapLayerDef(
     val hasTerrain: Boolean = false,
     val isDark: Boolean = false,
     val category: LayerCategory = LayerCategory.GENERAL,
-    val tileUrls: List<String> = emptyList()
+    val tileUrls: List<String> = emptyList(),
+    /** Nom court adapté pour le tiroir de calques (ex. "Satellite 20cm"). */
+    val previewLabelResId: Int = labelResId,
 )
 
 // ── Liste des couches disponibles ───────────────────────────────────────────
@@ -274,7 +278,8 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
         isVector = true,
         hasTerrain = true,
         category = LayerCategory.GENERAL,
-        tileUrls = listOf(maptilerTilesUrl("topo-v2"))
+        tileUrls = listOf(maptilerTilesUrl("topo-v2")),
+        previewLabelResId = R.string.map_preview_maptiler_topo,
     ))
     add(MapLayerDef(
         key = "MAPTILER_SATELLITE",
@@ -284,7 +289,8 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
         isVector = true,
         isDark = true,
         category = LayerCategory.GENERAL,
-        tileUrls = listOf(maptilerTilesUrl("hybrid"))
+        tileUrls = listOf(maptilerTilesUrl("hybrid")),
+        previewLabelResId = R.string.map_preview_maptiler_satellite,
     ))
     add(MapLayerDef(
         key = "MAPTILER_STREETS",
@@ -293,7 +299,8 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
         styleJson = vectorStyleSimple("streets-v2", "MapTiler Streets"),
         isVector = true,
         category = LayerCategory.GENERAL,
-        tileUrls = listOf(maptilerTilesUrl("streets-v2"))
+        tileUrls = listOf(maptilerTilesUrl("streets-v2")),
+        previewLabelResId = R.string.map_preview_streets,
     ))
     add(MapLayerDef(
         key = "MAPTILER_DARK",
@@ -303,7 +310,8 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
         isVector = true,
         isDark = true,
         category = LayerCategory.GENERAL,
-        tileUrls = listOf(maptilerTilesUrl("dark-v2"))
+        tileUrls = listOf(maptilerTilesUrl("dark-v2")),
+        previewLabelResId = R.string.map_preview_dark,
     ))
 
     // ── Couches IGN (raster — hybride) ──
@@ -313,7 +321,8 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
         emoji = "🗺️",
         styleJson = rasterStyle("Plan IGN v2", geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"), attribution = ATTR_IGN),
         category = LayerCategory.GENERAL,
-        tileUrls = listOf(geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"))
+        tileUrls = listOf(geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2")),
+        previewLabelResId = R.string.map_preview_plan_ign,
     ))
     add(MapLayerDef(
         key = "ORTHO_IGN",
@@ -322,7 +331,8 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
         styleJson = rasterStyle("Ortho IGN", geopfLayer("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"), attribution = ATTR_IGN),
         isDark = true,
         category = LayerCategory.GENERAL,
-        tileUrls = listOf(geopfLayer("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"))
+        tileUrls = listOf(geopfLayer("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg")),
+        previewLabelResId = R.string.map_preview_ortho_ign,
     ))
 
     // ── Couches composites IGN ──
@@ -341,7 +351,8 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
         tileUrls = listOf(
             geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"),
             geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
-        )
+        ),
+        previewLabelResId = R.string.map_preview_plan_cadastre,
     ))
     add(MapLayerDef(
         key = "ORTHO_CADASTRE",
@@ -359,7 +370,8 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
         tileUrls = listOf(
             geopfLayer("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"),
             geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
-        )
+        ),
+        previewLabelResId = R.string.map_preview_ortho_cadastre,
     ))
 
     // ── Couches internationales (raster) ──
@@ -368,7 +380,8 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
         labelResId = R.string.map_layer_topo,
         emoji = "🏔️",
         styleJson = rasterStyle("OpenTopoMap", "https://tile.opentopomap.org/{z}/{x}/{y}.png", maxZoom = 17, attribution = ATTR_OPENTOPO),
-        tileUrls = listOf("https://tile.opentopomap.org/{z}/{x}/{y}.png")
+        tileUrls = listOf("https://tile.opentopomap.org/{z}/{x}/{y}.png"),
+        previewLabelResId = R.string.map_preview_relief,
     ))
     add(MapLayerDef(
         key = "SATELLITE",
@@ -376,7 +389,8 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
         emoji = "🌍",
         styleJson = rasterStyle("ESRI Satellite", "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", attribution = ATTR_ESRI),
         isDark = true,
-        tileUrls = listOf("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}")
+        tileUrls = listOf("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"),
+        previewLabelResId = R.string.map_preview_satellite_monde,
     ))
 
     // ── Couche hors-ligne locale ──
@@ -385,7 +399,8 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
         labelResId = R.string.map_layer_offline_local,
         emoji = "📥",
         styleJson = offlineLocalStyle("Offline Local"),
-        tileUrls = emptyList()
+        tileUrls = emptyList(),
+        previewLabelResId = R.string.map_layer_offline_local,
     ))
 }
 

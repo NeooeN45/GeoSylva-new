@@ -2,11 +2,6 @@ package com.forestry.counter.presentation.screens.forestry
 
 import android.content.Context
 import android.util.Log
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,14 +9,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -30,11 +27,10 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Straighten
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,9 +44,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.forestry.counter.R
-import com.forestry.counter.presentation.theme.Elevation
 import com.forestry.counter.presentation.theme.GsShape
 import com.forestry.counter.presentation.theme.MartelageEnlever
+import com.forestry.counter.presentation.theme.Radius
 import com.forestry.counter.presentation.theme.Space
 import com.forestry.counter.presentation.theme.Touch
 import com.mapbox.mapboxsdk.geometry.LatLng
@@ -86,8 +82,9 @@ internal sealed class MapMeasurePanelEvent {
 }
 
 /**
- * Panneau de mesure distance / surface (bas gauche) et mesures sauvegardées.
+ * Tiroir de mesure distance / surface et mesures sauvegardées.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun MapMeasurePanel(
     state: MapMeasurePanelState,
@@ -96,40 +93,33 @@ internal fun MapMeasurePanel(
     onEvent: (MapMeasurePanelEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    AnimatedVisibility(
-        visible = state.points.isNotEmpty() || state.isActive,
+    if (!state.isActive && state.points.isEmpty()) return
+    ModalBottomSheet(
+        onDismissRequest = { onEvent(MapMeasurePanelEvent.SetActive(false)) },
         modifier = modifier,
-        enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
-        exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
+        shape = RoundedCornerShape(topStart = Radius.lg, topEnd = Radius.lg),
     ) {
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
-            ),
-            shape = GsShape.md,
-            elevation = CardDefaults.cardElevation(defaultElevation = Elevation.overlay)
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Space.md, vertical = Space.sm),
+            verticalArrangement = Arrangement.spacedBy(Space.sm)
         ) {
-            Column(
-                modifier = Modifier.padding(Space.sm).widthIn(max = 220.dp),
-                verticalArrangement = Arrangement.spacedBy(Space.xs)
-            ) {
-                MeasurePanelHeader()
-                MeasureModeSelector(state = state, onEvent = onEvent)
-                if (state.isActive && state.points.isEmpty()) {
-                    Text(
-                        stringResource(R.string.measure_tap_hint),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                MeasureUnitSelector(state = state, onEvent = onEvent)
-                MeasureResults(state = state)
-                MeasureColorPalette(state = state, onEvent = onEvent)
-                MeasureActionButtons(state = state, onEvent = onEvent)
-                if (state.showSavedPanel) {
-                    SavedMeasuresPanel(context = context, onEvent = onEvent)
-                }
+            MeasurePanelHeader()
+            MeasureModeSelector(state = state, onEvent = onEvent)
+            if (state.isActive && state.points.isEmpty()) {
+                Text(
+                    stringResource(R.string.measure_tap_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
+            MeasureUnitSelector(state = state, onEvent = onEvent)
+            MeasureResults(state = state)
+            MeasureColorPalette(state = state, onEvent = onEvent)
+            MeasureActionButtons(state = state, onEvent = onEvent)
+            if (state.showSavedPanel) {
+                SavedMeasuresPanel(context = context, onEvent = onEvent)
+            }
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(Space.sm))
         }
     }
 }
@@ -144,11 +134,11 @@ private fun MeasurePanelHeader() {
             Icons.Default.Straighten,
             contentDescription = stringResource(R.string.cd_straighten),
             tint = MartelageEnlever,
-            modifier = Modifier.size(Space.md)
+            modifier = Modifier.size(Space.lg)
         )
         Text(
             stringResource(R.string.measure_tool_title),
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MartelageEnlever
         )
@@ -160,11 +150,7 @@ private fun MeasureModeSelector(
     state: MapMeasurePanelState,
     onEvent: (MapMeasurePanelEvent) -> Unit
 ) {
-    // Puces compactes (mode/unité) : hauteur volontairement < Touch.field ici —
-    // ce panneau est absorbé par la barre d'outils du mode Libre à l'étape 5
-    // de la refonte Carte, pas la peine de le redimensionner en profondeur
-    // avant cette réorganisation.
-    Row(horizontalArrangement = Arrangement.spacedBy(Space.xxs)) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
         listOf(MeasureMode.DISTANCE to R.string.measure_mode_distance,
             MeasureMode.AREA to R.string.measure_mode_area).forEach { (mode, resId) ->
             val sel = state.mode == mode
@@ -177,17 +163,18 @@ private fun MeasureModeSelector(
                 },
                 color = if (sel) MartelageEnlever else MaterialTheme.colorScheme.surfaceVariant,
                 shape = GsShape.field,
-                modifier = Modifier.height(26.dp)
+                modifier = Modifier.weight(1f).height(Touch.field)
             ) {
-                Text(
-                    stringResource(resId),
-                    modifier = Modifier.padding(horizontal = Space.sm, vertical = Space.xxs),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (sel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Text(
+                        stringResource(resId),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (sel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     }
@@ -199,46 +186,50 @@ private fun MeasureUnitSelector(
     onEvent: (MapMeasurePanelEvent) -> Unit
 ) {
     if (state.mode == MeasureMode.DISTANCE) {
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.xxs)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
             listOf(MeasureDistUnit.M to "m", MeasureDistUnit.KM to "km").forEach { (unit, label) ->
                 val sel = state.distUnit == unit
                 Surface(
                     onClick = { onEvent(MapMeasurePanelEvent.SetDistUnit(unit)) },
                     color = if (sel) state.color else MaterialTheme.colorScheme.surfaceVariant,
-                    shape = GsShape.xs,
-                    modifier = Modifier.height(22.dp)
+                    shape = GsShape.sm,
+                    modifier = Modifier.height(Touch.min)
                 ) {
-                    Text(
-                        label,
-                        modifier = Modifier.padding(horizontal = Space.xs, vertical = Space.xxs),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (sel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.wrapContentSize()) {
+                        Text(
+                            label,
+                            modifier = Modifier.padding(horizontal = Space.md),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (sel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }
     } else {
-        Row(horizontalArrangement = Arrangement.spacedBy(Space.xxs)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
             listOf(MeasureAreaUnit.M2 to "m²", MeasureAreaUnit.ARES to "ares", MeasureAreaUnit.HA to "ha").forEach { (unit, label) ->
                 val sel = state.areaUnit == unit
                 Surface(
                     onClick = { onEvent(MapMeasurePanelEvent.SetAreaUnit(unit)) },
                     color = if (sel) state.color else MaterialTheme.colorScheme.surfaceVariant,
-                    shape = GsShape.xs,
-                    modifier = Modifier.height(22.dp)
+                    shape = GsShape.sm,
+                    modifier = Modifier.height(Touch.min)
                 ) {
-                    Text(
-                        label,
-                        modifier = Modifier.padding(horizontal = Space.xs, vertical = Space.xxs),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (sel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.wrapContentSize()) {
+                        Text(
+                            label,
+                            modifier = Modifier.padding(horizontal = Space.md),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (sel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }
@@ -255,8 +246,8 @@ private fun MeasureResults(state: MapMeasurePanelState) {
         }
         Text(
             stringResource(R.string.measure_panel_distance, t),
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
             color = state.color
         )
     }
@@ -269,15 +260,15 @@ private fun MeasureResults(state: MapMeasurePanelState) {
         }
         Text(
             stringResource(R.string.measure_panel_area, t),
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
             color = state.color
         )
     }
     if (state.points.isNotEmpty()) {
         Text(
             stringResource(R.string.measure_points_count, state.points.size),
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -288,15 +279,15 @@ private fun MeasureColorPalette(
     state: MapMeasurePanelState,
     onEvent: (MapMeasurePanelEvent) -> Unit
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(Space.xxs)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
         MEASURE_COLORS.forEach { c ->
             val isSelected = c == state.color
             Box(
                 modifier = Modifier
-                    .size(if (isSelected) Space.lg else Space.md)
+                    .size(if (isSelected) Touch.min else Space.xl)
                     .clip(CircleShape)
                     .background(c)
-                    .border(if (isSelected) 2.dp else 0.dp, Color.White, CircleShape)
+                    .border(if (isSelected) 3.dp else 0.dp, Color.White, CircleShape)
                     .clickable { onEvent(MapMeasurePanelEvent.SetColor(c)) }
             )
         }
@@ -308,46 +299,59 @@ private fun MeasureActionButtons(
     state: MapMeasurePanelState,
     onEvent: (MapMeasurePanelEvent) -> Unit
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
         if (state.points.isNotEmpty()) {
-            SmallFloatingActionButton(
-                onClick = { onEvent(MapMeasurePanelEvent.SetPoints(state.points.dropLast(1))) },
+            MeasureActionButton(
+                icon = Icons.Default.Remove,
+                contentDescription = stringResource(R.string.measure_undo),
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                shape = GsShape.sm,
-                modifier = Modifier.size(Touch.field)
-            ) {
-                Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.measure_undo), modifier = Modifier.size(Space.md))
-            }
-            SmallFloatingActionButton(
-                onClick = { onEvent(MapMeasurePanelEvent.SetPoints(emptyList())) },
+                onClick = { onEvent(MapMeasurePanelEvent.SetPoints(state.points.dropLast(1))) },
+            )
+            MeasureActionButton(
+                icon = Icons.Default.Close,
+                contentDescription = stringResource(R.string.measure_clear),
                 containerColor = MaterialTheme.colorScheme.errorContainer,
                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                shape = GsShape.sm,
-                modifier = Modifier.size(Touch.field)
-            ) {
-                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.measure_clear), modifier = Modifier.size(Space.md))
-            }
+                onClick = { onEvent(MapMeasurePanelEvent.SetPoints(emptyList())) },
+            )
             if (state.points.size >= 2) {
-                SmallFloatingActionButton(
-                    onClick = { onEvent(MapMeasurePanelEvent.SaveRequest) },
+                MeasureActionButton(
+                    icon = Icons.Default.LocationOn,
+                    contentDescription = stringResource(R.string.measure_save),
                     containerColor = MartelageEnlever,
                     contentColor = Color.White,
-                    shape = GsShape.sm,
-                    modifier = Modifier.size(Touch.field)
-                ) {
-                    Icon(Icons.Default.LocationOn, contentDescription = stringResource(R.string.measure_save), modifier = Modifier.size(Space.md))
-                }
+                    onClick = { onEvent(MapMeasurePanelEvent.SaveRequest) },
+                )
             }
         }
-        SmallFloatingActionButton(
-            onClick = { onEvent(MapMeasurePanelEvent.ToggleSavedPanel) },
+        MeasureActionButton(
+            icon = Icons.Default.Layers,
+            contentDescription = stringResource(R.string.map_mesures_sauvegardees),
             containerColor = if (state.showSavedPanel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
             contentColor = if (state.showSavedPanel) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-            shape = GsShape.sm,
-            modifier = Modifier.size(Touch.field)
-        ) {
-            Icon(Icons.Default.Layers, contentDescription = stringResource(R.string.map_mesures_sauvegardees), modifier = Modifier.size(Space.md))
+            onClick = { onEvent(MapMeasurePanelEvent.ToggleSavedPanel) },
+        )
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.MeasureActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    containerColor: Color,
+    contentColor: Color,
+    onClick: () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        color = containerColor,
+        contentColor = contentColor,
+        shape = GsShape.md,
+        modifier = Modifier.weight(1f).height(Touch.fieldPrimary),
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(Space.lg))
         }
     }
 }
