@@ -296,6 +296,14 @@ fun MapRechercheScreen(
                 lifecycleOwner.lifecycle.addObserver(observer)
                 onDispose {
                     lifecycleOwner.lifecycle.removeObserver(observer)
+                    // Désactive le LocationComponent (coupe son écouteur de
+                    // capteur boussole) AVANT de détruire la vue — sinon un
+                    // événement capteur en vol peut retomber sur un Style
+                    // déjà invalidé et planter l'app (IllegalStateException
+                    // MapLibre "newer style is loading/has loaded").
+                    try { mapLibreMap?.locationComponent?.isLocationComponentEnabled = false } catch (e: Throwable) { Log.w(TAG, "locationComponent disable failed", e) }
+                    mapReady = false
+                    mapLibreMap = null
                     try { mapView.onDestroy() } catch (e: Throwable) { Log.w(TAG, "mapView.onDestroy failed", e) }
                 }
             }
