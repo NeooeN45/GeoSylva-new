@@ -54,6 +54,7 @@ internal fun offlineLocalStyle(name: String = "Offline Local"): String {
 }
 
 internal fun rasterStyle(
+    id: String,
     name: String,
     tileUrl: String,
     tileSize: Int = 256,
@@ -65,12 +66,21 @@ internal fun rasterStyle(
         throw SecurityException("URL de tuile non sécurisée: $tileUrl")
     }
     val attributionField = if (attribution.isNotEmpty()) ""","attribution":"$attribution"""" else ""
+    // L'id de source/couche doit être unique par calque (ici dérivé de la
+    // clé du calque, ex. "PLAN_IGN", "SATELLITE"...) — toutes les couches
+    // raster réutilisaient auparavant le même id "tiles", ce qui amenait
+    // MapLibre à considérer la source comme "compatible" d'un style à
+    // l'autre lors d'un changement de calque (setStyle fait un diff plutôt
+    // qu'un remplacement complet) et à réafficher les tuiles déjà en cache
+    // de l'ANCIEN calque au lieu de charger celles du nouveau — d'où des
+    // tuiles d'un calque précédent qui restaient "figées" (souvent en
+    // noir ou en niveaux de gris) mélangées aux nouvelles.
     return """{
   "version": 8,
   "name": "$name",
   "glyphs": "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
   "sources": {
-    "tiles": {
+    "$id": {
       "type": "raster",
       "tiles": ["$tileUrl"],
       "tileSize": $tileSize,
@@ -79,12 +89,13 @@ internal fun rasterStyle(
   },
   "layers": [
     { "id": "background", "type": "background", "paint": { "background-color": "#EFF5EC" } },
-    { "id": "tiles", "type": "raster", "source": "tiles" }
+    { "id": "$id", "type": "raster", "source": "$id" }
   ]
 }"""
 }
 
 internal fun rasterStyleMulti(
+    id: String,
     name: String,
     baseTileUrl: String,
     overlayTileUrls: List<String> = emptyList(),
@@ -96,16 +107,48 @@ internal fun rasterStyleMulti(
     val sources = mutableListOf<String>()
     val layers = mutableListOf<String>()
     val baseAttrField = if (baseAttribution.isNotEmpty()) ""","attribution":"$baseAttribution"""" else ""
-    sources += """"base":{"type":"raster","tiles":["$baseTileUrl"],"tileSize":$tileSize,"maxzoom":$maxZoom$baseAttrField}"""
+    // Voir le commentaire de rasterStyle() : id unique par calque pour
+    // éviter que MapLibre ne réutilise le cache de tuiles d'un calque
+    // composite précédent lors d'un changement de style.
+    val baseId = "${id}_base"
+    sources += """"$baseId":{"type":"raster","tiles":["$baseTileUrl"],"tileSize":$tileSize,"maxzoom":$maxZoom$baseAttrField}"""
     layers += """{ "id": "background", "type": "background", "paint": { "background-color": "#EFF5EC" } }"""
-    layers += """{ "id": "base", "type": "raster", "source": "base" }"""
+    layers += """{ "id": "$baseId", "type": "raster", "source": "$baseId" }"""
     overlayTileUrls.forEachIndexed { i, url ->
         val ovAttr = overlayAttributions.getOrNull(i) ?: ""
         val ovAttrField = if (ovAttr.isNotEmpty()) ""","attribution":"$ovAttr"""" else ""
-        sources += """"overlay$i":{"type":"raster","tiles":["$url"],"tileSize":256,"maxzoom":$maxZoom$ovAttrField}"""
-        layers += """{ "id": "overlay$i", "type": "raster", "source": "overlay$i", "paint": { "raster-opacity": 0.7 } }"""
+        val overlayId = "${id}_overlay$i"
+        sources += """"$overlayId":{"type":"raster","tiles":["$url"],"tileSize":256,"maxzoom":$maxZoom$ovAttrField}"""
+        layers += """{ "id": "$overlayId", "type": "raster", "source": "$overlayId", "paint": { "raster-opacity": 0.7 } }"""
     }
     return """{"version":8,"name":"$name","glyphs":"https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf","sources":{${sources.joinToString(",")}},"layers":[${layers.joinToString(",")}]}"""
+}
+
+/**
+ * Style JSON complet d'un calque raster, mais avec les ids stables
+ * "active_base"/"active_overlayN" (voir MapRenderers.kt) plutôt que l'id
+ * propre au calque — utilisé pour le tout premier chargement de la carte
+ * et pour tout repli en setStyle() complet, afin que les changements de
+ * calque suivants puissent ensuite utiliser le remplacement incrémental
+ * (swapRasterLayer) sans jamais laisser une source d'un ancien calque
+ * derrière eux.
+ */
+internal fun activeStyleJsonFor(layer: MapLayerDef): String {
+    val base = layer.tileUrls.getOrNull(0) ?: return offlineLocalStyle(layer.key)
+    val overlays = layer.tileUrls.drop(1)
+    return if (overlays.isEmpty()) {
+        rasterStyle(ACTIVE_BASE_ID, layer.key, base, maxZoom = layer.rasterMaxZoom, attribution = layer.attribution)
+    } else {
+        rasterStyleMulti(
+            "active",
+            layer.key,
+            base,
+            overlayTileUrls = overlays,
+            maxZoom = layer.rasterMaxZoom,
+            baseAttribution = layer.attribution,
+            overlayAttributions = overlays.map { layer.attribution },
+        )
+    }
 }
 
 // ── Styles vectoriels MapTiler avec terrain 3D ──────────────────────────────
@@ -123,7 +166,7 @@ internal fun vectorStyleWithTerrain(
     val key = BuildConfig.MAPTILER_KEY
     if (key.isBlank()) {
         Log.w(TAG_LAYERS, "MAPTILER_KEY empty — falling back to raster style")
-        return rasterStyle(displayName, geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"), attribution = ATTR_IGN)
+        return rasterStyle("fallback_$styleName", displayName, geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"), attribution = ATTR_IGN)
     }
 
     val terrainSource = """
@@ -232,7 +275,7 @@ internal fun vectorStyleSimple(
     val key = BuildConfig.MAPTILER_KEY
     if (key.isBlank()) {
         Log.w(TAG_LAYERS, "MAPTILER_KEY empty — falling back to raster")
-        return rasterStyle(displayName, geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"), attribution = ATTR_IGN)
+        return rasterStyle("fallback_$maptilerStyleId", displayName, geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"), attribution = ATTR_IGN)
     }
     // Utiliser l'URL style.json complète de MapTiler (style prêt-à-l'emploi)
     return maptilerUrl(maptilerStyleId)
@@ -264,6 +307,23 @@ data class MapLayerDef(
     val tileUrls: List<String> = emptyList(),
     /** Nom court adapté pour le tiroir de calques (ex. "Satellite 20cm"). */
     val previewLabelResId: Int = labelResId,
+    /**
+     * Source IGN (data.geopf.fr) : couverture strictement France — hors de
+     * cette zone, le serveur renvoie 404 sur toutes les tuiles. Sert au
+     * repli automatique vers un fond mondial (voir MapRechercheScreen)
+     * plutôt que de laisser un écran noir quand la caméra se retrouve hors
+     * de cette couverture (le style ne peint alors même pas son fond de
+     * repli — limite observée du moteur de rendu natif).
+     */
+    val franceOnly: Boolean = false,
+    /**
+     * Attribution légale de la source (identique pour base et éventuelle
+     * surcouche dans ce catalogue). Utilisée par le changement de calque
+     * incrémental (swapRasterLayer) — voir MapRenderers.kt.
+     */
+    val attribution: String = "",
+    /** Zoom max de la source raster, pour le changement de calque incrémental. */
+    val rasterMaxZoom: Int = 19,
 )
 
 // ── Liste des couches disponibles ───────────────────────────────────────────
@@ -327,20 +387,24 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
         key = "PLAN_IGN",
         labelResId = R.string.map_layer_plan_ign,
         emoji = "🗺️",
-        styleJson = rasterStyle("Plan IGN v2", geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"), attribution = ATTR_IGN),
+        styleJson = rasterStyle("PLAN_IGN", "Plan IGN v2", geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"), attribution = ATTR_IGN),
         category = LayerCategory.GENERAL,
         tileUrls = listOf(geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2")),
         previewLabelResId = R.string.map_preview_plan_ign,
+        franceOnly = true,
+        attribution = ATTR_IGN,
     ))
     add(MapLayerDef(
         key = "ORTHO_IGN",
         labelResId = R.string.map_layer_ortho_ign,
         emoji = "🛰️",
-        styleJson = rasterStyle("Ortho IGN", geopfLayer("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"), attribution = ATTR_IGN),
+        styleJson = rasterStyle("ORTHO_IGN", "Ortho IGN", geopfLayer("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"), attribution = ATTR_IGN),
         isDark = true,
         category = LayerCategory.GENERAL,
         tileUrls = listOf(geopfLayer("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg")),
         previewLabelResId = R.string.map_preview_ortho_ign,
+        franceOnly = true,
+        attribution = ATTR_IGN,
     ))
 
     // ── Couches composites IGN ──
@@ -349,6 +413,7 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
         labelResId = R.string.map_layer_plan_ign_cadastre,
         emoji = "📐",
         styleJson = rasterStyleMulti(
+            "PLAN_IGN_CADASTRE",
             "Plan IGN + Cadastre",
             geopfLayer("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"),
             overlayTileUrls = listOf(geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")),
@@ -361,12 +426,15 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
             geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
         ),
         previewLabelResId = R.string.map_preview_plan_cadastre,
+        franceOnly = true,
+        attribution = ATTR_IGN,
     ))
     add(MapLayerDef(
         key = "ORTHO_CADASTRE",
         labelResId = R.string.map_layer_ortho_cadastre,
         emoji = "🏘️",
         styleJson = rasterStyleMulti(
+            "ORTHO_CADASTRE",
             "Ortho IGN + Cadastre",
             geopfLayer("ORTHOIMAGERY.ORTHOPHOTOS", "image/jpeg"),
             overlayTileUrls = listOf(geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")),
@@ -380,6 +448,8 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
             geopfLayer("CADASTRALPARCELS.PARCELLAIRE_EXPRESS")
         ),
         previewLabelResId = R.string.map_preview_ortho_cadastre,
+        franceOnly = true,
+        attribution = ATTR_IGN,
     ))
 
     // ── Couches internationales (raster) ──
@@ -387,43 +457,51 @@ internal val MAP_LAYERS: List<MapLayerDef> = buildList {
         key = "TOPO",
         labelResId = R.string.map_layer_topo,
         emoji = "🏔️",
-        styleJson = rasterStyle("OpenTopoMap", "https://tile.opentopomap.org/{z}/{x}/{y}.png", maxZoom = 17, attribution = ATTR_OPENTOPO),
+        styleJson = rasterStyle("TOPO", "OpenTopoMap", "https://tile.opentopomap.org/{z}/{x}/{y}.png", maxZoom = 17, attribution = ATTR_OPENTOPO),
         tileUrls = listOf("https://tile.opentopomap.org/{z}/{x}/{y}.png"),
         previewLabelResId = R.string.map_preview_relief,
+        attribution = ATTR_OPENTOPO,
+        rasterMaxZoom = 17,
     ))
     add(MapLayerDef(
         key = "SATELLITE",
         labelResId = R.string.map_layer_satellite,
         emoji = "🌍",
-        styleJson = rasterStyle("ESRI Satellite", "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", attribution = ATTR_ESRI),
+        styleJson = rasterStyle("SATELLITE", "ESRI Satellite", "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", attribution = ATTR_ESRI),
         isDark = true,
         tileUrls = listOf("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"),
         previewLabelResId = R.string.map_preview_satellite_monde,
+        attribution = ATTR_ESRI,
     ))
     add(MapLayerDef(
         key = "OSM_STANDARD",
         labelResId = R.string.map_layer_osm,
         emoji = "🗺️",
-        styleJson = rasterStyle("OpenStreetMap", "https://tile.openstreetmap.org/{z}/{x}/{y}.png", maxZoom = 19, attribution = ATTR_OSM),
+        styleJson = rasterStyle("OSM_STANDARD", "OpenStreetMap", "https://tile.openstreetmap.org/{z}/{x}/{y}.png", maxZoom = 19, attribution = ATTR_OSM),
         tileUrls = listOf("https://tile.openstreetmap.org/{z}/{x}/{y}.png"),
         previewLabelResId = R.string.map_layer_osm,
+        attribution = ATTR_OSM,
     ))
     add(MapLayerDef(
         key = "CARTO_LIGHT",
         labelResId = R.string.map_layer_carto_light,
         emoji = "☀️",
-        styleJson = rasterStyle("CARTO Positron", "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", maxZoom = 20, attribution = ATTR_CARTO),
+        styleJson = rasterStyle("CARTO_LIGHT", "CARTO Positron", "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", maxZoom = 20, attribution = ATTR_CARTO),
         tileUrls = listOf("https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"),
         previewLabelResId = R.string.map_preview_carto_light,
+        attribution = ATTR_CARTO,
+        rasterMaxZoom = 20,
     ))
     add(MapLayerDef(
         key = "CARTO_DARK",
         labelResId = R.string.map_layer_carto_dark,
         emoji = "🌑",
-        styleJson = rasterStyle("CARTO Dark Matter", "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", maxZoom = 20, attribution = ATTR_CARTO),
+        styleJson = rasterStyle("CARTO_DARK", "CARTO Dark Matter", "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", maxZoom = 20, attribution = ATTR_CARTO),
         isDark = true,
         tileUrls = listOf("https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"),
         previewLabelResId = R.string.map_preview_carto_dark,
+        attribution = ATTR_CARTO,
+        rasterMaxZoom = 20,
     ))
 
     // ── Couche hors-ligne locale ──

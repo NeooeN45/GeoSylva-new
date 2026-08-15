@@ -162,7 +162,7 @@ fun MapScreen(
     val essences by (essenceRepository?.getAllEssences()
         ?: kotlinx.coroutines.flow.flowOf(emptyList<Essence>())).collectAsStateWithLifecycle(initialValue = emptyList())
     val animationsEnabled by preferencesManager.animationsEnabled.collectAsStateWithLifecycle(initialValue = true)
-    val mapLastLayerKey by preferencesManager.mapLastLayerKey.collectAsStateWithLifecycle(initialValue = "PLAN_IGN")
+    val mapLastLayerKey by preferencesManager.mapLastLayerKey.collectAsStateWithLifecycle(initialValue = "SATELLITE")
     val mapShowLegendPref by preferencesManager.mapShowLegend.collectAsStateWithLifecycle(initialValue = false)
     val mapOnlyReliableGps by preferencesManager.mapOnlyReliableGps.collectAsStateWithLifecycle(initialValue = false)
     val mapReliableGpsThresholdM by preferencesManager.mapReliableGpsThresholdM.collectAsStateWithLifecycle(initialValue = 8f)

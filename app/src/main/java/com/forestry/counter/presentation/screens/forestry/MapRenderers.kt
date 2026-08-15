@@ -16,8 +16,11 @@ import com.mapbox.mapboxsdk.style.layers.FillLayer
 import com.mapbox.mapboxsdk.style.layers.LineLayer
 import com.mapbox.mapboxsdk.style.layers.PropertyFactory
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer
+import com.mapbox.mapboxsdk.style.layers.RasterLayer
 import com.mapbox.mapboxsdk.style.sources.GeoJsonOptions
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource
+import com.mapbox.mapboxsdk.style.sources.RasterSource
+import com.mapbox.mapboxsdk.style.sources.TileSet
 import com.mapbox.mapboxsdk.maps.Style
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -44,6 +47,69 @@ internal const val MEAS_LINE_SRC = "meas-line-src"
 internal const val MEAS_PTS_SRC = "meas-pts-src"
 internal const val MEAS_LINE_LYR = "meas-line-lyr"
 internal const val MEAS_PTS_LYR = "meas-pts-lyr"
+internal const val ACTIVE_BASE_ID = "active_base"
+private const val ACTIVE_OVERLAY_PREFIX = "active_overlay"
+private const val ACTIVE_MAX_OVERLAYS = 2
+
+// ── Changement de fond de carte incrémental ─────────────────────────────────
+
+/**
+ * Remplace le fond de carte actif en ajoutant/retirant uniquement sa
+ * source et sa couche raster (ids stables "active_base"/"active_overlayN"),
+ * sans jamais appeler `map.setStyle()` — contrairement à un rechargement
+ * complet du style, qui recrée toute la carte de façon asynchrone et peut,
+ * si un second changement de calque est demandé pendant qu'un premier est
+ * encore en cours de chargement, faire cohabiter des tuiles des deux styles
+ * dans le rendu final (observé : quadrants entiers de calques différents
+ * mélangés à l'écran). C'est l'approche des clients SIG établis (QGIS,
+ * QField, Géoportail) : un seul document cartographique, dont on ajoute ou
+ * retire des couches, plutôt qu'un rechargement systématique de tout.
+ *
+ * Sans effet sur les couches tiges/mesure/tracé, qui gardent leurs propres
+ * ids stables et ne sont jamais touchées ici.
+ */
+internal fun swapRasterLayer(
+    style: Style,
+    baseTileUrl: String,
+    overlayTileUrls: List<String>,
+    attribution: String,
+    maxZoom: Int,
+    tileSize: Int = 256,
+) {
+    for (i in 0 until ACTIVE_MAX_OVERLAYS) {
+        val overlayId = "$ACTIVE_OVERLAY_PREFIX$i"
+        try { style.removeLayer(overlayId) } catch (e: Throwable) { Log.w(TAG_R, "removeLayer $overlayId", e) }
+        try { style.removeSource(overlayId) } catch (e: Throwable) { Log.w(TAG_R, "removeSource $overlayId", e) }
+    }
+    try { style.removeLayer(ACTIVE_BASE_ID) } catch (e: Throwable) { Log.w(TAG_R, "removeLayer active_base", e) }
+    try { style.removeSource(ACTIVE_BASE_ID) } catch (e: Throwable) { Log.w(TAG_R, "removeSource active_base", e) }
+
+    if (baseTileUrl.isEmpty()) return
+
+    val baseTileSet = TileSet("2.1.0", baseTileUrl).apply {
+        this.maxZoom = maxZoom.toFloat()
+        if (attribution.isNotEmpty()) this.attribution = attribution
+    }
+    style.addSource(RasterSource(ACTIVE_BASE_ID, baseTileSet, tileSize))
+    // Juste au-dessus du fond beige de repli, donc sous tiges/mesure/tracé
+    // (ajoutées séparément, toujours au sommet de la pile de couches).
+    style.addLayerAbove(RasterLayer(ACTIVE_BASE_ID, ACTIVE_BASE_ID), "background")
+
+    var lastId = ACTIVE_BASE_ID
+    overlayTileUrls.take(ACTIVE_MAX_OVERLAYS).forEachIndexed { i, url ->
+        val overlayId = "$ACTIVE_OVERLAY_PREFIX$i"
+        val overlayTileSet = TileSet("2.1.0", url).apply {
+            this.maxZoom = maxZoom.toFloat()
+            if (attribution.isNotEmpty()) this.attribution = attribution
+        }
+        style.addSource(RasterSource(overlayId, overlayTileSet, 256))
+        style.addLayerAbove(
+            RasterLayer(overlayId, overlayId).withProperties(PropertyFactory.rasterOpacity(0.7f)),
+            lastId,
+        )
+        lastId = overlayId
+    }
+}
 
 // ── Shapefile overlay ───────────────────────────────────────────────────────
 

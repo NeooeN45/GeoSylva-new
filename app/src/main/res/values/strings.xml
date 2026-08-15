@@ -447,6 +447,7 @@
     <string name="map_preview_carto_light">Clair</string>
     <string name="map_preview_carto_dark">Sombre</string>
     <string name="map_layer_search_placeholder">Rechercher un fond de carte</string>
+    <string name="map_layer_auto_fallback_message">Hors de la couverture IGN : bascule sur Satellite Monde</string>
     <string name="map_layer_osm">OSM</string>
     <string name="offline_download">Télécharger les tuiles hors-ligne</string>
     <string name="offline_regions_title">Zones hors-ligne</string>

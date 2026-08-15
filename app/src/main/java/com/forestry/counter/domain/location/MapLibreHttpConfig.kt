@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import com.mapbox.mapboxsdk.module.http.HttpRequestUtil
 import okhttp3.Cache
-import okhttp3.Dispatcher
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
@@ -46,33 +45,26 @@ object MapLibreHttpConfig {
             val cacheDir = File(context.cacheDir, CACHE_DIR)
             val cache = Cache(cacheDir, CACHE_SIZE_BYTES)
 
-            // Une même source de tuiles est un seul host (data.geopf.fr,
-            // tile.opentopomap.org…) : la limite OkHttp par défaut de 5
-            // requêtes simultanées par host bride artificiellement le
-            // chargement d'un pan/zoom qui doit récupérer des dizaines de
-            // tuiles d'un coup. La relever accélère nettement l'affichage.
-            val dispatcher = Dispatcher().apply {
-                maxRequestsPerHost = 16
-                maxRequests = 32
-            }
-
+            // NOTE : une hausse de maxRequestsPerHost (5→16) et un
+            // intercepteur forçant Cache-Control sur les réponses de
+            // tuiles ont été essayés ici pour accélérer le chargement,
+            // puis retirés — ils coïncidaient avec l'apparition de tuiles
+            // rendues en noir à côté de tuiles correctement chargées, sur
+            // une même couche (ex. OSM), reproduit à la fois sur
+            // l'émulateur ET sur un appareil réel. Reproductible sur les
+            // deux, ce qui pointe vers l'un de ces deux changements
+            // applicatifs plutôt qu'une particularité GPU d'émulateur.
+            // Config OkHttp minimale, alignée sur ce qui fonctionnait
+            // avant ces deux tentatives : cache disque simple, retry,
+            // User-Agent — rien qui réécrive les réponses ni ne pousse la
+            // concurrence au-delà des valeurs par défaut d'OkHttp.
             val client = OkHttpClient.Builder()
                 .cache(cache)
-                .dispatcher(dispatcher)
                 .connectTimeout(15, TimeUnit.SECONDS)
                 .readTimeout(20, TimeUnit.SECONDS)
                 .callTimeout(30, TimeUnit.SECONDS)
                 .addInterceptor(UserAgentInterceptor(USER_AGENT))
                 .addInterceptor(RetryInterceptor(MAX_RETRIES, BACKOFF_BASE_MS))
-                // Réponse réseau (pas application) : seule addNetworkInterceptor
-                // voit les en-têtes bruts avant que le cache disque OkHttp ne
-                // décide de stocker ou non. La plupart des serveurs de tuiles
-                // (WMTS IGN notamment) ne renvoient aucun Cache-Control — sans
-                // cet en-tête, OkHttp considère la réponse non cacheable et
-                // retélécharge chaque tuile à chaque affichage, même déjà vue :
-                // c'est la cause la plus probable d'un chargement "toujours
-                // lent" malgré les 50 Mo de cache déjà configurés.
-                .addNetworkInterceptor(ForceCacheableInterceptor())
                 .build()
 
             HttpRequestUtil.setOkHttpClient(client)
@@ -81,25 +73,6 @@ object MapLibreHttpConfig {
         } catch (e: Throwable) {
             Log.w(TAG, "Failed to configure OkHttp for MapLibre", e)
         }
-    }
-}
-
-/**
- * Impose un Cache-Control public sur les réponses de tuiles qui n'en
- * déclarent aucun, pour que le cache disque OkHttp puisse effectivement
- * les servir sans nouvelle requête réseau. 7 jours : les fonds de carte
- * (relief, cadastre, imagerie) ne changent pas d'une session à l'autre.
- */
-private class ForceCacheableInterceptor : Interceptor {
-    override fun intercept(chain: Interceptor.Chain): Response {
-        val response = chain.proceed(chain.request())
-        if (!response.isSuccessful) return response
-        val existing = response.header("Cache-Control")
-        if (existing != null && !existing.contains("no-store", ignoreCase = true)) return response
-        return response.newBuilder()
-            .removeHeader("Pragma")
-            .header("Cache-Control", "public, max-age=604800")
-            .build()
     }
 }
 

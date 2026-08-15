@@ -386,7 +386,11 @@ class UserPreferencesManager(private val context: Context) {
     }
 
     val mapLastLayerKey: Flow<String> = dataStore.data.map { prefs ->
-        prefs[MAP_LAST_LAYER_KEY] ?: "PLAN_IGN"
+        // Satellite Monde (ESRI, couverture mondiale, sans dépendance à une
+        // clé API) plutôt que Plan IGN (France uniquement) — un premier
+        // lancement sans position GPS encore connue ne doit jamais risquer
+        // de tomber hors de la couverture du fond de carte par défaut.
+        prefs[MAP_LAST_LAYER_KEY] ?: "SATELLITE"
     }
 
     suspend fun setMapLastLayerKey(layerKey: String) {

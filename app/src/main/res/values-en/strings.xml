@@ -444,6 +444,7 @@
     <string name="map_preview_carto_light">Light</string>
     <string name="map_preview_carto_dark">Dark</string>
     <string name="map_layer_search_placeholder">Search a base map</string>
+    <string name="map_layer_auto_fallback_message">Outside IGN coverage: switching to World Satellite</string>
     <string name="map_layer_osm">OSM</string>
     <string name="gps_periodic_unavailable">⚠ GPS signal unavailable — location capture may fail</string>
     <string name="gps_periodic_poor">⚠ Poor GPS accuracy (±%1$.0f m) — threshold is ±%2$.0f m. Move to an open area for better signal.</string>

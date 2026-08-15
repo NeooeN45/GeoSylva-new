@@ -146,7 +146,7 @@ fun MapRechercheScreen(
         .collectAsStateWithLifecycle(initialValue = emptyList())
     val essenceMap = remember(essences) { essences.associateBy { it.code.uppercase() } }
 
-    val mapLastLayerKey by preferencesManager.mapLastLayerKey.collectAsStateWithLifecycle(initialValue = "PLAN_IGN")
+    val mapLastLayerKey by preferencesManager.mapLastLayerKey.collectAsStateWithLifecycle(initialValue = "SATELLITE")
     val mapOnlyReliableGps by preferencesManager.mapOnlyReliableGps.collectAsStateWithLifecycle(initialValue = false)
     val mapReliableGpsThresholdM by preferencesManager.mapReliableGpsThresholdM.collectAsStateWithLifecycle(initialValue = 8f)
 
@@ -214,6 +214,19 @@ fun MapRechercheScreen(
 
     var mapReady by remember { mutableStateOf(false) }
     var mapLibreMap by remember { mutableStateOf<MapboxMap?>(null) }
+    // Un changement de calque appelé pendant qu'un précédent setStyle() est
+    // encore en cours (ex. tap rapide sur un autre calque, ou tout autre
+    // appelant concurrent) fait chevaucher deux transitions de style — le
+    // rendu peut alors composer des tuiles des deux styles à la fois
+    // (observé : quadrants entiers de styles différents mélangés sur
+    // l'écran). Ce verrou fait ignorer tout changement demandé tant que le
+    // précédent n'a pas fini de charger.
+    var styleLoadInFlight by remember { mutableStateOf(false) }
+    // true quand le style actif utilise les ids stables "active_base"/
+    // "active_overlayN" (voir MapRenderers.kt) — condition nécessaire pour
+    // pouvoir passer par swapRasterLayer() au prochain changement de
+    // calque plutôt que par un setStyle() complet.
+    var activeStyleIsIncremental by remember { mutableStateOf(false) }
     val initialLayerIdx = remember(mapLastLayerKey) { MAP_LAYERS.indexOfFirst { it.key == mapLastLayerKey }.takeIf { it >= 0 } ?: 0 }
     var currentLayerIdx by remember(mapLastLayerKey) { mutableIntStateOf(initialLayerIdx) }
     var showLayerPicker by remember { mutableStateOf(false) }
@@ -267,19 +280,65 @@ fun MapRechercheScreen(
     }
 
     fun switchLayer(index: Int) {
-        currentLayerIdx = index
+        if (styleLoadInFlight) return
         val map = mapLibreMap ?: return
         val layer = MAP_LAYERS.getOrElse(index) { MAP_LAYERS[0] }
+        val isOfflineSpecial = layer.key == "OFFLINE_LOCAL" && offlineTileManager.hasOfflineTiles()
+        currentLayerIdx = index
         scope.launch { preferencesManager.setMapLastLayerKey(layer.key) }
-        val styleJson = if (layer.key == "OFFLINE_LOCAL" && offlineTileManager.hasOfflineTiles()) {
-            offlineTileManager.buildOfflineStyle(offlineTileManager.downloadedLayerCount().coerceAtLeast(1))
-        } else layer.styleJson
+
+        // Chemin rapide : le style actif utilise déjà les ids stables
+        // "active_base"/"active_overlayN" et le nouveau calque est un
+        // raster simple — on remplace juste la source/couche active, sans
+        // recharger tout le style (voir swapRasterLayer, MapRenderers.kt).
+        // Bien plus fiable qu'un setStyle() complet à chaque changement.
+        if (activeStyleIsIncremental && !layer.isVector && !isOfflineSpecial && layer.tileUrls.isNotEmpty()) {
+            val style = map.style
+            if (style != null) {
+                try {
+                    swapRasterLayer(
+                        style = style,
+                        baseTileUrl = layer.tileUrls[0],
+                        overlayTileUrls = layer.tileUrls.drop(1),
+                        attribution = layer.attribution,
+                        maxZoom = layer.rasterMaxZoom,
+                    )
+                    renderTigesOnMap(style, filteredGeoTiges, essenceMap, essenceColors)
+                    // Le composant de localisation garde une référence interne
+                    // au Style — la mutation directe (add/removeSource/Layer)
+                    // sans passer par un setStyle() complet peut l'invalider
+                    // silencieusement (observé : LocationComponentNotInitializedException
+                    // en boucle après un changement de calque incrémental).
+                    // Réactivation défensive à chaque changement.
+                    enableLocationComponent(map, style, context)
+                    return
+                } catch (e: Throwable) {
+                    Log.w(TAG, "Incremental layer swap failed, falling back to full reload", e)
+                    // tombe dans le repli setStyle() complet ci-dessous
+                }
+            }
+        }
+
+        // Repli setStyle() complet — vectoriel (MapTiler), hors-ligne, ou
+        // échec du chemin rapide. Les calques raster utilisent ici aussi
+        // les ids "active_base"/"active_overlayN" (activeStyleJsonFor)
+        // pour que le PROCHAIN changement de calque puisse, lui, emprunter
+        // le chemin rapide.
+        styleLoadInFlight = true
+        val styleJson = when {
+            isOfflineSpecial -> offlineTileManager.buildOfflineStyle(offlineTileManager.downloadedLayerCount().coerceAtLeast(1))
+            layer.isVector -> layer.styleJson
+            else -> activeStyleJsonFor(layer)
+        }
         try {
             map.setStyle(styleBuilderFor(styleJson)) { style ->
+                styleLoadInFlight = false
+                activeStyleIsIncremental = !isOfflineSpecial && !layer.isVector
                 enableLocationComponent(map, style, context)
                 renderTigesOnMap(style, filteredGeoTiges, essenceMap, essenceColors)
             }
         } catch (e: Throwable) {
+            styleLoadInFlight = false
             Log.w(TAG, "Style switch failed", e)
         }
     }
@@ -289,7 +348,19 @@ fun MapRechercheScreen(
         val lifecycleOwner = LocalLifecycleOwner.current
         var mapError by remember { mutableStateOf(false) }
         val mapView = remember {
-            try { MapView(context) } catch (e: Throwable) { mapError = true; null }
+            try {
+                MapView(context).apply {
+                    // Filet de sécurité : sur certains rendus GPU (notamment
+                    // l'émulateur), la couche "background" du style ne peint
+                    // pas toujours de façon fiable les zones sans tuile —
+                    // observé concrètement hors couverture IGN (France), où
+                    // l'écran reste noir au lieu du beige clair attendu.
+                    // Fixer la couleur de fond de la vue elle-même garantit
+                    // qu'aucun trou de rendu ne retombe sur le noir par défaut
+                    // de la surface GL.
+                    setBackgroundColor(android.graphics.Color.parseColor("#EFF5EC"))
+                }
+            } catch (e: Throwable) { mapError = true; null }
         }
 
         if (mapView != null && !mapError) {
@@ -329,12 +400,19 @@ fun MapRechercheScreen(
                             getMapAsync { map ->
                                 try {
                                     val selectedLayer = MAP_LAYERS.getOrElse(currentLayerIdx) { MAP_LAYERS[0] }
-                                    val initStyleJson = if (selectedLayer.key == "OFFLINE_LOCAL" && offlineTileManager.hasOfflineTiles()) {
-                                        offlineTileManager.buildOfflineStyle(offlineTileManager.downloadedLayerCount().coerceAtLeast(1))
-                                    } else selectedLayer.styleJson
+                                    val initIsOfflineSpecial = selectedLayer.key == "OFFLINE_LOCAL" && offlineTileManager.hasOfflineTiles()
+                                    val initStyleJson = when {
+                                        initIsOfflineSpecial -> offlineTileManager.buildOfflineStyle(offlineTileManager.downloadedLayerCount().coerceAtLeast(1))
+                                        selectedLayer.isVector -> selectedLayer.styleJson
+                                        // Ids stables "active_base"/"active_overlayN" dès le premier
+                                        // chargement, pour que le premier changement de calque puisse
+                                        // déjà emprunter le remplacement incrémental (swapRasterLayer).
+                                        else -> activeStyleJsonFor(selectedLayer)
+                                    }
                                     map.setStyle(styleBuilderFor(initStyleJson)) { style ->
                                         mapLibreMap = map
                                         mapReady = true
+                                        activeStyleIsIncremental = !initIsOfflineSpecial && !selectedLayer.isVector
                                         enableLocationComponent(map, style, context)
                                         renderTigesOnMap(style, filteredGeoTiges, essenceMap, essenceColors)
                                         if (!tigeTapAttached) {
@@ -406,6 +484,17 @@ fun MapRechercheScreen(
         // GpsAverager.GpsQuality) — alimente la pastille de fiabilité en
         // haut à droite et la couleur de pulsation du puck. Pas de second
         // listener de localisation en parallèle de celui de MapLibre.
+        //
+        // Un repli automatique de calque (hors couverture IGN → calque
+        // mondial) avait été tenté ici, mais déclenchait un second
+        // setStyle() en pleine phase de chargement du calque initial : les
+        // deux transitions de style se chevauchaient et le rendu composait
+        // des tuiles des deux styles à la fois (par ex. relief sombre et
+        // OSM couleur dans des quadrants différents de l'écran) — un bug
+        // bien plus gênant que celui qu'il tentait de corriger. Retiré :
+        // mieux vaut un unique changement de style explicite (choix de
+        // l'utilisateur) qu'une bascule automatique qui peut entrer en
+        // course avec le chargement en cours.
         LaunchedEffect(mapReady, hasLocationPermission) {
             if (!mapReady || !hasLocationPermission) return@LaunchedEffect
             var lastColor: Int? = null
