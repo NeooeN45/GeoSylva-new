@@ -1,7 +1,7 @@
 # Politique de confidentialité — GeoSylva
 
 **Dernière mise à jour :** 3 août 2026
-**Version app concernée :** 2.4.0 (identité et synchronisation optionnelle en développement)
+**Version app concernée :** 3.0.0 (identité et synchronisation optionnelle en développement)
 
 ## Introduction
 
@@ -352,4 +352,4 @@ Pour toute question relative à cette politique de confidentialité :
 
 ---
 
-*Cette politique de confidentialité s'applique à l'application Android GeoSylva (version 2.4.0 en développement).*
+*Cette politique de confidentialité s'applique à l'application Android GeoSylva (version 3.0.0 en développement).*

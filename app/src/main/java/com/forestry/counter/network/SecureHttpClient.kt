@@ -1,7 +1,6 @@
 package com.forestry.counter.network
 
 import android.content.Context
-import com.forestry.counter.BuildConfig
 import okhttp3.CertificatePinner
 import okhttp3.Dns
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -18,47 +17,17 @@ import java.util.concurrent.TimeUnit
  *
  * TLS repose sur les autorités système définies dans network_security_config.xml.
  *
- * L'épinglage de clés (certificate pinning) OkHttp est **activé** pour tous les
- * domaines de la liste [SECURE_DOMAINS] (7 domaines cartographiques) ainsi que
- * pour le domaine de l'API GSIE extrait dynamiquement de
- * `BuildConfig.GSIE_API_BASE_URL`. Chaque domaine possède un pin primaire et un
- * pin de secours (backup) afin de permettre une rotation TLS coordonnée sans
- * interruption de service : si l'autorité ou la clé publique primaire est
- * remplacée, le pin de secours maintient la connectivité le temps que le pin
- * primaire soit mis à jour dans une nouvelle version de l'application.
+ * Les fournisseurs cartographiques sont des services tiers dont GeoSylva ne
+ * contrôle ni les certificats ni leur rotation. Ils utilisent donc la chaîne de
+ * confiance Android, sans pins statiques applicatifs. Cette stratégie évite de
+ * rendre une version déjà distribuée inutilisable lors d'une rotation TLS tout
+ * en conservant HTTPS obligatoire, la liste blanche et la protection DNS/SSRF.
  *
- * Les pins actuels sont des **placeholders** ([PIN_PRIMARY_PLACEHOLDER] et
- * [PIN_BACKUP_PLACEHOLDER]) à remplacer par les hashes SHA-256 des clés
- * publiques de production (voir les `TODO` dans [buildCertificatePinner]).
- *
- * ATTENTION : OkHttp rejette toute connexion vers un domaine pinné dont le
- * certificat ne correspond à aucun pin déclaré. Tant que les placeholders sont
- * en place, les flux vers les domaines pinnés échoueront en production.
- * Remplacer impérativement les placeholders par les hashes réels avant toute
- * mise en production, sinon tous les flux distants (tuiles carto + API GSIE)
- * seront bloqués.
+ * Un éventuel épinglage futur doit être limité à une infrastructure Quintessences
+ * maîtrisée, avec au moins une clé de secours réelle et une procédure de rotation
+ * testée avant activation.
  */
 object SecureHttpClient {
-
-    /**
-     * Pin primaire placeholder — hash SHA-256 d'une clé publique inexistante.
-     *
-     * TODO: remplacer par hash production (clé publique actuelle de chaque
-     * domaine). À générer avec `openssl s_client` ou l'utilitaire
-     * `CertificatePinner.pin()` d'OkHttp sur le certificat de production.
-     */
-    private const val PIN_PRIMARY_PLACEHOLDER =
-        "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-
-    /**
-     * Pin de secours placeholder — hash SHA-256 d'une clé de rotation future.
-     *
-     * TODO: remplacer par hash production (clé publique de la prochaine
-     * rotation TLS de chaque domaine). Permet de changer de certificat sans
-     * casser l'application déjà déployée.
-     */
-    private const val PIN_BACKUP_PLACEHOLDER =
-        "sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
 
     /**
      * Crée un client HTTPS avec validation des redirections et résolution DNS publique.
@@ -87,7 +56,6 @@ object SecureHttpClient {
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
-            .certificatePinner(buildCertificatePinner())
             .dns(if (allowLocalDebug) Dns.SYSTEM else PublicOnlyDns)
 
         if (enableLogging && isDebugBuild()) {
@@ -116,42 +84,10 @@ object SecureHttpClient {
     )
 
     /**
-     * Construit le [CertificatePinner] OkHttp pour tous les domaines pinnés.
-     *
-     * Couvre les 7 domaines cartographiques de [SECURE_DOMAINS] ainsi que le
-     * domaine de l'API GSIE extrait dynamiquement de
-     * `BuildConfig.GSIE_API_BASE_URL`. Chaque domaine reçoit un pin primaire
-     * ([PIN_PRIMARY_PLACEHOLDER]) et un pin de secours
-     * ([PIN_BACKUP_PLACEHOLDER]) pour permettre la rotation TLS.
-     *
-     * Le domaine GSIE n'est pinné que si son URL de base est une URL HTTPS
-     * distante valide ([isSafeRemoteHttpsUrl]) : les URLs de debug local
-     * (ex. `http://127.0.0.1:8000/`) sont exclues pour ne pas bloquer les
-     * essais en émulateur.
-     *
-     * @return CertificatePinner configuré pour tous les domaines éligibles
+     * Pinner volontairement vide : compatibilité avec le diagnostic existant.
+     * La confiance TLS est fournie par Android, pas par des pins tiers figés.
      */
-    fun buildCertificatePinner(): CertificatePinner {
-        val builder = CertificatePinner.Builder()
-        SECURE_DOMAINS.forEach { domain ->
-            builder.add(domain, PIN_PRIMARY_PLACEHOLDER, PIN_BACKUP_PLACEHOLDER)
-        }
-        gsieApiHost()?.let { host ->
-            builder.add(host, PIN_PRIMARY_PLACEHOLDER, PIN_BACKUP_PLACEHOLDER)
-        }
-        return builder.build()
-    }
-
-    /**
-     * Extrait le nom d'hôte de l'URL de base de l'API GSIE.
-     *
-     * @return le host pinnable, ou null si l'URL est vide, invalide ou locale
-     */
-    private fun gsieApiHost(): String? {
-        val baseUrl = BuildConfig.GSIE_API_BASE_URL.trim()
-        if (baseUrl.isEmpty() || !isSafeRemoteHttpsUrl(baseUrl)) return null
-        return baseUrl.toHttpUrlOrNull()?.host
-    }
+    fun buildCertificatePinner(): CertificatePinner = CertificatePinner.Builder().build()
 
     /** Retourne true si l'URL cible un domaine de la liste [SECURE_DOMAINS]. */
     fun isSecureDomain(url: String): Boolean {

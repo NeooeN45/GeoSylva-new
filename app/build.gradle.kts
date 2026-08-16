@@ -20,8 +20,8 @@ android {
         applicationId = "com.forestry.counter"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
-        versionName = "2.4.0"
+        versionCode = 11
+        versionName = "3.0.0"
 
         // Stable by default: wall-clock values here invalidate every incremental build
         // and make two builds of the same source produce different artifacts.

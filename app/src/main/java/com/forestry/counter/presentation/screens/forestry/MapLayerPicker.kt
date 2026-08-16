@@ -29,13 +29,16 @@ import androidx.compose.material.icons.filled.Landscape
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.forestry.counter.BuildConfig
 import com.forestry.counter.R
 import com.forestry.counter.domain.location.OfflineTileManager
 import com.forestry.counter.network.SecureHttpClient
@@ -70,10 +74,11 @@ import com.forestry.counter.presentation.theme.Touch
 @Composable
 internal fun MapLayerPicker(
     visible: Boolean,
-    currentLayerIdx: Int,
+    loadState: MapLayerLoadState,
     hasOfflineTilesState: Boolean,
     offlineTileManager: OfflineTileManager,
     onLayerSelected: (Int) -> Unit,
+    onRetry: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     is3DActive: Boolean = false,
@@ -97,6 +102,37 @@ internal fun MapLayerPicker(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
+
+            if (loadState.isLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(top = Space.xs))
+                Text(
+                    stringResource(R.string.map_layer_loading),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = Space.xs),
+                )
+            } else if (loadState.failedIndex != null) {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    shape = GsShape.sm,
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.xs),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(start = Space.sm),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            stringResource(R.string.map_layer_load_error),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(onClick = onRetry) {
+                            Text(stringResource(R.string.retry))
+                        }
+                    }
+                }
+            }
 
             // ── Barre de recherche (même look que Réglages) ──
             Surface(
@@ -159,9 +195,10 @@ internal fun MapLayerPicker(
                     val index = MAP_LAYERS.indexOf(layer)
                     LayerTile(
                         layer = layer,
-                        isSelected = index == currentLayerIdx,
+                        isSelected = index == loadState.displayedIndex,
+                        isLoading = index == loadState.loadingRequest?.layerIndex,
                         badgeCount = if (layer.key == "OFFLINE_LOCAL") offlineTileCount else 0,
-                        onClick = { onLayerSelected(index); onDismiss() },
+                        onClick = { onLayerSelected(index) },
                     )
                 }
             }
@@ -212,7 +249,8 @@ private fun previewTileUrl(layer: MapLayerDef): String? {
 
 /** Même en-tête que le client HTTP MapLibre — certains serveurs de tuiles
  * (IGN notamment) rejettent les requêtes sans User-Agent identifiable. */
-private const val PREVIEW_USER_AGENT = "GeoSylva/2.3.0 (+https://geosylva.fr; contact: contact@geosylva.fr)"
+private val PREVIEW_USER_AGENT =
+    "GeoSylva/${BuildConfig.VERSION_NAME} (+https://geosylva.fr; contact: contact@geosylva.fr)"
 
 /**
  * Grande tuile illustrée d'un fond de carte : dégradé + emoji toujours en
@@ -224,6 +262,7 @@ private const val PREVIEW_USER_AGENT = "GeoSylva/2.3.0 (+https://geosylva.fr; co
 private fun LayerTile(
     layer: MapLayerDef,
     isSelected: Boolean,
+    isLoading: Boolean,
     badgeCount: Int,
     onClick: () -> Unit,
 ) {
@@ -290,7 +329,13 @@ private fun LayerTile(
             modifier = Modifier.align(Alignment.BottomStart).padding(Space.sm),
         )
 
-        if (isSelected) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.TopEnd).padding(Space.xs).size(Space.lg),
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = 3.dp,
+            )
+        } else if (isSelected) {
             Icon(
                 Icons.Filled.CheckCircle,
                 contentDescription = null,

@@ -100,7 +100,7 @@ L'ambition est de fournir :
 - **Persistance** : Room (DB v32, migrations actives)
 - **Préférences** : DataStore (non chiffré)
 - **Navigation** : Navigation Compose (sealed class Screen, 5 sous-graphes)
-- **Network** : OkHttp + SecureHttpClient (certificate pinning actif en release)
+- **Network** : OkHttp + SecureHttpClient (HTTPS, autorités Android, liste blanche, DNS public)
 - **GIS** : Lambert-93 IGN NTG 71, WKT, Shapefile, GeoJSON, DEM SRTM
 - **Exports** : CSV, XLSX (Apache POI), JSON, ZIP, Shapefile, GeoJSON, PDF
 - **Maps** : MapLibre GL 10.3.1
@@ -141,7 +141,7 @@ pas encore la preuve du contraire) :
 | Intégrité base de données | 5/10 | non re-vérifié | Risque données | DB passée de v29→v32, migrations ajoutées — à ré-auditer |
 | Logique forestière domainale | 6.5/10 | non re-vérifié | Approximatif | — |
 | Traitement des données (mappers) | 5.5/10 | **amélioré** | En progrès | Refactor repositories→modèles domaine commité le 2026-07-01 (voir `.devin/AGENT_COORDINATION.md` §6) |
-| Sécurité / chiffrement / réseau | 5/10 | **~7/10** | Nettement amélioré | SQLCipher actif (`ForestryDatabase.kt:151`), certificate pinning actif (`SecureHttpClient.kt:46-56`), FLAG_SECURE actif (`MainActivity.kt`), injection SQL GeoPackage corrigée (whitelist regex) |
+| Sécurité / chiffrement / réseau | 5/10 | **~7/10** | Nettement amélioré | SQLCipher actif (`ForestryDatabase.kt:151`), HTTPS + confiance Android + protection DNS/SSRF (`SecureHttpClient.kt`), FLAG_SECURE actif (`MainActivity.kt`), injection SQL GeoPackage corrigée (whitelist regex) |
 | GIS / géomatique | 7.5/10 | **~8/10** | Amélioré | 6 sous-phases carte/GPS terminées : attribution légale sources carto, perf `setGeoJson()`, tuiles offline parallèles 6 concurrent + retry backoff, cache HTTP MapLibre 50MB, suppression Helmert faux + 8 points contrôle Lambert93, compas TYPE_ROTATION_VECTOR + lissage passe-bas. `Lambert93.kt` dupliqué toujours présent (1.17 non fait). Scoreboard carte/GPS : Phase 1 80%, Phase 2-4 0%. |
 | Présentation / UI / Compose | 6.5/10 | **~7/10** | Amélioré | `collectAsState()` entièrement migré vers `collectAsStateWithLifecycle()` (166 occurrences, 0 restante) |
 | Internationalisation (FR/EN) | 4/10 | **~5/10** | Toujours insuffisant | `plurals.xml` créé FR/EN ; mais 71 `SimpleDateFormat` et 53 `€` codés en dur toujours présents |
@@ -224,7 +224,7 @@ Voir :
 |---|--------|---------|-------|--------|--------|--------|
 | 0.1 | Activer `kotlin.incremental=true` dans gradle.properties | Build | B-C1 | 0.1j | ✅ FAIT | `gradle.properties:9` |
 | 0.2 | Réactiver SQLCipher + clé Android Keystore + migration DB | Sécurité/RGPD | S-C1, R-C2 | 3j | ✅ FAIT | `ForestryDatabase.kt:151` (SupportFactory + DatabaseEncryptionService/Keystore) |
-| 0.3 | Activer certificate pinning + corriger SecureTileService | Sécurité | S-C2, R-M4 | 1j | ✅ FAIT | `SecureHttpClient.kt:46-56` (4 domaines pinnés) |
+| 0.3 | Fiabiliser TLS et corriger SecureTileService | Sécurité | S-C2, R-M4 | 1j | ✅ FAIT | HTTPS obligatoire, autorités Android et aucun pin tiers statique ; placeholders retirés |
 | 0.4 | Valider tableName dans GeoImportParser (whitelist regex) | Sécurité | S-C3 | 0.5j | ✅ FAIT | `GeoImportParser.kt:447-453` |
 | 0.5 | Ajouter FLAG_SECURE sur MainActivity | Sécurité | S-H4 | 0.5j | ✅ FAIT | `MainActivity.kt:35-39` |
 | 0.6 | Réécrire PRIVACY_POLICY.md (26 PII, base légale, transferts) | RGPD | R-C1 | 1j | ✅ FAIT | `PRIVACY_POLICY.md` réécrit le 2026-07-01 après audit factuel vs code : 8 erreurs corrigées (6 services réseau manquants, `operateurNom`/`psgNumero`/champs libres ajoutés, « Effacer toutes mes données » marqué à venir, purge auto cache GPS marquée à venir, §2.3 BackupWorker ZIP non chiffré ajouté, §3.2 PriceSyncWorker pas de cert pinning ajouté, contact RGPD renseigné) |

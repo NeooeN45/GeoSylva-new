@@ -68,15 +68,8 @@ sealed class Screen(val route: String) {
         fun forParcelle(parcelleId: String): String = "martelage/PARCELLE/none/$parcelleId/none"
         fun forPlacette(parcelleId: String, placetteId: String): String = "martelage/PLACETTE/none/$parcelleId/$placetteId"
     }
-    object Map : Screen("map/{parcelleId}?navLat={navLat}&navLon={navLon}&navEssence={navEssence}&navDiam={navDiam}") {
+    object Map : Screen("map/{parcelleId}") {
         fun createRoute(parcelleId: String) = "map/$parcelleId"
-        fun createRouteWithNav(
-            parcelleId: String,
-            lat: Double,
-            lon: Double,
-            essenceName: String,
-            diamCm: Double
-        ) = "map/$parcelleId?navLat=$lat&navLon=$lon&navEssence=$essenceName&navDiam=$diamCm"
     }
     object EssenceDiam : Screen("placette/{parcelleId}/{placetteId}/essence/{essenceCode}") {
         fun createRoute(parcelleId: String, placetteId: String, essenceCode: String) = "placette/$parcelleId/$placetteId/essence/$essenceCode"

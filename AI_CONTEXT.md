@@ -48,7 +48,7 @@ dans l'APK. L'activation publique attend le domaine et le tunnel du Fondateur.
 | Préférences | DataStore | 1.0.0 | Non chiffré (à corriger) |
 | Sérialisation | kotlinx.serialization | 1.6.3 | |
 | Coroutines | kotlinx.coroutines | 1.8.1 | Bien scopées (viewModelScope, lifecycleScope) |
-| Network | OkHttp | 4.12.0 | SecureHttpClient avec certificate pinning actif en release |
+| Network | OkHttp | 4.12.0 | SecureHttpClient : HTTPS, autorités Android, liste blanche et DNS public |
 | Maps | MapLibre GL | 10.3.1 | 12 couches carto |
 | Camera | CameraX | 1.3.3 | Clinomètre numérique |
 | Location | Play Services Location | 21.3.0 | + LocationManager legacy (à remplacer) |
@@ -278,7 +278,7 @@ Fichier clé : `domain/calculation/ForestryCalculator.kt`
 | Élément | Statut | Fichier |
 |---|---|---|
 | SQLCipher | **ACTIF** | `build.gradle.kts`, `ForestryDatabase.kt` |
-| Certificate pinning | **ACTIF en release** (désactivé en debug) | `SecureHttpClient.kt` |
+| Certificate pinning tiers | **DÉSACTIVÉ** : rotation non maîtrisée ; confiance TLS Android | `SecureHttpClient.kt` |
 | FLAG_SECURE | **Absent** | `MainActivity.kt` |
 | DataStore chiffrement | **Absent** | `UserPreferences.kt` |
 | Root detection | **Absent** | — |
@@ -394,7 +394,7 @@ Voir les audits pour le détail complet :
 Priorité immédiate :
 1. `kotlin.incremental=true` (0.1j)
 2. SQLCipher + Keystore + migration (3j)
-3. Certificate pinning (1j)
+3. Smoke tests réseau sur APK release (cartographie + API GSIE)
 4. RGPD : politique + consentement + registre (4j)
 5. `collectAsStateWithLifecycle()` (2j)
 6. Coil + downsampling images (2j)

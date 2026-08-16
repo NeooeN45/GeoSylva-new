@@ -49,6 +49,7 @@ import java.util.Date
 internal fun MapOfflineRegionsSheet(
     regions: List<OfflineTileManager.RegionMeta>,
     estimate: Pair<Long, Long>?,
+    downloadAvailable: Boolean,
     onRequestDownloadCurrentView: () -> Unit,
     onConfirmDownload: () -> Unit,
     onCancelEstimate: () -> Unit,
@@ -74,8 +75,10 @@ internal fun MapOfflineRegionsSheet(
 
             Surface(
                 onClick = onRequestDownloadCurrentView,
+                enabled = downloadAvailable,
                 shape = GsShape.md,
-                color = MaterialTheme.colorScheme.primaryContainer,
+                color = if (downloadAvailable) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Row(
@@ -83,13 +86,23 @@ internal fun MapOfflineRegionsSheet(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Space.sm),
                 ) {
-                    Icon(Icons.Default.CloudDownload, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                    val actionColor = if (downloadAvailable) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+                    Icon(Icons.Default.CloudDownload, contentDescription = null, tint = actionColor)
                     Text(
                         stringResource(R.string.offline_download_current_view),
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = actionColor,
                     )
                 }
+            }
+            if (!downloadAvailable) {
+                Text(
+                    stringResource(R.string.offline_pack_unavailable_for_layer),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = Space.xs),
+                )
             }
 
             if (regions.isEmpty()) {

@@ -4,6 +4,7 @@ import com.forestry.counter.capsule.json.JsonValue
 import com.forestry.counter.capsule.json.StrictJsonParser
 import java.io.File
 import java.security.MessageDigest
+import java.nio.charset.StandardCharsets
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -43,9 +44,23 @@ class InteropFixturesTest {
                 val (digest, name) = line.split("  ", limit = 2)
                 name to digest
             }
-        for (entry in corpusDir.listFiles()!!) {
-            if (entry.name == "SHA256SUMS.txt") continue
-            val actual = MessageDigest.getInstance("SHA-256").digest(entry.readBytes())
+        val corpusEntries = corpusDir.listFiles()!!.filter { it.name != "SHA256SUMS.txt" }
+        assertEquals(
+            corpusEntries.map { it.name }.toSet(),
+            recorded.keys,
+            "Le manifeste SHA-256 doit référencer exactement tout le corpus",
+        )
+        for (entry in corpusEntries) {
+            // Git peut matérialiser une fixture texte en CRLF sur un ancien
+            // checkout Windows malgré eol=lf. L'empreinte reste celle de la
+            // représentation canonique interopérable, jamais celle de l'OS.
+            val canonicalBytes = when (entry.extension.lowercase()) {
+                "json", "pem" -> entry.readText(StandardCharsets.UTF_8)
+                    .replace("\r\n", "\n")
+                    .toByteArray(StandardCharsets.UTF_8)
+                else -> entry.readBytes()
+            }
+            val actual = MessageDigest.getInstance("SHA-256").digest(canonicalBytes)
                 .joinToString("") { "%02x".format(it) }
             assertEquals(recorded[entry.name], actual, "SHA-256 divergent pour ${entry.name}")
         }

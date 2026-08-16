@@ -467,6 +467,7 @@
     <string name="offline_downloading">Downloading tiles…</string>
     <string name="offline_download_done">Tiles downloaded ✓</string>
     <string name="offline_download_error">Download error</string>
+    <string name="offline_pack_unavailable_for_layer">This basemap remains available online, but its provider is not yet approved for offline packs.</string>
     <string name="map_layer_offline_local">Offline local</string>
     <string name="map_layer_satellite">Satellite</string>
     <string name="map_layer_satellite_labels">Sat. + labels</string>
@@ -2184,7 +2185,7 @@
     <string name="diagmenu_prerequisites">Prerequisites</string>
     <string name="diagmenu_last_diagnostic">Last diagnosis</string>
     <string name="diagmenu_algo_cnpf">Deterministic CNPF algorithm</string>
-    <string name="diagmenu_algo_description">Multi-criteria scoring: SER fertility × 40%, climate suitability × 20%, soil × 20%, CC2050 resilience × 10%, health risks × 10%. 20 species evaluated.</string>
+    <string name="diagmenu_algo_description" formatted="false">Multi-criteria scoring: SER fertility × 40%, climate suitability × 20%, soil × 20%, CC2050 resilience × 10%, health risks × 10%. 20 species evaluated.</string>
     <string name="diagmenu_prereq_station">Environmental station (soil, climate, SER)</string>
     <string name="diagmenu_prereq_stand">Stand (plots &amp; inventoried stems)</string>
     <string name="diagmenu_error_format">Error: %1$s</string>
@@ -2479,4 +2480,7 @@
     <string name="developer_sync_pull_result">%1$d ajoutée(s), %2$d mise(s) à jour, %3$d supprimée(s), %4$d ignorée(s) (modification locale non synchronisée)</string>
     <string name="developer_sync_pull_error">Échec de la récupération — vérifie la connexion.</string>
 
+    <string name="map_layer_loading">Loading map layer…</string>
+    <string name="map_layer_load_error">This map layer is temporarily unavailable.</string>
+    <string name="retry">Retry</string>
 </resources>

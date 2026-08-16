@@ -2,6 +2,7 @@ package com.forestry.counter.domain.location
 
 import android.content.Context
 import android.util.Log
+import com.forestry.counter.BuildConfig
 import com.mapbox.mapboxsdk.module.http.HttpRequestUtil
 import okhttp3.Cache
 import okhttp3.Interceptor
@@ -29,8 +30,8 @@ object MapLibreHttpConfig {
     private const val BACKOFF_BASE_MS = 500L
 
     /** User-Agent conforme OSM — identique à OfflineTileManager pour cohérence */
-    private const val USER_AGENT =
-        "GeoSylva/2.3.0 (+https://geosylva.fr; contact: contact@geosylva.fr)"
+    private val USER_AGENT =
+        "GeoSylva/${BuildConfig.VERSION_NAME} (+https://geosylva.fr; contact: contact@geosylva.fr)"
 
     @Volatile
     private var configured = false

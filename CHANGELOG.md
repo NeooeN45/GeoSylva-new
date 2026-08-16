@@ -5,8 +5,34 @@ Format follows [Keep a Changelog](https://keepachangelog.com).
 
 ## [Unreleased] — 2026-08-03
 
+### Fixed
+
+- **Chargement des fonds de carte** — les changements de couche sont désormais
+  sérialisés, la dernière demande est conservée, les callbacks obsolètes sont
+  ignorés et un délai maximal mène vers une erreur visible avec relance.
+- **Packs cartographiques hors ligne** — refus des flux vectoriels enregistrés
+  comme images, des fournisseurs non qualifiés pour le téléchargement massif
+  et des limites géographiques invalides. Une zone partielle n'est plus
+  publiée dans le catalogue.
+- **Écriture et confidentialité du cache** — fichiers temporaires avant
+  publication, catalogue remplacé atomiquement, concurrence bornée à six
+  workers et journaux limités au domaine sans URL, requête ni clé d'API.
+- **Ressources cartographiques en release** — suppression des empreintes TLS
+  factices qui bloquaient IGN, Esri, CARTO, OpenTopo et MapTiler. HTTPS reste
+  obligatoire avec les autorités de confiance Android, la liste blanche de
+  domaines et la protection DNS/SSRF.
+- **Diagnostic de sécurité réseau** — le statut n'annonce plus à tort un
+  certificate pinning actif ; un test empêche le retour de pins placeholders.
+
 ### Added
 
+- **Gate de livraison** — la CI construit désormais aussi le bundle Release
+  minifié et expose un contrôle final unique exigeant lint, tests, APK Debug
+  et bundle Release. Dependabot surveille Gradle et GitHub Actions chaque
+  semaine.
+- **Corpus d’interopérabilité** — le contrôle SHA-256 canonise les fins de
+  ligne des fixtures texte et vérifie l’exhaustivité du manifeste, afin de
+  produire le même verdict sous Windows et dans la CI Linux.
 - **Synchronisation des parcelles avec GSIE** — activation explicite depuis
   les options développeur, puis file Room/SQLCipher et traitement WorkManager.
 - **Protocole sans écrasement** — UUID d’opération, version serveur, tombstones

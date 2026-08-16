@@ -16,13 +16,13 @@ class SecureTileService(@Suppress("UNUSED_PARAMETER") context: Context) {
 
     /**
      * Obtient les statistiques de sécurité pour le monitoring.
-     * Les connexions reposent sur TLS système, une liste de domaines autorisés
-     * et l'épinglage de clés (certificate pinning) OkHttp avec pin de secours.
+     * Les connexions reposent sur TLS système, HTTPS obligatoire, une liste de
+     * domaines autorisés et le refus des résolutions DNS non publiques.
      */
     fun getSecurityStats(): SecurityStats {
         return SecurityStats(
             secureDomainsCount = SecureHttpClient.SECURE_DOMAINS.size,
-            certificatePinningEnabled = true,
+            certificatePinningEnabled = false,
             loggingEnabled = false
         )
     }

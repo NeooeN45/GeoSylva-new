@@ -221,7 +221,7 @@ app/src/main/java/com/forestry/counter/
 │   │   ├── Lambert93Converter.kt# Conversion Lambert93 + Helmert WGS84→ETRS89
 │   │   └── OfflineTileManager.kt# Gestion tuiles hors-ligne
 │   ├── geo/                     # Lambert 93, Shapefile parser, GeoImport
-│   ├── security/                # Certificate pinning, SecureHttpClient
+│   ├── security/                # Validation HTTPS, domaines autorisés, protection SSRF
 │   └── usecase/export/          # ShapefileExporter, PdfSynthesisExporter, ExportDataUseCase
 └── presentation/
     ├── screens/
@@ -238,7 +238,7 @@ app/src/main/java/com/forestry/counter/
 - **Reactive** — Kotlin Flow du DAO jusqu'à l'UI Compose
 - **Offline-first** — Room + DataStore, aucune dépendance réseau pour les données
 - **Chiffrement** — SQLCipher (Keystore Android) pour les données sensibles au repos
-- **Sécurité réseau** — Certificate pinning SHA-256 sur les domaines cartographiques
+- **Sécurité réseau** — HTTPS obligatoire, autorités Android, domaines autorisés et protection DNS/SSRF
 - **Testable** — 420+ tests unitaires couvrant calculs, tarifs, export, conversion, IBP
 
 ---
@@ -256,7 +256,7 @@ app/src/main/java/com/forestry/counter/
 | **Export** | Apache POI (XLSX), OpenCSV, Shapefile (pur Java), PDF |
 | **Sérialisation** | kotlinx.serialization |
 | **Background** | WorkManager (sauvegardes et synchronisation réseau différée) |
-| **Sécurité** | SQLCipher (Keystore), Certificate Pinning (SHA-256) |
+| **Sécurité** | SQLCipher (Keystore), HTTPS obligatoire, liste blanche réseau et protection DNS/SSRF |
 | **Build** | Gradle 8.2 + KSP + ProGuard/R8 |
 
 ---
@@ -466,4 +466,3 @@ Ouvrez une [issue](../../issues) avec :
 Pour toute question, réclamation ou collaboration :
 
 **5jvw9s5zj@mozmail.com**
-

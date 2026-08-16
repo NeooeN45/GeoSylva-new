@@ -1,72 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Variantes hors debug : HTTPS uniquement, autorités système uniquement. -->
-<!-- L'épinglage de clés (pin-set) complète le CertificatePinner OkHttp défini
-     dans SecureHttpClient. Les pins ci-dessous sont des placeholders à remplacer
-     par les hashes SHA-256 des clés publiques de production (voir TODO dans
-     SecureHttpClient.buildCertificatePinner). Le domaine de l'API GSIE, dynamique
-     (BuildConfig.GSIE_API_BASE_URL), est pinné côté OkHttp uniquement. -->
+<!--
+    Production : HTTPS obligatoire et autorités de confiance Android uniquement.
+
+    Les fournisseurs cartographiques sont des tiers dont GeoSylva ne maîtrise
+    pas la rotation des certificats. Aucun pin statique n'est donc livré. Un
+    éventuel pinning futur sera réservé à une infrastructure Quintessences
+    maîtrisée et accompagné d'une clé de secours réelle.
+-->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system"/>
         </trust-anchors>
     </base-config>
-
-    <!-- TODO: remplacer les pins placeholders par les hashes production. -->
-
-    <domain-config>
-        <domain includeSubdomains="true">demotiles.maplibre.org</domain>
-        <pin-set>
-            <pin digest="SHA-256">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</pin>
-            <pin digest="SHA-256">BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=</pin>
-        </pin-set>
-    </domain-config>
-
-    <domain-config>
-        <domain includeSubdomains="true">tile.opentopomap.org</domain>
-        <pin-set>
-            <pin digest="SHA-256">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</pin>
-            <pin digest="SHA-256">BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=</pin>
-        </pin-set>
-    </domain-config>
-
-    <domain-config>
-        <domain includeSubdomains="true">basemaps.cartocdn.com</domain>
-        <pin-set>
-            <pin digest="SHA-256">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</pin>
-            <pin digest="SHA-256">BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=</pin>
-        </pin-set>
-    </domain-config>
-
-    <domain-config>
-        <domain includeSubdomains="true">server.arcgisonline.com</domain>
-        <pin-set>
-            <pin digest="SHA-256">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</pin>
-            <pin digest="SHA-256">BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=</pin>
-        </pin-set>
-    </domain-config>
-
-    <domain-config>
-        <domain includeSubdomains="true">data.geopf.fr</domain>
-        <pin-set>
-            <pin digest="SHA-256">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</pin>
-            <pin digest="SHA-256">BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=</pin>
-        </pin-set>
-    </domain-config>
-
-    <domain-config>
-        <domain includeSubdomains="true">api.maptiler.com</domain>
-        <pin-set>
-            <pin digest="SHA-256">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</pin>
-            <pin digest="SHA-256">BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=</pin>
-        </pin-set>
-    </domain-config>
-
-    <domain-config>
-        <domain includeSubdomains="true">tiles.maptiler.com</domain>
-        <pin-set>
-            <pin digest="SHA-256">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</pin>
-            <pin digest="SHA-256">BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=</pin>
-        </pin-set>
-    </domain-config>
 </network-security-config>

@@ -467,6 +467,7 @@
     <string name="offline_downloading">Téléchargement des tuiles…</string>
     <string name="offline_download_done">Tuiles téléchargées ✓</string>
     <string name="offline_download_error">Erreur de téléchargement</string>
+    <string name="offline_pack_unavailable_for_layer">Ce fond reste disponible en ligne, mais son fournisseur n’est pas encore qualifié pour créer un pack hors ligne.</string>
     <string name="map_layer_offline_local">Hors ligne local</string>
     <string name="map_layer_satellite">Satellite</string>
     <string name="map_layer_satellite_labels">Sat. + noms</string>
@@ -2080,7 +2081,7 @@
     <string name="diagmenu_prerequisites">Pré-requis</string>
     <string name="diagmenu_last_diagnostic">Dernier diagnostic</string>
     <string name="diagmenu_algo_cnpf">Algorithme CNPF déterministe</string>
-    <string name="diagmenu_algo_description">Scoring multi-critères : fertilité SER × 40%, adéquation climatique × 20%, sol × 20%, résilience CC2050 × 10%, risques sanitaires × 10%. 20 essences évaluées.</string>
+    <string name="diagmenu_algo_description" formatted="false">Scoring multi-critères : fertilité SER × 40%, adéquation climatique × 20%, sol × 20%, résilience CC2050 × 10%, risques sanitaires × 10%. 20 essences évaluées.</string>
     <string name="diagmenu_prereq_station">Station environnementale (sol, climat, SER)</string>
     <string name="diagmenu_prereq_stand">Peuplement (placettes &amp; tiges inventoriées)</string>
     <string name="diagmenu_error_format">Erreur : %1$s</string>
@@ -2472,4 +2473,7 @@
     <string name="developer_sync_pull_result">%1$d ajoutée(s), %2$d mise(s) à jour, %3$d supprimée(s), %4$d ignorée(s) (modification locale non synchronisée)</string>
     <string name="developer_sync_pull_error">Échec de la récupération — vérifie la connexion.</string>
 
+    <string name="map_layer_loading">Chargement du fond de carte…</string>
+    <string name="map_layer_load_error">Ce fond de carte est temporairement indisponible.</string>
+    <string name="retry">Réessayer</string>
 </resources>

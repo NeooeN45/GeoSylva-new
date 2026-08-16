@@ -8,7 +8,7 @@ import androidx.navigation.navArgument
 import com.forestry.counter.ForestryCounterApplication
 import com.forestry.counter.presentation.screens.forestry.DashboardScreen
 import com.forestry.counter.presentation.screens.forestry.EssenceDiamScreen
-import com.forestry.counter.presentation.screens.forestry.MapScreen
+import com.forestry.counter.presentation.screens.forestry.MapRechercheScreen
 import com.forestry.counter.presentation.screens.forestry.MartelageScreen
 import com.forestry.counter.presentation.screens.forestry.ParcellesScreen
 import com.forestry.counter.presentation.screens.forestry.PlacetteDetailScreen
@@ -301,10 +301,6 @@ fun NavGraphBuilder.forestryFlowNavGraph(
         route = Screen.Map.route,
         arguments = listOf(
             navArgument("parcelleId") { type = NavType.StringType },
-            navArgument("navLat") { type = NavType.StringType; nullable = true; defaultValue = null },
-            navArgument("navLon") { type = NavType.StringType; nullable = true; defaultValue = null },
-            navArgument("navEssence") { type = NavType.StringType; nullable = true; defaultValue = null },
-            navArgument("navDiam") { type = NavType.StringType; nullable = true; defaultValue = null }
         ),
         enterTransition = transitions.enter,
         exitTransition = transitions.exit,
@@ -312,11 +308,7 @@ fun NavGraphBuilder.forestryFlowNavGraph(
         popExitTransition = transitions.popExit,
     ) { backStackEntry ->
         val parcelleId = backStackEntry.arguments?.getString("parcelleId") ?: return@composable
-        val navLat = backStackEntry.arguments?.getString("navLat")?.toDoubleOrNull()
-        val navLon = backStackEntry.arguments?.getString("navLon")?.toDoubleOrNull()
-        val navEssence = backStackEntry.arguments?.getString("navEssence")
-        val navDiam = backStackEntry.arguments?.getString("navDiam")?.toDoubleOrNull()
-        MapScreen(
+        MapRechercheScreen(
             parcelleId = parcelleId,
             tigeRepository = app.tigeRepository,
             essenceRepository = app.essenceRepository,
@@ -324,10 +316,6 @@ fun NavGraphBuilder.forestryFlowNavGraph(
             preferencesManager = app.userPreferences,
             offlineTileManager = app.offlineTileManager,
             onNavigateBack = { navController.popBackStack() },
-            initialNavLat = navLat,
-            initialNavLon = navLon,
-            initialNavEssence = navEssence,
-            initialNavDiam = navDiam
         )
     }
 }

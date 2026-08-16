@@ -44,7 +44,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -67,6 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.forestry.counter.R
 import com.forestry.counter.data.preferences.UserPreferencesManager
 import com.forestry.counter.domain.location.OfflineTileManager
+import com.forestry.counter.domain.location.OfflineTilePolicy
 import com.forestry.counter.domain.location.TreeNavigator
 import com.forestry.counter.domain.location.WktUtils
 import com.forestry.counter.domain.model.Essence
@@ -93,6 +93,7 @@ import com.mapbox.mapboxsdk.maps.Style
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -214,21 +215,14 @@ fun MapRechercheScreen(
 
     var mapReady by remember { mutableStateOf(false) }
     var mapLibreMap by remember { mutableStateOf<MapboxMap?>(null) }
-    // Un changement de calque appelé pendant qu'un précédent setStyle() est
-    // encore en cours (ex. tap rapide sur un autre calque, ou tout autre
-    // appelant concurrent) fait chevaucher deux transitions de style — le
-    // rendu peut alors composer des tuiles des deux styles à la fois
-    // (observé : quadrants entiers de styles différents mélangés sur
-    // l'écran). Ce verrou fait ignorer tout changement demandé tant que le
-    // précédent n'a pas fini de charger.
-    var styleLoadInFlight by remember { mutableStateOf(false) }
     // true quand le style actif utilise les ids stables "active_base"/
     // "active_overlayN" (voir MapRenderers.kt) — condition nécessaire pour
     // pouvoir passer par swapRasterLayer() au prochain changement de
     // calque plutôt que par un setStyle() complet.
     var activeStyleIsIncremental by remember { mutableStateOf(false) }
     val initialLayerIdx = remember(mapLastLayerKey) { MAP_LAYERS.indexOfFirst { it.key == mapLastLayerKey }.takeIf { it >= 0 } ?: 0 }
-    var currentLayerIdx by remember(mapLastLayerKey) { mutableIntStateOf(initialLayerIdx) }
+    var layerLoadState by remember(mapLastLayerKey) { mutableStateOf(MapLayerLoadState(initialLayerIdx)) }
+    val currentLayerIdx = layerLoadState.displayedIndex
     var showLayerPicker by remember { mutableStateOf(false) }
     var showLegend by remember { mutableStateOf(false) }
     var tigeTapAttached by remember { mutableStateOf(false) }
@@ -279,12 +273,26 @@ fun MapRechercheScreen(
         map.animateCameraSmooth(CameraUpdateFactory.newCameraPosition(newPosition))
     }
 
-    fun switchLayer(index: Int) {
-        if (styleLoadInFlight) return
-        val map = mapLibreMap ?: return
-        val layer = MAP_LAYERS.getOrElse(index) { MAP_LAYERS[0] }
+    lateinit var startLayerRequest: (MapLayerLoadRequest) -> Unit
+
+    fun applyLayerDecision(decision: MapLayerLoadDecision) {
+        layerLoadState = decision.state
+        val next = decision.requestToStart
+        if (next != null) {
+            startLayerRequest(next)
+        } else if (!decision.state.isLoading && decision.state.failedIndex == null) {
+            showLayerPicker = false
+        }
+    }
+
+    startLayerRequest = start@ { request ->
+        val map = mapLibreMap
+        if (map == null) {
+            applyLayerDecision(layerLoadState.fail(request.id))
+            return@start
+        }
+        val layer = MAP_LAYERS.getOrElse(request.layerIndex) { MAP_LAYERS[0] }
         val isOfflineSpecial = layer.key == "OFFLINE_LOCAL" && offlineTileManager.hasOfflineTiles()
-        currentLayerIdx = index
         scope.launch { preferencesManager.setMapLastLayerKey(layer.key) }
 
         // Chemin rapide : le style actif utilise déjà les ids stables
@@ -311,7 +319,8 @@ fun MapRechercheScreen(
                     // en boucle après un changement de calque incrémental).
                     // Réactivation défensive à chaque changement.
                     enableLocationComponent(map, style, context)
-                    return
+                    applyLayerDecision(layerLoadState.succeed(request.id))
+                    return@start
                 } catch (e: Throwable) {
                     Log.w(TAG, "Incremental layer swap failed, falling back to full reload", e)
                     // tombe dans le repli setStyle() complet ci-dessous
@@ -324,7 +333,6 @@ fun MapRechercheScreen(
         // les ids "active_base"/"active_overlayN" (activeStyleJsonFor)
         // pour que le PROCHAIN changement de calque puisse, lui, emprunter
         // le chemin rapide.
-        styleLoadInFlight = true
         val styleJson = when {
             isOfflineSpecial -> offlineTileManager.buildOfflineStyle(offlineTileManager.downloadedLayerCount().coerceAtLeast(1))
             layer.isVector -> layer.styleJson
@@ -332,14 +340,31 @@ fun MapRechercheScreen(
         }
         try {
             map.setStyle(styleBuilderFor(styleJson)) { style ->
-                styleLoadInFlight = false
                 activeStyleIsIncremental = !isOfflineSpecial && !layer.isVector
                 enableLocationComponent(map, style, context)
                 renderTigesOnMap(style, filteredGeoTiges, essenceMap, essenceColors)
+                applyLayerDecision(layerLoadState.succeed(request.id))
             }
         } catch (e: Throwable) {
-            styleLoadInFlight = false
             Log.w(TAG, "Style switch failed", e)
+            applyLayerDecision(layerLoadState.fail(request.id))
+        }
+    }
+
+    fun switchLayer(index: Int) {
+        applyLayerDecision(layerLoadState.request(index))
+    }
+
+    fun retryLayer() {
+        applyLayerDecision(layerLoadState.retry())
+    }
+
+    LaunchedEffect(layerLoadState.loadingRequest?.id) {
+        val request = layerLoadState.loadingRequest ?: return@LaunchedEffect
+        delay(20_000)
+        if (layerLoadState.loadingRequest?.id == request.id) {
+            Log.w(TAG, "Map style load timed out for ${MAP_LAYERS.getOrNull(request.layerIndex)?.key}")
+            applyLayerDecision(layerLoadState.fail(request.id))
         }
     }
 
@@ -361,6 +386,16 @@ fun MapRechercheScreen(
                     setBackgroundColor(android.graphics.Color.parseColor("#EFF5EC"))
                 }
             } catch (e: Throwable) { mapError = true; null }
+        }
+
+        DisposableEffect(mapView) {
+            val listener = MapView.OnDidFailLoadingMapListener {
+                val request = layerLoadState.loadingRequest ?: return@OnDidFailLoadingMapListener
+                Log.w(TAG, "MapLibre reported a style loading failure for ${MAP_LAYERS.getOrNull(request.layerIndex)?.key}")
+                applyLayerDecision(layerLoadState.fail(request.id))
+            }
+            mapView?.addOnDidFailLoadingMapListener(listener)
+            onDispose { mapView?.removeOnDidFailLoadingMapListener(listener) }
         }
 
         if (mapView != null && !mapError) {
@@ -620,10 +655,11 @@ fun MapRechercheScreen(
 
         MapLayerPicker(
             visible = showLayerPicker,
-            currentLayerIdx = currentLayerIdx,
+            loadState = layerLoadState,
             hasOfflineTilesState = hasOfflineTilesState,
             offlineTileManager = offlineTileManager,
-            onLayerSelected = { index -> switchLayer(index); showLayerPicker = false },
+            onLayerSelected = { index -> switchLayer(index) },
+            onRetry = { retryLayer() },
             onDismiss = { showLayerPicker = false },
             is3DActive = is3DActive,
             onToggle3D = { toggle3D() },
@@ -838,6 +874,10 @@ fun MapRechercheScreen(
         MapOfflineRegionsSheet(
             regions = offlineRegions,
             estimate = offlineEstimate,
+            downloadAvailable = MAP_LAYERS.getOrElse(currentLayerIdx) { MAP_LAYERS[0] }
+                .tileUrls.let { templates ->
+                    templates.isNotEmpty() && templates.all { OfflineTilePolicy.validateTemplate(it) == null }
+                },
             onRequestDownloadCurrentView = {
                 val map = mapLibreMap ?: return@MapOfflineRegionsSheet
                 val bounds = map.projection.visibleRegion.latLngBounds

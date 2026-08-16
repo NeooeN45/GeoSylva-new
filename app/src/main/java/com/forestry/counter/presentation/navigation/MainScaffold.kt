@@ -335,10 +335,11 @@ fun TopLevelTabContent(
                     modifier = modifier,
                 )
                 com.forestry.counter.presentation.screens.forestry.CarteMode.RECHERCHE -> {
-                    // Nouvelle base "mode Recherche" (esprit QField) : moteur
-                    // MapLibre repris de MapScreen mais interface repensée
-                    // (barre d'outils unique). MapScreen reste intact par
-                    // ailleurs pour Forêts→Parcelle→carte. Un choix de zone
+                    // Base "mode Recherche" (esprit QField) : moteur MapLibre
+                    // avec interface repensée (barre d'outils unique). Depuis
+                    // la suppression de l'ancien MapScreen, c'est aussi le
+                    // moteur unique utilisé pour Forêts→Parcelle→carte (voir
+                    // ForestryFlowNavGraph). Un choix de zone
                     // (forêt/parcelle/placette) précède l'ouverture de la
                     // carte elle-même — état imbriqué, même pattern que
                     // `carteMode`, réinitialisé à la sortie de la branche.

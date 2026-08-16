@@ -213,7 +213,7 @@ internal fun MapOfflineProgressBar(
                         progress.isComplete && progress.error == null ->
                             "${stringResource(R.string.offline_download_done)} (${progress.completedResources} tuiles, $sizeMb Mo)"
                         progress.isComplete && progress.error != null ->
-                            progress.error ?: stringResource(R.string.offline_download_error)
+                            progress.error.orEmpty()
                         else -> stringResource(R.string.offline_downloading)
                     },
                     style = MaterialTheme.typography.labelMedium,
