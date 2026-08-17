@@ -370,6 +370,28 @@ post-incendie sans modifier l'état réel tant qu'aucune décision n'est validé
 Voir [GSIE_INTEGRATION.md](GSIE_INTEGRATION.md) et
 `Quintessences/GSIE/ARCHITECTURE/GSIE_ENVIRONMENTAL_DIGITAL_TWIN_PLATFORM.md`.
 
+### État du canal d'amplification GSIE — 2026-08-17
+
+La synchronisation actuellement livrée concerne les parcelles et reste
+explicitement activée par l'utilisateur. Le cœur forestier, les données de
+terrain et les calculs locaux restent utilisables hors ligne.
+
+La future analyse stationnelle serveur est cadrée par RFC-0041 et DEC-000073,
+encore respectivement `Draft` et `Proposé` côté Quintessences. GeoSylva ne
+construira pas les règles, qualifications ou états globaux GSIE. Le futur
+client enverra une intention avec un UUID de ressource GSIE déjà résolu ; la
+préparation, l'hydratation, les preuves et les blocages resteront côté serveur.
+
+La façade, le lien `parcelleId → gsie_resource_id`, la file Room dédiée et
+l'écran de résultats ne sont donc pas présentés comme livrés dans cette
+version. Les pages de martelage 3.0 restent indépendantes de cette première
+boucle d'intégration.
+
+Références :
+[DEC-000048](https://github.com/NeooeN45/Quintessences/blob/main/03_DECISIONS/DEC-000048.md),
+[RFC-0041](https://github.com/NeooeN45/Quintessences/blob/main/02_RFC/RFC-0041-contrat-facade-geosylva-identite-stationnelle.md),
+[DEC-000073](https://github.com/NeooeN45/Quintessences/blob/main/03_DECISIONS/DEC-000073.md).
+
 ---
 
 ## �🔒 Sécurité & Confidentialité
