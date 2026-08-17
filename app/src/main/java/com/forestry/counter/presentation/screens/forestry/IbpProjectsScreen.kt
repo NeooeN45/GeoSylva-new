@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import com.forestry.counter.presentation.utils.StaggerEntrance
+import com.forestry.counter.presentation.utils.localizeDefaultName
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -25,7 +26,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.forestry.counter.presentation.theme.IbpFaible
+import com.forestry.counter.presentation.theme.IbpTresBon
+import com.forestry.counter.presentation.theme.IbpTresFaible
+import com.forestry.counter.presentation.theme.SemanticSuccess
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.forestry.counter.R
 import com.forestry.counter.domain.model.IbpEvaluation
@@ -113,18 +119,18 @@ fun IbpProjectsScreen(
                 title = { Text(stringResource(R.string.ibp_projects_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 actions = {
                     if (onNavigateToDiagnostic != null && grouped.size == 1) {
                         IconButton(onClick = { onNavigateToDiagnostic(grouped.keys.first()) }) {
-                            Icon(Icons.Default.Analytics, contentDescription = "Diagnostic")
+                            Icon(Icons.Default.Analytics, contentDescription = stringResource(R.string.cd_diagnostic))
                         }
                     }
                     if (onNavigateToCompare != null && grouped.size == 1 && (grouped.values.firstOrNull()?.size ?: 0) >= 2) {
                         IconButton(onClick = { onNavigateToCompare(grouped.keys.first()) }) {
-                            Icon(Icons.Default.Timeline, contentDescription = "Comparaison temporelle")
+                            Icon(Icons.Default.Timeline, contentDescription = stringResource(R.string.cd_timeline))
                         }
                     }
                     if (evaluations.isNotEmpty()) {
@@ -132,7 +138,7 @@ fun IbpProjectsScreen(
                             val dateStr = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US).format(java.util.Date())
                             qgisExportLauncher.launch("ibp_export_$dateStr.zip")
                         }) {
-                            Icon(Icons.Default.Map, contentDescription = "Export QGIS")
+                            Icon(Icons.Default.Map, contentDescription = stringResource(R.string.cd_export))
                         }
                     }
                 }
@@ -141,8 +147,11 @@ fun IbpProjectsScreen(
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
             if (parcelleRepository != null && placetteRepository != null) {
-                FloatingActionButton(onClick = { showCreateDialog = true }) {
-                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.ibp_start))
+                FloatingActionButton(
+                    onClick = { showCreateDialog = true },
+                    modifier = Modifier.offset(x = 8.dp),
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_add))
                 }
             }
         }
@@ -201,13 +210,13 @@ fun IbpProjectsScreen(
                                 Icons.Default.Forest,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp),
-                                tint = Color(0xFF2E7D32)
+                                tint = SemanticSuccess
                             )
                             Text(
                                 parcelleName,
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2E7D32)
+                                color = SemanticSuccess
                             )
                             HorizontalDivider(modifier = Modifier.weight(1f))
                             Text(
@@ -293,11 +302,11 @@ private fun IbpProjectCard(
     val level = IbpLevel.fromScore(score)
     val levelColor = if (!isComplete) Color(0xFF78909C)
     else when (level) {
-        IbpLevel.VERY_LOW  -> Color(0xFFC62828)
-        IbpLevel.LOW       -> Color(0xFFE65100)
+        IbpLevel.VERY_LOW  -> IbpTresFaible
+        IbpLevel.LOW       -> IbpFaible
         IbpLevel.MEDIUM    -> Color(0xFFF57C00)
         IbpLevel.GOOD      -> Color(0xFF558B2F)
-        IbpLevel.VERY_GOOD -> Color(0xFF1B5E20)
+        IbpLevel.VERY_GOOD -> IbpTresBon
     }
 
     Card(
@@ -340,7 +349,9 @@ private fun IbpProjectCard(
                 Text(
                     placetteName,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     dateFormat.format(Date(eval.observationDate)),
@@ -360,15 +371,16 @@ private fun IbpProjectCard(
                         eval.globalNote,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
 
-            IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+            IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = stringResource(R.string.delete),
+                    contentDescription = stringResource(R.string.cd_delete),
                     modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
                 )
@@ -402,7 +414,7 @@ private fun IbpCreateDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        icon = { Icon(Icons.Default.EmojiNature, contentDescription = null, tint = Color(0xFF2E7D32)) },
+        icon = { Icon(Icons.Default.EmojiNature, contentDescription = null, tint = SemanticSuccess) },
         title = {
             Text(
                 if (selectedParcelle == null) stringResource(R.string.ibp_create_select_parcelle)
@@ -427,10 +439,10 @@ private fun IbpCreateDialog(
                     } else {
                         parcelles.forEach { parcelle ->
                             ListItem(
-                                headlineContent = { Text(parcelle.name, fontWeight = FontWeight.Medium) },
+                                headlineContent = { Text(localizeDefaultName(parcelle.name), fontWeight = FontWeight.Medium) },
                                 leadingContent = {
                                     Icon(Icons.Default.EmojiNature, contentDescription = null,
-                                        tint = Color(0xFF2E7D32), modifier = Modifier.size(20.dp))
+                                        tint = SemanticSuccess, modifier = Modifier.size(20.dp))
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -467,7 +479,7 @@ private fun IbpCreateDialog(
                             ListItem(
                                 headlineContent = {
                                     Text(
-                                        placette.name?.takeIf { it.isNotBlank() } ?: placette.id.take(8),
+                                        localizeDefaultName(placette.name)?.takeIf { it.isNotBlank() } ?: placette.id.take(8),
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                         color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                     )

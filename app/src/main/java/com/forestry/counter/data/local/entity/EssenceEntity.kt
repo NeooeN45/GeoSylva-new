@@ -1,5 +1,6 @@
 package com.forestry.counter.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -19,5 +20,12 @@ data class EssenceEntity(
     val hauteurMaxM: Double? = null,
     val diametreMaxCm: Double? = null,
     val toleranceOmbre: String? = null,
-    val remarques: String? = null
+    val remarques: String? = null,
+
+    // Metadata spec GeoSylva 3.0 (GEOSYLVA-003 §3.1)
+    val deletedAt: Long? = null,
+    val auteur: String? = null,
+    val source: String? = null,
+    @ColumnInfo(name = "version", defaultValue = "1")
+    val version: Int = 1
 )

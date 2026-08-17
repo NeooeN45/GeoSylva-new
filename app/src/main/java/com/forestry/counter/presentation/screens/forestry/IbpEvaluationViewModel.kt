@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 class IbpEvaluationViewModel(
     val parcelleId: String,
@@ -33,17 +32,9 @@ class IbpEvaluationViewModel(
         .map { it?.name?.takeIf { name -> name.isNotBlank() } ?: placetteId.take(LABEL_FALLBACK_LENGTH) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), placetteId.take(LABEL_FALLBACK_LENGTH))
 
-    fun saveEvaluation(evaluation: IbpEvaluation) {
-        viewModelScope.launch {
-            ibpRepository.save(evaluation)
-        }
-    }
+    suspend fun saveEvaluation(evaluation: IbpEvaluation) = ibpRepository.save(evaluation)
 
-    fun deleteEvaluation(id: String) {
-        viewModelScope.launch {
-            ibpRepository.delete(id)
-        }
-    }
+    suspend fun deleteEvaluation(id: String) = ibpRepository.delete(id)
 
     companion object {
         private const val STOP_TIMEOUT_MS = 5_000L

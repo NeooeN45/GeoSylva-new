@@ -1,5 +1,6 @@
 package com.forestry.counter.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -38,12 +39,15 @@ import androidx.room.PrimaryKey
         Index(name = "index_tiges_placetteOwnerId", value = ["placetteOwnerId"]),
         Index(name = "index_tiges_essenceCode", value = ["essenceCode"]),
         Index(name = "index_tiges_diamCm", value = ["diamCm"]),
-        Index(name = "index_tiges_sessionId", value = ["sessionId"])
+        Index(name = "index_tiges_sessionId", value = ["sessionId"]),
+        Index(name = "index_tiges_uuid", value = ["uuid"], unique = true)
     ]
 )
 data class TigeEntity(
     @PrimaryKey
     val tigeId: String,
+    /** UUID normalisé (RFC 4122) pour interop GSIE serveur — backfill asynchrone. */
+    val uuid: String? = null,
     val parcelleOwnerId: String,
     val placetteOwnerId: String?,
     val sessionId: String?,
@@ -80,5 +84,12 @@ data class TigeEntity(
     val coefficientElancement: Double?,
     val houppierM: Double?,
     val houppierPct: Double?,
-    val isTigeHabitat: Boolean
+    val isTigeHabitat: Boolean,
+
+    // Metadata spec GeoSylva 3.0 (GEOSYLVA-003 §3.1)
+    val deletedAt: Long? = null,
+    val auteur: String? = null,
+    val source: String? = null,
+    @ColumnInfo(name = "version", defaultValue = "1")
+    val version: Int = 1
 )

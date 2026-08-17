@@ -3,6 +3,7 @@ package com.forestry.counter.presentation.screens.onboarding
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.EaseInOutCubic
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
@@ -10,9 +11,12 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.EmojiNature
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Forest
 import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.Height
@@ -40,6 +45,7 @@ import androidx.compose.material.icons.filled.Terrain
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,9 +58,11 @@ import android.app.Activity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.forestry.counter.R
+import com.forestry.counter.presentation.theme.Primary
 import kotlinx.coroutines.launch
 
 private enum class PageCategory(val labelFr: String, val color: Color) {
@@ -66,16 +74,36 @@ private enum class PageCategory(val labelFr: String, val color: Color) {
     PRIVACY("RGPD", Color(0xFF37474F))
 }
 
+// Une fonctionnalité repliée dans une page-groupe (voir [OnboardingPage.subFeatures]) :
+// une carte dépliable, pas une page entière à faire défiler.
+private data class SubFeature(
+    val icon: ImageVector,
+    val titleRes: Int,
+    val descRes: Int,
+    val bulletResIds: List<Int> = emptyList(),
+)
+
 private data class OnboardingPage(
     val icon: ImageVector,
     val titleRes: Int,
     val descRes: Int,
     val bulletResIds: List<Int> = emptyList(),
-    val accentColor: Color = Color(0xFF4CAF50),
+    // Couleur de marque du thème, et non un vert littéral : la palette est la
+    // seule source de vérité (voir `theme/Color.kt`).
+    val accentColor: Color = Primary,
     val category: PageCategory = PageCategory.INVENTORY,
-    val isHero: Boolean = false
+    val isHero: Boolean = false,
+    // Pages-groupe (Collecte, Analyse, Écologie) : plusieurs fonctionnalités
+    // proches réunies en cartes dépliables sur une seule page, au lieu d'une
+    // page à part par fonctionnalité — moins de "Suivant" à enchaîner pour
+    // parcourir le même contenu.
+    val subFeatures: List<SubFeature> = emptyList(),
 )
 
+// 6 pages au lieu de 13 : les fonctionnalités proches (structuration,
+// mesure, hauteur, GPS, carte / synthèse, martelage / station, climat,
+// flore, IBP) sont regroupées par thème en cartes dépliables (voir
+// [GroupPageContent]) plutôt qu'étalées sur une page chacune.
 private val PAGES = listOf(
     OnboardingPage(
         Icons.Default.Park,
@@ -85,81 +113,53 @@ private val PAGES = listOf(
         Color(0xFF2E7D32), PageCategory.WELCOME, isHero = true
     ),
     OnboardingPage(
-        Icons.Default.Forest,
-        R.string.onboarding_forest_title,
-        R.string.onboarding_forest_desc,
-        listOf(R.string.onboarding_forest_b1, R.string.onboarding_forest_b2, R.string.onboarding_forest_b3),
-        Color(0xFF388E3C), PageCategory.INVENTORY
+        icon = Icons.Default.Forest,
+        titleRes = R.string.onboarding_group_collecte_title,
+        descRes = R.string.onboarding_group_collecte_desc,
+        accentColor = Color(0xFF00695C),
+        category = PageCategory.INVENTORY,
+        subFeatures = listOf(
+            SubFeature(Icons.Default.Forest, R.string.onboarding_forest_title, R.string.onboarding_forest_desc,
+                listOf(R.string.onboarding_forest_b1, R.string.onboarding_forest_b2, R.string.onboarding_forest_b3)),
+            SubFeature(Icons.Default.Straighten, R.string.onboarding_measure_title, R.string.onboarding_measure_desc,
+                listOf(R.string.onboarding_measure_b1, R.string.onboarding_measure_b2, R.string.onboarding_measure_b3)),
+            SubFeature(Icons.Default.Height, R.string.onboarding_height_title, R.string.onboarding_height_desc,
+                listOf(R.string.onboarding_height_b1, R.string.onboarding_height_b2, R.string.onboarding_height_b3)),
+            SubFeature(Icons.Default.GpsFixed, R.string.onboarding_gps_title, R.string.onboarding_gps_desc,
+                listOf(R.string.onboarding_gps_b1, R.string.onboarding_gps_b2, R.string.onboarding_gps_b3)),
+            SubFeature(Icons.Default.Map, R.string.onboarding_map_title, R.string.onboarding_map_desc,
+                listOf(R.string.onboarding_map_b1, R.string.onboarding_map_b2, R.string.onboarding_map_b3)),
+        ),
     ),
     OnboardingPage(
-        Icons.Default.Straighten,
-        R.string.onboarding_measure_title,
-        R.string.onboarding_measure_desc,
-        listOf(R.string.onboarding_measure_b1, R.string.onboarding_measure_b2, R.string.onboarding_measure_b3),
-        Color(0xFF00695C), PageCategory.INVENTORY
+        icon = Icons.Default.BarChart,
+        titleRes = R.string.onboarding_group_analyse_title,
+        descRes = R.string.onboarding_group_analyse_desc,
+        accentColor = Color(0xFFE65100),
+        category = PageCategory.ANALYSIS,
+        subFeatures = listOf(
+            SubFeature(Icons.Default.BarChart, R.string.onboarding_synthesis_title, R.string.onboarding_synthesis_desc,
+                listOf(R.string.onboarding_synthesis_b1, R.string.onboarding_synthesis_b2, R.string.onboarding_synthesis_b3)),
+            SubFeature(Icons.Default.Science, R.string.onboarding_marking_title, R.string.onboarding_marking_desc,
+                listOf(R.string.onboarding_marking_b1, R.string.onboarding_marking_b2, R.string.onboarding_marking_b3)),
+        ),
     ),
     OnboardingPage(
-        Icons.Default.Height,
-        R.string.onboarding_height_title,
-        R.string.onboarding_height_desc,
-        listOf(R.string.onboarding_height_b1, R.string.onboarding_height_b2, R.string.onboarding_height_b3),
-        Color(0xFF006064), PageCategory.INVENTORY
-    ),
-    OnboardingPage(
-        Icons.Default.GpsFixed,
-        R.string.onboarding_gps_title,
-        R.string.onboarding_gps_desc,
-        listOf(R.string.onboarding_gps_b1, R.string.onboarding_gps_b2, R.string.onboarding_gps_b3),
-        Color(0xFF0277BD), PageCategory.INVENTORY
-    ),
-    OnboardingPage(
-        Icons.Default.Map,
-        R.string.onboarding_map_title,
-        R.string.onboarding_map_desc,
-        listOf(R.string.onboarding_map_b1, R.string.onboarding_map_b2, R.string.onboarding_map_b3),
-        Color(0xFF1565C0), PageCategory.ANALYSIS
-    ),
-    OnboardingPage(
-        Icons.Default.BarChart,
-        R.string.onboarding_synthesis_title,
-        R.string.onboarding_synthesis_desc,
-        listOf(R.string.onboarding_synthesis_b1, R.string.onboarding_synthesis_b2, R.string.onboarding_synthesis_b3),
-        Color(0xFFE65100), PageCategory.ANALYSIS
-    ),
-    OnboardingPage(
-        Icons.Default.Science,
-        R.string.onboarding_marking_title,
-        R.string.onboarding_marking_desc,
-        listOf(R.string.onboarding_marking_b1, R.string.onboarding_marking_b2, R.string.onboarding_marking_b3),
-        Color(0xFFC62828), PageCategory.ANALYSIS
-    ),
-    OnboardingPage(
-        Icons.Default.Terrain,
-        R.string.onboarding_station_title,
-        R.string.onboarding_station_desc,
-        listOf(R.string.onboarding_station_b1, R.string.onboarding_station_b2, R.string.onboarding_station_b3),
-        Color(0xFF4E342E), PageCategory.ECOLOGY
-    ),
-    OnboardingPage(
-        Icons.Default.WbSunny,
-        R.string.onboarding_corr_title,
-        R.string.onboarding_corr_desc,
-        listOf(R.string.onboarding_corr_b1, R.string.onboarding_corr_b2, R.string.onboarding_corr_b3),
-        Color(0xFFEF6C00), PageCategory.ECOLOGY
-    ),
-    OnboardingPage(
-        Icons.Default.Eco,
-        R.string.onboarding_flora_title,
-        R.string.onboarding_flora_desc,
-        listOf(R.string.onboarding_flora_b1, R.string.onboarding_flora_b2, R.string.onboarding_flora_b3),
-        Color(0xFF2E7D32), PageCategory.ECOLOGY
-    ),
-    OnboardingPage(
-        Icons.Default.EmojiNature,
-        R.string.onboarding_ibp_title,
-        R.string.onboarding_ibp_desc,
-        listOf(R.string.onboarding_ibp_b1, R.string.onboarding_ibp_b2, R.string.onboarding_ibp_b3),
-        Color(0xFF1B5E20), PageCategory.ECOLOGY
+        icon = Icons.Default.Eco,
+        titleRes = R.string.onboarding_group_ecologie_title,
+        descRes = R.string.onboarding_group_ecologie_desc,
+        accentColor = Color(0xFF2E7D32),
+        category = PageCategory.ECOLOGY,
+        subFeatures = listOf(
+            SubFeature(Icons.Default.Terrain, R.string.onboarding_station_title, R.string.onboarding_station_desc,
+                listOf(R.string.onboarding_station_b1, R.string.onboarding_station_b2, R.string.onboarding_station_b3)),
+            SubFeature(Icons.Default.WbSunny, R.string.onboarding_corr_title, R.string.onboarding_corr_desc,
+                listOf(R.string.onboarding_corr_b1, R.string.onboarding_corr_b2, R.string.onboarding_corr_b3)),
+            SubFeature(Icons.Default.Eco, R.string.onboarding_flora_title, R.string.onboarding_flora_desc,
+                listOf(R.string.onboarding_flora_b1, R.string.onboarding_flora_b2, R.string.onboarding_flora_b3)),
+            SubFeature(Icons.Default.EmojiNature, R.string.onboarding_ibp_title, R.string.onboarding_ibp_desc,
+                listOf(R.string.onboarding_ibp_b1, R.string.onboarding_ibp_b2, R.string.onboarding_ibp_b3)),
+        ),
     ),
     OnboardingPage(
         Icons.Default.PictureAsPdf,
@@ -359,7 +359,9 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             text = if (last) stringResource(R.string.onboarding_accept)
                             else stringResource(R.string.onboarding_next),
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -479,10 +481,10 @@ private fun PageContent(page: OnboardingPage, pageOffset: Float = 0f) {
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        if (page.isHero) {
-            HeroWelcomeContent(page)
-        } else {
-            StandardPageContent(page)
+        when {
+            page.isHero -> HeroWelcomeContent(page)
+            page.subFeatures.isNotEmpty() -> GroupPageContent(page)
+            else -> StandardPageContent(page)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -501,7 +503,10 @@ private fun HeroWelcomeContent(page: OnboardingPage) {
     )
     Spacer(modifier = Modifier.height(4.dp))
     Text(
-        text = stringResource(page.titleRes).substringAfter(" "),
+        // Auparavant `stringResource(page.titleRes).substringAfter(" ")`, qui
+        // amputait le titre du premier mot et affichait « sur GeoSylva » sous
+        // « GeoSylva ». Le sous-titre est désormais une chaîne à part entière.
+        text = stringResource(R.string.onboarding_welcome_tagline),
         style = MaterialTheme.typography.headlineSmall,
         fontWeight = FontWeight.Medium,
         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
@@ -532,7 +537,7 @@ private fun HeroWelcomeContent(page: OnboardingPage) {
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
     ) {
         Text(
-            text = "Version 2.1 · Offline-first · CNPF",
+            text = stringResource(R.string.onboarding_version_info),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
@@ -580,6 +585,152 @@ private fun StandardPageContent(page: OnboardingPage) {
     if (page.bulletResIds.isNotEmpty()) {
         Spacer(modifier = Modifier.height(20.dp))
         FeatureCard(page = page)
+    }
+}
+
+// Page-groupe : titre + description du thème, puis les fonctionnalités
+// du groupe en cartes dépliables (voir [SubFeatureRow]) — remplace ce qui
+// était auparavant 2 à 5 pages "Suivant" par thème par une seule page où
+// on touche ce qui intéresse.
+@Composable
+private fun GroupPageContent(page: OnboardingPage) {
+    Text(
+        text = stringResource(page.titleRes),
+        style = MaterialTheme.typography.headlineMedium,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Center,
+        color = MaterialTheme.colorScheme.onBackground,
+        lineHeight = 34.sp
+    )
+    Spacer(modifier = Modifier.height(10.dp))
+    Text(
+        text = stringResource(page.descRes),
+        style = MaterialTheme.typography.bodyLarge,
+        textAlign = TextAlign.Center,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        lineHeight = 25.sp
+    )
+    Spacer(modifier = Modifier.height(20.dp))
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        page.subFeatures.forEach { feature ->
+            SubFeatureRow(feature = feature, accentColor = page.accentColor)
+        }
+    }
+    Spacer(modifier = Modifier.height(10.dp))
+    Text(
+        text = stringResource(R.string.onboarding_group_hint),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+        textAlign = TextAlign.Center
+    )
+}
+
+// Carte dépliable d'une fonctionnalité au sein d'une page-groupe. L'anim
+// est déclenchée par l'interaction (tap → déplier/replier), jamais par le
+// défilement ou le changement de page — même principe que le correctif
+// Explorer : une carte doit être immédiatement disponible, pas attendre
+// une animation d'apparition liée au geste qui l'amène à l'écran.
+@Composable
+private fun SubFeatureRow(feature: SubFeature, accentColor: Color) {
+    var expanded by rememberSaveable(feature.titleRes) { mutableStateOf(false) }
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = tween(220),
+        label = "chevronRotation"
+    )
+
+    Card(
+        onClick = { expanded = !expanded },
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, accentColor.copy(alpha = if (expanded) 0.4f else 0.18f))
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(accentColor.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = feature.icon,
+                        contentDescription = null,
+                        tint = accentColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(feature.titleRes),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    if (!expanded) {
+                        Text(
+                            text = stringResource(feature.descRes),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = Icons.Default.ExpandMore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .size(20.dp)
+                        .graphicsLayer { rotationZ = chevronRotation }
+                )
+            }
+            AnimatedVisibility(
+                visible = expanded,
+                enter = fadeIn(tween(180)) + expandVertically(tween(220)),
+                exit = fadeOut(tween(140)) + shrinkVertically(tween(180))
+            ) {
+                Column(modifier = Modifier.padding(top = 10.dp)) {
+                    Text(
+                        text = stringResource(feature.descRes),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 20.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    feature.bulletResIds.forEach { bulletRes ->
+                        Row(
+                            verticalAlignment = Alignment.Top,
+                            modifier = Modifier.padding(vertical = 3.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .padding(top = 7.dp, end = 8.dp)
+                                    .size(4.dp)
+                                    .clip(CircleShape)
+                                    .background(accentColor)
+                            )
+                            Text(
+                                text = stringResource(bulletRes),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                lineHeight = 18.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

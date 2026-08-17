@@ -1,7 +1,7 @@
 package com.forestry.counter.domain.diagnostic
 
 import android.content.Context
-import com.forestry.counter.data.local.entity.StationEnvironnementaleEntity
+import com.forestry.counter.domain.model.StationEnvironnementale
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -68,7 +68,7 @@ object DiagnosticTrainingDataExporter {
      */
     fun export(
         context: Context,
-        station: StationEnvironnementaleEntity?,
+        station: StationEnvironnementale?,
         peuplement: SylviculturalDiagnosticEngine.PeuplementIndicateurs,
         scores: List<EssenceSuitabilityScorer.SuitabilityScore>
     ) {

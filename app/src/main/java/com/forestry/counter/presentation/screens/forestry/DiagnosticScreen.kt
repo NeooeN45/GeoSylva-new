@@ -45,10 +45,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.forestry.counter.R
-import com.forestry.counter.data.local.entity.DiagnosticSylvicoleEntity
 import com.forestry.counter.domain.diagnostic.EssenceSuitabilityScorer
+import com.forestry.counter.domain.model.DiagnosticSylvicole
 import com.forestry.counter.domain.repository.DiagnosticSylvicoleRepository
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -62,7 +63,7 @@ fun DiagnosticScreen(
     diagnosticRepository: DiagnosticSylvicoleRepository,
     onNavigateBack: () -> Unit
 ) {
-    var diagnostic by remember { mutableStateOf<DiagnosticSylvicoleEntity?>(null) }
+    var diagnostic by remember { mutableStateOf<DiagnosticSylvicole?>(null) }
     var isLoading  by remember { mutableStateOf(true) }
 
     LaunchedEffect(diagnosticId) {
@@ -76,7 +77,7 @@ fun DiagnosticScreen(
                 title = { Text(stringResource(R.string.diag_results_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 }
             )
@@ -87,7 +88,7 @@ fun DiagnosticScreen(
                 CircularProgressIndicator()
             }
             diagnostic == null -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("Diagnostic introuvable", color = MaterialTheme.colorScheme.error)
+                Text(stringResource(R.string.diagscreen_not_found), color = MaterialTheme.colorScheme.error, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
             else -> {
                 val diag = diagnostic ?: return@Scaffold
@@ -99,7 +100,7 @@ fun DiagnosticScreen(
 
 @Composable
 private fun DiagnosticContent(
-    diag: DiagnosticSylvicoleEntity,
+    diag: DiagnosticSylvicole,
     paddingValues: androidx.compose.foundation.layout.PaddingValues
 ) {
     val json   = remember { Json { ignoreUnknownKeys = true } }
@@ -194,7 +195,7 @@ private fun ScoreGlobalCard(scoreGlobal: Int?, dateStr: String) {
 // Indicateurs peuplement
 // ──────────────────────────────────────────────────────────────────────────────
 @Composable
-private fun PeuplementIndicateursCard(diag: DiagnosticSylvicoleEntity) {
+private fun PeuplementIndicateursCard(diag: DiagnosticSylvicole) {
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -227,7 +228,7 @@ private fun IndicateurItem(label: String, value: String) {
 private fun EssencesRecommandeesCard(scores: List<Triple<String, Int, String>>) {
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Essences — adéquation station", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.diagscreen_essences_adequation), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             HorizontalDivider(thickness = 0.5.dp)
             scores.take(8).forEach { (code, score, classe) ->
                 EssenceScoreRow(code = code, score = score, classe = classe)
@@ -281,7 +282,7 @@ private fun RecommandationsCard(recommandations: List<String>) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Filled.Info, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp))
-                Text("Recommandations", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.diagscreen_recommendations), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
             }
             recommandations.forEach { rec ->
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -297,7 +298,7 @@ private fun RecommandationsCard(recommandations: List<String>) {
 // Scores station détaillés
 // ──────────────────────────────────────────────────────────────────────────────
 @Composable
-private fun StationScoresCard(diag: DiagnosticSylvicoleEntity) {
+private fun StationScoresCard(diag: DiagnosticSylvicole) {
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.diag_component_scores), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)

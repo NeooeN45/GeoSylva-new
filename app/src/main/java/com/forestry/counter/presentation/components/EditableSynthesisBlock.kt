@@ -262,7 +262,7 @@ private fun NoteBlock(
 //  Générateur de texte de synthèse automatique
 // ─────────────────────────────────────────────────────────────────────────────
 
-// TODO i18n: extraire vers strings.xml — buildAutoSynthesis et gradientHLabel/gradientTLabel
+// TODO(#3) i18n: extraire vers strings.xml — buildAutoSynthesis et gradientHLabel/gradientTLabel
 // sont des fonctions non-Composables générant du texte. Passer par un StringProvider.
 private fun buildAutoSynthesis(
     station: StationObservation,

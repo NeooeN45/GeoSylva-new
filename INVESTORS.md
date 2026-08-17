@@ -81,10 +81,11 @@ numérisation du secteur, pression réglementaire (documents de gestion durable)
 
 ## 5. Modèle économique
 
-**Double licence** :
+**Logiciel propriétaire** (voir [LICENSE](LICENSE)) — fork, redistribution et modification
+du code source interdits ; usage personnel et professionnel forestier autorisés.
 
-1. **Open source (AGPL-3.0)** — adoption, confiance, communauté, crédibilité technique.
-2. **Licence commerciale** — pour intégrations propriétaires, SaaS, services hébergés
+1. **Licence par défaut** — usage professionnel forestier direct, sans intégration tierce.
+2. **Licence commerciale** — pour intégrations tierces, SaaS, services hébergés
    (voir [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md)).
 
 **Pistes de revenus** :

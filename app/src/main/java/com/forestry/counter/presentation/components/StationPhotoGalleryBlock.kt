@@ -43,7 +43,7 @@ import java.io.InputStream
 //  Types photo
 // ─────────────────────────────────────────────────────────────────────────────
 
-// TODO i18n: extraire vers strings.xml — les libellés de PhotoCategory servent aussi
+// TODO(#3) i18n: extraire vers strings.xml — les libellés de PhotoCategory servent aussi
 // de clés de type persistées (photo.type), ne pas les renommer sans migration.
 enum class PhotoCategory(val label: String, val emoji: String, val color: Color) {
     SOL("Sol",            "🪨", Color(0xFF7D5A3C)),

@@ -455,6 +455,396 @@ object DatabaseMigrations {
     }
 
     /** Liste ordonnée de toutes les migrations pour Room.databaseBuilder */
+    val MIGRATION_32_33 = object : Migration(32, 33) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS parcel_sync_queue (
+                    accountId TEXT NOT NULL,
+                    parcelId TEXT NOT NULL,
+                    operation TEXT NOT NULL,
+                    operationId TEXT NOT NULL,
+                    state TEXT NOT NULL,
+                    serverVersion INTEGER,
+                    retryCount INTEGER NOT NULL,
+                    queuedAt INTEGER NOT NULL,
+                    lastAttemptAt INTEGER,
+                    lastSuccessAt INTEGER,
+                    nextAttemptAt INTEGER NOT NULL,
+                    lastErrorCode TEXT,
+                    PRIMARY KEY(accountId, parcelId)
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_parcel_sync_state_next " +
+                    "ON parcel_sync_queue(accountId, state, nextAttemptAt)"
+            )
+        }
+    }
+
+    /**
+     * Migration 33→34 — Contrat de données spec GeoSylva 3.0 (GEOSYLVA-003 §3.1).
+     *
+     * Ajoute les champs metadata normalisés sur les entités cœur métier :
+     *   - deletedAt   : soft delete (suppression logique traçable)
+     *   - auteur       : opérateur qui a créé/modifié la donnée
+     *   - source       : origine de la donnée (manual | import | sync | gps)
+     *   - version      : version de l'objet pour optimistic locking et historique
+     *
+     * Ces champs sont nullable pour préserver les données existantes
+     * (NULL = donnée pré-existing, non traçable mais non perdue).
+     * Les nouvelles écritures doivent les renseigner.
+     */
+    val MIGRATION_33_34 = object : Migration(33, 34) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // forets
+            addMetadataColumns(db, "forets")
+            // parcelles
+            addMetadataColumns(db, "parcelles")
+            // placettes
+            addMetadataColumns(db, "placettes")
+            // tiges
+            addMetadataColumns(db, "tiges")
+            // inventaire_sessions
+            addMetadataColumns(db, "inventaire_sessions")
+            // essences (référentiel — source utile)
+            addMetadataColumns(db, "essences")
+            // observations_flore
+            addMetadataColumns(db, "observations_flore")
+            // arbres_habitat
+            addMetadataColumns(db, "arbres_habitat")
+            // alertes_sanitaires
+            addMetadataColumns(db, "alertes_sanitaires")
+            // diagnostics_sylvicoles
+            addMetadataColumns(db, "diagnostics_sylvicoles")
+            // ripisylve_observation
+            addMetadataColumns(db, "ripisylve_observation")
+            // station_diagnostics
+            addMetadataColumns(db, "station_diagnostics")
+        }
+
+        private fun addMetadataColumns(db: SupportSQLiteDatabase, table: String) {
+            try { db.execSQL("ALTER TABLE $table ADD COLUMN deletedAt INTEGER") } catch (e: Throwable) { Log.w(TAG, "Migration ALTER TABLE ignorée (colonne déjà existante ?): ${e.message}") }
+            try { db.execSQL("ALTER TABLE $table ADD COLUMN auteur TEXT") } catch (e: Throwable) { Log.w(TAG, "Migration ALTER TABLE ignorée (colonne déjà existante ?): ${e.message}") }
+            try { db.execSQL("ALTER TABLE $table ADD COLUMN source TEXT") } catch (e: Throwable) { Log.w(TAG, "Migration ALTER TABLE ignorée (colonne déjà existante ?): ${e.message}") }
+            try { db.execSQL("ALTER TABLE $table ADD COLUMN version INTEGER NOT NULL DEFAULT 1") } catch (e: Throwable) { Log.w(TAG, "Migration ALTER TABLE ignorée (colonne déjà existante ?): ${e.message}") }
+        }
+    }
+
+    /**
+     * Migration 34→35 — Lot 1 : Contrat universel de données (GEOSYLVA-003 §7.6).
+     *
+     * 1. Ajoute la colonne `uuid` (TEXT, nullable) sur les entités cœur
+     *    existantes (forets, parcelles, placettes, tiges) pour l'interop GSIE.
+     *    Le backfill asynchrone est fait par [UuidBackfillWorker] (Sprint 2.3).
+     *
+     * 2. Ajoute les colonnes `provenance_*` sur forets et parcelles (spec §29.13).
+     *
+     * 3. Crée les nouvelles tables du contrat de données :
+     *    - permanent_trees : arbres permanents (identité stable, UUID)
+     *    - observations : observations d'arbres/peuplements (campagnes)
+     *    - measurements : mesures atomiques rattachées aux observations
+     *    - evidence : pièces jointes (photos, audio, docs, GPS)
+     *    - calculation_runs : résultats calculés (Method Registry — Lot 2)
+     *    - units : catalogue d'unités de mesure
+     *    - event_log : journal d'événements (base du Lot 5 sync)
+     *    - projects : projets/dossiers organisationnels (§29.11)
+     *    - project_forests : jonction N-N projets ↔ forêts
+     *
+     * Stratégie UUID : legacy_id + backfill asynchrone (décision Fondateur).
+     * L'ID existant (foretId, parcelleId, etc.) est conservé comme PK ;
+     * la colonne `uuid` est nullable puis backfillée par WorkManager.
+     */
+    val MIGRATION_34_35 = object : Migration(34, 35) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // 1. Colonne uuid sur les entités cœur existantes
+            addUuidColumn(db, "forets")
+            addUuidColumn(db, "parcelles")
+            addUuidColumn(db, "placettes")
+            addUuidColumn(db, "tiges")
+
+            // 2. Colonnes provenance sur forets et parcelles
+            addProvenanceColumns(db, "forets")
+            addProvenanceColumns(db, "parcelles")
+
+            // 3. Nouvelles tables
+            createPermanentTreesTable(db)
+            createObservationsTable(db)
+            createMeasurementsTable(db)
+            createEvidenceTable(db)
+            createCalculationRunsTable(db)
+            createUnitsTable(db)
+            createEventLogTable(db)
+            createProjectsTable(db)
+            createProjectForestsTable(db)
+        }
+
+        private fun addUuidColumn(db: SupportSQLiteDatabase, table: String) {
+            try {
+                db.execSQL("ALTER TABLE $table ADD COLUMN uuid TEXT")
+            } catch (e: Throwable) {
+                Log.w(TAG, "Migration ALTER TABLE $table.uuid ignorée (colonne déjà existante ?): ${e.message}")
+            }
+            try {
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_${table}_uuid ON $table(uuid)")
+            } catch (e: Throwable) {
+                Log.w(TAG, "Index uuid sur $table ignoré: ${e.message}")
+            }
+        }
+
+        private fun addProvenanceColumns(db: SupportSQLiteDatabase, table: String) {
+            try { db.execSQL("ALTER TABLE $table ADD COLUMN provenance_organism TEXT") } catch (e: Throwable) { Log.w(TAG, "provenance_organism sur $table: ${e.message}") }
+            try { db.execSQL("ALTER TABLE $table ADD COLUMN provenance_acquiredAt INTEGER") } catch (e: Throwable) { Log.w(TAG, "provenance_acquiredAt sur $table: ${e.message}") }
+            try { db.execSQL("ALTER TABLE $table ADD COLUMN provenance_license TEXT") } catch (e: Throwable) { Log.w(TAG, "provenance_license sur $table: ${e.message}") }
+            try { db.execSQL("ALTER TABLE $table ADD COLUMN provenance_precisionM REAL") } catch (e: Throwable) { Log.w(TAG, "provenance_precisionM sur $table: ${e.message}") }
+            try { db.execSQL("ALTER TABLE $table ADD COLUMN provenance_status TEXT") } catch (e: Throwable) { Log.w(TAG, "provenance_status sur $table: ${e.message}") }
+        }
+
+        private fun createPermanentTreesTable(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS permanent_trees (
+                    treeId TEXT NOT NULL PRIMARY KEY,
+                    uuid TEXT,
+                    parcelleOwnerId TEXT NOT NULL,
+                    placetteOwnerId TEXT,
+                    essenceCode TEXT NOT NULL,
+                    numeroArbre INTEGER,
+                    gpsWkt TEXT,
+                    precisionM REAL,
+                    altitudeM REAL,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL,
+                    deletedAt INTEGER,
+                    auteur TEXT,
+                    source TEXT,
+                    version INTEGER NOT NULL DEFAULT 1,
+                    FOREIGN KEY(parcelleOwnerId) REFERENCES parcelles(parcelleId) ON DELETE CASCADE,
+                    FOREIGN KEY(placetteOwnerId) REFERENCES placettes(placetteId) ON DELETE SET NULL,
+                    FOREIGN KEY(essenceCode) REFERENCES essences(code) ON DELETE RESTRICT
+                )
+            """.trimIndent())
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_permanent_trees_uuid ON permanent_trees(uuid)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_permanent_trees_parcelleOwnerId ON permanent_trees(parcelleOwnerId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_permanent_trees_placetteOwnerId ON permanent_trees(placetteOwnerId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_permanent_trees_essenceCode ON permanent_trees(essenceCode)")
+        }
+
+        private fun createObservationsTable(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS observations (
+                    observationId TEXT NOT NULL PRIMARY KEY,
+                    uuid TEXT,
+                    treeId TEXT,
+                    parcelleOwnerId TEXT NOT NULL,
+                    placetteOwnerId TEXT,
+                    targetType TEXT,
+                    targetId TEXT,
+                    protocol TEXT NOT NULL,
+                    observer TEXT,
+                    observedAt INTEGER NOT NULL,
+                    gpsWkt TEXT,
+                    precisionM REAL,
+                    note TEXT,
+                    provenance_organism TEXT,
+                    provenance_acquiredAt INTEGER,
+                    provenance_license TEXT,
+                    provenance_precisionM REAL,
+                    provenance_status TEXT,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL,
+                    deletedAt INTEGER,
+                    auteur TEXT,
+                    source TEXT,
+                    version INTEGER NOT NULL DEFAULT 1,
+                    FOREIGN KEY(treeId) REFERENCES permanent_trees(treeId) ON DELETE CASCADE,
+                    FOREIGN KEY(parcelleOwnerId) REFERENCES parcelles(parcelleId) ON DELETE CASCADE,
+                    FOREIGN KEY(placetteOwnerId) REFERENCES placettes(placetteId) ON DELETE SET NULL
+                )
+            """.trimIndent())
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_observations_uuid ON observations(uuid)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_observations_treeId ON observations(treeId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_observations_parcelleOwnerId ON observations(parcelleOwnerId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_observations_placetteOwnerId ON observations(placetteOwnerId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_observations_observedAt ON observations(observedAt)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_observations_protocol ON observations(protocol)")
+        }
+
+        private fun createMeasurementsTable(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS measurements (
+                    measurementId TEXT NOT NULL PRIMARY KEY,
+                    uuid TEXT,
+                    observationId TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    value REAL NOT NULL,
+                    unitCode TEXT NOT NULL,
+                    uncertainty REAL,
+                    method TEXT,
+                    heightM REAL,
+                    replacesMeasurementId TEXT,
+                    instrument TEXT,
+                    measuredAt INTEGER NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    deletedAt INTEGER,
+                    auteur TEXT,
+                    source TEXT,
+                    version INTEGER NOT NULL DEFAULT 1,
+                    FOREIGN KEY(observationId) REFERENCES observations(observationId) ON DELETE CASCADE
+                )
+            """.trimIndent())
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_measurements_uuid ON measurements(uuid)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_measurements_observationId ON measurements(observationId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_measurements_type ON measurements(type)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_measurements_replaces ON measurements(replacesMeasurementId)")
+        }
+
+        private fun createEvidenceTable(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS evidence (
+                    evidenceId TEXT NOT NULL PRIMARY KEY,
+                    uuid TEXT,
+                    observationId TEXT NOT NULL,
+                    measurementId TEXT,
+                    type TEXT NOT NULL,
+                    uri TEXT NOT NULL,
+                    sha256 TEXT,
+                    sizeBytes INTEGER,
+                    mimeType TEXT,
+                    caption TEXT,
+                    gpsWkt TEXT,
+                    capturedAt INTEGER NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    deletedAt INTEGER,
+                    auteur TEXT,
+                    source TEXT,
+                    version INTEGER NOT NULL DEFAULT 1,
+                    FOREIGN KEY(observationId) REFERENCES observations(observationId) ON DELETE CASCADE,
+                    FOREIGN KEY(measurementId) REFERENCES measurements(measurementId) ON DELETE CASCADE
+                )
+            """.trimIndent())
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_evidence_uuid ON evidence(uuid)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_evidence_observationId ON evidence(observationId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_evidence_measurementId ON evidence(measurementId)")
+        }
+
+        private fun createCalculationRunsTable(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS calculation_runs (
+                    runId TEXT NOT NULL PRIMARY KEY,
+                    uuid TEXT,
+                    observationId TEXT NOT NULL,
+                    method TEXT NOT NULL,
+                    methodVersion TEXT NOT NULL,
+                    inputMeasurementIds TEXT NOT NULL,
+                    outputs TEXT NOT NULL,
+                    uncertainty REAL,
+                    status TEXT NOT NULL,
+                    supersedesRunId TEXT,
+                    errorMessage TEXT,
+                    calculatedAt INTEGER NOT NULL,
+                    createdAt INTEGER NOT NULL,
+                    deletedAt INTEGER,
+                    auteur TEXT,
+                    source TEXT,
+                    version INTEGER NOT NULL DEFAULT 1,
+                    FOREIGN KEY(observationId) REFERENCES observations(observationId) ON DELETE CASCADE
+                )
+            """.trimIndent())
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_calculation_runs_uuid ON calculation_runs(uuid)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_calculation_runs_observationId ON calculation_runs(observationId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_calculation_runs_method ON calculation_runs(method)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_calculation_runs_status ON calculation_runs(status)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_calculation_runs_supersedes ON calculation_runs(supersedesRunId)")
+        }
+
+        private fun createUnitsTable(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS units (
+                    code TEXT NOT NULL PRIMARY KEY,
+                    symbol TEXT NOT NULL,
+                    nameFr TEXT NOT NULL,
+                    dimension TEXT NOT NULL,
+                    toBaseFactor REAL NOT NULL,
+                    baseUnitCode TEXT NOT NULL,
+                    description TEXT,
+                    version INTEGER NOT NULL DEFAULT 1
+                )
+            """.trimIndent())
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_units_code ON units(code)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_units_dimension ON units(dimension)")
+        }
+
+        private fun createEventLogTable(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS event_log (
+                    eventId TEXT NOT NULL PRIMARY KEY,
+                    eventType TEXT NOT NULL,
+                    entityType TEXT NOT NULL,
+                    entityId TEXT NOT NULL,
+                    entityUuid TEXT,
+                    payload TEXT,
+                    actor TEXT,
+                    occurredAt INTEGER NOT NULL,
+                    synced INTEGER NOT NULL DEFAULT 0,
+                    syncedAt INTEGER,
+                    version INTEGER NOT NULL DEFAULT 1
+                )
+            """.trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_event_log_entityType_entityId ON event_log(entityType, entityId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_event_log_eventType ON event_log(eventType)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_event_log_occurredAt ON event_log(occurredAt)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_event_log_synced ON event_log(synced)")
+        }
+
+        private fun createProjectsTable(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS projects (
+                    projectId TEXT NOT NULL PRIMARY KEY,
+                    uuid TEXT,
+                    name TEXT NOT NULL,
+                    color TEXT,
+                    territory TEXT,
+                    organization TEXT,
+                    status TEXT NOT NULL DEFAULT 'active',
+                    description TEXT,
+                    isFavorite INTEGER NOT NULL DEFAULT 0,
+                    provenance_organism TEXT,
+                    provenance_acquiredAt INTEGER,
+                    provenance_license TEXT,
+                    provenance_precisionM REAL,
+                    provenance_status TEXT,
+                    createdAt INTEGER NOT NULL,
+                    updatedAt INTEGER NOT NULL,
+                    deletedAt INTEGER,
+                    auteur TEXT,
+                    source TEXT,
+                    version INTEGER NOT NULL DEFAULT 1
+                )
+            """.trimIndent())
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_projects_uuid ON projects(uuid)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_projects_name ON projects(name)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_projects_territory ON projects(territory)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_projects_status ON projects(status)")
+        }
+
+        private fun createProjectForestsTable(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS project_forests (
+                    projectId TEXT NOT NULL,
+                    foretId TEXT NOT NULL,
+                    addedAt INTEGER NOT NULL,
+                    PRIMARY KEY(projectId, foretId),
+                    FOREIGN KEY(projectId) REFERENCES projects(projectId) ON DELETE CASCADE,
+                    FOREIGN KEY(foretId) REFERENCES forets(foretId) ON DELETE CASCADE
+                )
+            """.trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_project_forests_projectId ON project_forests(projectId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_project_forests_foretId ON project_forests(foretId)")
+        }
+    }
+
+    /** Liste ordonnée de toutes les migrations pour Room.databaseBuilder. */
     val ALL = arrayOf(
         MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
         MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
@@ -464,6 +854,9 @@ object DatabaseMigrations {
         com.forestry.counter.data.local.migration.MIGRATION_28_29,
         com.forestry.counter.data.local.migration.MIGRATION_29_30,
         com.forestry.counter.data.local.migration.MIGRATION_30_31,
-        com.forestry.counter.data.local.migration.MIGRATION_31_32
+        com.forestry.counter.data.local.migration.MIGRATION_31_32,
+        MIGRATION_32_33,
+        MIGRATION_33_34,
+        MIGRATION_34_35,
     )
 }

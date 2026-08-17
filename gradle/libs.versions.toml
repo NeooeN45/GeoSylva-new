@@ -1,4 +1,5 @@
 [versions]
+coil = "2.7.0"
 # Build tools
 agp = "8.2.2"
 kotlin = "1.9.23"
@@ -40,7 +41,12 @@ playServicesLocation = "21.3.0"
 blurview = "version-2.0.6"
 maplibre = "10.3.1"
 okhttp = "4.12.0"
+retrofit = "2.11.0"
+credentials = "1.5.0"
+googleId = "1.1.1"
 sqlcipher = "4.5.4"
+bouncycastle = "1.80"
+commonsCompress = "1.28.0"
 
 # Testing
 junit = "4.13.2"
@@ -50,6 +56,7 @@ androidxTestExtJunit = "1.1.5"
 espresso = "3.5.1"
 
 [libraries]
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 # Build tools
 agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar" }
@@ -110,10 +117,18 @@ play-services-location = { module = "com.google.android.gms:play-services-locati
 blurview = { module = "com.github.Dimezis:BlurView", version.ref = "blurview" }
 maplibre = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+retrofit-core = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+retrofit-kotlinx-serialization = { module = "com.squareup.retrofit2:converter-kotlinx-serialization", version.ref = "retrofit" }
+credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
+credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
+googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleId" }
 sqlcipher = { module = "net.zetetic:android-database-sqlcipher", version.ref = "sqlcipher" }
+bouncycastle-provider = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commonsCompress" }
 
 # Testing
 junit = { module = "junit:junit", version.ref = "junit" }
+mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-android = { module = "io.mockk:mockk-android", version.ref = "mockk" }
 arch-core-testing = { module = "androidx.arch.core:core-testing", version.ref = "archCoreTesting" }
@@ -163,6 +178,7 @@ testing = [
     "mockk",
     "kotlin-test",
     "arch-core-testing",
+    "mockwebserver",
 ]
 android-testing = [
     "androidx-test-ext-junit",
@@ -173,5 +189,6 @@ android-testing = [
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

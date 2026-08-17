@@ -30,4 +30,7 @@ interface IbpEvaluationDao {
 
     @Query("DELETE FROM ibp_evaluations WHERE placetteId = :placetteId")
     suspend fun deleteByPlacette(placetteId: String)
+
+    @Query("DELETE FROM ibp_evaluations")
+    suspend fun deleteAll()
 }

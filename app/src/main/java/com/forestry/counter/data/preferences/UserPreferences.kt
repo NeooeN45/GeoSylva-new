@@ -23,6 +23,8 @@ class UserPreferencesManager(private val context: Context) {
         // Theme preferences
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val ACCENT_COLOR = stringPreferencesKey("accent_color")
+        val CONTAINER_ACCENT_COLOR = stringPreferencesKey("container_accent_color")
+        val CARD_ACCENT_COLOR = stringPreferencesKey("card_accent_color")
         val BACKGROUND_TYPE = stringPreferencesKey("background_type")
         val BACKGROUND_IMAGE_ENABLED = booleanPreferencesKey("background_image_enabled")
         val BACKGROUND_IMAGE_URI = stringPreferencesKey("background_image_uri")
@@ -39,6 +41,7 @@ class UserPreferencesManager(private val context: Context) {
         val DYNAMIC_COLOR_ENABLED = booleanPreferencesKey("dynamic_color_enabled")
         val GLASS_BLUR_ENABLED = booleanPreferencesKey("glass_blur_enabled")
         val APP_LANGUAGE = stringPreferencesKey("app_language")
+        val LANGUAGE_SUGGESTION_ANSWERED = booleanPreferencesKey("language_suggestion_answered")
         val TILT_DEG = floatPreferencesKey("tilt_deg")
         val PRESS_SCALE = floatPreferencesKey("press_scale")
         val HALO_ALPHA = floatPreferencesKey("halo_alpha")
@@ -79,6 +82,24 @@ class UserPreferencesManager(private val context: Context) {
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         val IBP_ONBOARDING_SEEN = booleanPreferencesKey("ibp_onboarding_seen")
         val STATION_TUTORIAL_COMPLETED = booleanPreferencesKey("station_tutorial_completed")
+
+        // Métier de l'utilisateur — choisi juste après connexion, avant
+        // l'onboarding. Stocké localement (offline-first) ; PENDING_SYNC
+        // marque une valeur pas encore remontée au serveur GSIE, pour le
+        // jour où l'API d'identité exposera ce champ.
+        val USER_PROFESSION = stringPreferencesKey("user_profession")
+        val USER_PROFESSION_CUSTOM_TEXT = stringPreferencesKey("user_profession_custom_text")
+        val PROFESSION_SELECTION_COMPLETED = booleanPreferencesKey("profession_selection_completed")
+        val PROFESSION_PENDING_SYNC = booleanPreferencesKey("profession_pending_sync")
+
+        // Visite guidée (coachmarks) des 5 onglets principaux — se déclenche
+        // une fois, juste après la réponse aux autorisations GPS/caméra/
+        // galerie qui suivent l'onboarding.
+        val COACH_MARK_TOUR_PENDING = booleanPreferencesKey("coach_mark_tour_pending")
+        val COACH_MARK_TOUR_COMPLETED = booleanPreferencesKey("coach_mark_tour_completed")
+
+        // Options développeur locales — ne confèrent aucun rôle GSIE
+        val DEVELOPER_MODE_ENABLED = booleanPreferencesKey("developer_mode_enabled")
     }
 
     // IBP onboarding
@@ -101,12 +122,38 @@ class UserPreferencesManager(private val context: Context) {
     }
 
     val accentColor: Flow<String> = dataStore.data.map { prefs ->
-        prefs[ACCENT_COLOR] ?: "#4CAF50" // Default green
+        prefs[ACCENT_COLOR] ?: "#2D5F3F" // Vert forêt profond — couleur de marque GeoSylva
     }
 
     suspend fun setAccentColor(color: String) {
         dataStore.edit { prefs ->
             prefs[ACCENT_COLOR] = color
+        }
+    }
+
+    // Couleur des blocs mis en avant (ex. tuiles de statistiques) — distincte
+    // de l'accent des boutons/icônes (ACCENT_COLOR). `null` = dérivée du
+    // thème par défaut (PrimaryVariant / PrimaryVariantDark, Color.kt).
+    val containerAccentColor: Flow<String?> = dataStore.data.map { prefs ->
+        prefs[CONTAINER_ACCENT_COLOR]
+    }
+
+    suspend fun setContainerAccentColor(color: String?) {
+        dataStore.edit { prefs ->
+            if (color == null) prefs.remove(CONTAINER_ACCENT_COLOR) else prefs[CONTAINER_ACCENT_COLOR] = color
+        }
+    }
+
+    // Couleur des cartes et menus (surfaceContainerHigh) — le "verre foncé"
+    // signalé en thème sombre sur les lignes Thème/Langue/Taille de police
+    // de la page Apparence, entre autres. `null` = dérivée du thème.
+    val cardAccentColor: Flow<String?> = dataStore.data.map { prefs ->
+        prefs[CARD_ACCENT_COLOR]
+    }
+
+    suspend fun setCardAccentColor(color: String?) {
+        dataStore.edit { prefs ->
+            if (color == null) prefs.remove(CARD_ACCENT_COLOR) else prefs[CARD_ACCENT_COLOR] = color
         }
     }
 
@@ -182,7 +229,9 @@ class UserPreferencesManager(private val context: Context) {
     }
 
     val dynamicColorEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
-        prefs[DYNAMIC_COLOR_ENABLED] ?: true
+        // Désactivé par défaut : Material You dériverait la palette du fond
+        // d'écran de l'utilisateur et effacerait l'identité GeoSylva.
+        prefs[DYNAMIC_COLOR_ENABLED] ?: false
     }
 
     suspend fun setDynamicColorEnabled(enabled: Boolean) {
@@ -193,12 +242,33 @@ class UserPreferencesManager(private val context: Context) {
 
     // App language ("system", "fr", "en", ...)
     val appLanguage: Flow<String> = dataStore.data.map { prefs ->
-        prefs[APP_LANGUAGE] ?: "system"
+        // GeoSylva est une application française : le français s'applique par
+        // défaut, quel que soit le réglage de l'appareil. La traduction
+        // anglaise reste accessible via « Langue » dans les réglages, et le
+        // choix de l'utilisateur prime toujours sur ce défaut.
+        prefs[APP_LANGUAGE] ?: "fr"
     }
 
     suspend fun setAppLanguage(tag: String) {
         dataStore.edit { prefs ->
             prefs[APP_LANGUAGE] = tag
+        }
+    }
+
+    /**
+     * La suggestion de langue régionale (« votre téléphone est localisé en
+     * France, passer en français ? ») ne doit apparaître qu'une fois — que
+     * l'utilisateur accepte ou refuse. Ce drapeau est distinct de
+     * [appLanguage] : refuser la suggestion ne change pas la langue, mais ne
+     * doit plus jamais redéclencher la question.
+     */
+    val languageSuggestionAnswered: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[LANGUAGE_SUGGESTION_ANSWERED] ?: false
+    }
+
+    suspend fun setLanguageSuggestionAnswered(answered: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[LANGUAGE_SUGGESTION_ANSWERED] = answered
         }
     }
 
@@ -316,7 +386,11 @@ class UserPreferencesManager(private val context: Context) {
     }
 
     val mapLastLayerKey: Flow<String> = dataStore.data.map { prefs ->
-        prefs[MAP_LAST_LAYER_KEY] ?: "PLAN_IGN"
+        // Satellite Monde (ESRI, couverture mondiale, sans dépendance à une
+        // clé API) plutôt que Plan IGN (France uniquement) — un premier
+        // lancement sans position GPS encore connue ne doit jamais risquer
+        // de tomber hors de la couverture du fond de carte par défaut.
+        prefs[MAP_LAST_LAYER_KEY] ?: "SATELLITE"
     }
 
     suspend fun setMapLastLayerKey(layerKey: String) {
@@ -590,6 +664,91 @@ class UserPreferencesManager(private val context: Context) {
     suspend fun setOnboardingCompleted(completed: Boolean) {
         dataStore.edit { prefs ->
             prefs[ONBOARDING_COMPLETED] = completed
+        }
+    }
+
+    /**
+     * Termine l'onboarding et programme sa visite guidée dans une transaction
+     * unique. Aucun état intermédiaire « onboarding terminé sans visite » ne
+     * peut ainsi être observé si la composition ou le processus est interrompu.
+     */
+    suspend fun completeOnboardingAndScheduleCoachMarkTour() {
+        dataStore.edit { prefs ->
+            prefs[ONBOARDING_COMPLETED] = true
+            prefs[COACH_MARK_TOUR_PENDING] = true
+            prefs[COACH_MARK_TOUR_COMPLETED] = false
+        }
+    }
+
+    // ── Métier de l'utilisateur ──────────────────────────────────────────
+    // `userProfession` porte un code stable (ex. "forestier_onf") pour les
+    // choix de la liste prédéfinie, ou "autre" quand seul le texte libre
+    // est renseigné (`userProfessionCustomText`). `professionPendingSync`
+    // reste à `true` tant qu'aucun canal de synchronisation serveur
+    // n'existe côté GSIE — mis à `false` par ce futur appel, pas avant.
+
+    val userProfession: Flow<String?> = dataStore.data.map { prefs ->
+        prefs[USER_PROFESSION]
+    }
+
+    val userProfessionCustomText: Flow<String?> = dataStore.data.map { prefs ->
+        prefs[USER_PROFESSION_CUSTOM_TEXT]
+    }
+
+    val professionSelectionCompleted: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[PROFESSION_SELECTION_COMPLETED] ?: false
+    }
+
+    val professionPendingSync: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[PROFESSION_PENDING_SYNC] ?: false
+    }
+
+    suspend fun setUserProfession(code: String, customText: String? = null) {
+        dataStore.edit { prefs ->
+            prefs[USER_PROFESSION] = code
+            if (customText != null) {
+                prefs[USER_PROFESSION_CUSTOM_TEXT] = customText
+            } else {
+                prefs.remove(USER_PROFESSION_CUSTOM_TEXT)
+            }
+            prefs[PROFESSION_SELECTION_COMPLETED] = true
+            prefs[PROFESSION_PENDING_SYNC] = true
+        }
+    }
+
+    suspend fun setProfessionSelectionCompleted(completed: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[PROFESSION_SELECTION_COMPLETED] = completed
+        }
+    }
+
+    // ── Visite guidée (coachmarks) ───────────────────────────────────────
+    val coachMarkTourPending: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[COACH_MARK_TOUR_PENDING] ?: false
+    }
+
+    val coachMarkTourCompleted: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[COACH_MARK_TOUR_COMPLETED] ?: false
+    }
+
+    suspend fun setCoachMarkTourPending(pending: Boolean) {
+        dataStore.edit { prefs -> prefs[COACH_MARK_TOUR_PENDING] = pending }
+    }
+
+    suspend fun setCoachMarkTourCompleted(completed: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[COACH_MARK_TOUR_COMPLETED] = completed
+            prefs[COACH_MARK_TOUR_PENDING] = false
+        }
+    }
+
+    val developerModeEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[DEVELOPER_MODE_ENABLED] ?: false
+    }
+
+    suspend fun setDeveloperModeEnabled(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[DEVELOPER_MODE_ENABLED] = enabled
         }
     }
 }

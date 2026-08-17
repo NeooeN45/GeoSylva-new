@@ -1,14 +1,21 @@
 package com.forestry.counter.network
 
 import android.content.Context
+import com.forestry.counter.BuildConfig
 import io.mockk.mockk
-import okhttp3.OkHttpClient
+import okhttp3.Dns
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
+import java.net.UnknownHostException
 import org.junit.Before
 import org.junit.Test
 
 /**
  * Tests pour SecureHttpClient - Couverture des fonctionnalités de réseau sécurisé.
- * Vérifie le certificate pinning et la sécurité des connexions.
+ * Vérifie HTTPS, la résolution DNS publique, le refus des cibles SSRF et
+ * l'absence de pins statiques non maîtrisés sur les fournisseurs tiers.
  */
 class SecureHttpClientTest {
 
@@ -20,25 +27,13 @@ class SecureHttpClientTest {
     }
 
     @Test
-    fun `createSecureClient should return valid OkHttpClient`() {
-        // When
-        val client = SecureHttpClient.createSecureClient(context, enableLogging = false)
-
-        // Then
-        assert(client is OkHttpClient)
-        assert(client.connectTimeoutMillis == 30000) // 30 seconds
-        assert(client.readTimeoutMillis == 60000) // 60 seconds
-        assert(client.writeTimeoutMillis == 60000) // 60 seconds
-    }
-
-    @Test
-    fun `createSecureClient should enable logging in debug mode`() {
+    fun `createSecureClient should gate logging on build type`() {
         // When
         val client = SecureHttpClient.createSecureClient(context, enableLogging = true)
 
         // Then
-        assert(client is OkHttpClient)
-        // Should have logging interceptor when debug enabled
+        assertEquals(BuildConfig.DEBUG, client.interceptors.isNotEmpty())
+        assertTrue(client.networkInterceptors.isNotEmpty())
     }
 
     @Test
@@ -126,14 +121,12 @@ class SecureHttpClientTest {
     }
 
     @Test
-    fun `createSecureClient should have certificate pinning configured`() {
+    fun `createSecureClient should reject system DNS resolver`() {
         // When
         val client = SecureHttpClient.createSecureClient(context, enableLogging = false)
 
         // Then
-        assert(client is OkHttpClient)
-        // Certificate pinning should be configured (verified through internal structure)
-        // This is a basic test - actual pinning verification would require more complex setup
+        assertFalse(client.dns === Dns.SYSTEM)
     }
 
     @Test
@@ -154,5 +147,131 @@ class SecureHttpClientTest {
 
         // Then
         assert(client.retryOnConnectionFailure) { "Should retry on connection failure" }
+    }
+
+    @Test
+    fun `safe remote URL rejects local credentials and non https targets`() {
+        assertTrue(
+            SecureHttpClient.isSafeRemoteHttpsUrl("https://prices.example.org/feed.json")
+        )
+
+        listOf(
+            "http://prices.example.org/feed.json",
+            "https://localhost/feed.json",
+            "https://127.0.0.1/feed.json",
+            "https://10.0.0.1/feed.json",
+            "https://172.16.1.2/feed.json",
+            "https://192.168.1.2/feed.json",
+            "https://169.254.169.254/latest/meta-data",
+            "https://100.64.0.1/feed.json",
+            "https://192.0.2.1/feed.json",
+            "https://[::1]/feed.json",
+            "https://[fc00::1]/feed.json",
+            "https://[2001:db8::1]/feed.json",
+            "https://user:password@example.org/feed.json"
+        ).forEach { url ->
+            assertFalse("URL distante dangereuse acceptée : $url", SecureHttpClient.isSafeRemoteHttpsUrl(url))
+        }
+    }
+
+    @Test
+    fun `secure client DNS rejects non public addresses`() {
+        val client = SecureHttpClient.createSecureClient(context)
+
+        listOf(
+            "127.0.0.1",
+            "10.0.0.1",
+            "100.64.0.1",
+            "192.0.2.1",
+            "fc00::1",
+            "2001:db8::1"
+        ).forEach { address ->
+            try {
+                client.dns.lookup(address)
+                fail("Une adresse non publique ne doit jamais être résolue : $address")
+            } catch (_: UnknownHostException) {
+                // Protection SSRF attendue.
+            }
+        }
+    }
+
+    @Test
+    fun `secure domain requires https`() {
+        assertFalse(SecureHttpClient.isSecureDomain("http://data.geopf.fr/resource"))
+        assertTrue(SecureHttpClient.isSecureDomain("https://data.geopf.fr/resource"))
+    }
+
+    @Test
+    fun `local debug URL accepts only loopback and emulator aliases`() {
+        listOf(
+            "http://localhost:8000/",
+            "http://127.0.0.1:8000/",
+            "http://10.0.2.2:8000/"
+        ).forEach { url ->
+            assertTrue(url, SecureHttpClient.isSafeLocalDebugUrl(url))
+        }
+        listOf(
+            "http://192.168.1.10:8000/",
+            "http://10.0.0.5:8000/",
+            "https://127.0.0.1:8000/",
+            "http://user:password@127.0.0.1:8000/"
+        ).forEach { url ->
+            assertFalse(url, SecureHttpClient.isSafeLocalDebugUrl(url))
+        }
+    }
+
+    @Test
+    fun `local debug client uses system DNS only when explicitly enabled`() {
+        val client = SecureHttpClient.createSecureClient(context, allowLocalDebug = true)
+
+        assertTrue(client.dns === Dns.SYSTEM)
+    }
+
+    @Test
+    fun `secure client should not pin third party cartography domains`() {
+        val pinner = SecureHttpClient.buildCertificatePinner()
+
+        SecureHttpClient.SECURE_DOMAINS.forEach { domain ->
+            val pins = pinner.findMatchingPins(domain)
+            assertTrue(
+                "Un fournisseur tiers ne doit pas recevoir de pin statique : $domain",
+                pins.isEmpty()
+            )
+        }
+    }
+
+    @Test
+    fun `createSecureClient should rely on Android system trust`() {
+        val client = SecureHttpClient.createSecureClient(context, enableLogging = false)
+
+        SecureHttpClient.SECURE_DOMAINS.forEach { domain ->
+            assertTrue(
+                "Le client ne doit pas embarquer de pin tiers : $domain",
+                client.certificatePinner.findMatchingPins(domain).isEmpty()
+            )
+        }
+    }
+
+    @Test
+    fun `release network config should not contain placeholder pins`() {
+        val candidates = listOf(
+            java.io.File("src/main/res/xml/network_security_config.xml"),
+            java.io.File("app/src/main/res/xml/network_security_config.xml")
+        )
+        val config = requireNotNull(candidates.firstOrNull { it.isFile }) {
+            "network_security_config.xml introuvable depuis ${java.io.File(".").absolutePath}"
+        }
+        val xml = config.readText()
+
+        assertFalse("Le pin placeholder primaire ne doit jamais être livré", xml.contains("AAAA"))
+        assertFalse("Le pin placeholder de secours ne doit jamais être livré", xml.contains("BBBB"))
+        assertFalse("Aucun pin tiers statique ne doit être déclaré", xml.contains("<pin "))
+    }
+
+    @Test
+    fun `getSecurityStats should report certificate pinning disabled`() {
+        val stats = SecureTileService(context).getSecurityStats()
+
+        assertFalse("certificatePinningEnabled devrait être false", stats.certificatePinningEnabled)
     }
 }

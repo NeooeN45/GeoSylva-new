@@ -1,23 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
-    Configuration securite reseau :
-    - Cleartext (HTTP) interdit partout sauf localhost en debug
-    - Autorite de certification systeme uniquement (pas de CA utilisateur)
-    - Le certificate pinning est a activer avec les vrais hashes SHA-256
-      (voir SecureHttpClient.getCurrentCertificateHashes())
--->
-<network-security-config>
-    <!-- Toujours HTTPS, sauf localhost -->
-    <base-config cleartextTrafficPermitted="false">
-        <trust-anchors>
-            <certificates src="system"/>
-        </trust-anchors>
-    </base-config>
-
-    <!-- Localhost autorise en cleartext pour le debug local -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">localhost</domain>
-        <domain includeSubdomains="true">127.0.0.1</domain>
-        <domain includeSubdomains="true">10.0.2.2</domain>
-    </domain-config>
-</network-security-config>
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Production : HTTPS obligatoire et autorités de confiance Android uniquement.
+
+    Les fournisseurs cartographiques sont des tiers dont GeoSylva ne maîtrise
+    pas la rotation des certificats. Aucun pin statique n'est donc livré. Un
+    éventuel pinning futur sera réservé à une infrastructure Quintessences
+    maîtrisée et accompagné d'une clé de secours réelle.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>

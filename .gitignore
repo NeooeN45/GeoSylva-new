@@ -36,6 +36,9 @@ release_build.txt
 # Crash logs
 temp_crash_logs/
 *.txt
+# Exception : SHA256SUMS.txt du corpus d'interopérabilité capsule doit être
+# versionné (le test InteropFixturesTest vérifie son intégrité en CI).
+!capsule-verifier/src/test/resources/**/SHA256SUMS.txt
 
 # OS files
 .DS_Store
@@ -52,4 +55,13 @@ martelage_calcul/
 
 # Captures / generated
 *.hprof
+replay_pid*.log
+hs_err_pid*.log
+
+# Build outputs and local performance artifacts
+app/build/
+.gradle/
+**/mapping/
+**/reports/
 *.log
+gsie/

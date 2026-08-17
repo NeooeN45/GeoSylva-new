@@ -36,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.annotation.SuppressLint
@@ -48,7 +49,9 @@ import com.forestry.counter.R
 import com.forestry.counter.domain.model.*
 import com.forestry.counter.domain.repository.IbpRepository
 import com.forestry.counter.domain.repository.PlacetteRepository
+import com.forestry.counter.presentation.components.LoadingState
 import com.forestry.counter.domain.usecase.export.IbpPdfExporter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -94,7 +97,7 @@ fun IbpEvaluationScreen(
             save = { mapOf(key to safeJson.encodeToString(serializer, it)) },
             restore = { map -> runCatching {
             val raw = safeJson.decodeFromString(serializer, map[key] as String)
-            if (raw.schemaVersion < 2) raw.migrateToV2() else raw
+            if (raw.schemaVersion == IbpAnswers.SCHEMA_LEGACY_SIMPLIFIED) raw.migrateToV2() else raw
         }.getOrElse { IbpAnswers.new() } }
         )
     }
@@ -107,6 +110,12 @@ fun IbpEvaluationScreen(
     var gpsLat by rememberSaveable { mutableStateOf<Double?>(null) }
     var gpsLon by rememberSaveable { mutableStateOf<Double?>(null) }
     var initialized by rememberSaveable { mutableStateOf(false) }
+    var ibpLoading by remember { mutableStateOf(evaluationId != null) }
+    var draftEvaluationId by rememberSaveable {
+        mutableStateOf(evaluationId ?: UUID.randomUUID().toString())
+    }
+    val isReplacementDraft = evaluationId != null && draftEvaluationId != evaluationId
+    val isReadOnlyHistory = existing?.answers?.isCurrentMethod == false && !isReplacementDraft
 
     val growthConditions = runCatching { IbpGrowthConditions.valueOf(growthConditionsStr) }.getOrElse { IbpGrowthConditions.LOWLAND }
     val ibpMode = runCatching { IbpMode.valueOf(ibpModeStr) }.getOrElse { IbpMode.COMPLET }
@@ -140,15 +149,23 @@ fun IbpEvaluationScreen(
             val loc = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                 ?: lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
             if (loc != null) { gpsLat = loc.latitude; gpsLon = loc.longitude }
-        } catch (_: Exception) {}
+        } catch (e: Exception) { android.util.Log.w("IbpEval", "GPS capture failed", e) }
     }
 
     LaunchedEffect(Unit) { captureGps() }
+
+    LaunchedEffect(evaluationId) {
+        if (evaluationId != null) {
+            ibpRepository.getById(evaluationId).first()
+            ibpLoading = false
+        }
+    }
 
     var showResultDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showUnsavedDialog by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var showOverflowMenu by remember { mutableStateOf(false) }
 
     val ibpOnboardingSeen by remember(userPreferences) {
         userPreferences?.ibpOnboardingSeen ?: kotlinx.coroutines.flow.flowOf(true)
@@ -162,11 +179,11 @@ fun IbpEvaluationScreen(
         if (uri != null) {
             scope.launch {
                 val eval = IbpEvaluation(
-                    id = evaluationId ?: UUID.randomUUID().toString(),
+                    id = draftEvaluationId,
                     placetteId = placetteId,
                     parcelleId = parcelleId,
                     observationDate = observationDate,
-                    createdAt = System.currentTimeMillis(),
+                    createdAt = if (isReplacementDraft) System.currentTimeMillis() else existing?.createdAt ?: System.currentTimeMillis(),
                     updatedAt = System.currentTimeMillis(),
                     evaluatorName = evaluatorName,
                     answers = answers,
@@ -187,16 +204,24 @@ fun IbpEvaluationScreen(
         }
     }
 
+    fun startCurrentProtocolDraft() {
+        draftEvaluationId = UUID.randomUUID().toString()
+        answers = IbpAnswers.new()
+        globalNote = ""
+        observationDate = System.currentTimeMillis()
+        showDatePicker = false
+    }
+
     fun saveEvaluation() {
+        if (!answers.isCurrentMethod) return
         scope.launch {
-            val id = evaluationId ?: UUID.randomUUID().toString()
             val now = System.currentTimeMillis()
             val eval = IbpEvaluation(
-                id = id,
+                id = draftEvaluationId,
                 placetteId = placetteId,
                 parcelleId = parcelleId,
                 observationDate = observationDate,
-                createdAt = existing?.createdAt ?: now,
+                createdAt = if (isReplacementDraft) now else existing?.createdAt ?: now,
                 updatedAt = now,
                 evaluatorName = evaluatorName,
                 answers = answers,
@@ -206,9 +231,15 @@ fun IbpEvaluationScreen(
                 latitude = gpsLat,
                 longitude = gpsLon
             )
-            viewModel.saveEvaluation(eval)
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            snackbar.showSnackbar(context.getString(R.string.ibp_saved))
+            runCatching { viewModel.saveEvaluation(eval) }
+                .onSuccess {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    snackbar.showSnackbar(context.getString(R.string.ibp_saved))
+                    if (isReplacementDraft) onNavigateBack()
+                }
+                .onFailure {
+                    snackbar.showSnackbar(context.getString(R.string.ibp_save_error))
+                }
         }
     }
 
@@ -217,7 +248,7 @@ fun IbpEvaluationScreen(
     val savedNote = existing?.globalNote ?: ""
     val savedConditions = existing?.growthConditions ?: IbpGrowthConditions.LOWLAND
     val savedMode = existing?.ibpMode ?: IbpMode.COMPLET
-    val hasUnsavedChanges = initialized && (answers != savedAnswers || evaluatorName != savedName || globalNote != savedNote || growthConditions != savedConditions || ibpMode != savedMode)
+    val hasUnsavedChanges = !isReadOnlyHistory && initialized && (answers != savedAnswers || evaluatorName != savedName || globalNote != savedNote || growthConditions != savedConditions || ibpMode != savedMode)
 
     BackHandler(enabled = hasUnsavedChanges) { showUnsavedDialog = true }
 
@@ -226,6 +257,11 @@ fun IbpEvaluationScreen(
     val scoreB = answers.scoreB
     val level = IbpLevel.fromScore(scoreTotal)
     val levelColor = ibpLevelColor(level)
+
+    if (ibpLoading) {
+        LoadingState("Chargement de l'évaluation…")
+        return
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
@@ -239,25 +275,39 @@ fun IbpEvaluationScreen(
                 },
                 actions = {
                     IconButton(onClick = { onNavigateToReference?.invoke() }) {
-                        Icon(Icons.Default.MenuBook, contentDescription = "Guide IBP")
+                        Icon(Icons.Default.MenuBook, contentDescription = stringResource(R.string.cd_guide))
                     }
-                    if (answers.isComplete) {
-                        IconButton(onClick = { showResultDialog = true }) {
-                            Icon(Icons.Default.Assessment, contentDescription = stringResource(R.string.ibp_result))
+                    if (!isReadOnlyHistory) {
+                        IconButton(onClick = { saveEvaluation() }) {
+                            Icon(Icons.Default.Save, contentDescription = stringResource(R.string.cd_save))
                         }
                     }
-                    IconButton(onClick = {
-                        val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(observationDate))
-                        exportPdfLauncher.launch("IBP_${dateStr}.pdf")
-                    }) {
-                        Icon(Icons.Default.PictureAsPdf, contentDescription = stringResource(R.string.ibp_export_pdf))
-                    }
-                    IconButton(onClick = { saveEvaluation() }) {
-                        Icon(Icons.Default.Save, contentDescription = stringResource(R.string.save))
-                    }
-                    if (evaluationId != null) {
+                    if (evaluationId != null && !isReplacementDraft) {
                         IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.ibp_delete), tint = MaterialTheme.colorScheme.error)
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.cd_delete), tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                    Box {
+                        IconButton(onClick = { showOverflowMenu = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.cd_more))
+                        }
+                        DropdownMenu(expanded = showOverflowMenu, onDismissRequest = { showOverflowMenu = false }) {
+                            if (answers.isComplete) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.ibp_result)) },
+                                    leadingIcon = { Icon(Icons.Default.Assessment, contentDescription = "Résultat IBP") },
+                                    onClick = { showOverflowMenu = false; showResultDialog = true }
+                                )
+                            }
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.ibp_export_pdf)) },
+                                leadingIcon = { Icon(Icons.Default.PictureAsPdf, contentDescription = "Exporter en PDF") },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(observationDate))
+                                    exportPdfLauncher.launch("IBP_${dateStr}.pdf")
+                                }
+                            )
                         }
                     }
                 },
@@ -292,13 +342,22 @@ fun IbpEvaluationScreen(
                 observationDate = observationDate,
                 onDateClick = { showDatePicker = true },
                 growthConditions = growthConditions,
-                onGrowthConditionsChange = { growthConditionsStr = it.name }
+                onGrowthConditionsChange = { growthConditionsStr = it.name },
+                enabled = !isReadOnlyHistory
+            )
+
+            IbpMethodBanner(
+                answers = answers,
+                readOnly = isReadOnlyHistory,
+                onCreateCurrent = ::startCurrentProtocolDraft,
+                onOpenReference = onNavigateToReference
             )
 
             // ── Mode selector ────────────────────────────────────────
             IbpModeSelectorRow(
                 selectedMode = ibpMode,
-                onModeSelected = { ibpModeStr = it.name }
+                onModeSelected = { ibpModeStr = it.name },
+                enabled = !isReadOnlyHistory
             )
 
             // ── Group A ─────────────────────────────────────────────
@@ -319,6 +378,8 @@ fun IbpEvaluationScreen(
                         currentDetails = answers.getDetails(cid),
                         currentCounts = answers.counts,
                         growthConditions = growthConditions,
+                        schemaVersion = answers.schemaVersion,
+                        readOnly = isReadOnlyHistory,
                         onAnswer = { v -> answers = answers.set(cid, v) },
                         onDetailsChange = { items -> answers = answers.setDetails(cid, items) },
                         onCountChange = { key, v -> answers = answers.withCount(key, v) }
@@ -342,6 +403,8 @@ fun IbpEvaluationScreen(
                         currentDetails = answers.getDetails(cid),
                         currentCounts = answers.counts,
                         growthConditions = growthConditions,
+                        schemaVersion = answers.schemaVersion,
+                        readOnly = isReadOnlyHistory,
                         onAnswer = { v -> answers = answers.set(cid, v) },
                         onDetailsChange = { items -> answers = answers.setDetails(cid, items) },
                         onCountChange = { key, v -> answers = answers.withCount(key, v) }
@@ -357,7 +420,8 @@ fun IbpEvaluationScreen(
                     value = globalNote,
                     onValueChange = { globalNote = it },
                     modifier = Modifier.fillMaxWidth().heightIn(min = 88.dp),
-                    placeholder = { Text(stringResource(R.string.ibp_global_note_hint), style = MaterialTheme.typography.bodySmall) }
+                    placeholder = { Text(stringResource(R.string.ibp_global_note_hint), style = MaterialTheme.typography.bodySmall) },
+                    readOnly = isReadOnlyHistory
                 )
             }
 
@@ -527,7 +591,7 @@ private fun IbpScoreHeader(
                             color = levelColor,
                             modifier = Modifier.alignByBaseline()
                         )
-                        Text(" / 50", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.alignByBaseline())
+                        Text(stringResource(R.string.ibpeval_over_50), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.alignByBaseline())
                     }
                 }
                 Column(horizontalAlignment = Alignment.End) {
@@ -562,7 +626,7 @@ private fun ScorePill(label: String, score: Int, max: Int, color: Color) {
         Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(10.dp).clip(CircleShape).background(color))
             Spacer(Modifier.width(6.dp))
-            Text("$label : ${if (score >= 0) "$score" else "—"} / $max", style = MaterialTheme.typography.labelLarge, color = color, fontWeight = FontWeight.SemiBold)
+            Text("$label : ${if (score >= 0) "$score" else "—"} / $max", style = MaterialTheme.typography.labelLarge, color = color, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -633,13 +697,15 @@ private fun IbpMetaSection(
     observationDate: Long,
     onDateClick: () -> Unit = {},
     growthConditions: IbpGrowthConditions = IbpGrowthConditions.LOWLAND,
-    onGrowthConditionsChange: (IbpGrowthConditions) -> Unit = {}
+    onGrowthConditionsChange: (IbpGrowthConditions) -> Unit = {},
+    enabled: Boolean = true
 ) {
     val dateStr = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(observationDate))
     var conditionsExpanded by remember { mutableStateOf(false) }
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
+                enabled = enabled,
                 value = evaluatorName,
                 onValueChange = onEvaluatorChange,
                 modifier = Modifier.weight(1f),
@@ -647,7 +713,7 @@ private fun IbpMetaSection(
                 singleLine = true,
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(18.dp)) }
             )
-            Box(modifier = Modifier.width(140.dp).clickable { onDateClick() }) {
+            Box(modifier = Modifier.weight(1f).clickable(enabled = enabled) { onDateClick() }) {
                 OutlinedTextField(
                     value = dateStr,
                     onValueChange = {},
@@ -668,11 +734,12 @@ private fun IbpMetaSection(
         }
         ExposedDropdownMenuBox(
             expanded = conditionsExpanded,
-            onExpandedChange = { conditionsExpanded = it }
+            onExpandedChange = { if (enabled) conditionsExpanded = it }
         ) {
             OutlinedTextField(
                 value = ibpGrowthConditionsLabel(growthConditions),
                 onValueChange = {},
+                enabled = enabled,
                 readOnly = true,
                 label = { Text(stringResource(R.string.ibp_growth_conditions), style = MaterialTheme.typography.bodySmall) },
                 leadingIcon = { Icon(Icons.Default.Landscape, contentDescription = null, modifier = Modifier.size(18.dp)) },
@@ -717,6 +784,8 @@ private fun IbpCriterionCard(
     currentDetails: List<String>,
     currentCounts: Map<String, Float> = emptyMap(),
     growthConditions: IbpGrowthConditions,
+    schemaVersion: Int,
+    readOnly: Boolean = false,
     onAnswer: (Int) -> Unit,
     onDetailsChange: (List<String>) -> Unit,
     onCountChange: (String, Float) -> Unit = { _, _ -> }
@@ -757,8 +826,8 @@ private fun IbpCriterionCard(
                 }
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(ibpCriterionTitle(criterionId), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    Text(ibpCriterionSubtitle(criterionId), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(ibpCriterionTitle(criterionId), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(ibpCriterionSubtitle(criterionId), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 if (isAnswered) {
                     Surface(color = badgeColor, shape = CircleShape, modifier = Modifier.size(28.dp)) {
@@ -768,10 +837,10 @@ private fun IbpCriterionCard(
                     }
                     Spacer(Modifier.width(4.dp))
                 }
-                IconButton(onClick = { detailsExpanded = !detailsExpanded }, modifier = Modifier.size(32.dp)) {
+                IconButton(onClick = { detailsExpanded = !detailsExpanded }, modifier = Modifier.size(48.dp)) {
                     Icon(
                         if (detailsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = null, modifier = Modifier.size(20.dp),
+                        contentDescription = if (detailsExpanded) stringResource(R.string.cd_collapse) else stringResource(R.string.cd_expand), modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -782,7 +851,10 @@ private fun IbpCriterionCard(
                 Column(modifier = Modifier.padding(top = 12.dp)) {
                     HorizontalDivider(color = badgeColor.copy(alpha = .2f))
                     Spacer(Modifier.height(10.dp))
-                    when (criterionId) {
+                    if (readOnly) {
+                        IbpHistoryDetailsPanel(currentDetails)
+                    } else {
+                        when (criterionId) {
                         IbpCriterionId.E1 -> IbpSpeciesPanel(
                             selected = currentDetails, conditions = growthConditions
                         ) { items -> onDetailsChange(items); onAnswer(IbpCriterionData.scoreA(items, growthConditions)) }
@@ -829,18 +901,27 @@ private fun IbpCriterionCard(
                             onGbChange  = { v -> onCountChange(IbpCriterionData.KEY_GB_GB, v)
                                 onAnswer(IbpCriterionData.scoreEFromCounts(currentCounts[IbpCriterionData.KEY_GB_TGB] ?: 0f, v, growthConditions)) }
                         )
-                        IbpCriterionId.DMH -> IbpDmhActivePanel(
-                            selected = currentDetails,
-                            dmhCount = currentCounts[IbpCriterionData.KEY_DMH_N] ?: 0f,
-                            onDmhCountChange = { v -> onCountChange(IbpCriterionData.KEY_DMH_N, v)
-                                onAnswer(IbpCriterionData.scoreFFromCounts(v)) },
-                            onDetailsChange = onDetailsChange
+                        IbpCriterionId.DMH -> IbpDmhV32Panel(
+                            counts = currentCounts,
+                            onGroupCountChange = { key, raw ->
+                                val value = raw.takeIf { it.isFinite() }?.coerceAtLeast(0f) ?: 0f
+                                val updated = currentCounts + (key to value)
+                                onCountChange(key, value)
+                                onDetailsChange(
+                                    IbpCriterionData.dmhTypes.filterIndexed { index, _ ->
+                                        (updated[IbpCriterionData.dmhGroupKey(index)] ?: 0f) > 0f
+                                    }
+                                )
+                                onAnswer(IbpCriterionData.scoreFFromCounts(IbpCriterionData.dmhCappedTotal(updated)))
+                            }
                         )
                         IbpCriterionId.VS -> IbpOpenHabitatPanel(
                             pct = currentCounts[IbpCriterionData.KEY_VS_PCT] ?: 0f,
+                            growthConditions = growthConditions,
                             onPctChange = { v -> onCountChange(IbpCriterionData.KEY_VS_PCT, v)
-                                onAnswer(IbpCriterionData.scoreGFromPct(v)) }
+                                onAnswer(IbpCriterionData.scoreGFromPct(v, growthConditions)) }
                         )
+                    }
                     }
                     Spacer(Modifier.height(8.dp))
                     HorizontalDivider(color = badgeColor.copy(alpha = .2f))
@@ -850,15 +931,16 @@ private fun IbpCriterionCard(
 
             Spacer(Modifier.height(8.dp))
 
-            // ── Score selector (Larrieu & Gonin 2008: 0/2/5 only) ────
-            val scoreList = listOf(0, 2, 5)
+            // ── Score selector officiel IBP FR v3.2 : 0/1/2/5 ────
+            val scoreList = IbpAnswers.validScoresForSchema(schemaVersion).sorted()
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 scoreList.forEach { pts ->
                     IbpOptionRow(
                         score = pts,
                         label = ibpCriterionOptionLabel(criterionId, pts),
                         selected = currentValue == pts,
-                        onSelect = { onAnswer(pts) }
+                        onSelect = { onAnswer(pts) },
+                        enabled = !readOnly
                     )
                 }
             }
@@ -879,7 +961,7 @@ private fun IbpSpeciesPanel(
         Text(stringResource(R.string.ibp_native_species_genres), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
         Text(
             if (conditions == IbpGrowthConditions.SUBALPINE)
-                "Subalpin : ≥3 genres → 5 pts · 1–2 genres → 2 pts · 0 genre → 0 pt"
+                "Subalpin : ≥3 genres → 5 pts · 2 genres → 2 pts · 1 genre → 1 pt · 0 genre → 0 pt"
             else "≥5 genres → 5 pts · 3–4 genres → 2 pts · 2 genres → 1 pt · ≤1 genre → 0 pt",
             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -896,7 +978,7 @@ private fun IbpSpeciesPanel(
             ) {
                 Checkbox(checked = checked, onCheckedChange = null, modifier = Modifier.size(24.dp))
                 Spacer(Modifier.width(6.dp))
-                Text(species, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                Text(species, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
         if (selected.isNotEmpty()) {
@@ -935,7 +1017,7 @@ private fun IbpChecklistPanel(
             ) {
                 Checkbox(checked = checked, onCheckedChange = null, modifier = Modifier.size(24.dp))
                 Spacer(Modifier.width(6.dp))
-                Text(item, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                Text(item, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
         if (selected.isNotEmpty()) {
@@ -987,7 +1069,7 @@ private fun IbpRadioGuidePanel(title: String, items: List<String>, onSelect: (In
 }
 
 @Composable
-private fun IbpOptionRow(score: Int, label: String, selected: Boolean, onSelect: () -> Unit) {
+private fun IbpOptionRow(score: Int, label: String, selected: Boolean, enabled: Boolean = true, onSelect: () -> Unit) {
     val bgColor by animateColorAsState(
         if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
         label = "ibpOptionBg"
@@ -1002,7 +1084,7 @@ private fun IbpOptionRow(score: Int, label: String, selected: Boolean, onSelect:
             .clip(RoundedCornerShape(8.dp))
             .background(bgColor)
             .border(1.dp, borderColor, RoundedCornerShape(8.dp))
-            .clickable { onSelect() }
+            .clickable(enabled = enabled) { onSelect() }
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1028,7 +1110,9 @@ private fun IbpOptionRow(score: Int, label: String, selected: Boolean, onSelect:
             label,
             style = MaterialTheme.typography.bodySmall,
             color = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
         if (selected) {
             Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
@@ -1040,7 +1124,7 @@ private fun IbpOptionRow(score: Int, label: String, selected: Boolean, onSelect:
 @Composable
 private fun IbpResultCard(level: IbpLevel, scoreTotal: Int, scoreA: Int, scoreB: Int, levelColor: Color, answers: IbpAnswers) {
     val weakCriteria = IbpCriterionId.ALL
-        .filter { answers.get(it) in listOf(0, 2) }
+        .filter { answers.get(it) in listOf(0, 1, 2) }
         .sortedBy { answers.get(it) }
         .take(3)
     Card(
@@ -1082,7 +1166,7 @@ private fun IbpResultCard(level: IbpLevel, scoreTotal: Int, scoreA: Int, scoreB:
                             Text("${cid.code} $sc/5", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = ibpLevelColor(IbpLevel.fromScore(sc)), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
                         }
                         Spacer(Modifier.width(6.dp))
-                        Text(ibpCriterionTip(cid), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        Text(ibpCriterionTip(cid), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
@@ -1265,7 +1349,7 @@ fun IbpMartelageCard(
                 }
                 if (evaluationCount >= 2 && onNavigateToHistory != null && parcelleId != null) {
                     TextButton(onClick = { onNavigateToHistory(parcelleId, placetteId) }) {
-                        Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Default.History, contentDescription = "Historique", modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
                         Text(stringResource(R.string.ibp_history_title), style = MaterialTheme.typography.labelSmall)
                     }
@@ -1341,21 +1425,24 @@ fun IbpContextVsPeuplementChart(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("IBP Contexte vs Peuplement & Gestion",
-                style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.ibpeval_context_vs_peuplement),
+                style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(bottom = 8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(10.dp).clip(CircleShape).background(colorA))
                 Spacer(Modifier.width(4.dp))
-                Text("Peuplement A–G : ${if (scoreA >= 0) "$scoreA/35" else "—"}",
-                    style = MaterialTheme.typography.labelSmall, color = colorA)
+                Text(stringResource(R.string.ibpeval_peuplement_ag, if (scoreA >= 0) "$scoreA/35" else "—"),
+                    style = MaterialTheme.typography.labelSmall, color = colorA,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(10.dp).clip(CircleShape).background(colorB))
                 Spacer(Modifier.width(4.dp))
-                Text("Contexte H–J : ${if (scoreB >= 0) "$scoreB/15" else "—"}",
-                    style = MaterialTheme.typography.labelSmall, color = colorB)
+                Text(stringResource(R.string.ibpeval_contexte_hj, if (scoreB >= 0) "$scoreB/15" else "—"),
+                    style = MaterialTheme.typography.labelSmall, color = colorB,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
 
@@ -1423,8 +1510,9 @@ fun IbpContextVsPeuplementChart(
             }
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-            Text("← Peuplement et Gestion (A–G) / 35 →",
-                style = MaterialTheme.typography.labelSmall, color = colorA)
+            Text(stringResource(R.string.ibpeval_peuplement_axis),
+                style = MaterialTheme.typography.labelSmall, color = colorA,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
@@ -1495,7 +1583,8 @@ fun IbpRadarChart(
 @Composable
 private fun IbpModeSelectorRow(
     selectedMode: IbpMode,
-    onModeSelected: (IbpMode) -> Unit
+    onModeSelected: (IbpMode) -> Unit,
+    enabled: Boolean = true
 ) {
     val modes = IbpMode.values()
     val modeLabels = mapOf(
@@ -1523,10 +1612,11 @@ private fun IbpModeSelectorRow(
                 FilterChip(
                     selected = selected,
                     onClick = { onModeSelected(mode) },
+                    enabled = enabled,
                     label = { Text(modeLabels[mode] ?: mode.name, style = MaterialTheme.typography.labelSmall) },
                     leadingIcon = {
                         modeIcons[mode]?.let { iv ->
-                            Icon(iv, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(iv, contentDescription = stringResource(R.string.cd_filter), modifier = Modifier.size(16.dp))
                         }
                     }
                 )
@@ -1543,14 +1633,14 @@ private fun IbpDeadwoodCountPanel(
     onBmgChange: (Float) -> Unit,
     onBmmChange: (Float) -> Unit
 ) {
-    val autoScore = if (bmgValue >= 3f) 5 else if (bmgValue >= 1f || bmmValue >= 1f) 2 else 0
+    val autoScore = IbpCriterionData.scoreCFromCounts(bmgValue, bmmValue)
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(stringResource(R.string.ibp_field_counting), style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
         IbpCountField(label = labelBmg, hint = "ex: 3.0", value = bmgValue, onChange = onBmgChange,
             badge = if (bmgValue >= 3f) "→ 5 pts" else if (bmgValue >= 1f) "→ 2 pts" else null)
         IbpCountField(label = labelBmm, hint = "ex: 1.0", value = bmmValue, onChange = onBmmChange,
-            badge = if (bmgValue < 1f && bmmValue >= 1f) "→ 2 pts" else null)
+            badge = if (bmgValue < 1f && bmgValue + bmmValue >= 1f) "→ 1 pt" else null)
         IbpAutoScoreBadge(autoScore)
         Text(stringResource(R.string.ibp_bmg_help),
             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1566,60 +1656,27 @@ private fun IbpBigTreeCountPanel(
     onGbChange: (Float) -> Unit
 ) {
     val autoScore = IbpCriterionData.scoreEFromCounts(tgbValue, gbValue, conditions)
-    val tgbLabel = if (conditions == IbpGrowthConditions.SUBALPINE) "TGB (∅>47.5 cm) /ha" else "TGB (∅>67.5 cm) /ha"
-    val gbLabel  = if (conditions == IbpGrowthConditions.SUBALPINE) "GB (∅ 27.5–47.5 cm) /ha" else "GB (∅ 47.5–67.5 cm) /ha"
+    val tgbLabel = if (conditions == IbpGrowthConditions.SUBALPINE) stringResource(R.string.ibpeval_tgb_subalpine) else stringResource(R.string.ibpeval_tgb_default)
+    val gbLabel  = if (conditions == IbpGrowthConditions.SUBALPINE) stringResource(R.string.ibpeval_gb_subalpine) else stringResource(R.string.ibpeval_gb_default)
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Comptage terrain – arbres vivants (arbres/ha)", style = MaterialTheme.typography.labelMedium,
+        Text(stringResource(R.string.ibpeval_big_tree_count_title), style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
-        IbpCountField(label = tgbLabel, hint = "ex: 5.0", value = tgbValue, onChange = onTgbChange,
-            badge = if (tgbValue >= 5f) "→ 5 pts" else if (tgbValue >= 1f) "→ 2 pts" else null)
-        IbpCountField(label = gbLabel, hint = "ex: 2.0", value = gbValue, onChange = onGbChange,
-            badge = if (tgbValue < 1f && gbValue >= 1f) "→ 2 pts" else null)
+        IbpCountField(label = tgbLabel, hint = stringResource(R.string.ibpeval_hint_example), value = tgbValue, onChange = onTgbChange,
+            badge = if (tgbValue >= 5f) stringResource(R.string.ibpeval_badge_5_pts) else if (tgbValue >= 1f) stringResource(R.string.ibpeval_badge_2_pts) else null)
+        IbpCountField(label = gbLabel, hint = stringResource(R.string.ibpeval_hint_example), value = gbValue, onChange = onGbChange,
+            badge = if (tgbValue < 1f && tgbValue + gbValue >= 1f) stringResource(R.string.ibpeval_badge_1_pt) else null)
         IbpAutoScoreBadge(autoScore)
-    }
-}
-
-/* ─────────────── DMH Active Panel (F) ──────────────────────────── */
-@Composable
-private fun IbpDmhActivePanel(
-    selected: List<String>,
-    dmhCount: Float,
-    onDmhCountChange: (Float) -> Unit,
-    onDetailsChange: (List<String>) -> Unit
-) {
-    val autoScore = IbpCriterionData.scoreFFromCounts(dmhCount)
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        IbpCountField(
-            label = "Arbres porteurs de ≥1 dmh (arbres/ha)",
-            hint = "ex: 5.0",
-            value = dmhCount,
-            onChange = onDmhCountChange,
-            badge = if (dmhCount >= 5f) "→ 5 pts" else if (dmhCount >= 2f) "→ 2 pts" else "→ 0 pt"
-        )
-        IbpAutoScoreBadge(autoScore)
-        HorizontalDivider()
-        Text(stringResource(R.string.ibp_dmh_types_observed), style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
-        IbpCriterionData.dmhTypes.forEach { dmh ->
-            val checked = dmh in selected
-            Row(
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp))
-                    .clickable { onDetailsChange(if (checked) selected - dmh else selected + dmh) }
-                    .padding(vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Checkbox(checked = checked, onCheckedChange = null, modifier = Modifier.size(22.dp))
-                Spacer(Modifier.width(6.dp))
-                Text(dmh, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-            }
-        }
     }
 }
 
 /* ─────────────── Open Habitat Panel (G) ────────────────────────── */
 @Composable
-private fun IbpOpenHabitatPanel(pct: Float, onPctChange: (Float) -> Unit) {
-    val autoScore = IbpCriterionData.scoreGFromPct(pct)
+private fun IbpOpenHabitatPanel(
+    pct: Float,
+    growthConditions: IbpGrowthConditions,
+    onPctChange: (Float) -> Unit
+) {
+    val autoScore = IbpCriterionData.scoreGFromPct(pct, growthConditions)
     val sliderPct = pct.coerceIn(0f, 100f)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.ibp_open_habitat_surface),
@@ -1639,17 +1696,19 @@ private fun IbpOpenHabitatPanel(pct: Float, onPctChange: (Float) -> Unit) {
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            val zones = listOf("0%" to Color(0xFFC62828), "<1% ou >5%" to Color(0xFFE65100), "1–5%" to Color(0xFF2E7D32))
+            val zones = listOf(stringResource(R.string.ibpeval_zone_0) to Color(0xFFC62828), stringResource(R.string.ibpeval_zone_low) to Color(0xFFE65100), stringResource(R.string.ibpeval_zone_optimal) to Color(0xFF2E7D32))
             zones.forEach { (label, color) ->
                 Surface(color = color.copy(alpha = .12f), shape = RoundedCornerShape(12.dp)) {
                     Text(label, style = MaterialTheme.typography.labelSmall, color = color,
-                        fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                        fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
         IbpAutoScoreBadge(autoScore)
-        Text("Seuil optimal : 1–5 % → 5 pts | >0 % → 2 pts | 0 % → 0 pt",
-            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.ibpeval_open_habitat_threshold),
+            style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -1690,7 +1749,7 @@ private fun IbpCountField(
 /* ─────────────── Auto-score badge ──────────────────────────────── */
 @Composable
 private fun IbpAutoScoreBadge(score: Int) {
-    val color = when (score) { 5 -> Color(0xFF2E7D32); 2 -> Color(0xFFF9A825); else -> Color(0xFFC62828) }
+    val color = when (score) { 5 -> Color(0xFF2E7D32); 2 -> Color(0xFFF9A825); 1 -> Color(0xFFE65100); else -> Color(0xFFC62828) }
     Surface(color = color.copy(alpha = .12f), shape = RoundedCornerShape(10.dp)) {
         Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {

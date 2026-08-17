@@ -1,13 +1,13 @@
 package com.forestry.counter.domain.repository
 
-import com.forestry.counter.data.local.entity.DiagnosticSylvicoleEntity
+import com.forestry.counter.domain.model.DiagnosticSylvicole
 import kotlinx.coroutines.flow.Flow
 
 interface DiagnosticSylvicoleRepository {
-    fun getByParcelle(parcelleId: String): Flow<List<DiagnosticSylvicoleEntity>>
-    suspend fun getLatestByParcelle(parcelleId: String): DiagnosticSylvicoleEntity?
-    suspend fun getById(id: String): DiagnosticSylvicoleEntity?
-    suspend fun insert(diagnostic: DiagnosticSylvicoleEntity)
-    suspend fun update(diagnostic: DiagnosticSylvicoleEntity)
+    fun getByParcelle(parcelleId: String): Flow<List<DiagnosticSylvicole>>
+    suspend fun getLatestByParcelle(parcelleId: String): DiagnosticSylvicole?
+    suspend fun getById(id: String): DiagnosticSylvicole?
+    suspend fun insert(diagnostic: DiagnosticSylvicole)
+    suspend fun update(diagnostic: DiagnosticSylvicole)
     suspend fun deleteById(id: String)
 }

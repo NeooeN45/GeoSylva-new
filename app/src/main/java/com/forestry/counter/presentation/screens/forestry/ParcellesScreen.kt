@@ -41,6 +41,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import android.widget.ImageView
@@ -51,7 +52,9 @@ import com.forestry.counter.domain.repository.PlacetteRepository
 import com.forestry.counter.domain.repository.TigeRepository
 import com.forestry.counter.data.preferences.UserPreferencesManager
 import com.forestry.counter.presentation.components.AppMiniDialog
+import com.forestry.counter.presentation.components.LoadingState
 import com.forestry.counter.presentation.components.TipCard
+import com.forestry.counter.presentation.utils.localizeDefaultName
 import com.forestry.counter.presentation.utils.rememberHapticFeedback
 import com.forestry.counter.presentation.utils.rememberSoundFeedback
 import com.forestry.counter.presentation.utils.StaggerEntrance
@@ -76,14 +79,16 @@ fun ParcellesScreen(
     onNavigateToMartelage: ((String) -> Unit)? = null,
     onNavigateToMap: (() -> Unit)? = null,
     onNavigateToDiagnostic: ((String) -> Unit)? = null,
-    onNavigateToIbp: ((String) -> Unit)? = null
+    onNavigateToIbp: ((String) -> Unit)? = null,
+    onNavigateToCreateParcelle: ((String) -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
-    val parcelles by (
+    val parcellesState by (
         if (forestId != null) parcelleRepository.getParcellesByForest(forestId) else parcelleRepository.getAllParcelles()
-    ).collectAsStateWithLifecycle(initialValue = emptyList())
+    ).collectAsStateWithLifecycle(initialValue = null)
+    val parcelles = parcellesState ?: emptyList<Parcelle>()
 
     var editParcelle by remember { mutableStateOf<Parcelle?>(null) }
     var deleteParcelle by remember { mutableStateOf<Parcelle?>(null) }
@@ -153,6 +158,11 @@ fun ParcellesScreen(
         }
     }
 
+    if (parcellesState == null) {
+        LoadingState("Chargement des parcelles…")
+        return
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         if (backgroundImageEnabled) {
             val uriString = backgroundImageUri
@@ -183,7 +193,28 @@ fun ParcellesScreen(
             snackbarHost = { SnackbarHost(hostState = snackbar) },
             topBar = {
                 TopAppBar(
-                    title = { Text(stringResource(R.string.parcelles_title)) },
+                    title = {
+                        Column {
+                            Text(
+                                stringResource(R.string.parcelles_title),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                            val subtitle = group?.name?.takeIf { it.isNotBlank() }
+                                ?: stringResource(R.string.parcelles_count_format, parcelles.size)
+                            val full = if (group?.name?.isNotBlank() == true) {
+                                "$subtitle · ${stringResource(R.string.parcelles_count_format, parcelles.size)}"
+                            } else subtitle
+                            Text(
+                                full,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    },
                     navigationIcon = {
                         if (onNavigateBack != null) {
                             IconButton(onClick = {
@@ -215,20 +246,23 @@ fun ParcellesScreen(
                                 playClickFeedback()
                                 onNavigateToMartelage(forestId)
                             }) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Straighten, contentDescription = stringResource(R.string.cd_straighten))
-                                    Spacer(modifier = Modifier.width(2.dp))
-                                    Icon(Icons.Default.Description, contentDescription = stringResource(R.string.martelage))
-                                }
+                                Icon(Icons.Default.Straighten, contentDescription = stringResource(R.string.martelage))
                             }
                         }
                     }
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(onClick = {
-                    addParcelle()
-                }) {
+                FloatingActionButton(
+                    onClick = {
+                        if (onNavigateToCreateParcelle != null && forestId != null) {
+                            onNavigateToCreateParcelle(forestId)
+                        } else {
+                            addParcelle()
+                        }
+                    },
+                    modifier = Modifier.offset(x = 8.dp),
+                ) {
                     Icon(Icons.Default.Add, contentDescription = stringResource(R.string.create_parcelle))
                 }
             },
@@ -628,7 +662,7 @@ private fun ParcelleCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         ListItem(
-            headlineContent = { Text(parcelle.name) },
+            headlineContent = { Text(localizeDefaultName(parcelle.name)) },
             supportingContent = {
                 val surfaceHa = parcelle.surfaceHa
                 if (surfaceHa != null && surfaceHa > 0.0) {
@@ -638,7 +672,7 @@ private fun ParcelleCard(
             trailingContent = {
                 Row {
                     IconButton(onClick = onEdit) {
-                        Icon(Icons.Default.Edit, contentDescription = null)
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.cd_edit))
                     }
                     IconButton(onClick = onDelete) {
                         Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete_parcelle))
@@ -654,14 +688,14 @@ private fun ParcelleCard(
                             if (onNavigateToIbp != null) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.parcelles_menu_ibp_biodiversity)) },
-                                    leadingIcon = { Icon(Icons.Default.EmojiNature, contentDescription = null) },
+                                    leadingIcon = { Icon(Icons.Default.EmojiNature, contentDescription = "IBP Biodiversité") },
                                     onClick = { menuExpanded = false; onNavigateToIbp() }
                                 )
                             }
                             if (onNavigateToDiagnostic != null) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.parcelles_menu_sylvicultural_diagnostic)) },
-                                    leadingIcon = { Icon(Icons.Default.Science, contentDescription = null) },
+                                    leadingIcon = { Icon(Icons.Default.Science, contentDescription = "Diagnostic sylvicole") },
                                     onClick = { menuExpanded = false; onNavigateToDiagnostic() }
                                 )
                             }

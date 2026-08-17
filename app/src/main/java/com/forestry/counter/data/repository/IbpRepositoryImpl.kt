@@ -15,8 +15,9 @@ private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 private val answersSerializer = IbpAnswers.serializer()
 
 private fun IbpEvaluationEntity.toDomain(): IbpEvaluation {
-    val rawAnswers = runCatching { json.decodeFromString(answersSerializer, answersJson) }.getOrElse { IbpAnswers.new() }
-    val answers = if (rawAnswers.schemaVersion < 2) rawAnswers.migrateToV2() else rawAnswers
+    val rawAnswers = runCatching { json.decodeFromString(answersSerializer, answersJson) }
+        .getOrElse { IbpAnswers.unreadableHistory() }
+    val answers = if (rawAnswers.schemaVersion == IbpAnswers.SCHEMA_LEGACY_SIMPLIFIED) rawAnswers.migrateToV2() else rawAnswers
     val conditions = runCatching { IbpGrowthConditions.valueOf(growthConditions) }.getOrElse { IbpGrowthConditions.LOWLAND }
     val mode = runCatching { IbpMode.valueOf(ibpMode) }.getOrElse { IbpMode.COMPLET }
     return IbpEvaluation(
@@ -66,6 +67,9 @@ class IbpRepositoryImpl(private val dao: IbpEvaluationDao) : IbpRepository {
         dao.getAll().map { list -> list.map { it.toDomain() } }
 
     override suspend fun save(evaluation: IbpEvaluation) {
+        require(evaluation.answers.isCurrentMethod) {
+            "Une evaluation historique IBP ne peut pas etre modifiee. Creer une evaluation v3.2 distincte."
+        }
         dao.upsert(evaluation.toEntity())
     }
 

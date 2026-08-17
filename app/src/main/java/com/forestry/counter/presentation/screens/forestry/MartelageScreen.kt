@@ -107,6 +107,8 @@ import com.forestry.counter.presentation.utils.rememberSoundFeedback
 import com.forestry.counter.presentation.utils.ColorUtils
 import com.forestry.counter.domain.calculation.PriceCalculator
 import com.forestry.counter.domain.calculation.ProductBreakdownRow
+import com.forestry.counter.domain.calculation.EssenceAliases
+import com.forestry.counter.domain.calculation.pricing.FrenchRegion
 import kotlinx.coroutines.launch
 import com.forestry.counter.domain.model.ClimateZone
 import com.forestry.counter.domain.usecase.fertility.FertilityClassifier
@@ -621,6 +623,12 @@ fun MartelageScreen(
         gHaAvant
     ) {
         value = if (surfaceM2 != null && surfaceM2 > 0.0) {
+            // Région administrative déduite du code commune de la parcelle → le coefficient
+            // régional est appliqué dans le revenu AUTORITAIRE (et plus seulement à l'affichage),
+            // ce qui supprime la divergence avec le breakdown produit.
+            val region = parcellesInScope
+                .firstNotNullOfOrNull { it.codeInseeCommune }
+                ?.let { FrenchRegion.fromCodeCommune(it) }
             computeMartelageStats(
                 tigesInScope = tigesInScope,
                 surfaceM2 = surfaceM2,
@@ -631,7 +639,8 @@ fun MartelageScreen(
                 essences = essences,
                 forestryCalculator = forestryCalculator,
                 nHaAvant = nHaAvant,
-                gHaAvant = gHaAvant
+                gHaAvant = gHaAvant,
+                region = region
             )
         } else null
     }
@@ -766,7 +775,10 @@ fun MartelageScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbar) },
         topBar = {
-            val topBarBackground = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+            // Le martelage est un écran de décision : la lisibilité prime sur le décor.
+            // La photographie reste visible en arrière-plan, mais ne doit pas concurrencer
+            // les indicateurs dendrométriques et les actions terrain.
+            val topBarBackground = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
             val topBarContent = ColorUtils.getContrastingTextColor(topBarBackground)
             TopAppBar(
                 title = { Text(stringResource(R.string.martelage_before_cut_title)) },
@@ -847,7 +859,7 @@ fun MartelageScreen(
             val contentScrollState = rememberScrollState()
 
             // Fond semi-opaque pour le contenu et couleur de texte auto-contrastée globale
-            val pageBackground = MaterialTheme.colorScheme.surface.copy(alpha = 0.82f)
+            val pageBackground = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f)
             val pageTextColor = ColorUtils.getContrastingTextColor(pageBackground)
 
             CompositionLocalProvider(LocalContentColor provides pageTextColor) {
@@ -858,7 +870,7 @@ fun MartelageScreen(
                         .verticalScroll(contentScrollState)
                         .padding(padding)
                         .background(pageBackground)
-                        .padding(12.dp)
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
                         .animateContentSize(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
@@ -886,7 +898,7 @@ fun MartelageScreen(
                             AssistChip(
                                 onClick = { playClickFeedback(); showParamPanel = !showParamPanel },
                                 label = { Text(stringResource(R.string.martelage_parameters)) },
-                                leadingIcon = { Icon(Icons.Filled.Tune, contentDescription = null) }
+                                leadingIcon = { Icon(Icons.Filled.Tune, contentDescription = "Paramètres") }
                             )
                         }
                         Text(scopeLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1467,6 +1479,10 @@ fun MartelageScreen(
                             // Ventilation produits par essence
                             LaunchedEffect(s.perEssence) {
                                 val prices = forestryCalculator.loadPriceEntries()
+                                // Déduction déterministe de la région administrative (commune → département → région)
+                                val region: FrenchRegion? = parcellesInScope
+                                    .firstNotNullOfOrNull { it.codeInseeCommune }
+                                    ?.let { FrenchRegion.fromCodeCommune(it) }
                                 val result = mutableMapOf<String, List<ProductBreakdownRow>>()
                                 s.perEssence.forEach { ess ->
                                     if (ess.vTotal <= 0.0) return@forEach
@@ -1481,9 +1497,11 @@ fun MartelageScreen(
                                         diam >= 15 -> mapOf("BI" to v * 0.40, "BCh" to v * 0.35, "PATE" to v * 0.25)
                                         else       -> mapOf("BCh" to v * 0.50, "PATE" to v * 0.50)
                                     }
-                                    val baseBreakdown = PriceCalculator.buildBreakdown(
+                                    val candidates = EssenceAliases.candidates(ess.essenceCode)
+                                    val baseBreakdown = PriceCalculator.buildBreakdownWithReport(
                                         prices = prices, essenceCode = ess.essenceCode,
-                                        volumeByProduct = products, diamCm = diam, quality = q
+                                        volumeByProduct = products, diamCm = diam, quality = q,
+                                        region = region, essenceCandidates = candidates
                                     )
                                     // Align product breakdown total with authoritative synthesis revenue
                                     val synRevenue = ess.revenueTotal
@@ -1977,7 +1995,7 @@ private fun SuperCorrelateurBannerCard(onClick: () -> Unit) {
                     modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
                     Icon(
                         Icons.Default.Analytics,
-                        contentDescription = null,
+                        contentDescription = "Super corrélateur",
                         tint = androidx.compose.ui.graphics.Color(0xFF2E7D32),
                         modifier = androidx.compose.ui.Modifier.size(28.dp)
                     )
@@ -1998,7 +2016,7 @@ private fun SuperCorrelateurBannerCard(onClick: () -> Unit) {
             }
             Icon(
                 Icons.Default.Analytics,
-                contentDescription = null,
+                contentDescription = "Ouvrir",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 modifier = androidx.compose.ui.Modifier.size(18.dp)
             )
@@ -2104,7 +2122,7 @@ private fun TypelogiqueRapideCard(prefilledGPerHa: Double? = null) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(stringResource(R.string.martelage_basal_area_g), style = MaterialTheme.typography.labelMedium)
-                    Text("%.1f m²/ha  →  classe $capital".format(gPerHa),
+                    Text(stringResource(R.string.martelage_g_per_ha_class_format, gPerHa, capital),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 }
@@ -2129,7 +2147,7 @@ private fun TypelogiqueRapideCard(prefilledGPerHa: Double? = null) {
                 Surface(color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
                     shape = RoundedCornerShape(8.dp)) {
                     Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        Text("Code CNPF : $cnpfCode  ·  Structure $structure  ·  GB+TGB = ${ratio.gbTgbPct.toInt()}%",
+                        Text(stringResource(R.string.martelage_cnpf_info, cnpfCode, structure, ratio.gbTgbPct.toInt()),
                             style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSecondaryContainer)
                         Text(stringResource(R.string.martelage_pct_normalized),

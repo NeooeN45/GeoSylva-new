@@ -133,7 +133,7 @@ object PackResolver {
 
     /**
      * Catalogue des packs régionaux disponibles (non installés par défaut).
-     * TODO_METIER : charger depuis un manifest remote + cache local signé.
+     * TODO(#2) METIER : charger depuis un manifest remote + cache local signé.
      */
     val REGIONAL_CATALOG: List<GeoPackDescriptor> = RegionFrance.values().map { region ->
         GeoPackDescriptor(

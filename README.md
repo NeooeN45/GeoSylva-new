@@ -7,11 +7,15 @@
 [![Version](https://img.shields.io/badge/version-2.4.0-green?style=for-the-badge)](CHANGELOG.md)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
-[![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=for-the-badge)](LICENSE)
-[![No Forks](https://img.shields.io/badge/Forks-NOT%20ALLOWED-red?style=for-the-badge)](CONTRIBUTING.md)
+[![License](https://img.shields.io/badge/License-Propri%C3%A9taire-red?style=for-the-badge)](LICENSE)
 
-**Conçue par des forestiers, pour les forestiers.**  
+**Conçue par des forestiers, pour les forestiers.**
 Inventaire terrain, martelage, cartographie et synthèse dendrométrique — entièrement hors-ligne.
+
+> **GeoSylva** est la spécialisation forestière de
+> [**Quintessences**](https://github.com/NeooeN45/Quintessences) —
+> écosystème d'intelligence environnementale propulsé par le moteur
+> GSIE (General System Intelligence Engine).
 
 ---
 
@@ -47,7 +51,7 @@ GeoSylva remplace le carnet de terrain et les tableurs Excel par une **applicati
 | 🌳 **Marché** | Forêt métropolitaine ≈ **17 M ha** (~31 % du territoire), **~3,5 M de propriétaires privés**, filière forêt-bois ≈ **400 000 emplois**. Utilisateurs cibles : experts forestiers, coopératives, ONF, CRPF/CNPF, techniciens et propriétaires gestionnaires.<sup>(chiffres publics à confirmer en due diligence)</sup> |
 | 🎯 **Problème** | L'inventaire et le martelage se font encore au carnet papier + Excel : lent, source d'erreurs, sans GPS, sans calculs normalisés, ré-saisie au bureau. |
 | 💡 **Solution** | Une app Android **tout-en-un, 100 % hors-ligne** : saisie terrain, GPS de précision, 7 méthodes de cubage, IBP CNPF officiel, cartographie 12 couches, exports SIG/PDF. |
-| 💰 **Modèle économique** | **Double licence** : open source AGPL-3.0 (adoption, confiance, communauté) + **licence commerciale** pour intégrations propriétaires/SaaS. Potentiel d'abonnement pro & modules entreprise. |
+| 💰 **Modèle économique** | Logiciel **propriétaire** (voir [LICENSE](LICENSE)) : usage personnel et professionnel forestier autorisés, fork/redistribution/modification interdits. Une **licence commerciale** séparée existe pour les intégrations tierces/SaaS — voir [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md). Potentiel d'abonnement pro & modules entreprise. |
 | 🛡️ **Atouts différenciants** | IBP CNPF officiel, chiffrement SQLCipher, conformité RGPD documentée, 420+ tests, architecture Clean — **maturité technique rare** pour un produit de ce stade. |
 
 📄 **Dossier détaillé pour investisseurs & partenaires → [INVESTORS.md](INVESTORS.md)**
@@ -150,12 +154,26 @@ GeoSylva remplace le carnet de terrain et les tableurs Excel par une **applicati
 
 ### 🛡️ Fiabilité terrain
 
-- **100% hors-ligne** — aucune connexion requise pour toutes les fonctionnalités
+- **Cœur métier hors-ligne** — inventaire, calculs, carte locale et exports
+  restent disponibles sans compte ni connexion GSIE
 - **Sauvegarde automatique** quotidienne via WorkManager
 - **Rappel hauteurs avec snooze** — reportez les alertes de hauteurs manquantes (1h, 4h, 24h)
 - **Tri des parcelles** — par nom, surface ou date de mise à jour
 - **Tips contextuels** — aide intégrée sur chaque écran
 - **Onboarding complet** — 14 écrans d'introduction interactifs avec consentement RGPD
+
+### 🔐 Compte Quintessences et connexion GSIE
+
+- **Compte facultatif** — GeoSylva reste utilisable hors ligne sans créer de compte
+- **Connexion locale** — adresse e-mail et mot de passe via l’identité commune Quintessences
+- **Connexion Google** — Credential Manager Android avec nonce vérifié par GSIE
+- **Session chiffrée** — jetons conservés dans un coffre Android séparé des données de terrain
+- **Espace compte** — état de session, fournisseur courant, rôles et déconnexion
+- **Profil et vérification** — modification du nom affiché et confirmation de l'adresse par code
+- **Récupération** — nouveau mot de passe par code à usage unique, avec fermeture des anciennes sessions
+- **Options développeur** — huit pressions sur la version ouvrent le diagnostic GSIE et la commande explicite de synchronisation
+- **Parcelles connectées en option** — activation manuelle, file SQLCipher, reprise WorkManager, versions serveur et conflits sans écrasement silencieux
+- **Transport protégé** — en production, HTTPS vers la bordure Cloudflare puis tunnel privé vers GSIE ; les JWT et rôles GSIE restent obligatoires
 
 ---
 
@@ -180,11 +198,12 @@ GeoSylva remplace le carnet de terrain et les tableurs Excel par une **applicati
 app/src/main/java/com/forestry/counter/
 ├── data/
 │   ├── local/
-│   │   ├── entity/              # Room entities (28 tables)
+│   │   ├── entity/              # Room entities (29 tables)
 │   │   ├── dao/                 # Data Access Objects
 │   │   ├── CanonicalEssences.kt # 95+ espèces pré-configurées
-│   │   ├── DatabaseMigrations.kt# Migrations v1→v32
-│   │   └── ForestryDatabase.kt  # Room database (v32, SQLCipher)
+│   │   ├── DatabaseMigrations.kt# Migrations v1→v33
+│   │   └── ForestryDatabase.kt  # Room database (v33, SQLCipher)
+│   ├── sync/                    # Contrat GSIE, file et politique de reprise
 │   ├── preferences/             # DataStore (GPS, affichage, tarifs…)
 │   ├── repository/              # Implémentations Repository
 │   ├── mapper/                  # Entity ↔ Domain mappers
@@ -202,7 +221,7 @@ app/src/main/java/com/forestry/counter/
 │   │   ├── Lambert93Converter.kt# Conversion Lambert93 + Helmert WGS84→ETRS89
 │   │   └── OfflineTileManager.kt# Gestion tuiles hors-ligne
 │   ├── geo/                     # Lambert 93, Shapefile parser, GeoImport
-│   ├── security/                # Certificate pinning, SecureHttpClient
+│   ├── security/                # Validation HTTPS, domaines autorisés, protection SSRF
 │   └── usecase/export/          # ShapefileExporter, PdfSynthesisExporter, ExportDataUseCase
 └── presentation/
     ├── screens/
@@ -219,7 +238,7 @@ app/src/main/java/com/forestry/counter/
 - **Reactive** — Kotlin Flow du DAO jusqu'à l'UI Compose
 - **Offline-first** — Room + DataStore, aucune dépendance réseau pour les données
 - **Chiffrement** — SQLCipher (Keystore Android) pour les données sensibles au repos
-- **Sécurité réseau** — Certificate pinning SHA-256 sur les domaines cartographiques
+- **Sécurité réseau** — HTTPS obligatoire, autorités Android, domaines autorisés et protection DNS/SSRF
 - **Testable** — 420+ tests unitaires couvrant calculs, tarifs, export, conversion, IBP
 
 ---
@@ -230,14 +249,14 @@ app/src/main/java/com/forestry/counter/
 |---|---|
 | **Langage** | Kotlin 1.9 + Coroutines + Flow |
 | **UI** | Jetpack Compose + Material 3 |
-| **Base de données** | Room (SQLite) — 28 tables, 32 migrations, DB v32, SQLCipher |
+| **Base de données** | Room (SQLite) — 29 tables, DB v33, SQLCipher |
 | **Préférences** | DataStore Preferences |
 | **Cartographie** | MapLibre GL Native 10.3 |
 | **Géolocalisation** | Google Fused Location Provider |
 | **Export** | Apache POI (XLSX), OpenCSV, Shapefile (pur Java), PDF |
 | **Sérialisation** | kotlinx.serialization |
-| **Background** | WorkManager (sauvegardes planifiées) |
-| **Sécurité** | SQLCipher (Keystore), Certificate Pinning (SHA-256) |
+| **Background** | WorkManager (sauvegardes et synchronisation réseau différée) |
+| **Sécurité** | SQLCipher (Keystore), HTTPS obligatoire, liste blanche réseau et protection DNS/SSRF |
 | **Build** | Gradle 8.2 + KSP + ProGuard/R8 |
 
 ---
@@ -278,6 +297,35 @@ cd GeoSylva
 # → app/build/outputs/bundle/release/
 ```
 
+### Configuration de l’identité GSIE
+
+Ajouter les valeurs suivantes dans `local.properties` ou dans les variables
+d’environnement de la CI :
+
+```properties
+GSIE_API_BASE_URL=https://api.example.org/
+GOOGLE_WEB_CLIENT_ID=000000000000-example.apps.googleusercontent.com
+```
+
+`GSIE_API_BASE_URL` doit être une URL HTTPS publique en release. Un build
+debug accepte `http://127.0.0.1:8000/` pour les essais locaux. Avec un
+émulateur ou un appareil relié par ADB :
+
+```bash
+adb reverse tcp:8000 tcp:8000
+```
+
+L'API locale fournit les courriels captifs sur <http://localhost:8025>.
+Le client Google n’est
+activé que si le serveur le publie comme disponible **et** si
+`GOOGLE_WEB_CLIENT_ID` est renseigné. Le client ID OAuth n’est pas un secret ;
+aucun secret OAuth ne doit être intégré dans l’application.
+
+GeoSylva n'embarque ni token Cloudflare Access ni certificat mTLS partagé.
+Ces secrets sont réservés aux services de confiance : un secret placé dans un
+APK serait extractible. Le mobile s'authentifie toujours avec son compte et
+ses jetons GSIE.
+
 ## 🧪 Tests
 
 ```bash
@@ -306,14 +354,56 @@ cd GeoSylva
 
 ---
 
-## 🔒 Sécurité & Confidentialité
+## Intégration GSIE et Hub GeoSylva
+
+GeoSylva est la **projection forestière** du jumeau numérique environnemental
+fédéré GSIE. L'application reste entièrement offline-first et publie, lorsque
+l'utilisateur l'autorise, des observations, peuplements, diagnostics,
+interventions et résultats versionnés vers GSIE.
+
+Les données Ignis, Hydro, Flora et Artemis sont consommées via les contrats
+GSIE versionnés, jamais par accès direct à leurs bases. Le Hub GeoSylva permet
+ensuite d'explorer l'évolution de la forêt, comparer des scénarios de
+croissance, de rendement, de changement d'essences ou de restauration
+post-incendie sans modifier l'état réel tant qu'aucune décision n'est validée.
+
+Voir [GSIE_INTEGRATION.md](GSIE_INTEGRATION.md) et
+`Quintessences/GSIE/ARCHITECTURE/GSIE_ENVIRONMENTAL_DIGITAL_TWIN_PLATFORM.md`.
+
+### État du canal d'amplification GSIE — 2026-08-17
+
+La synchronisation actuellement livrée concerne les parcelles et reste
+explicitement activée par l'utilisateur. Le cœur forestier, les données de
+terrain et les calculs locaux restent utilisables hors ligne.
+
+La future analyse stationnelle serveur est cadrée par RFC-0041 et DEC-000073,
+encore respectivement `Draft` et `Proposé` côté Quintessences. GeoSylva ne
+construira pas les règles, qualifications ou états globaux GSIE. Le futur
+client enverra une intention avec un UUID de ressource GSIE déjà résolu ; la
+préparation, l'hydratation, les preuves et les blocages resteront côté serveur.
+
+La façade, le lien `parcelleId → gsie_resource_id`, la file Room dédiée et
+l'écran de résultats ne sont donc pas présentés comme livrés dans cette
+version. Les pages de martelage 3.0 restent indépendantes de cette première
+boucle d'intégration.
+
+Références :
+[DEC-000048](https://github.com/NeooeN45/Quintessences/blob/main/03_DECISIONS/DEC-000048.md),
+[RFC-0041](https://github.com/NeooeN45/Quintessences/blob/main/02_RFC/RFC-0041-contrat-facade-geosylva-identite-stationnelle.md),
+[DEC-000073](https://github.com/NeooeN45/Quintessences/blob/main/03_DECISIONS/DEC-000073.md).
+
+---
+
+## �🔒 Sécurité & Confidentialité
 
 - ✅ **Aucune publicité** — expérience 100% professionnelle
-- ✅ **Aucun tracking / analytics** — aucune donnée collectée
-- ✅ **Fonctionne hors-ligne** — aucune connexion requise pour les données
-- ✅ **Données 100% locales** — stockées uniquement sur l'appareil
+- ✅ **Aucun tracking / analytics** — aucune télémétrie publicitaire ou comportementale
+- ✅ **Données de terrain locales par défaut** — aucune synchronisation sans action explicite
+- ✅ **Synchronisation maîtrisée** — seules les parcelles sont concernées après activation ; tiges, placettes, photos et diagnostics restent locaux
+- ✅ **Compte optionnel transparent** — seules les données d’identité nécessaires sont transmises à GSIE lors d’une inscription ou connexion
 - ✅ **Chiffrement SQLCipher** — base de données chiffrée au repos (Keystore Android)
-- ✅ **Certificate Pinning** — SHA-256 sur data.geopf.fr, tile.opentopomap.org, basemaps.cartocdn.com, server.arcgisonline.com
+- ✅ **Réseau durci** — HTTPS obligatoire pour GSIE, validation TLS système,
+  refus des redirections non publiques et des résolutions DNS privées
 - ✅ **RGPD compliant** — SCC (Standard Contractual Clauses) pour transferts US (Esri/MapLibre/CartoCDN)
 - ✅ **ProGuard/R8** — code obfusqué en release
 - ✅ **Code source auditable** — open source sous AGPL-3.0
@@ -337,26 +427,25 @@ cd GeoSylva
 | [AUDIT_UI_UX_GLOBAL.md](AUDIT_UI_UX_GLOBAL.md) | Audit UI/UX complet |
 | [RESEARCH_OPPORTUNITIES.md](RESEARCH_OPPORTUNITIES.md) | 150+ opportunités de recherche |
 | [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) | Conditions de licence commerciale |
+| [GSIE_INTEGRATION.md](GSIE_INTEGRATION.md) | Intégration au jumeau numérique fédéré GSIE |
 
 ---
 
 ## 📄 Licence
 
-Ce projet est sous **double licence**.
+GeoSylva est un logiciel **propriétaire** — voir [LICENSE](LICENSE) pour le texte complet.
 
-### Open Source
-**GNU Affero General Public License v3.0 (AGPL-3.0)** — libre pour usage personnel, éducatif et projets open-source compatibles. L'usage commercial est autorisé sous AGPL-3.0 à condition de divulguer le code source complet.
+### Licence par défaut
+Usage **personnel** et **professionnel forestier** autorisés. **Fork, redistribution et modification du code source sont formellement interdits.** Le code source, la documentation, les ressources graphiques et les bases de données embarquées restent la propriété exclusive de GeoSylva.
 
-### Commerciale
-Requise pour une utilisation **sans les obligations AGPL-3.0** (intégration propriétaire, SaaS, services hébergés). Voir [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
+### Licence commerciale
+Un accord commercial séparé est requis pour toute intégration tierce, SaaS ou service hébergé n'entrant pas dans le cadre de la licence par défaut. Voir [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
 
 ---
 
 ## 👥 Contribution
 
-> ⛔ **Les forks de ce dépôt sont strictement interdits.**
->
-> GeoSylva est un projet en développement actif et contrôlé. Toute copie du code source dans un dépôt tiers, redistribution sous un autre nom ou réutilisation commerciale sans licence commerciale explicite constitue une violation des conditions d'utilisation et de la licence AGPL-3.0.
+> GeoSylva est un logiciel propriétaire (voir [LICENSE](LICENSE)) — **les forks et modifications du code source ne sont pas autorisés**. Les retours d'expérience terrain, suggestions de fonctionnalités et rapports de bugs restent les bienvenus (voir contact ci-dessous). Les intégrations commerciales nécessitant des conditions différentes doivent faire l'objet d'un accord séparé — voir [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
 
 ### 💬 Vos retours sont précieux — et fortement encouragés !
 
@@ -391,3 +480,11 @@ Ouvrez une [issue](../../issues) avec :
 *GeoSylva — L'inventaire forestier, simplifié.*
 
 </div>
+
+---
+
+## Contact
+
+Pour toute question, réclamation ou collaboration :
+
+**5jvw9s5zj@mozmail.com**

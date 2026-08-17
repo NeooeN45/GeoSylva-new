@@ -48,6 +48,15 @@ class ExpertForestryCalculatorTest {
         return ExpertForestryCalculator(base, fakeRepo)
     }
 
+    /**
+     * Compare un IS nullable à une valeur attendue non-null.
+     * Échoue explicitement si l'IS est null au lieu d'une erreur de typage.
+     */
+    private fun assertIsEquals(expected: Double, actual: Double?, delta: Double) {
+        val value = actual ?: error("Expected non-null IS=$expected, got null")
+        assertEquals(expected, value, delta)
+    }
+
     // endregion
 
     // =====================================================================
@@ -59,8 +68,10 @@ class ExpertForestryCalculatorTest {
         val calc = buildCalculator()
         val indiceStation = calc.calculateIndiceDeStation("QUPE", 80, 20.0, 35.0)
 
-        assertTrue("IS should be >= 5", indiceStation >= 5.0)
-        assertTrue("IS should be <= 30", indiceStation <= 30.0)
+        assertNotNull(indiceStation)
+        val isValue = indiceStation ?: error("IS should not be null")
+        assertTrue("IS should be >= 5", isValue >= 5.0)
+        assertTrue("IS should be <= 30", isValue <= 30.0)
     }
 
     @Test
@@ -68,8 +79,10 @@ class ExpertForestryCalculatorTest {
         val calc = buildCalculator()
         val indiceStation = calc.calculateIndiceDeStation("FASY", 80, 22.0, 30.0)
 
-        assertTrue("IS should be >= 10", indiceStation >= 10.0)
-        assertTrue("IS should be <= 28", indiceStation <= 28.0)
+        assertNotNull(indiceStation)
+        val isValue = indiceStation ?: error("IS should not be null")
+        assertTrue("IS should be >= 10", isValue >= 10.0)
+        assertTrue("IS should be <= 28", isValue <= 28.0)
     }
 
     @Test
@@ -77,36 +90,156 @@ class ExpertForestryCalculatorTest {
         val calc = buildCalculator()
         val indiceStation = calc.calculateIndiceDeStation("UNKNOWN_SPECIES", 60, 18.0, 25.0)
 
-        assertEquals(15.0, indiceStation, 0.001)
+        assertIsEquals(15.0, indiceStation, 0.001)
     }
 
     @Test
     fun `should_cap_is_at_30_when_extreme_values`() {
         val calc = buildCalculator()
-        // Very large height and diameter should be capped by coerceAtMost(30.0)
+        // QUPE à âge réf (100) avec Hdom = 100 -> IS = Hdom = 100 -> borné à 30.
         val indiceStation = calc.calculateIndiceDeStation("QUPE", 100, 100.0, 200.0)
 
-        assertTrue("IS should not exceed 30", indiceStation <= 30.0)
+        assertNotNull(indiceStation)
+        val isValue = indiceStation ?: error("IS should not be null")
+        assertTrue("IS should not exceed 30", isValue <= 30.0)
+    }
+
+    @Test
+    fun `should_extrapolate_is_when_age_below_reference_chene`() {
+        val calc = buildCalculator()
+        // QUPE : âge réf = 100 ans. Âge actuel = 50 (< réf).
+        // IS = Hdom × (100 / 50) = 12.0 × 2 = 24.0.
+        val indiceStation = calc.calculateIndiceDeStation("QUPE", 50, 12.0, 20.0)
+
+        assertIsEquals(24.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_return_hdom_when_age_equals_reference_chene`() {
+        val calc = buildCalculator()
+        // QUPE : âge réf = 100 ans. Âge actuel = 100 (== réf) -> IS = Hdom.
+        val indiceStation = calc.calculateIndiceDeStation("QUPE", 100, 20.0, 35.0)
+
+        assertIsEquals(20.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_return_hdom_when_age_above_reference_chene`() {
+        val calc = buildCalculator()
+        // QUPE : âge réf = 100 ans. Âge actuel = 120 (> réf) -> IS = Hdom.
+        val indiceStation = calc.calculateIndiceDeStation("QUPE", 120, 22.0, 40.0)
+
+        assertIsEquals(22.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_extrapolate_is_when_age_below_reference_hetre`() {
+        val calc = buildCalculator()
+        // FASY : âge réf = 80 ans. Âge actuel = 40 (< réf).
+        // IS = Hdom × (80 / 40) = 15.0 × 2 = 30.0 -> borné à 30.0.
+        val indiceStation = calc.calculateIndiceDeStation("FASY", 40, 15.0, 25.0)
+
+        assertIsEquals(30.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_return_hdom_when_age_equals_reference_hetre`() {
+        val calc = buildCalculator()
+        // FASY : âge réf = 80 ans. Âge actuel = 80 (== réf) -> IS = Hdom.
+        val indiceStation = calc.calculateIndiceDeStation("FASY", 80, 22.0, 30.0)
+
+        assertIsEquals(22.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_return_hdom_when_age_above_reference_hetre`() {
+        val calc = buildCalculator()
+        // FASY : âge réf = 80 ans. Âge actuel = 100 (> réf) -> IS = Hdom.
+        val indiceStation = calc.calculateIndiceDeStation("FASY", 100, 24.0, 35.0)
+
+        assertIsEquals(24.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_extrapolate_is_when_age_below_reference_resineux`() {
+        val calc = buildCalculator()
+        // ABAL (sapin) : âge réf = 50 ans. Âge actuel = 25 (< réf).
+        // IS = Hdom × (50 / 25) = 10.0 × 2 = 20.0.
+        val indiceStation = calc.calculateIndiceDeStation("ABAL", 25, 10.0, 18.0)
+
+        assertIsEquals(20.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_return_hdom_when_age_equals_reference_resineux`() {
+        val calc = buildCalculator()
+        // ABAL : âge réf = 50 ans. Âge actuel = 50 (== réf) -> IS = Hdom.
+        val indiceStation = calc.calculateIndiceDeStation("ABAL", 50, 18.0, 28.0)
+
+        assertIsEquals(18.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_return_hdom_when_age_above_reference_resineux`() {
+        val calc = buildCalculator()
+        // EPAICEA : âge réf = 50 ans. Âge actuel = 70 (> réf) -> IS = Hdom.
+        val indiceStation = calc.calculateIndiceDeStation("EPAICEA", 70, 20.0, 30.0)
+
+        assertIsEquals(20.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_return_null_when_age_is_zero`() {
+        val calc = buildCalculator()
+        val indiceStation = calc.calculateIndiceDeStation("QUPE", 0, 20.0, 35.0)
+
+        assertEquals(null, indiceStation)
+    }
+
+    @Test
+    fun `should_return_null_when_age_is_negative`() {
+        val calc = buildCalculator()
+        val indiceStation = calc.calculateIndiceDeStation("FASY", -5, 20.0, 30.0)
+
+        assertEquals(null, indiceStation)
+    }
+
+    @Test
+    fun `should_return_default_is_when_unknown_essence_with_valid_age`() {
+        val calc = buildCalculator()
+        // Essence inconnue : repli sur IS = 15.0 quelque soit l'âge.
+        val indiceStation = calc.calculateIndiceDeStation("ESSENCE_INCONNUE", 60, 18.0, 25.0)
+
+        assertIsEquals(15.0, indiceStation, 0.001)
+    }
+
+    @Test
+    fun `should_floor_is_at_5_when_extrapolation_below_minimum`() {
+        val calc = buildCalculator()
+        // QUPE : âge réf = 100. Âge = 90, Hdom = 4.0.
+        // IS = 4.0 × (100/90) = 4.44 -> borné à 5.0.
+        val indiceStation = calc.calculateIndiceDeStation("QUPE", 90, 4.0, 10.0)
+
+        assertIsEquals(5.0, indiceStation, 0.001)
     }
 
     @Test
     fun `should_compute_chene_is_with_known_formula`() {
         val calc = buildCalculator()
-        // C-CALC-2 : IS ≈ Hdom (proxy en l'absence de l'âge de référence).
-        // QUPE avec Hdom = 20.0 m -> IS = 20.0 (borné 5–30).
+        // IS officiel ONF : QUPE (âge réf = 100), âge = 80 (< réf).
+        // IS = Hdom × (100 / 80) = 20.0 × 1.25 = 25.0 (borné 5–30).
         val indiceStation = calc.calculateIndiceDeStation("QUPE", 80, 20.0, 35.0)
 
-        assertEquals(20.0, indiceStation, 0.001)
+        assertIsEquals(25.0, indiceStation, 0.001)
     }
 
     @Test
     fun `should_compute_hetre_is_with_known_formula`() {
         val calc = buildCalculator()
-        // C-CALC-2 : IS ≈ Hdom (proxy en l'absence de l'âge de référence).
-        // FASY avec Hdom = 22.0 m -> IS = 22.0 (borné 5–30).
+        // IS officiel ONF : FASY (âge réf = 80), âge = 80 (== réf) -> IS = Hdom = 22.0.
         val indiceStation = calc.calculateIndiceDeStation("FASY", 80, 22.0, 30.0)
 
-        assertEquals(22.0, indiceStation, 0.001)
+        assertIsEquals(22.0, indiceStation, 0.001)
     }
 
     // =====================================================================
@@ -395,9 +528,9 @@ class ExpertForestryCalculatorTest {
     @Test
     fun `should_compute_known_schumacher_hall_value_for_chene`() {
         val calc = buildCalculator()
-        // QUPE params: a=-2.0, b=2.0, c=1.0
-        // V = exp(-2.0 + 2.0*ln(40) + 1.0*ln(22))
-        val expected = kotlin.math.exp(-2.0 + 2.0 * kotlin.math.ln(40.0) + 1.0 * kotlin.math.ln(22.0))
+        // QUPE (chêne pédonculé) : coefficients réels Vallet et al. (2006),
+        // SylvicultureDatabase.cubageA/B/C — a=-9.90, b=1.97, c=1.29.
+        val expected = kotlin.math.exp(-9.90 + 1.97 * kotlin.math.ln(40.0) + 1.29 * kotlin.math.ln(22.0))
         val volume = calc.schumacherHallVolume("QUPE", 40.0, 22.0)
 
         assertEquals(expected, volume, 0.001)
@@ -413,6 +546,62 @@ class ExpertForestryCalculatorTest {
         assertTrue(
             "Different essences should produce different volumes",
             abs(volumeChene - volumeHetre) > 0.01
+        )
+    }
+
+    @Test
+    fun `should_use_distinct_sourced_coefficients_for_previously_lumped_oak_species`() {
+        // Avant le branchement sur SylvicultureDatabase, QUPE/QUPES/QUPU
+        // partageaient les mêmes coefficients approximés (a=-2.0, b=2.0, c=1.0).
+        // Vallet et al. (2006) leur donne des coefficients réels distincts.
+        val calc = buildCalculator()
+        val volumePedoncule = calc.schumacherHallVolume("QUPE", 40.0, 22.0)
+        val volumeSessile = calc.schumacherHallVolume("QUPES", 40.0, 22.0)
+        val volumePubescent = calc.schumacherHallVolume("QUPU", 40.0, 22.0)
+
+        assertTrue(
+            "QUPE et QUPES doivent maintenant différer (coefficients sourcés distincts)",
+            abs(volumePedoncule - volumeSessile) > 0.001
+        )
+        assertTrue(
+            "QUPE et QUPU doivent maintenant différer (coefficients sourcés distincts)",
+            abs(volumePedoncule - volumePubescent) > 0.001
+        )
+    }
+
+    @Test
+    fun `should_fall_back_to_generic_parameters_for_essence_absent_from_database`() {
+        // Une essence absente de SylvicultureDatabase (28 essences) doit
+        // utiliser le repli générique plutôt que planter.
+        val calc = buildCalculator()
+        val volume = calc.schumacherHallVolume("ESSENCE_INCONNUE_TEST", 40.0, 22.0)
+
+        assertTrue("Le repli générique doit produire un volume positif", volume > 0.0)
+    }
+
+    @Test
+    fun `should_resolve_abal_alias_to_abba_sourced_coefficients`() {
+        // Le code métier historique utilise "ABAL" pour le Sapin pectiné,
+        // tandis que SylvicultureDatabase utilise "ABBA". L'alias doit
+        // résoudre vers les coefficients sourcés (Vallet et al. 2006) et
+        // non vers le repli générique non sourcé — garde-fou ADR-007.
+        val calc = buildCalculator()
+        val volumeAbal = calc.schumacherHallVolume("ABAL", 40.0, 22.0)
+        val volumeAbba = calc.schumacherHallVolume("ABBA", 40.0, 22.0)
+
+        assertEquals(
+            "ABAL (alias hérité) et ABBA (canonique) doivent donner le même volume",
+            volumeAbba,
+            volumeAbal,
+            0.0001
+        )
+        // Garde-fou : le volume sourc ABBA doit différer du repli générique
+        // (-2.0, 2.0, 1.0) pour garantir qu'on n'utilise pas silencieusement
+        // le repli non sourcé.
+        val volumeRepli = calc.schumacherHallVolume("ESSENCE_INCONNUE_TEST", 40.0, 22.0)
+        assertTrue(
+            "ABBA doit utiliser des coefficients sourcés distincts du repli générique",
+            abs(volumeAbba - volumeRepli) > 0.01
         )
     }
 }

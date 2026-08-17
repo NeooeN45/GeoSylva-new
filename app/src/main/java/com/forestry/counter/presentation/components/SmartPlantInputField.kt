@@ -18,11 +18,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
+import com.forestry.counter.presentation.theme.IbpFaible
+import com.forestry.counter.presentation.theme.IbpMoyen
+import com.forestry.counter.presentation.theme.MartelageEnlever
+import com.forestry.counter.presentation.theme.SemanticInfo
+import com.forestry.counter.presentation.theme.SemanticSuccess
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.forestry.counter.R
 import com.forestry.counter.domain.usecase.florist.*
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -131,7 +138,7 @@ fun SmartPlantInputField(
             ) {
                 Icon(Icons.Default.List, null, modifier = Modifier.size(13.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("Parcourir", style = MaterialTheme.typography.labelSmall)
+                Text(stringResource(R.string.smart_parcourir), style = MaterialTheme.typography.labelSmall)
             }
         }
 
@@ -198,13 +205,13 @@ private fun SpeciesChip(
     val isHygrophyte = espece.valeurIndicatrice.indicateurHydromorphie
     val isPerturbed  = espece.valeurIndicatrice.indicateurPerturbation
     val chipColor = when {
-        isHygrophyte -> Color(0xFF1565C0).copy(alpha = 0.12f)
-        isPerturbed  -> Color(0xFFE65100).copy(alpha = 0.12f)
+        isHygrophyte -> SemanticInfo.copy(alpha = 0.12f)
+        isPerturbed  -> MartelageEnlever.copy(alpha = 0.12f)
         else         -> MaterialTheme.colorScheme.secondaryContainer
     }
     val textColor = when {
-        isHygrophyte -> Color(0xFF1565C0)
-        isPerturbed  -> Color(0xFFE65100)
+        isHygrophyte -> SemanticInfo
+        isPerturbed  -> MartelageEnlever
         else         -> MaterialTheme.colorScheme.onSecondaryContainer
     }
 
@@ -243,9 +250,9 @@ private fun SuggestionRow(
 ) {
     val sp = suggestion.espece
     val confidenceColor = when (suggestion.confidence) {
-        FloraNormalizer.ConfidenceLevel.HIGH      -> Color(0xFF2E7D32)
-        FloraNormalizer.ConfidenceLevel.MEDIUM    -> Color(0xFFF9A825)
-        FloraNormalizer.ConfidenceLevel.LOW       -> Color(0xFFE65100)
+        FloraNormalizer.ConfidenceLevel.HIGH      -> SemanticSuccess
+        FloraNormalizer.ConfidenceLevel.MEDIUM    -> IbpMoyen
+        FloraNormalizer.ConfidenceLevel.LOW       -> IbpFaible
         FloraNormalizer.ConfidenceLevel.UNCERTAIN -> Color(0xFF9E9E9E)
     }
 
@@ -284,7 +291,7 @@ private fun SuggestionRow(
                 )
                 if (isAlreadySelected) {
                     Icon(Icons.Default.CheckCircle, null,
-                        tint = Color(0xFF2E7D32), modifier = Modifier.size(14.dp))
+                        tint = SemanticSuccess, modifier = Modifier.size(14.dp))
                 }
             }
             Text(
@@ -319,8 +326,8 @@ private fun SuggestionRow(
             val h = sp.valeurIndicatrice.ellenbergH.codeEllenberg
             val hColor = when {
                 h <= 2 -> Color(0xFFBF360C)
-                h >= 5 -> Color(0xFF1565C0)
-                else   -> Color(0xFF2E7D32)
+                h >= 5 -> SemanticInfo
+                else   -> SemanticSuccess
             }
             Text("H=${h}", style = MaterialTheme.typography.labelSmall,
                 color = hColor, fontWeight = FontWeight.Bold)

@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.animation.core.*
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import coil.compose.AsyncImage
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
@@ -48,8 +50,6 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import android.os.Build
 import android.app.Activity
-import android.net.Uri
-import android.widget.ImageView
 import eightbitlab.com.blurview.BlurView
 import eightbitlab.com.blurview.RenderEffectBlur
 import android.view.ViewGroup
@@ -71,7 +71,8 @@ fun GroupsScreen(
     preferencesManager: UserPreferencesManager,
     onNavigateToMartelage: ((String?) -> Unit)? = null,
     onNavigateToMap: ((String) -> Unit)? = null,
-    onNavigateToIbp: (() -> Unit)? = null
+    onNavigateToIbp: (() -> Unit)? = null,
+    onNavigateBack: (() -> Unit)? = null,
 ) {
     val viewModel = remember { GroupsViewModel(groupRepository) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -105,17 +106,11 @@ fun GroupsScreen(
         if (backgroundImageEnabled) {
             val uriString = backgroundImageUri
             if (uriString != null) {
-                val uri = remember(uriString) { Uri.parse(uriString) }
-                AndroidView(
+                AsyncImage(
+                    model = uriString,
+                    contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
-                    factory = { context ->
-                        ImageView(context).apply {
-                            scaleType = ImageView.ScaleType.CENTER_CROP
-                        }
-                    },
-                    update = { imageView ->
-                        imageView.setImageURI(uri)
-                    }
+                    contentScale = ContentScale.Crop
                 )
             } else {
                 Image(
@@ -157,6 +152,16 @@ fun GroupsScreen(
                     TopAppBar(
                         title = { Text(stringResource(R.string.groups_title), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         colors = TopAppBarDefaults.topAppBarColors(containerColor = if (useBlurTop) Color.Transparent else MaterialTheme.colorScheme.surface),
+                        navigationIcon = {
+                            if (onNavigateBack != null) {
+                                IconButton(onClick = onNavigateBack) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = stringResource(R.string.cd_back),
+                                    )
+                                }
+                            }
+                        },
                         actions = {
                             if (hasSelection) {
                                 IconButton(onClick = {
@@ -222,7 +227,8 @@ fun GroupsScreen(
             },
             floatingActionButton = {
                 FloatingActionButton(
-                    onClick = { showCreateDialog = true }
+                    onClick = { showCreateDialog = true },
+                    modifier = Modifier.offset(x = 8.dp),
                 ) {
                     Icon(Icons.Default.Add, contentDescription = stringResource(R.string.create_group))
                 }
@@ -337,7 +343,7 @@ fun GroupsScreen(
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                                         ) {
-                                            Icon(Icons.Default.Forest, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                                            Icon(Icons.Default.Forest, contentDescription = stringResource(R.string.cd_forest), tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                                             Text(g.name, style = MaterialTheme.typography.bodyMedium)
                                         }
                                     }
@@ -422,7 +428,7 @@ fun GroupsScreen(
                                             verticalAlignment = Alignment.CenterVertically,
                                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                                         ) {
-                                            Icon(Icons.Default.Forest, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                                            Icon(Icons.Default.Forest, contentDescription = stringResource(R.string.cd_forest), tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                                             Text(g.name, style = MaterialTheme.typography.bodyMedium)
                                         }
                                     }
@@ -534,7 +540,7 @@ fun GroupsScreen(
                         val autoSelected = cleanedColor.isBlank()
                         Surface(
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(48.dp)
                                 .clickable { colorHex = "" },
                             color = MaterialTheme.colorScheme.surface,
                             shape = CircleShape,
@@ -557,7 +563,7 @@ fun GroupsScreen(
                             val selected = cleanedColor.equals(hex, ignoreCase = true)
                             Surface(
                                 modifier = Modifier
-                                    .size(40.dp)
+                                    .size(48.dp)
                                     .clickable { colorHex = hex },
                                 color = col,
                                 shape = CircleShape,
@@ -780,7 +786,7 @@ fun GroupCard(
                     Box {
                         IconButton(
                             onClick = { showMenu = true },
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(48.dp)
                         ) {
                             Icon(
                                 Icons.Default.MoreVert,
@@ -847,7 +853,7 @@ fun GroupCard(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(8.dp)
-                    .size(20.dp)
+                    .size(48.dp)
                     .clickable { onToggleSelected() }
             ) {
                 Box(
@@ -879,40 +885,51 @@ fun GroupCard(
 
 @Composable
 fun EmptyState(onCreateGroup: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.FolderOpen,
-            contentDescription = null,
-            modifier = Modifier.size(80.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text(
-            text = stringResource(R.string.no_groups),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        Text(
-            text = stringResource(R.string.create_group_to_start),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Button(onClick = onCreateGroup) {
-            Icon(Icons.Default.Add, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.create_group))
+    // `onSurfaceVariant` suit déjà le thème (clair/sombre), mais posé
+    // directement sur la photo de fond — qui, elle, ne change jamais de
+    // ton avec le thème — le contraste restait insuffisant dans les deux
+    // sens. Un pavé translucide (même traitement que "Bonjour" sur
+    // l'Accueil) porte le texte, avec `onBackground` pour un contraste net.
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        androidx.compose.material3.Surface(
+            color = MaterialTheme.colorScheme.background.copy(alpha = 0.72f),
+            shape = com.forestry.counter.presentation.theme.GsShape.lg,
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 32.dp, vertical = 28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.FolderOpen,
+                    contentDescription = null,
+                    modifier = Modifier.size(80.dp),
+                    tint = MaterialTheme.colorScheme.onBackground
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = stringResource(R.string.no_groups),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = stringResource(R.string.create_group_to_start),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Button(onClick = onCreateGroup) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.create_group))
+                }
+            }
         }
     }
 }
@@ -981,7 +998,7 @@ fun CreateGroupDialog(
             val autoSelected = colorHex.isBlank()
             Surface(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(48.dp)
                     .clickable { colorHex = "" },
                 color = MaterialTheme.colorScheme.surface,
                 shape = CircleShape,
@@ -1017,7 +1034,7 @@ fun CreateGroupDialog(
                 val selected = cleanedColor.equals(hex, ignoreCase = true)
                 Surface(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(48.dp)
                         .clickable { colorHex = hex },
                     color = col,
                     shape = CircleShape,

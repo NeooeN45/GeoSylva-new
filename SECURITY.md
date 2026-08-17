@@ -1,8 +1,9 @@
 # Politique de sécurité — GeoSylva
 
 La sécurité des données forestières et personnelles de nos utilisateurs est une priorité.
-GeoSylva applique le chiffrement au repos (SQLCipher), le certificate pinning SHA-256 et
-une conformité RGPD documentée (registre des traitements, SCC pour les transferts hors-UE).
+GeoSylva applique le chiffrement au repos (SQLCipher), HTTPS obligatoire avec
+la chaîne de confiance Android, une protection DNS/SSRF et une conformité RGPD
+documentée (registre des traitements, SCC pour les transferts hors-UE).
 
 ## Versions supportées
 

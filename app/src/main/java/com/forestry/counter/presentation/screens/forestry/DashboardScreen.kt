@@ -96,6 +96,7 @@ import com.forestry.counter.domain.usecase.fertility.FertilityClass
 import com.forestry.counter.domain.usecase.fertility.FertilityClassifier
 import com.forestry.counter.domain.usecase.fertility.FertilityResult
 import com.forestry.counter.presentation.utils.AnimatedCounter
+import com.forestry.counter.presentation.components.LoadingState
 import com.forestry.counter.presentation.utils.StaggerEntrance
 import kotlinx.coroutines.launch
 import kotlin.math.PI
@@ -129,8 +130,10 @@ fun DashboardScreen(
     parcelleRepository: ParcelleRepository? = null,
     onNavigateBack: () -> Unit
 ) {
-    val tiges by tigeRepository.getTigesByParcelle(parcelleId).collectAsStateWithLifecycle(initialValue = emptyList())
-    val essences by essenceRepository.getAllEssences().collectAsStateWithLifecycle(initialValue = emptyList())
+    val tigesState by tigeRepository.getTigesByParcelle(parcelleId).collectAsStateWithLifecycle(initialValue = null)
+    val tiges = tigesState ?: emptyList<Tige>()
+    val essencesState by essenceRepository.getAllEssences().collectAsStateWithLifecycle(initialValue = null)
+    val essences = essencesState ?: emptyList<Essence>()
     val essenceMap = remember(essences) { essences.associateBy { it.code.uppercase() } }
 
     val parcelle by (parcelleRepository?.getParcelleById(parcelleId)
@@ -195,18 +198,47 @@ fun DashboardScreen(
         }
     }
 
+    if (tigesState == null || essencesState == null) {
+        LoadingState("Chargement du tableau de bord…")
+        return
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.dashboard_title), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = {
+                    Column {
+                        Text(
+                            stringResource(R.string.dashboard_title),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = Color.White
+                        )
+                        val subtitle = if (tiges.isNotEmpty()) {
+                            stringResource(R.string.dashboard_subtitle_format, totalTiges, speciesCount)
+                        } else {
+                            parcelle?.name ?: ""
+                        }
+                        if (subtitle.isNotBlank()) {
+                            Text(
+                                subtitle,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.85f)
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                    scrolledContainerColor = Color.Transparent
                 ),
                 modifier = Modifier.drawBehind {
                     drawRect(
@@ -498,7 +530,7 @@ private fun AnimatedDonutChart(
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 AnimatedCounter(total, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("tiges", style = MaterialTheme.typography.labelSmall,
+                Text(stringResource(R.string.dashboard_tiges_unit), style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -591,7 +623,7 @@ private fun AnimatedBarChart(
         if (showCurve && entries.size >= 3) {
             Spacer(Modifier.height(6.dp))
             val curveColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
-            Text("Distribution de fréquence", style = MaterialTheme.typography.labelSmall,
+            Text(stringResource(R.string.dashboard_freq_dist), style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 2.dp))
         }
     }
@@ -707,7 +739,7 @@ private fun StandStructureCard(diamClasses: Map<Int, Int>, liocourtQ: Double?) {
                 Row(verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Default.Terrain, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                    Text("Structure du peuplement", style = MaterialTheme.typography.titleSmall,
+                    Text(stringResource(R.string.dashboard_stand_structure), style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold, color = Color.White)
                 }
             }
@@ -719,15 +751,15 @@ private fun StandStructureCard(diamClasses: Map<Int, Int>, liocourtQ: Double?) {
                         else                    -> Color(0xFFC62828)
                     }
                     val structureLabel = when {
-                        liocourtQ in 1.1..1.8 -> "Régulière (Liocourt)"
-                        liocourtQ < 0.8       -> "Peuplement jeune ou homogène"
-                        liocourtQ > 2.2       -> "Structure irrégulière forte"
-                        else                  -> "Structure hétérogène"
+                        liocourtQ in 1.1..1.8 -> stringResource(R.string.dashboard_structure_regular)
+                        liocourtQ < 0.8       -> stringResource(R.string.dashboard_structure_young)
+                        liocourtQ > 2.2       -> stringResource(R.string.dashboard_structure_irregular)
+                        else                  -> stringResource(R.string.dashboard_structure_heterogeneous)
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically) {
                         Column {
-                            Text("Coeff. de Liocourt (q)", style = MaterialTheme.typography.labelMedium,
+                            Text(stringResource(R.string.dashboard_liocourt_coeff), style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(String.format("%.2f", liocourtQ),
                                 style = MaterialTheme.typography.headlineSmall,
@@ -747,9 +779,9 @@ private fun StandStructureCard(diamClasses: Map<Int, Int>, liocourtQ: Double?) {
                 val minDiam = diamClasses.keys.minOrNull() ?: 0
                 val maxDiam = diamClasses.keys.maxOrNull() ?: 0
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    StructureStat("Classes diam.", "$classesCount", Modifier.weight(1f))
-                    StructureStat("Ø min", "${minDiam} cm", Modifier.weight(1f))
-                    StructureStat("Ø max", "${maxDiam} cm", Modifier.weight(1f))
+                    StructureStat(stringResource(R.string.dashboard_classes_diam), "$classesCount", Modifier.weight(1f))
+                    StructureStat(stringResource(R.string.dashboard_diam_min), "${minDiam} cm", Modifier.weight(1f))
+                    StructureStat(stringResource(R.string.dashboard_diam_max), "${maxDiam} cm", Modifier.weight(1f))
                 }
             }
         }
@@ -783,14 +815,14 @@ private fun FertilityCard(results: List<FertilityResult>, climateZone: ClimateZo
                     Row(verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Icon(Icons.Default.WaterDrop, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                        Text("Classes de fertilité", style = MaterialTheme.typography.titleSmall,
+                        Text(stringResource(R.string.dashboard_fertility_classes), style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold, color = Color.White)
                     }
                     Spacer(Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Icon(Icons.Default.Terrain, null, tint = Color.White.copy(0.8f), modifier = Modifier.size(14.dp))
-                        Text("Zone : ${climateZone.labelFr}",
+                        Text(stringResource(R.string.dashboard_zone_format, climateZone.labelFr),
                             style = MaterialTheme.typography.labelSmall, color = Color.White.copy(0.85f))
                     }
                 }
@@ -804,7 +836,7 @@ private fun FertilityCard(results: List<FertilityResult>, climateZone: ClimateZo
                     }
                 }
                 // Disclaimer
-                Text("Basé sur ONF/CNPF — indicatif. Sans âge connu, la précision dépend des mesures dendrométriques disponibles.",
+                Text(stringResource(R.string.dashboard_fertility_disclaimer),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.7f),
                     modifier = Modifier.padding(top = 4.dp))
@@ -845,10 +877,10 @@ private fun FertilityRow(result: FertilityResult, index: Int, started: Boolean) 
                     color = classColor.copy(alpha = confAlpha * 0.9f))
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text("${result.treeCount} t.",
+                Text(stringResource(R.string.dashboard_tree_count_format, result.treeCount),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (result.avgDiamCm > 0) Text("Ø ${String.format("%.0f",result.avgDiamCm)} cm",
+                if (result.avgDiamCm > 0) Text(stringResource(R.string.dashboard_avg_diam_format, result.avgDiamCm),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -867,8 +899,8 @@ private fun FertilityRow(result: FertilityResult, index: Int, started: Boolean) 
         }
         // Height info
         val heightStr = when {
-            result.dominantHeightM != null -> "H0 ~${String.format("%.1f",result.dominantHeightM)} m"
-            result.loreyHeightM != null    -> "HL ~${String.format("%.1f",result.loreyHeightM)} m"
+            result.dominantHeightM != null -> stringResource(R.string.dashboard_height_h0_format, result.dominantHeightM)
+            result.loreyHeightM != null    -> stringResource(R.string.dashboard_height_hl_format, result.loreyHeightM)
             else -> null
         }
         if (heightStr != null || result.zoneCompatibility.icon != "✓") {

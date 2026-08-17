@@ -24,12 +24,15 @@ import androidx.room.PrimaryKey
     ],
     indices = [
         Index(name = "index_placettes_parcelleOwnerId", value = ["parcelleOwnerId"]),
-        Index(name = "index_placettes_sessionId", value = ["sessionId"])
+        Index(name = "index_placettes_sessionId", value = ["sessionId"]),
+        Index(name = "index_placettes_uuid", value = ["uuid"], unique = true)
     ]
 )
 data class PlacetteEntity(
     @PrimaryKey
     val placetteId: String,
+    /** UUID normalisé (RFC 4122) pour interop GSIE serveur — backfill asynchrone. */
+    val uuid: String? = null,
     val parcelleOwnerId: String,
     val name: String?,
     val type: String?,
@@ -41,5 +44,12 @@ data class PlacetteEntity(
     val referenceGpsWkt: String?,
     val azimutRef: Double?,
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+
+    // Metadata spec GeoSylva 3.0 (GEOSYLVA-003 §3.1)
+    val deletedAt: Long? = null,
+    val auteur: String? = null,
+    val source: String? = null,
+    @ColumnInfo(name = "version", defaultValue = "1")
+    val version: Int = 1
 )

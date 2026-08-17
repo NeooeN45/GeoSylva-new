@@ -9,5 +9,14 @@ data class Placette(
     val surfaceM2: Double?,
     val centerWkt: String?,
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
-)
+    val updatedAt: Long = System.currentTimeMillis(),
+
+    // Metadata spec GeoSylva 3.0 §3.1 — provenance et traçabilité
+    override val deletedAt: Long? = null,
+    override val auteur: String? = null,
+    override val source: String? = null,
+    override val version: Int = 1
+) : Metadatable<Placette> {
+    override fun withMetadata(auteur: String, source: String, version: Int): Placette =
+        copy(auteur = auteur, source = source, version = version)
+}

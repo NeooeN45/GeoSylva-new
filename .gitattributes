@@ -1,0 +1,19 @@
+# Fins de ligne reproductibles sur Windows, Linux et en CI.
+* text=auto eol=lf
+
+# Lanceurs Windows.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Artefacts binaires Android et données.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.jar binary
+*.aar binary
+*.apk binary
+*.aab binary
+*.jks binary

@@ -8,7 +8,7 @@ import androidx.navigation.navArgument
 import com.forestry.counter.ForestryCounterApplication
 import com.forestry.counter.presentation.screens.forestry.DashboardScreen
 import com.forestry.counter.presentation.screens.forestry.EssenceDiamScreen
-import com.forestry.counter.presentation.screens.forestry.MapScreen
+import com.forestry.counter.presentation.screens.forestry.MapRechercheScreen
 import com.forestry.counter.presentation.screens.forestry.MartelageScreen
 import com.forestry.counter.presentation.screens.forestry.ParcellesScreen
 import com.forestry.counter.presentation.screens.forestry.PlacetteDetailScreen
@@ -41,7 +41,7 @@ fun NavGraphBuilder.forestryFlowNavGraph(
             onNavigateToGroup = { groupId ->
                 navController.navigate(Screen.Parcelles.createRoute(groupId))
             },
-            onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+            onNavigateToSettings = { navController.navigate(Screen.SettingsHome.route) },
             preferencesManager = app.userPreferences,
             onNavigateToMartelage = { groupIdOrNull ->
                 if (groupIdOrNull == null) {
@@ -53,7 +53,11 @@ fun NavGraphBuilder.forestryFlowNavGraph(
             onNavigateToMap = { scope ->
                 navController.navigate(Screen.Map.createRoute(scope))
             },
-            onNavigateToIbp = { navController.navigate(Screen.IbpProjects.route) }
+            onNavigateToIbp = { navController.navigate(Screen.IbpProjects.route) },
+            // Poussé depuis Explorer (catégorie « Forêts ») : sans flèche
+            // retour, c'était une impasse — l'écran fut conçu à l'origine
+            // comme onglet de premier niveau, jamais comme sous-page.
+            onNavigateBack = { navController.popBackStack() },
         )
     }
 
@@ -90,6 +94,9 @@ fun NavGraphBuilder.forestryFlowNavGraph(
             },
             onNavigateToIbp = { pid ->
                 navController.navigate(Screen.IbpHistory.createRoute(pid))
+            },
+            onNavigateToCreateParcelle = { fid ->
+                navController.navigate(Screen.CreateParcelle.createRoute(fid))
             }
         )
     }
@@ -124,6 +131,9 @@ fun NavGraphBuilder.forestryFlowNavGraph(
             },
             onNavigateToDiagnostic = { pid ->
                 navController.navigate(Screen.DiagnosticMenu.createRoute(pid))
+            },
+            onNavigateToCreatePlacette = { pid ->
+                navController.navigate(Screen.CreatePlacette.createRoute(pid))
             }
         )
     }
@@ -267,7 +277,7 @@ fun NavGraphBuilder.forestryFlowNavGraph(
             parcelleRepository = app.parcelleRepository,
             forestryCalculator = app.forestryCalculator,
             userPreferences = app.userPreferences,
-            onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+            onNavigateToSettings = { navController.navigate(Screen.SettingsHome.route) },
             onNavigateToPriceTablesEditor = { navController.navigate(Screen.PriceTablesEditor.route) },
             onNavigateToMap = { pid -> navController.navigate(Screen.Map.createRoute(pid)) },
             ibpRepository = app.ibpRepository,
@@ -291,10 +301,6 @@ fun NavGraphBuilder.forestryFlowNavGraph(
         route = Screen.Map.route,
         arguments = listOf(
             navArgument("parcelleId") { type = NavType.StringType },
-            navArgument("navLat") { type = NavType.StringType; nullable = true; defaultValue = null },
-            navArgument("navLon") { type = NavType.StringType; nullable = true; defaultValue = null },
-            navArgument("navEssence") { type = NavType.StringType; nullable = true; defaultValue = null },
-            navArgument("navDiam") { type = NavType.StringType; nullable = true; defaultValue = null }
         ),
         enterTransition = transitions.enter,
         exitTransition = transitions.exit,
@@ -302,11 +308,7 @@ fun NavGraphBuilder.forestryFlowNavGraph(
         popExitTransition = transitions.popExit,
     ) { backStackEntry ->
         val parcelleId = backStackEntry.arguments?.getString("parcelleId") ?: return@composable
-        val navLat = backStackEntry.arguments?.getString("navLat")?.toDoubleOrNull()
-        val navLon = backStackEntry.arguments?.getString("navLon")?.toDoubleOrNull()
-        val navEssence = backStackEntry.arguments?.getString("navEssence")
-        val navDiam = backStackEntry.arguments?.getString("navDiam")?.toDoubleOrNull()
-        MapScreen(
+        MapRechercheScreen(
             parcelleId = parcelleId,
             tigeRepository = app.tigeRepository,
             essenceRepository = app.essenceRepository,
@@ -314,10 +316,6 @@ fun NavGraphBuilder.forestryFlowNavGraph(
             preferencesManager = app.userPreferences,
             offlineTileManager = app.offlineTileManager,
             onNavigateBack = { navController.popBackStack() },
-            initialNavLat = navLat,
-            initialNavLon = navLon,
-            initialNavEssence = navEssence,
-            initialNavDiam = navDiam
         )
     }
 }

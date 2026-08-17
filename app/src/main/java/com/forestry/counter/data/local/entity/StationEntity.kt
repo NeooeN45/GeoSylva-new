@@ -1,5 +1,6 @@
 package com.forestry.counter.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -65,7 +66,14 @@ data class StationEntity(
     val especesMesophiles: Boolean,
     val especesHygrophiles: Boolean,
     
-    val notes: String
+    val notes: String,
+
+    // Metadata spec GeoSylva 3.0 (GEOSYLVA-003 §3.1)
+    val deletedAt: Long? = null,
+    val auteur: String? = null,
+    val source: String? = null,
+    @ColumnInfo(name = "version", defaultValue = "1")
+    val version: Int = 1
 ) {
     fun toDomain(): StationObservation {
         return StationObservation(
@@ -100,7 +108,11 @@ data class StationEntity(
             especesXerophiles = especesXerophiles,
             especesMesophiles = especesMesophiles,
             especesHygrophiles = especesHygrophiles,
-            notes = notes
+            notes = notes,
+            deletedAt = deletedAt,
+            auteur = auteur,
+            source = source,
+            version = version
         )
     }
 
@@ -138,7 +150,11 @@ data class StationEntity(
                 especesXerophiles = obs.especesXerophiles,
                 especesMesophiles = obs.especesMesophiles,
                 especesHygrophiles = obs.especesHygrophiles,
-                notes = obs.notes
+                notes = obs.notes,
+                deletedAt = obs.deletedAt,
+                auteur = obs.auteur,
+                source = obs.source,
+                version = obs.version
             )
         }
 

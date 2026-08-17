@@ -1,5 +1,6 @@
 package com.forestry.counter.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -57,7 +58,14 @@ data class RipisylveEntity(
     val invasivesCsv: String,
     val inadapteesMode: String,
     val stabilitePct: Double,
-    val globalNotes: String
+    val globalNotes: String,
+
+    // Metadata spec GeoSylva 3.0 (GEOSYLVA-003 §3.1)
+    val deletedAt: Long? = null,
+    val auteur: String? = null,
+    val source: String? = null,
+    @ColumnInfo(name = "version", defaultValue = "1")
+    val version: Int = 1
 ) {
     fun toDomain(): RipisylveObservation = RipisylveObservation(
         id = id,
@@ -95,7 +103,11 @@ data class RipisylveEntity(
         invasivesIdentifiees = if (invasivesCsv.isBlank()) emptyList() else invasivesCsv.split(","),
         inadapteesMode = InadapteesMode.entries.firstOrNull { it.name == inadapteesMode } ?: InadapteesMode.ABSENCE,
         stabilitePct = stabilitePct,
-        globalNotes = globalNotes
+        globalNotes = globalNotes,
+        deletedAt = deletedAt,
+        auteur = auteur,
+        source = source,
+        version = version
     )
 
     companion object {
@@ -136,7 +148,11 @@ data class RipisylveEntity(
             invasivesCsv = obs.invasivesIdentifiees.joinToString(","),
             inadapteesMode = obs.inadapteesMode.name,
             stabilitePct = obs.stabilitePct,
-            globalNotes = obs.globalNotes
+            globalNotes = obs.globalNotes,
+            deletedAt = obs.deletedAt,
+            auteur = obs.auteur,
+            source = obs.source,
+            version = obs.version
         )
     }
 }

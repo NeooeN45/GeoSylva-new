@@ -38,6 +38,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import android.widget.ImageView
@@ -48,6 +49,8 @@ import com.forestry.counter.domain.repository.ParcelleRepository
 import com.forestry.counter.domain.repository.TigeRepository
 import com.forestry.counter.data.preferences.UserPreferencesManager
 import com.forestry.counter.presentation.components.AppMiniDialog
+import com.forestry.counter.presentation.components.LoadingState
+import com.forestry.counter.presentation.utils.localizeDefaultName
 import com.forestry.counter.presentation.utils.rememberHapticFeedback
 import com.forestry.counter.presentation.utils.rememberSoundFeedback
 import com.forestry.counter.presentation.utils.StaggerEntrance
@@ -70,12 +73,14 @@ fun PlacettesScreen(
     onNavigateToMartelageForParcelle: ((String) -> Unit)? = null,
     onNavigateToMap: ((String) -> Unit)? = null,
     onNavigateToDashboard: ((String) -> Unit)? = null,
-    onNavigateToDiagnostic: ((String) -> Unit)? = null
+    onNavigateToDiagnostic: ((String) -> Unit)? = null,
+    onNavigateToCreatePlacette: ((String) -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
-    val placettes by placetteRepository.getPlacettesByParcelle(parcelleId).collectAsStateWithLifecycle(initialValue = emptyList())
+    val placettesState by placetteRepository.getPlacettesByParcelle(parcelleId).collectAsStateWithLifecycle(initialValue = null)
+    val placettes = placettesState ?: emptyList<Placette>()
     val parcelle by parcelleRepository.getParcelleById(parcelleId).collectAsStateWithLifecycle(initialValue = null)
 
     val hapticEnabled by userPreferences.hapticEnabled.collectAsStateWithLifecycle(initialValue = true)
@@ -132,6 +137,11 @@ fun PlacettesScreen(
         }
     }
 
+    if (placettesState == null) {
+        LoadingState("Chargement des placettes…")
+        return
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         if (backgroundImageEnabled) {
             val uriString = backgroundImageUri
@@ -162,7 +172,29 @@ fun PlacettesScreen(
             snackbarHost = { SnackbarHost(hostState = snackbar) },
             topBar = {
                 TopAppBar(
-                    title = { Text(stringResource(R.string.placettes_title)) },
+                    title = {
+                        Column {
+                            Text(
+                                stringResource(R.string.placettes_title),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                            val pName = parcelle?.name?.takeIf { it.isNotBlank() }
+                            val subtitle = if (pName != null) {
+                                "$pName · ${stringResource(R.string.placettes_count_format, placettes.size)}"
+                            } else {
+                                stringResource(R.string.placettes_count_format, placettes.size)
+                            }
+                            Text(
+                                subtitle,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    },
                     navigationIcon = {
                         IconButton(onClick = {
                             playClickFeedback()
@@ -170,20 +202,20 @@ fun PlacettesScreen(
                         }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back)) }
                     },
                     actions = {
-                        if (onNavigateToDiagnostic != null) {
-                            IconButton(onClick = {
-                                playClickFeedback()
-                                onNavigateToDiagnostic(parcelleId)
-                            }) {
-                                Icon(Icons.Default.Assessment, contentDescription = stringResource(R.string.cd_diagnostic))
-                            }
-                        }
                         if (onNavigateToDashboard != null) {
                             IconButton(onClick = {
                                 playClickFeedback()
                                 onNavigateToDashboard(parcelleId)
                             }) {
                                 Icon(Icons.Default.BarChart, contentDescription = stringResource(R.string.dashboard_button))
+                            }
+                        }
+                        if (onNavigateToDiagnostic != null) {
+                            IconButton(onClick = {
+                                playClickFeedback()
+                                onNavigateToDiagnostic(parcelleId)
+                            }) {
+                                Icon(Icons.Default.Assessment, contentDescription = stringResource(R.string.cd_diagnostic))
                             }
                         }
                         if (onNavigateToMap != null) {
@@ -199,20 +231,23 @@ fun PlacettesScreen(
                                 playClickFeedback()
                                 onNavigateToMartelageForParcelle(parcelleId)
                             }) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Straighten, contentDescription = null)
-                                    Spacer(modifier = Modifier.width(2.dp))
-                                    Icon(Icons.Default.Description, contentDescription = stringResource(R.string.martelage))
-                                }
+                                Icon(Icons.Default.Straighten, contentDescription = stringResource(R.string.martelage))
                             }
                         }
                     }
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(onClick = {
-                    addPlacette()
-                }) {
+                FloatingActionButton(
+                    onClick = {
+                        if (onNavigateToCreatePlacette != null) {
+                            onNavigateToCreatePlacette(parcelleId)
+                        } else {
+                            addPlacette()
+                        }
+                    },
+                    modifier = Modifier.offset(x = 8.dp),
+                ) {
                     Icon(Icons.Default.Add, contentDescription = stringResource(R.string.create_placette))
                 }
             },
@@ -455,11 +490,11 @@ private fun PlacetteCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         ListItem(
-            headlineContent = { Text(placette.name ?: placette.id.take(8)) },
+            headlineContent = { Text(localizeDefaultName(placette.name) ?: placette.id.take(8)) },
             trailingContent = {
                 Row {
                     IconButton(onClick = onEdit) {
-                        Icon(Icons.Default.Edit, contentDescription = null)
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.cd_edit))
                     }
                     IconButton(onClick = onDelete) {
                         Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete_placette))

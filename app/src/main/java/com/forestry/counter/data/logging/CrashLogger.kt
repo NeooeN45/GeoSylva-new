@@ -38,7 +38,7 @@ object CrashLogger {
         val dir = File(context.filesDir, LOG_DIR).also { it.mkdirs() }
         pruneOldLogs(dir)
         val ts = TS_FORMAT.format(Date())
-        PrintWriter(File(dir, "crash-$ts.txt"), Charsets.UTF_8).use { pw ->
+        PrintWriter(OutputStreamWriter(File(dir, "crash-$ts.txt").outputStream(), Charsets.UTF_8)).use { pw ->
             pw.println("=== GeoSylva Crash Report ===")
             pw.println("Timestamp : $ts")
             pw.println("Version   : ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")

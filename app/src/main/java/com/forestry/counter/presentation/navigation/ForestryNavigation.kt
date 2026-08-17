@@ -13,11 +13,17 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.forestry.counter.ForestryCounterApplication
+import com.forestry.counter.presentation.screens.account.LoginScreen
+import com.forestry.counter.presentation.screens.explorer.ExplorerCategory
+import kotlinx.coroutines.launch
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
@@ -33,7 +39,15 @@ sealed class Screen(val route: String) {
     object Calculator : Screen("group/{groupId}/calculator") {
         fun createRoute(groupId: String) = "group/$groupId/calculator"
     }
-    object Settings : Screen("settings")
+    object SettingsHome : Screen("settings_home")
+    object Settings : Screen("settings?section={section}") {
+        fun createRoute(section: String? = null) =
+            if (section != null) "settings?section=$section" else "settings"
+    }
+    object Account : Screen("settings/account")
+    object Login : Screen("settings/account/login")
+    object PasswordRecovery : Screen("settings/account/password-recovery")
+    object DeveloperOptions : Screen("settings/developer")
     object PriceTablesEditor : Screen("settings/price_tables")
     object Parcelles : Screen("parcelles/{forestId}") {
         fun createRoute(forestId: String?) = "parcelles/${forestId ?: "none"}"
@@ -54,15 +68,8 @@ sealed class Screen(val route: String) {
         fun forParcelle(parcelleId: String): String = "martelage/PARCELLE/none/$parcelleId/none"
         fun forPlacette(parcelleId: String, placetteId: String): String = "martelage/PLACETTE/none/$parcelleId/$placetteId"
     }
-    object Map : Screen("map/{parcelleId}?navLat={navLat}&navLon={navLon}&navEssence={navEssence}&navDiam={navDiam}") {
+    object Map : Screen("map/{parcelleId}") {
         fun createRoute(parcelleId: String) = "map/$parcelleId"
-        fun createRouteWithNav(
-            parcelleId: String,
-            lat: Double,
-            lon: Double,
-            essenceName: String,
-            diamCm: Double
-        ) = "map/$parcelleId?navLat=$lat&navLon=$lon&navEssence=$essenceName&navDiam=$diamCm"
     }
     object EssenceDiam : Screen("placette/{parcelleId}/{placetteId}/essence/{essenceCode}") {
         fun createRoute(parcelleId: String, placetteId: String, essenceCode: String) = "placette/$parcelleId/$placetteId/essence/$essenceCode"
@@ -96,6 +103,22 @@ sealed class Screen(val route: String) {
         fun createRoute(diagnosticId: String) = "diagnostic/result/$diagnosticId"
     }
     object Onboarding : Screen("onboarding")
+
+    /**
+     * Porte d'entrée de l'application, au tout premier lancement.
+     *
+     * Héberge [Screen.Login] avec une sémantique de démarrage : c'est le seul
+     * écran porteur d'une vidéo, et le seul moment où GeoSylva se présente.
+     * « Continuer hors ligne » y est toujours accessible — l'application doit
+     * rester pleinement utilisable sans compte ni réseau.
+     */
+    object Welcome : Screen("welcome")
+    /**
+     * Sélection du métier — juste après connexion ou "Continuer hors
+     * ligne", avant l'onboarding. Vue une seule fois par installation,
+     * comme Welcome dont elle hérite la place dans le parcours.
+     */
+    object ProfessionSelection : Screen("profession_selection")
     object RipisylveDiagnostic : Screen("ripisylve/diagnostic/{parcelleId}") {
         fun createRoute(parcelleId: String) = "ripisylve/diagnostic/$parcelleId"
     }
@@ -104,9 +127,24 @@ sealed class Screen(val route: String) {
         fun createRoute(parcelleId: String) = "stand/classification/$parcelleId"
     }
     object TarifDocs : Screen("settings/tarif_docs")
+    object PrivacyPolicy : Screen("settings/privacy_policy")
     object PackManager : Screen("packs")
     object SuperCorrelateur : Screen("super_correlateur/{parcelleId}") {
         fun createRoute(parcelleId: String) = "super_correlateur/$parcelleId"
+    }
+    object Projects : Screen("projects")
+    object ProjectDetail : Screen("project/{projectId}") {
+        fun createRoute(projectId: String) = "project/$projectId"
+    }
+    object ForestDetail : Screen("forest/{forestId}") {
+        fun createRoute(forestId: String) = "forest/$forestId"
+    }
+    object CreateForest : Screen("forest/create")
+    object CreateParcelle : Screen("parcelle/create/{forestId}") {
+        fun createRoute(forestId: String) = "parcelle/create/$forestId"
+    }
+    object CreatePlacette : Screen("placette/create/{parcelleId}") {
+        fun createRoute(parcelleId: String) = "placette/create/$parcelleId"
     }
 }
 
@@ -115,6 +153,12 @@ sealed class Screen(val route: String) {
 @Composable
 fun ForestryNavigation(app: ForestryCounterApplication) {
     val navController = rememberNavController()
+    // Remonté depuis TopLevelTabContent (branche Carte) pour piloter le
+    // masquage plein écran de la bottom nav sur les modes Maps/Recherche/
+    // Libre — voir MainScaffold(hideBottomBar).
+    var carteMode by androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf<com.forestry.counter.presentation.screens.forestry.CarteMode?>(null)
+    }
 
     val animationsEnabled by app.userPreferences.animationsEnabled.collectAsStateWithLifecycle(initialValue = true)
     val onboardingCompleted by app.userPreferences.onboardingCompleted.collectAsStateWithLifecycle(initialValue = true)
@@ -188,16 +232,136 @@ fun ForestryNavigation(app: ForestryCounterApplication) {
         },
     )
 
-    val startDest = if (onboardingCompleted) Screen.Forets.route else Screen.Onboarding.route
+    // Premier lancement : connexion → onboarding → accueil.
+    // Ensuite : accueil directement. La connexion n'est donc vue qu'une fois
+    // par installation, ce qui justifie d'y placer la vidéo de présentation.
+    val startDest = if (onboardingCompleted) BottomNavDestination.startRoute else Screen.Welcome.route
 
-    NavHost(
-        navController = navController,
-        startDestination = startDest,
-    ) {
-        onboardingNavGraph(navController, app, transitions)
-        forestryFlowNavGraph(navController, app, transitions)
-        ibpNavGraph(navController, app, transitions)
-        diagnosticNavGraph(navController, app, transitions)
-        settingsNavGraph(navController, app, transitions)
+    MainScaffold(navController = navController, app = app, hideBottomBar = carteMode != null) { innerModifier ->
+        NavHost(
+            navController = navController,
+            startDestination = startDest,
+        ) {
+            composable(
+                route = Screen.Welcome.route,
+                enterTransition = transitions.enter,
+                exitTransition = transitions.exit,
+                popEnterTransition = transitions.popEnter,
+                popExitTransition = transitions.popExit,
+            ) {
+                val goToProfessionSelection = {
+                    navController.navigate(Screen.ProfessionSelection.route) {
+                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                    }
+                }
+                LoginScreen(
+                    repository = app.identityRepository,
+                    onAuthenticated = goToProfessionSelection,
+                    onContinueOffline = goToProfessionSelection,
+                    onForgotPassword = { navController.navigate(Screen.PasswordRecovery.route) },
+                    animationsEnabled = animationsEnabled,
+                    preferencesManager = app.userPreferences,
+                )
+            }
+
+            composable(
+                route = Screen.ProfessionSelection.route,
+                enterTransition = transitions.enter,
+                exitTransition = transitions.exit,
+                popEnterTransition = transitions.popEnter,
+                popExitTransition = transitions.popExit,
+            ) {
+                val scope = rememberCoroutineScope()
+                com.forestry.counter.presentation.screens.onboarding.ProfessionSelectionScreen(
+                    onComplete = { code, customText ->
+                        scope.launch {
+                            app.userPreferences.setUserProfession(code, customText)
+                        }
+                        navController.navigate(Screen.Onboarding.route) {
+                            popUpTo(Screen.ProfessionSelection.route) { inclusive = true }
+                        }
+                    },
+                )
+            }
+
+            // Lot 1 — 5 onglets de premier niveau (bottom nav)
+            BottomNavDestination.entries.forEach { destination ->
+                composable(
+                    route = destination.route,
+                    enterTransition = transitions.enter,
+                    exitTransition = transitions.exit,
+                    popEnterTransition = transitions.popEnter,
+                    popExitTransition = transitions.popExit,
+                ) {
+                    TopLevelTabContent(
+                        route = destination.route,
+                        app = app,
+                        carteMode = carteMode,
+                        onCarteModeChange = { carteMode = it },
+                        onNavigateToExplorer = {
+                            navController.navigate(BottomNavDestination.EXPLORER.route) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        onNavigateToForet = { foretId ->
+                            navController.navigate(Screen.ForestDetail.createRoute(foretId))
+                        },
+                        onNavigateToForets = {
+                            navController.navigate(Screen.Forets.route)
+                        },
+                        onNavigateToProjects = {
+                            navController.navigate(Screen.Projects.route)
+                        },
+                        onNavigateToLogin = {
+                            navController.navigate(Screen.Login.route)
+                        },
+                        onNavigateToSettings = {
+                            navController.navigate(Screen.SettingsHome.route)
+                        },
+                        onNavigateToSettingsCategory = { category ->
+                            // Même logique que SettingsHomeScreen poussé en pile
+                            // (SettingsNavGraph) : « compte » ouvre l'espace Compte
+                            // lui-même, les autres catégories filtrent Réglages.
+                            if (category == "compte") {
+                                navController.navigate(Screen.Account.route)
+                            } else {
+                                navController.navigate(Screen.Settings.createRoute(category))
+                            }
+                        },
+                        onCreateForest = {
+                            navController.navigate(Screen.CreateForest.route)
+                        },
+                        onCategoryClick = { category ->
+                            when (category) {
+                                // Placettes et Diagnostics n'ont pas de vue globale
+                                // propre : elles n'existent que rattachées à une
+                                // parcelle. La liste globale des parcelles (déjà
+                                // câblée vers Placettes/Diagnostic/Carte/Martelage/
+                                // IBP par parcelle) est le point d'entrée commun.
+                                ExplorerCategory.PARCELLES,
+                                ExplorerCategory.PLACETTES,
+                                ExplorerCategory.DIAGNOSTICS -> {
+                                    navController.navigate(Screen.Parcelles.createRoute(null))
+                                }
+                                // Le reste n'a encore ni écran ni entrée dédiée
+                                // (Lot 1) : rien à faire.
+                                else -> {}
+                            }
+                        },
+                        modifier = innerModifier,
+                    )
+                }
+            }
+
+            onboardingNavGraph(navController, app, transitions)
+            forestryFlowNavGraph(navController, app, transitions)
+            ibpNavGraph(navController, app, transitions)
+            diagnosticNavGraph(navController, app, transitions)
+            settingsNavGraph(navController, app, transitions)
+            projectsNavGraph(navController, app, transitions)
+            forestDetailNavGraph(navController, app, transitions)
+        }
     }
 }

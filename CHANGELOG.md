@@ -3,6 +3,80 @@
 All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com).
 
+## [Unreleased] — 2026-08-03
+
+### Fixed
+
+- **Chargement des fonds de carte** — les changements de couche sont désormais
+  sérialisés, la dernière demande est conservée, les callbacks obsolètes sont
+  ignorés et un délai maximal mène vers une erreur visible avec relance.
+- **Packs cartographiques hors ligne** — refus des flux vectoriels enregistrés
+  comme images, des fournisseurs non qualifiés pour le téléchargement massif
+  et des limites géographiques invalides. Une zone partielle n'est plus
+  publiée dans le catalogue.
+- **Écriture et confidentialité du cache** — fichiers temporaires avant
+  publication, catalogue remplacé atomiquement, concurrence bornée à six
+  workers et journaux limités au domaine sans URL, requête ni clé d'API.
+- **Ressources cartographiques en release** — suppression des empreintes TLS
+  factices qui bloquaient IGN, Esri, CARTO, OpenTopo et MapTiler. HTTPS reste
+  obligatoire avec les autorités de confiance Android, la liste blanche de
+  domaines et la protection DNS/SSRF.
+- **Diagnostic de sécurité réseau** — le statut n'annonce plus à tort un
+  certificate pinning actif ; un test empêche le retour de pins placeholders.
+
+### Added
+
+- **Gate de livraison** — la CI construit désormais aussi le bundle Release
+  minifié et expose un contrôle final unique exigeant lint, tests, APK Debug
+  et bundle Release. Dependabot surveille Gradle et GitHub Actions chaque
+  semaine.
+- **Corpus d’interopérabilité** — le contrôle SHA-256 canonise les fins de
+  ligne des fixtures texte et vérifie l’exhaustivité du manifeste, afin de
+  produire le même verdict sous Windows et dans la CI Linux.
+- **Synchronisation des parcelles avec GSIE** — activation explicite depuis
+  les options développeur, puis file Room/SQLCipher et traitement WorkManager.
+- **Protocole sans écrasement** — UUID d’opération, version serveur, tombstones
+  de suppression et conflits conservés pour résolution humaine.
+- **File résistante aux courses** — réclamation conditionnelle des opérations,
+  conservation des éditions locales sur réponse tardive et continuation des
+  lots de plus de 50 parcelles.
+- **Migration Room 32→33** — table `parcel_sync_queue`, index de reprise et
+  schéma Room v33 exporté.
+- **Diagnostic de synchronisation** — compteurs en attente, synchronisés, en
+  conflit et en erreur, sans exposition des jetons.
+
+- **Compte Quintessences** — écrans Compose distincts pour la connexion, la
+  création de compte et la consultation de la session GSIE.
+- **Connexion locale et Google** — client Retrofit conforme au contrat
+  `DEC-000044`, découverte dynamique des fournisseurs et Google Credential
+  Manager avec nonce serveur.
+- **Session chiffrée** — jetons GSIE stockés dans un coffre
+  `EncryptedSharedPreferences`, séparé des préférences ordinaires.
+- **Options développeur** — activation persistante après huit pressions sur
+  la version, puis diagnostic local de `/health`, `/ready`, des fournisseurs
+  d’identité, du build et de l’appareil, avec commande de synchronisation.
+- **Cycle complet du compte** — profil modifiable, vérification d'adresse,
+  récupération de mot de passe et révocation des sessions antérieures.
+- **518 tests unitaires** — 518 passés, aucun échec ni test ignoré.
+- **Validation Android** — compilation Kotlin, assemblage de l’APK et lint
+  réussis ; 0 erreur lint et 577 avertissements non bloquants.
+- **Validation émulateur** — parcours compte, récupération et page développeur
+  reliée à l'API locale ; diagnostic `/health` et `/ready` fonctionnel.
+
+### Changed
+
+- Les fonctions forestières locales restent accessibles sans compte et en cas
+  d’indisponibilité de GSIE.
+- La documentation de confidentialité distingue désormais les données de
+  terrain locales du traitement d’identité optionnel.
+- Le retour de progression des huit pressions utilise un toast non tactile :
+  la ligne de version reste accessible pendant tout le déverrouillage.
+- Le protocole de production prévoit Cloudflare Tunnel devant GSIE sans
+  embarquer de secret Cloudflare ou de certificat mTLS partagé dans l'APK.
+- Une connexion au compte n’envoie aucune parcelle à elle seule. La première
+  transmission requiert « Activer et synchroniser les parcelles » ; ensuite,
+  les changements sont placés dans la file pour ce compte.
+
 ## [2.4.0] — 2026-06-30
 
 ### Added

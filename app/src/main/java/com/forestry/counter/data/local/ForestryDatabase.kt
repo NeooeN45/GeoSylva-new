@@ -19,6 +19,7 @@ import com.forestry.counter.data.local.dao.GroupVariableDao
 import com.forestry.counter.data.local.dao.InventaireSessionDao
 import com.forestry.counter.data.local.dao.ObservationFloreDao
 import com.forestry.counter.data.local.dao.ParcelleDao
+import com.forestry.counter.data.local.dao.ParcelSyncDao
 import com.forestry.counter.data.local.dao.PlacetteDao
 import com.forestry.counter.data.local.dao.EssenceDao
 import com.forestry.counter.data.local.dao.ProjectionClimatiqueSerDao
@@ -40,6 +41,7 @@ import com.forestry.counter.data.local.entity.GroupEntity
 import com.forestry.counter.data.local.entity.GroupVariableEntity
 import com.forestry.counter.data.local.entity.ObservationFloreEntity
 import com.forestry.counter.data.local.entity.ParcelleEntity
+import com.forestry.counter.data.local.entity.ParcelSyncEntity
 import com.forestry.counter.data.local.entity.PlacetteEntity
 import com.forestry.counter.data.local.entity.ProjectionClimatiqueSerEntity
 import com.forestry.counter.data.local.entity.StationEnvironnementaleEntity
@@ -62,6 +64,23 @@ import com.forestry.counter.data.local.entity.DataCorrelationEntity
 import com.forestry.counter.data.local.entity.DataInterpretationEntity
 import com.forestry.counter.data.local.entity.EntityRelationEntity
 import com.forestry.counter.data.local.entity.AdvancedCalculationEntity
+import com.forestry.counter.data.local.entity.PermanentTreeEntity
+import com.forestry.counter.data.local.entity.TreeObservationEntity
+import com.forestry.counter.data.local.entity.MeasurementEntity
+import com.forestry.counter.data.local.entity.EvidenceEntity
+import com.forestry.counter.data.local.entity.CalculationRunEntity
+import com.forestry.counter.data.local.entity.UnitEntity
+import com.forestry.counter.data.local.entity.EventLogEntity
+import com.forestry.counter.data.local.entity.ProjectEntity
+import com.forestry.counter.data.local.entity.ProjectForestCrossRef
+import com.forestry.counter.data.local.dao.PermanentTreeDao
+import com.forestry.counter.data.local.dao.TreeObservationDao
+import com.forestry.counter.data.local.dao.MeasurementDao
+import com.forestry.counter.data.local.dao.EvidenceDao
+import com.forestry.counter.data.local.dao.CalculationRunDao
+import com.forestry.counter.data.local.dao.UnitDao
+import com.forestry.counter.data.local.dao.EventLogDao
+import com.forestry.counter.data.local.dao.ProjectDao
 
 @Database(
     entities = [
@@ -92,9 +111,20 @@ import com.forestry.counter.data.local.entity.AdvancedCalculationEntity
         DataCorrelationEntity::class,
         DataInterpretationEntity::class,
         EntityRelationEntity::class,
-        AdvancedCalculationEntity::class
+        AdvancedCalculationEntity::class,
+        ParcelSyncEntity::class,
+        // Lot 1 — Contrat universel de données (GEOSYLVA-003 §7.6)
+        PermanentTreeEntity::class,
+        TreeObservationEntity::class,
+        MeasurementEntity::class,
+        EvidenceEntity::class,
+        CalculationRunEntity::class,
+        UnitEntity::class,
+        EventLogEntity::class,
+        ProjectEntity::class,
+        ProjectForestCrossRef::class
     ],
-    version = 32,
+    version = 35,
     exportSchema = true
 )
 @TypeConverters(EnumConverters::class)
@@ -104,6 +134,7 @@ abstract class ForestryDatabase : RoomDatabase() {
     abstract fun formulaDao(): FormulaDao
     abstract fun groupVariableDao(): GroupVariableDao
     abstract fun parcelleDao(): ParcelleDao
+    abstract fun parcelSyncDao(): ParcelSyncDao
     abstract fun placetteDao(): PlacetteDao
     abstract fun essenceDao(): EssenceDao
     abstract fun tigeDao(): TigeDao
@@ -126,6 +157,15 @@ abstract class ForestryDatabase : RoomDatabase() {
     abstract fun dataInterpretationDao(): DataInterpretationDao
     abstract fun entityRelationDao(): EntityRelationDao
     abstract fun advancedCalculationDao(): AdvancedCalculationDao
+    // Lot 1 — Contrat universel de données
+    abstract fun permanentTreeDao(): PermanentTreeDao
+    abstract fun treeObservationDao(): TreeObservationDao
+    abstract fun measurementDao(): MeasurementDao
+    abstract fun evidenceDao(): EvidenceDao
+    abstract fun calculationRunDao(): CalculationRunDao
+    abstract fun unitDao(): UnitDao
+    abstract fun eventLogDao(): EventLogDao
+    abstract fun projectDao(): ProjectDao
 
     companion object {
         const val DATABASE_NAME = "forestry_counter.db"

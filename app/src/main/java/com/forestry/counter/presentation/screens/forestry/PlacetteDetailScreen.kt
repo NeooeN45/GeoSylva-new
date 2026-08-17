@@ -14,9 +14,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -46,6 +50,9 @@ import androidx.compose.material.icons.filled.EmojiNature
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Water
 import androidx.compose.ui.Alignment
@@ -54,6 +61,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import com.forestry.counter.presentation.theme.AccentBlue
+import com.forestry.counter.presentation.theme.AccentGreen
+import com.forestry.counter.presentation.theme.EssenceMixte
+import com.forestry.counter.presentation.theme.SemanticError
+import com.forestry.counter.presentation.theme.SemanticInfo
+import com.forestry.counter.presentation.theme.SemanticSuccess
+import com.forestry.counter.presentation.theme.SemanticWarning
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -65,6 +79,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.window.Dialog
+import androidx.compose.foundation.shape.CircleShape
 import com.forestry.counter.R
 import com.forestry.counter.domain.model.Essence
 import com.forestry.counter.domain.model.Tige
@@ -75,6 +92,7 @@ import androidx.core.content.FileProvider
 import androidx.core.content.ContextCompat
 import com.forestry.counter.data.preferences.UserPreferencesManager
 import com.forestry.counter.presentation.components.AppMiniDialog
+import com.forestry.counter.presentation.components.LoadingState
 import com.forestry.counter.presentation.utils.rememberHapticFeedback
 import com.forestry.counter.presentation.utils.rememberSoundFeedback
 import kotlinx.coroutines.launch
@@ -105,10 +123,10 @@ private fun essenceColor(essence: Essence?): Color? {
     // Sinon, couleurs par catégorie, puis fallback hash
     val cat = essence.categorie?.uppercase()?.trim()
     return when (cat) {
-        "AVENIR" -> Color(0xFF4CAF50)
-        "RESERVE" -> Color(0xFF2196F3)
-        "ENLEVER" -> Color(0xFFF44336)
-        "DEPERIR" -> Color(0xFFFF9800)
+        "AVENIR" -> AccentGreen
+        "RESERVE" -> AccentBlue
+        "ENLEVER" -> SemanticError
+        "DEPERIR" -> SemanticWarning
         "BIODIV" -> Color(0xFF26A69A)
         else -> hashColorFromCode(essence.code)
     }
@@ -116,21 +134,21 @@ private fun essenceColor(essence: Essence?): Color? {
 
 private fun hashColorFromCode(code: String): Color {
     val palette = listOf(
-        Color(0xFF4CAF50), // green
-        Color(0xFF2196F3), // blue
-        Color(0xFFF44336), // red
-        Color(0xFFFF9800), // orange
+        AccentGreen, // green
+        AccentBlue, // blue
+        SemanticError, // red
+        SemanticWarning, // orange
         Color(0xFF26A69A), // teal
         Color(0xFF9C27B0), // purple
         Color(0xFF009688), // deep teal
-        Color(0xFF795548), // brown
+        EssenceMixte, // brown
         Color(0xFF607D8B)  // blue gray
     )
     val idx = (code.hashCode() and 0x7FFFFFFF) % palette.size
     return palette[idx]
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun PlacetteDetailScreen(
     parcelleId: String,
@@ -160,8 +178,12 @@ fun PlacetteDetailScreen(
     var searchActive by remember { mutableStateOf(false) }
     var searchQuery  by remember { mutableStateOf("") }
 
-    val allEssences by essenceRepository.getAllEssences().collectAsStateWithLifecycle(initialValue = emptyList())
-    val tiges by tigeRepository.getTigesByPlacette(placetteId).collectAsStateWithLifecycle(initialValue = emptyList())
+    val allEssencesState by essenceRepository.getAllEssences().collectAsStateWithLifecycle(initialValue = null)
+    val allEssences = allEssencesState ?: emptyList<Essence>()
+    val tigesState by tigeRepository.getTigesByPlacette(placetteId).collectAsStateWithLifecycle(initialValue = null)
+    val tiges = tigesState ?: emptyList<Tige>()
+    val placetteState by placetteRepository.getPlacetteById(placetteId).collectAsStateWithLifecycle(initialValue = null)
+    val placetteName = placetteState?.name
     val persistedOrder by userPreferences.essenceOrderFlow(placetteId).collectAsStateWithLifecycle(initialValue = emptyList())
 
     val hapticEnabled by userPreferences.hapticEnabled.collectAsStateWithLifecycle(initialValue = true)
@@ -226,6 +248,39 @@ fun PlacetteDetailScreen(
     var photoFiles        by remember { mutableStateOf(getPlacettePhotos(context, placetteId)) }
     var pendingPhotoFile  by remember { mutableStateOf<File?>(null) }
     var deleteTargetPhoto by remember { mutableStateOf<File?>(null) }
+    var photoViewerIndex  by remember { mutableStateOf<Int?>(null) }
+    var renameTargetPhoto by remember { mutableStateOf<File?>(null) }
+    var photoSelectionMode by remember { mutableStateOf(false) }
+    val selectedPhotos = remember { mutableStateListOf<File>() }
+
+    fun exportPhotos(files: List<File>) {
+        if (files.isEmpty()) return
+        runCatching {
+            val uris = files.map {
+                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", it)
+            }
+            val intent = if (uris.size == 1) {
+                android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                    type = "image/jpeg"
+                    putExtra(android.content.Intent.EXTRA_STREAM, uris.first())
+                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+            } else {
+                android.content.Intent(android.content.Intent.ACTION_SEND_MULTIPLE).apply {
+                    type = "image/jpeg"
+                    putParcelableArrayListExtra(android.content.Intent.EXTRA_STREAM, ArrayList(uris))
+                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+            }
+            context.startActivity(
+                android.content.Intent.createChooser(intent, context.getString(R.string.photo_export_chooser))
+            )
+        }.onFailure { e ->
+            scope.launch { snackbar.showSnackbar(e.message ?: context.getString(R.string.error)) }
+        }
+        photoSelectionMode = false
+        selectedPhotos.clear()
+    }
 
     val photoLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success) {
@@ -251,11 +306,37 @@ fun PlacetteDetailScreen(
         pendingCameraLaunch = false
     }
 
+    if (allEssencesState == null || tigesState == null) {
+        LoadingState("Chargement de la placette…")
+        return
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                title = {},
+                title = {
+                    Column {
+                        Text(
+                            placetteName?.takeIf { it.isNotBlank() }
+                                ?: stringResource(R.string.placette_essences_title),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        val essencesCount = presentEssences.size
+                        val subtitle = stringResource(
+                            R.string.placette_essences_subtitle_format, tiges.size, essencesCount
+                        )
+                        Text(
+                            subtitle,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = {
                         playClickFeedback()
@@ -265,7 +346,7 @@ fun PlacetteDetailScreen(
                     }
                 },
                 actions = {
-                    // Action principale : recherche (toujours visible)
+                    // Recherche
                     IconButton(onClick = {
                         playClickFeedback()
                         searchActive = !searchActive
@@ -276,7 +357,7 @@ fun PlacetteDetailScreen(
                             contentDescription = stringResource(R.string.search_essences)
                         )
                     }
-                    // Menu overflow : diagnostics + actions secondaires
+                    // Menu overflow : actions de gestion
                     Box {
                         IconButton(onClick = { showMoreMenu = true }) {
                             Icon(Icons.Default.MoreVert, contentDescription = null)
@@ -285,50 +366,6 @@ fun PlacetteDetailScreen(
                             expanded = showMoreMenu,
                             onDismissRequest = { showMoreMenu = false }
                         ) {
-                            // ── Diagnostics & outils ──
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.martelage)) },
-                                leadingIcon = { Icon(Icons.Default.Straighten, contentDescription = null) },
-                                onClick = {
-                                    showMoreMenu = false
-                                    playClickFeedback()
-                                    onNavigateToMartelage(parcelleId, placetteId)
-                                }
-                            )
-                            if (onNavigateToStationDiag != null) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.diag_station_btn)) },
-                                    leadingIcon = { Icon(Icons.Default.Science, contentDescription = null, tint = Color(0xFF1565C0)) },
-                                    onClick = {
-                                        showMoreMenu = false
-                                        playClickFeedback()
-                                        onNavigateToStationDiag(parcelleId)
-                                    }
-                                )
-                            }
-                            if (onNavigateToRipisylveDiag != null) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.diag_ripisylve_btn)) },
-                                    leadingIcon = { Icon(Icons.Default.Water, contentDescription = null, tint = Color(0xFF0277BD)) },
-                                    onClick = {
-                                        showMoreMenu = false
-                                        playClickFeedback()
-                                        onNavigateToRipisylveDiag(parcelleId)
-                                    }
-                                )
-                            }
-                            if (onNavigateToIbp != null) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.ibp_start)) },
-                                    leadingIcon = { Icon(Icons.Default.EmojiNature, contentDescription = null, tint = Color(0xFF2E7D32)) },
-                                    onClick = {
-                                        showMoreMenu = false
-                                        playClickFeedback()
-                                        onNavigateToIbp(parcelleId, placetteId)
-                                    }
-                                )
-                            }
-                            HorizontalDivider()
                             // ── Actions de gestion ──
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.reorder)) },
@@ -379,26 +416,65 @@ fun PlacetteDetailScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                playClickFeedback()
-                showAddDialog = true
-            }) {
+            FloatingActionButton(
+                onClick = {
+                    playClickFeedback()
+                    showAddDialog = true
+                },
+                modifier = Modifier.offset(x = 8.dp),
+            ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add))
             }
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(12.dp)) {
-            // ── Titre centré entre top bar et tabs ───────────────────────────────────
-            Text(
-                text = stringResource(R.string.placette_essences_title),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            // ── Actions diagnostics centrées (Martelage / Station / Ripisylve / IBP) ──
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp)
-            )
+            ) {
+                Button(onClick = {
+                    playClickFeedback()
+                    onNavigateToMartelage(parcelleId, placetteId)
+                }) {
+                    Icon(Icons.Default.Straighten, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.martelage))
+                }
+                if (onNavigateToStationDiag != null) {
+                    OutlinedButton(onClick = {
+                        playClickFeedback()
+                        onNavigateToStationDiag(parcelleId)
+                    }) {
+                        Icon(Icons.Default.Science, contentDescription = null, modifier = Modifier.size(18.dp), tint = SemanticInfo)
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.diag_station_btn))
+                    }
+                }
+                if (onNavigateToRipisylveDiag != null) {
+                    OutlinedButton(onClick = {
+                        playClickFeedback()
+                        onNavigateToRipisylveDiag(parcelleId)
+                    }) {
+                        Icon(Icons.Default.Water, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color(0xFF0277BD))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.diag_ripisylve_btn))
+                    }
+                }
+                if (onNavigateToIbp != null) {
+                    OutlinedButton(onClick = {
+                        playClickFeedback()
+                        onNavigateToIbp(parcelleId, placetteId)
+                    }) {
+                        Icon(Icons.Default.EmojiNature, contentDescription = null, modifier = Modifier.size(18.dp), tint = SemanticSuccess)
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.ibp_start))
+                    }
+                }
+            }
             Spacer(Modifier.height(4.dp))
 
             // ── TabRow : Essences / Évolution ──────────────────────────────────────
@@ -457,47 +533,111 @@ fun PlacetteDetailScreen(
 
             // ── Galerie photos ────────────────────────────────────────────────────────
             if (photoFiles.isNotEmpty()) {
-                Text(
-                    stringResource(R.string.placette_photos_title),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)
+                ) {
+                    Text(
+                        stringResource(R.string.placette_photos_title),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (photoSelectionMode) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                stringResource(R.string.photo_selected_count, selectedPhotos.size),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            TextButton(
+                                onClick = { exportPhotos(selectedPhotos.toList()) },
+                                enabled = selectedPhotos.isNotEmpty()
+                            ) {
+                                Icon(Icons.Default.Share, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(stringResource(R.string.photo_export))
+                            }
+                            TextButton(onClick = {
+                                photoSelectionMode = false
+                                selectedPhotos.clear()
+                            }) { Text(stringResource(R.string.cancel)) }
+                        }
+                    } else {
+                        TextButton(onClick = { photoSelectionMode = true }) {
+                            Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(stringResource(R.string.photo_select))
+                        }
+                    }
+                }
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(bottom = 10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(bottom = 8.dp)
                 ) {
                     items(photoFiles, key = { it.absolutePath }) { file ->
                         val bmp = remember(file.absolutePath) {
                             runCatching {
                                 BitmapFactory.decodeFile(file.absolutePath)
-                                    ?.let { android.graphics.Bitmap.createScaledBitmap(it, 120, 120, true) }
+                                    ?.let { android.graphics.Bitmap.createScaledBitmap(it, 96, 96, true) }
                                     ?.asImageBitmap()
                             }.getOrNull()
                         }
+                        val isSelected = file in selectedPhotos
                         Surface(
                             shape = MaterialTheme.shapes.small,
+                            border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
                             modifier = Modifier
-                                .size(80.dp)
+                                .size(64.dp)
                                 .combinedClickable(
-                                    onClick = {},
+                                    onClick = {
+                                        playClickFeedback()
+                                        if (photoSelectionMode) {
+                                            if (isSelected) selectedPhotos.remove(file) else selectedPhotos.add(file)
+                                        } else {
+                                            photoViewerIndex = photoFiles.indexOf(file)
+                                        }
+                                    },
                                     onLongClick = { deleteTargetPhoto = file }
                                 )
                         ) {
-                            if (bmp != null) {
-                                Image(
-                                    painter = BitmapPainter(bmp),
-                                    contentDescription = null,
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            } else {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    Icon(Icons.Default.CameraAlt, null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                if (bmp != null) {
+                                    Image(
+                                        painter = BitmapPainter(bmp),
+                                        contentDescription = null,
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } else {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        Icon(Icons.Default.CameraAlt, null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                                if (photoSelectionMode && isSelected) {
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(4.dp)
+                                            .size(20.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primary),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -848,7 +988,71 @@ fun PlacetteDetailScreen(
             onConfirm = {
                 photoToDelete.delete()
                 photoFiles = getPlacettePhotos(context, placetteId)
+                selectedPhotos.remove(photoToDelete)
                 deleteTargetPhoto = null
+            }
+        )
+    }
+
+    // ── Visualiseur photo plein écran ─────────────────────────────────────────
+    photoViewerIndex?.let { idx ->
+        if (idx in photoFiles.indices) {
+            PlacettePhotoViewerDialog(
+                file = photoFiles[idx],
+                canPrev = idx > 0,
+                canNext = idx < photoFiles.lastIndex,
+                onPrev = { photoViewerIndex = idx - 1 },
+                onNext = { photoViewerIndex = idx + 1 },
+                onRename = {
+                    renameTargetPhoto = photoFiles[idx]
+                    photoViewerIndex = null
+                },
+                onExport = { exportPhotos(listOf(photoFiles[idx])) },
+                onDelete = {
+                    deleteTargetPhoto = photoFiles[idx]
+                    photoViewerIndex = null
+                },
+                onDismiss = { photoViewerIndex = null }
+            )
+        } else {
+            photoViewerIndex = null
+        }
+    }
+
+    // ── Renommage photo ───────────────────────────────────────────────────────
+    renameTargetPhoto?.let { target ->
+        val initialName = target.nameWithoutExtension
+        var newName by remember(target) { mutableStateOf(initialName) }
+        AlertDialog(
+            onDismissRequest = { renameTargetPhoto = null },
+            title = { Text(stringResource(R.string.photo_rename_title)) },
+            text = {
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    label = { Text(stringResource(R.string.photo_rename_label)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    enabled = newName.isNotBlank() && newName.trim() != initialName,
+                    onClick = {
+                        val sanitized = newName.trim().replace(Regex("[\\\\/:*?\"<>|]"), "_")
+                        val dest = File(target.parentFile, "$sanitized.jpg")
+                        if (!dest.exists() && target.renameTo(dest)) {
+                            photoFiles = getPlacettePhotos(context, placetteId)
+                            scope.launch { snackbar.showSnackbar(context.getString(R.string.photo_renamed)) }
+                        } else {
+                            scope.launch { snackbar.showSnackbar(context.getString(R.string.photo_rename_error)) }
+                        }
+                        renameTargetPhoto = null
+                    }
+                ) { Text(stringResource(R.string.validate)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { renameTargetPhoto = null }) { Text(stringResource(R.string.cancel)) }
             }
         )
     }
@@ -1229,10 +1433,10 @@ private fun YearEvolutionCard(
 }
 
 private fun martelageCategoryColor(category: String): Color = when (category) {
-    "AVENIR" -> Color(0xFF4CAF50)
-    "RESERVE" -> Color(0xFF2196F3)
-    "ENLEVER" -> Color(0xFFF44336)
-    "DEPERIR" -> Color(0xFFFF9800)
+    "AVENIR" -> AccentGreen
+    "RESERVE" -> AccentBlue
+    "ENLEVER" -> SemanticError
+    "DEPERIR" -> SemanticWarning
     "BIODIV" -> Color(0xFF26A69A)
     "AUTRE" -> Color(0xFF607D8B)
     else -> Color(0xFF607D8B)
@@ -1246,4 +1450,111 @@ private fun martelageCategoryLabel(category: String): String = when (category) {
     "BIODIV" -> "Biodiversité"
     "AUTRE" -> "Non catégorisé"
     else -> category.lowercase().replaceFirstChar { it.uppercase() }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PlacettePhotoViewerDialog(
+    file: File,
+    canPrev: Boolean,
+    canNext: Boolean,
+    onPrev: () -> Unit,
+    onNext: () -> Unit,
+    onRename: () -> Unit,
+    onExport: () -> Unit,
+    onDelete: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val bmp = remember(file.absolutePath) {
+        runCatching {
+            BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
+        }.getOrNull()
+    }
+    Dialog(onDismissRequest = onDismiss) {
+        Card(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // ── Barre supérieure : nom + fermer ──
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        file.nameWithoutExtension,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
+                    }
+                }
+                // ── Image plein cadre + navigation prev/next ──
+                Box(
+                    modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (bmp != null) {
+                        Image(
+                            painter = BitmapPainter(bmp),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.CameraAlt,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
+                    if (canPrev) {
+                        IconButton(
+                            onClick = onPrev,
+                            modifier = Modifier.align(Alignment.CenterStart)
+                        ) {
+                            Icon(Icons.Default.KeyboardArrowLeft, contentDescription = stringResource(R.string.previous))
+                        }
+                    }
+                    if (canNext) {
+                        IconButton(
+                            onClick = onNext,
+                            modifier = Modifier.align(Alignment.CenterEnd)
+                        ) {
+                            Icon(Icons.Default.KeyboardArrowRight, contentDescription = stringResource(R.string.next))
+                        }
+                    }
+                }
+                // ── Actions : Renommer / Exporter / Supprimer ──
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    TextButton(onClick = onRename) {
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.photo_rename))
+                    }
+                    TextButton(onClick = onExport) {
+                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.photo_export))
+                    }
+                    TextButton(onClick = onDelete) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+        }
+    }
 }

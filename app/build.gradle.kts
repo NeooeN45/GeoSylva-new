@@ -1,5 +1,3 @@
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.io.StringReader
 import java.util.Properties
 
@@ -22,13 +20,56 @@ android {
         applicationId = "com.forestry.counter"
         minSdk = 26
         targetSdk = 35
-        versionCode = 9
-        versionName = "2.3.0"
+        versionCode = 11
+        versionName = "3.0.0"
 
-        val buildId = LocalDateTime.now()
-            .format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
+        // Stable by default: wall-clock values here invalidate every incremental build
+        // and make two builds of the same source produce different artifacts.
+        val buildId = providers.gradleProperty("geosylva.buildId")
+            .orElse(providers.environmentVariable("GEOSYLVA_BUILD_ID"))
+            .orElse("dev")
+            .get()
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+        val buildTimestampMs = providers.gradleProperty("geosylva.buildTimestampMs")
+            .orElse(providers.environmentVariable("GEOSYLVA_BUILD_TIMESTAMP_MS"))
+            .orElse("0")
+            .get().toLongOrNull() ?: error("geosylva.buildTimestampMs must be an integer")
+        buildConfigField("Long", "BUILD_TIMESTAMP", "${buildTimestampMs}L")
         buildConfigField("String", "BUILD_ID", "\"$buildId\"")
-        buildConfigField("Long", "BUILD_TIMESTAMP", "${System.currentTimeMillis()}L")
+
+        // Clé API MapTiler (tuiles vectorielles + terrain 3D)
+        // Récupérée depuis local.properties ou variable d'environnement
+        val localPropsFile = rootProject.file("local.properties")
+        val localProps = Properties()
+        if (localPropsFile.exists()) {
+            localProps.load(StringReader(localPropsFile.readText(Charsets.UTF_8).removePrefix("\uFEFF")))
+        }
+        val maptilerKey = localProps.getProperty("MAPTILER_KEY")
+            ?: System.getenv("MAPTILER_KEY")
+            ?: ""
+        buildConfigField("String", "MAPTILER_KEY", "\"$maptilerKey\"")
+
+        fun buildConfigString(value: String): String = value
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+
+        val gsieApiBaseUrl = localProps.getProperty("GSIE_API_BASE_URL")
+            ?: System.getenv("GSIE_API_BASE_URL")
+            ?: ""
+        val googleWebClientId = localProps.getProperty("GOOGLE_WEB_CLIENT_ID")
+            ?: System.getenv("GOOGLE_WEB_CLIENT_ID")
+            ?: ""
+        buildConfigField(
+            "String",
+            "GSIE_API_BASE_URL",
+            "\"${buildConfigString(gsieApiBaseUrl)}\""
+        )
+        buildConfigField(
+            "String",
+            "GOOGLE_WEB_CLIENT_ID",
+            "\"${buildConfigString(googleWebClientId)}\""
+        )
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -109,6 +150,11 @@ android {
     // Asset Pack pour les tuiles DEM SRTM (offline elevation data)
     assetPacks += ":dem_pack"
 
+    // Expose les schemas JSON Room (app/schemas/) aux tests instrumentés
+    // afin que MigrationTestHelper puisse créer une DB à une version antérieure.
+    sourceSets {
+        getByName("androidTest").assets.srcDirs("$projectDir/schemas")
+    }
 }
 
 /*
@@ -125,6 +171,7 @@ ksp {
 }
 
 dependencies {
+    implementation(libs.coil.compose)
     // Core Android
     implementation(libs.core.ktx)
     implementation(libs.core.splashscreen)
@@ -199,6 +246,10 @@ dependencies {
     // MapLibre GL (Map mode)
     implementation(libs.maplibre)
 
+    // Note — la vidéo de l'écran de connexion n'utilise aucune dépendance :
+    // `TextureView` + `MediaPlayer` de la plateforme suffisent pour une boucle
+    // locale et muette. Voir `presentation/components/VideoBackdrop.kt`.
+
     // OkHttp for HTTP calls (price sync)
     implementation(libs.okhttp)
 
@@ -208,9 +259,18 @@ dependencies {
     // AndroidX Security for encrypted file storage
     implementation(libs.security.crypto)
 
+    // Identité Quintessences : contrat GSIE + connexion Google officielle
+    implementation(libs.retrofit.core)
+    implementation(libs.retrofit.kotlinx.serialization)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play.services.auth)
+    implementation(libs.googleid)
+
     // Testing
     testImplementation(libs.bundles.testing)
     androidTestImplementation(libs.bundles.android.testing)
+    // MigrationTestHelper (tests de migration Room instrumentés)
+    androidTestImplementation(libs.room.testing)
     androidTestImplementation(composeBom)
     androidTestImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.tooling)

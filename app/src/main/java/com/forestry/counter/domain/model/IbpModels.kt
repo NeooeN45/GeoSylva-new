@@ -52,8 +52,11 @@ enum class IbpMode {
     fun maxScore(): Int = criteria().size * 5
 }
 
-/** Valid answer values: -1 (unanswered), 0, 2, 5 (IBP v3 scoring).
- *  schemaVersion=1 = legacy 0/1/2 system; schemaVersion=2 = current 0/2/5 system.
+/** Versioned IBP answers. Historical methods remain readable and are never silently
+ *  recalculated with a newer protocol.
+ *  schemaVersion=1 = legacy simplified 0/1/2 system.
+ *  schemaVersion=2 = former GeoSylva 0/2/5 method.
+ *  schemaVersion=3 = official IBP FR v3.2 (0/1/2/5), dated 2026-02-02.
  *  counts: raw field measurements (BMg/ha, TGB/ha, dmh trees/ha, open %, …)
  *  tremTypesPresents: liste des codes TreM détectés (ex: "TF1", "TF2", "TE1"…)
  *  tremNbArbresHabitat: nb de tiges marquées isTigeHabitat dans la placette
@@ -73,7 +76,7 @@ data class IbpAnswers(
     val cf: Int = -1,
     val co: Int = -1,
     val hc: Int = -1,
-    val schemaVersion: Int = 2,
+    val schemaVersion: Int = SCHEMA_PREVIOUS_METHOD,
     val details: Map<String, List<String>> = emptyMap(),
     val counts: Map<String, Float> = emptyMap(),
 
@@ -102,17 +105,23 @@ data class IbpAnswers(
         IbpCriterionId.HC  -> hc
     }
 
-    fun set(id: IbpCriterionId, value: Int): IbpAnswers = when (id) {
-        IbpCriterionId.E1  -> copy(e1 = value)
-        IbpCriterionId.E2  -> copy(e2 = value)
-        IbpCriterionId.GB  -> copy(gb = value)
-        IbpCriterionId.BMS -> copy(bms = value)
-        IbpCriterionId.BMC -> copy(bmc = value)
-        IbpCriterionId.DMH -> copy(dmh = value)
-        IbpCriterionId.VS  -> copy(vs = value)
-        IbpCriterionId.CF  -> copy(cf = value)
-        IbpCriterionId.CO  -> copy(co = value)
-        IbpCriterionId.HC  -> copy(hc = value)
+    fun set(id: IbpCriterionId, value: Int): IbpAnswers {
+        val validScores = validScoresForSchema(schemaVersion)
+        require(value == -1 || value in validScores) {
+            "Score IBP invalide: $value pour le schema v$schemaVersion (valeurs admises: -1, ${validScores.sorted().joinToString()})"
+        }
+        return when (id) {
+            IbpCriterionId.E1  -> copy(e1 = value)
+            IbpCriterionId.E2  -> copy(e2 = value)
+            IbpCriterionId.GB  -> copy(gb = value)
+            IbpCriterionId.BMS -> copy(bms = value)
+            IbpCriterionId.BMC -> copy(bmc = value)
+            IbpCriterionId.DMH -> copy(dmh = value)
+            IbpCriterionId.VS  -> copy(vs = value)
+            IbpCriterionId.CF  -> copy(cf = value)
+            IbpCriterionId.CO  -> copy(co = value)
+            IbpCriterionId.HC  -> copy(hc = value)
+        }
     }
 
     /** Migrate legacy 0/1/2 scores to 0/2/5 system. */
@@ -148,13 +157,33 @@ data class IbpAnswers(
         return a + b
     }
 
+    val isCurrentMethod: Boolean get() = schemaVersion == CURRENT_SCHEMA_VERSION
+    val methodLabel: String get() = when (schemaVersion) {
+        SCHEMA_LEGACY_SIMPLIFIED -> "Historique GeoSylva v1"
+        SCHEMA_PREVIOUS_METHOD -> "Historique IBP v2"
+        CURRENT_SCHEMA_VERSION -> IbpCriterionData.REFERENCE_VERSION
+        else -> "Historique IBP non reconnu (schema v$schemaVersion)"
+    }
+
     val answeredCount: Int get() = listOf(e1, e2, gb, bms, bmc, dmh, vs, cf, co, hc).count { it >= 0 }
     val isComplete: Boolean get() = answeredCount == 10
 
     companion object {
-        /** Create a new IbpAnswers with current schema (v2 = 0/2/5 system, Larrieu & Gonin 2008). */
-        fun new() = IbpAnswers(schemaVersion = 2)
-        val VALID_SCORES = setOf(0, 2, 5)
+        const val SCHEMA_LEGACY_SIMPLIFIED = 1
+        const val SCHEMA_PREVIOUS_METHOD = 2
+        const val CURRENT_SCHEMA_VERSION = 3
+
+        /** Create answers with the official IBP FR v3.2 score set. */
+        fun new() = IbpAnswers(schemaVersion = CURRENT_SCHEMA_VERSION)
+
+        /** Safe placeholder for unreadable historical JSON. It must stay read-only. */
+        fun unreadableHistory() = IbpAnswers(schemaVersion = 0)
+
+        val VALID_SCORES = setOf(0, 1, 2, 5)
+        val PREVIOUS_VALID_SCORES = setOf(0, 2, 5)
+
+        fun validScoresForSchema(schemaVersion: Int): Set<Int> =
+            if (schemaVersion >= CURRENT_SCHEMA_VERSION) VALID_SCORES else PREVIOUS_VALID_SCORES
     }
 }
 

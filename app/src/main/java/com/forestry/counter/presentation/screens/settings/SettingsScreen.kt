@@ -3,6 +3,7 @@ package com.forestry.counter.presentation.screens.settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,7 +16,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.forestry.counter.data.preferences.FontSize
 import com.forestry.counter.data.preferences.GpsCaptureMode
@@ -30,6 +34,7 @@ import com.forestry.counter.presentation.theme.AccentOrange
 import com.forestry.counter.presentation.theme.AccentPurple
 import com.forestry.counter.presentation.theme.AccentRed
 import com.forestry.counter.presentation.components.AppMiniDialog
+import com.forestry.counter.presentation.components.LoadingState
 import com.forestry.counter.data.logging.CrashLogger
 import com.forestry.counter.domain.usecase.export.ExportDataUseCase
 import com.forestry.counter.domain.repository.ParameterRepository
@@ -68,6 +73,11 @@ import androidx.work.Data
 import androidx.core.os.LocaleListCompat
 import com.forestry.counter.BuildConfig
 import com.forestry.counter.data.work.PriceSyncWorker
+import android.os.SystemClock
+import android.widget.Toast
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.forestry.counter.domain.repository.IdentityRepository
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.util.Locale
 
@@ -83,12 +93,51 @@ fun SettingsScreen(
     parcelleRepository: ParcelleRepository? = null,
     placetteRepository: PlacetteRepository? = null,
     offlineTileManager: com.forestry.counter.domain.location.OfflineTileManager? = null,
+    identityRepository: IdentityRepository,
+    deleteAllUserDataUseCase: com.forestry.counter.domain.usecase.privacy.DeleteAllUserDataUseCase? = null,
     onNavigateToPriceTablesEditor: () -> Unit = {},
+    onNavigateToAccount: () -> Unit = {},
+    onNavigateToDeveloperOptions: () -> Unit = {},
+    onNavigateToPrivacyPolicy: () -> Unit = {},
+    targetSection: String? = null,
+    /**
+     * Restreint l'affichage à un sous-ensemble d'ids de section — c'est ce
+     * qui transforme cet écran unique en « sous-page » dédiée (Apparence,
+     * Terrain & forêt…) sans dupliquer 1900 lignes de logique déjà éprouvée
+     * (dialogues de tarif, lanceurs d'export, WorkManager…) dans cinq
+     * fichiers séparés. `null` = comportement historique, tout affiché.
+     */
+    categoryFilter: Set<String>? = null,
+    screenTitle: String? = null,
     onNavigateBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val hapticFeedback = LocalHapticFeedback.current
+    val developerUnlocker = remember { DeveloperModeUnlocker() }
+
+    // Défilement direct vers une section — arrivée depuis SettingsHomeScreen
+    // (catégorie ou résultat de recherche). Chaque position est capturée
+    // relative au Column défilant puis normalisée par le décalage de scroll
+    // courant, seule façon fiable d'obtenir une position stable dans un
+    // Modifier.verticalScroll (voir SettingsSectionAnchor plus bas).
+    //
+    // Un seul saut : sans le garde `hasScrolledToTarget`, chaque frame de
+    // l'animation de scroll fait réémettre onGloballyPositioned pour la
+    // section cible avec une position légèrement différente, ce qui relance
+    // LaunchedEffect (clé = valeur de l'ancre) et redémarre l'animation vers
+    // une nouvelle cible à chaque frame — la boucle ne converge jamais là où
+    // elle devrait et l'utilisateur atterrit bien plus bas que prévu.
+    val settingsScrollState = rememberScrollState()
+    val sectionAnchors = remember { mutableStateMapOf<String, Float>() }
+    var hasScrolledToTarget by remember { mutableStateOf(false) }
+    LaunchedEffect(targetSection, sectionAnchors[targetSection]) {
+        if (hasScrolledToTarget) return@LaunchedEffect
+        val y = targetSection?.let { sectionAnchors[it] } ?: return@LaunchedEffect
+        hasScrolledToTarget = true
+        settingsScrollState.animateScrollTo(y.toInt().coerceIn(0, settingsScrollState.maxValue.coerceAtLeast(0)))
+    }
 
     fun xmlEscape(s: String): String = buildString {
         s.forEach { ch ->
@@ -131,6 +180,8 @@ fun SettingsScreen(
     val hapticEnabled by preferencesManager.hapticEnabled.collectAsStateWithLifecycle(initialValue = true)
     val csvSeparator by preferencesManager.csvSeparator.collectAsStateWithLifecycle(initialValue = ",")
     val accentColor by preferencesManager.accentColor.collectAsStateWithLifecycle(initialValue = "#4CAF50")
+    val containerAccentColor by preferencesManager.containerAccentColor.collectAsStateWithLifecycle(initialValue = null)
+    val cardAccentColor by preferencesManager.cardAccentColor.collectAsStateWithLifecycle(initialValue = null)
     val dynamicColorEnabled by preferencesManager.dynamicColorEnabled.collectAsStateWithLifecycle(initialValue = true)
     val backgroundImageEnabled by preferencesManager.backgroundImageEnabled.collectAsStateWithLifecycle(initialValue = true)
     val soundEnabled by preferencesManager.soundEnabled.collectAsStateWithLifecycle(initialValue = true)
@@ -139,7 +190,43 @@ fun SettingsScreen(
     val keepScreenOn by preferencesManager.keepScreenOn.collectAsStateWithLifecycle(initialValue = false)
     val mapOnlyReliableGps by preferencesManager.mapOnlyReliableGps.collectAsStateWithLifecycle(initialValue = false)
     val mapReliableGpsThresholdM by preferencesManager.mapReliableGpsThresholdM.collectAsStateWithLifecycle(initialValue = 8f)
+    val developerModeEnabled by preferencesManager.developerModeEnabled.collectAsStateWithLifecycle(initialValue = false)
+    val accountSession by identityRepository.session.collectAsStateWithLifecycle()
     var showCsvDialog by remember { mutableStateOf(false) }
+
+    fun handleVersionTap() {
+        when (
+            val result = developerUnlocker.registerTap(
+                nowMillis = SystemClock.elapsedRealtime(),
+                alreadyEnabled = developerModeEnabled,
+            )
+        ) {
+            DeveloperUnlockResult.Open -> onNavigateToDeveloperOptions()
+            DeveloperUnlockResult.Enabled -> scope.launch {
+                preferencesManager.setDeveloperModeEnabled(true)
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                onNavigateToDeveloperOptions()
+            }
+            is DeveloperUnlockResult.Progress -> {
+                if (result.remainingTaps <= 4) {
+                    Toast.makeText(
+                        context,
+                        context.getString(
+                            R.string.developer_taps_remaining,
+                            result.remainingTaps,
+                        ),
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                }
+            }
+        }
+    }
+
+    var settingsLoading by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        preferencesManager.themeMode.first()
+        settingsLoading = false
+    }
 
     // Tarif de cubage
     var showTarifDialog by remember { mutableStateOf(false) }
@@ -329,16 +416,17 @@ fun SettingsScreen(
         }
     }
 
+    if (settingsLoading) {
+        LoadingState("Chargement des paramètres…")
+        return
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.settings)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                    }
-                }
+            com.forestry.counter.presentation.components.CompactPageHeader(
+                title = screenTitle ?: stringResource(R.string.settings),
+                onBack = onNavigateBack,
             )
         }
     ) { paddingValues ->
@@ -346,10 +434,40 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(settingsScrollState),
+            // Une sous-page filtrée à une seule petite section (Interaction,
+            // par ex.) laissait tout son contenu collé en haut, un grand vide
+            // en dessous. `Center` ne change rien pour une liste longue —
+            // elle remplit déjà tout l'écran — mais recentre les listes
+            // courtes verticalement, plus équilibré visuellement.
+            verticalArrangement = if (categoryFilter != null) Arrangement.Center else Arrangement.Top,
         ) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_quintessences),
+                id = "compte", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.settings_account_title)) },
+                    supportingContent = {
+                        Text(
+                            stringResource(
+                                if (accountSession == null) R.string.settings_account_signed_out
+                                else R.string.settings_account_signed_in
+                            )
+                        )
+                    },
+                    leadingContent = {
+                        Icon(Icons.Default.AccountCircle, contentDescription = null)
+                    },
+                    modifier = Modifier.clickable(onClick = onNavigateToAccount),
+                )
+            }
+
             // Appearance Section
-            SettingsSection(title = stringResource(R.string.appearance)) {
+            SettingsSection(
+                title = stringResource(R.string.appearance),
+                id = "apparence", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 SettingsItem(
                     icon = Icons.Default.Palette,
                     title = stringResource(R.string.theme),
@@ -425,8 +543,8 @@ fun SettingsScreen(
                     Box {
                         ListItem(
                             headlineContent = { Text(stringResource(R.string.language)) },
-                            supportingContent = { Text(when (appLanguage) { "system" -> stringResource(R.string.system); "fr" -> stringResource(R.string.french); "en" -> stringResource(R.string.english); else -> appLanguage }) },
-                            leadingContent = { Icon(Icons.Default.Language, contentDescription = null) },
+                            supportingContent = { Text(when (appLanguage) { "system" -> stringResource(R.string.system); "fr" -> stringResource(R.string.french); "en" -> stringResource(R.string.english); else -> appLanguage }, maxLines = 3, overflow = TextOverflow.Ellipsis) },
+                            leadingContent = { Icon(Icons.Default.Language, contentDescription = stringResource(R.string.cd_language)) },
                             modifier = Modifier.clickable { expanded = true }
                         )
                         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
@@ -467,10 +585,10 @@ fun SettingsScreen(
                                     FontSize.SMALL -> stringResource(R.string.small)
                                     FontSize.MEDIUM -> stringResource(R.string.normal_size)
                                     FontSize.LARGE -> stringResource(R.string.large)
-                                })
+                                }, maxLines = 3, overflow = TextOverflow.Ellipsis)
                             },
                             leadingContent = {
-                                Icon(Icons.Default.FormatSize, contentDescription = null)
+                                Icon(Icons.Default.FormatSize, contentDescription = stringResource(R.string.cd_font_size))
                             },
                             modifier = Modifier.clickable { expanded = true }
                         )
@@ -514,7 +632,7 @@ fun SettingsScreen(
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.dynamic_color)) },
                     supportingContent = { Text(stringResource(R.string.use_system_palette)) },
-                    leadingContent = { Icon(Icons.Default.ColorLens, contentDescription = null) },
+                    leadingContent = { Icon(Icons.Default.ColorLens, contentDescription = stringResource(R.string.cd_color_theme)) },
                     trailingContent = {
                         Switch(
                             checked = dynamicColorEnabled,
@@ -529,7 +647,7 @@ fun SettingsScreen(
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.settings_background_image)) },
                     supportingContent = { Text(stringResource(R.string.settings_background_image_desc)) },
-                    leadingContent = { Icon(Icons.Default.Image, contentDescription = null) },
+                    leadingContent = { Icon(Icons.Default.Image, contentDescription = stringResource(R.string.cd_background_image)) },
                     trailingContent = {
                         Switch(
                             checked = backgroundImageEnabled,
@@ -559,43 +677,83 @@ fun SettingsScreen(
                             }
                         },
                         label = { Text(stringResource(R.string.settings_background_default_forest)) },
-                        leadingIcon = { Icon(Icons.Default.Forest, contentDescription = null) }
+                        leadingIcon = { Icon(Icons.Default.Forest, contentDescription = stringResource(R.string.cd_forest)) },
+                        border = null,
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            leadingIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
                     )
                     AssistChip(
                         onClick = {
                             backgroundImagePickerLauncher.launch(arrayOf("image/*"))
                         },
                         label = { Text(stringResource(R.string.settings_background_personal_photo)) },
-                        leadingIcon = { Icon(Icons.Default.Photo, contentDescription = null) }
+                        leadingIcon = { Icon(Icons.Default.Photo, contentDescription = null) },
+                        border = null,
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            leadingIconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
                     )
                 }
 
-                // Accent Color chips (neon green/teal palette) with selection ring
+                // Couleur d'accent — boutons et icônes. Palette large (39 teintes
+                // sur tout le cercle chromatique, plus une entrée personnalisée)
+                // : la précédente ne proposait que des verts et neutres, jugée
+                // trop pauvre.
                 Text(text = stringResource(R.string.accent_color), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
-                var showMoreAccent by remember { mutableStateOf(false) }
-                FlowRow(modifier = Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val options = listOf(
-                        "#00E676", "#00C853", "#64FFDA", "#1DE9B6", "#A5FF8B", "#B9F6CA", "#69F0AE", "#18FFFF", "#00BFA5", "#00FF88",
-                        "#00FF66", "#00FFA2", "#00FFC6", "#66FF99", "#33FFAA", "#00FFD1", "#11FFEE", "#22E3B3", "#49FFDF", "#5BFFB5",
-                        "#C6FF00", "#AEEA00", "#00BCD4", "#00E5FF", "#2979FF", "#00B0FF", "#7C4DFF", "#E040FB", "#FFC400", "#FFAB00", "#FF5252", "#FF6E6E"
-                    )
-                    val list = if (showMoreAccent) options else options.take(10)
-                    list.forEach { hex ->
-                        val col = try { androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(hex)) } catch (e: Exception) { MaterialTheme.colorScheme.primary }
-                        val selected = accentColor.equals(hex, true)
-                        Surface(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clickable { scope.launch { preferencesManager.setAccentColor(hex) } },
-                            color = col,
-                            shape = MaterialTheme.shapes.small,
-                            border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.onSurface) else BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-                        ) {}
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
-                    TextButton(onClick = { showMoreAccent = !showMoreAccent }) { Text(stringResource(if (showMoreAccent) R.string.less_colors else R.string.more_colors)) }
-                }
+                ColorPickerRow(
+                    current = accentColor,
+                    onPick = { hex -> scope.launch { preferencesManager.setAccentColor(hex) } },
+                    allowReset = false,
+                )
+
+                // Couleur des blocs mis en avant (tuiles de statistiques…) —
+                // distincte de la couleur d'accent ci-dessus : elle restait
+                // figée au vert de marque quel que soit l'accent choisi.
+                Text(
+                    text = stringResource(R.string.container_accent_color),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+                Text(
+                    text = stringResource(R.string.container_accent_color_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                ColorPickerRow(
+                    current = containerAccentColor,
+                    onPick = { hex -> scope.launch { preferencesManager.setContainerAccentColor(hex) } },
+                    allowReset = true,
+                    onReset = { scope.launch { preferencesManager.setContainerAccentColor(null) } },
+                )
+
+                // Couleur des cartes et menus — le fond des lignes ci-dessus
+                // (Thème, Langue, Taille de police…) elles-mêmes. Signalée en
+                // thème sombre comme un « verre foncé » peu agréable.
+                Text(
+                    text = stringResource(R.string.card_accent_color),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+                Text(
+                    text = stringResource(R.string.card_accent_color_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                ColorPickerRow(
+                    current = cardAccentColor,
+                    onPick = { hex -> scope.launch { preferencesManager.setCardAccentColor(hex) } },
+                    allowReset = true,
+                    onReset = { scope.launch { preferencesManager.setCardAccentColor(null) } },
+                )
 
                 // Keep screen on
                 ListItem(
@@ -650,10 +808,13 @@ fun SettingsScreen(
                 
             }
 
-            HorizontalDivider()
+            if (categoryFilter == null) HorizontalDivider()
 
             // Tarifs de cubage
-            SettingsSection(title = stringResource(R.string.settings_section_tarifs)) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_tarifs),
+                id = "tarifs", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 val tarifLabelRes = when (currentTarifMethod) {
                     TarifMethod.SCHAEFFER_1E -> R.string.tarif_method_schaeffer_1e
                     TarifMethod.SCHAEFFER_2E -> R.string.tarif_method_schaeffer_2e
@@ -732,10 +893,13 @@ fun SettingsScreen(
                 )
             }
 
-            HorizontalDivider()
+            if (categoryFilter == null) HorizontalDivider()
 
             // Produits & Prix
-            SettingsSection(title = stringResource(R.string.settings_section_products_prices)) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_products_prices),
+                id = "produits_prix", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.settings_edit_price_tables)) },
                     supportingContent = { Text(stringResource(R.string.settings_edit_price_tables_desc)) },
@@ -744,7 +908,7 @@ fun SettingsScreen(
                 )
             }
 
-            HorizontalDivider()
+            if (categoryFilter == null) HorizontalDivider()
 
             // Carte hors-ligne
             if (offlineTileManager != null) {
@@ -757,7 +921,10 @@ fun SettingsScreen(
                     }
                 }
 
-                SettingsSection(title = stringResource(R.string.settings_section_offline_map)) {
+                SettingsSection(
+                    title = stringResource(R.string.settings_section_offline_map),
+                    id = "carte_hors_ligne", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+                ) {
                     val stats = cacheStats
                     val tileCount = stats?.first ?: 0
                     val sizeMb = stats?.second?.let { String.format("%.1f", it / 1_048_576.0) } ?: "0"
@@ -812,13 +979,16 @@ fun SettingsScreen(
                     )
                 }
 
-                HorizontalDivider()
+                if (categoryFilter == null) HorizontalDivider()
             }
 
 
             // Exports Forestry
             if (tigeRepository != null && forestryCalculator != null) {
-                SettingsSection(title = stringResource(R.string.settings_section_forestry_exports)) {
+                SettingsSection(
+                    title = stringResource(R.string.settings_section_forestry_exports),
+                    id = "exports", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+                ) {
                     var exportScope by remember { mutableStateOf("PROJECT") }
                     
                     val exportScopes = listOf("PROJECT", "PARCELLE", "PLACETTE")
@@ -853,21 +1023,33 @@ fun SettingsScreen(
                                 onClick = {
                                     exportScope = "PROJECT"
                                 },
-                                label = { Text(stringResource(R.string.settings_export_scope_project)) }
+                                label = { Text(stringResource(R.string.settings_export_scope_project), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                border = null,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                ),
                             )
                             FilterChip(
                                 selected = exportScope == "PARCELLE",
                                 onClick = {
                                     exportScope = "PARCELLE"
                                 },
-                                label = { Text(stringResource(R.string.settings_export_scope_parcelle)) }
+                                label = { Text(stringResource(R.string.settings_export_scope_parcelle), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                border = null,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                ),
                             )
                             FilterChip(
                                 selected = exportScope == "PLACETTE",
                                 onClick = {
                                     exportScope = "PLACETTE"
                                 },
-                                label = { Text(stringResource(R.string.settings_export_scope_placette)) }
+                                label = { Text(stringResource(R.string.settings_export_scope_placette), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                border = null,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                ),
                             )
                         }
 
@@ -877,7 +1059,7 @@ fun SettingsScreen(
                             Box {
                                 ListItem(
                                     headlineContent = { Text(stringResource(R.string.settings_export_parcelle)) },
-                                    supportingContent = { Text(selectedParcelleName ?: stringResource(R.string.settings_export_choose_parcelle)) },
+                                    supportingContent = { Text(selectedParcelleName ?: stringResource(R.string.settings_export_choose_parcelle), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable { parcelleMenuExpanded = true }
@@ -888,7 +1070,7 @@ fun SettingsScreen(
                                 ) {
                                     parcelles.forEach { p ->
                                         DropdownMenuItem(
-                                            text = { Text(p.name) },
+                                            text = { Text(p.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                                             onClick = {
                                                 selectedParcelleId = p.id
                                                 selectedPlacetteId = null
@@ -906,7 +1088,7 @@ fun SettingsScreen(
                             Box {
                                 ListItem(
                                     headlineContent = { Text(stringResource(R.string.settings_export_placette)) },
-                                    supportingContent = { Text(selectedPlacetteName ?: stringResource(R.string.settings_export_choose_placette)) },
+                                    supportingContent = { Text(selectedPlacetteName ?: stringResource(R.string.settings_export_choose_placette), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable { placetteMenuExpanded = true }
@@ -917,7 +1099,7 @@ fun SettingsScreen(
                                 ) {
                                     placettes.forEach { pl ->
                                         DropdownMenuItem(
-                                            text = { Text(pl.name ?: pl.id.take(8)) },
+                                            text = { Text(pl.name ?: pl.id.take(8), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                                             onClick = {
                                                 selectedPlacetteId = pl.id
                                                 placetteMenuExpanded = false
@@ -929,7 +1111,16 @@ fun SettingsScreen(
                         }
                     }
 
-                    Row(modifier = Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // FlowRow et non Row : quatre libellés (« CSV Tiges »,
+                    // « GeoJSON », « GPX », « Excel forestry ») forcés à
+                    // weight(1f) dans une seule ligne se tronquaient en
+                    // « CSV … », « Geo… », « Exce… ». Les boutons gardent leur
+                    // largeur naturelle et se répartissent sur deux lignes.
+                    FlowRow(
+                        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
                         val exportCsv = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
                             if (uri != null) {
                                 scope.launch {
@@ -990,7 +1181,7 @@ fun SettingsScreen(
                                 }
                             }
                         }
-                        Button(onClick = { exportCsv.launch("tiges.csv") }) { Text(stringResource(R.string.settings_export_csv_tiges)) }
+                        Button(onClick = { exportCsv.launch("tiges.csv") }) { Text(stringResource(R.string.settings_export_csv_tiges), maxLines = 1, overflow = TextOverflow.Ellipsis) }
 
                         val exportGeo = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/geo+json")) { uri ->
                             if (uri != null) {
@@ -1029,7 +1220,7 @@ fun SettingsScreen(
                                 }
                             }
                         }
-                        Button(onClick = { exportGeo.launch("tiges.geojson") }) { Text(stringResource(R.string.settings_export_geojson)) }
+                        Button(onClick = { exportGeo.launch("tiges.geojson") }) { Text(stringResource(R.string.settings_export_geojson), maxLines = 1, overflow = TextOverflow.Ellipsis) }
 
                         val exportGpx = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/gpx+xml")) { uri ->
                             if (uri != null) {
@@ -1096,7 +1287,7 @@ fun SettingsScreen(
                                 }
                             }
                         }
-                        Button(onClick = { exportGpx.launch("tiges.gpx") }) { Text(stringResource(R.string.settings_export_gpx)) }
+                        Button(onClick = { exportGpx.launch("tiges.gpx") }) { Text(stringResource(R.string.settings_export_gpx), maxLines = 1, overflow = TextOverflow.Ellipsis) }
 
                         val exportExcelForestry = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) { uri ->
                             if (uri != null) {
@@ -1205,7 +1396,7 @@ fun SettingsScreen(
                                 }
                             }
                         }
-                        Button(onClick = { exportExcelForestry.launch("forestry.xlsx") }) { Text(stringResource(R.string.settings_export_excel_forestry)) }
+                        Button(onClick = { exportExcelForestry.launch("forestry.xlsx") }) { Text(stringResource(R.string.settings_export_excel_forestry), maxLines = 1, overflow = TextOverflow.Ellipsis) }
                     }
 
                     val exportProfile = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
@@ -1244,18 +1435,21 @@ fun SettingsScreen(
                         }
                     }
                     Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Button(onClick = { exportProfile.launch("profil.json") }) { Text(stringResource(R.string.settings_export_profile_json)) }
+                        Button(onClick = { exportProfile.launch("profil.json") }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.settings_export_profile_json), maxLines = 1, overflow = TextOverflow.Ellipsis) }
                     }
                 }
             }
 
             // Interaction Section
-            SettingsSection(title = stringResource(R.string.settings_section_interaction)) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_interaction),
+                id = "interaction", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.animations)) },
                     supportingContent = { Text(stringResource(R.string.settings_animations_desc)) },
                     leadingContent = {
-                        Icon(Icons.Default.Settings, contentDescription = null)
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.cd_settings))
                     },
                     trailingContent = {
                         Switch(
@@ -1272,7 +1466,7 @@ fun SettingsScreen(
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.sound)) },
                     supportingContent = { Text(stringResource(R.string.settings_sound_desc)) },
-                    leadingContent = { Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null) },
+                    leadingContent = { Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = stringResource(R.string.cd_volume)) },
                     trailingContent = {
                         Switch(
                             checked = soundEnabled,
@@ -1285,7 +1479,7 @@ fun SettingsScreen(
                     headlineContent = { Text(stringResource(R.string.haptic_feedback)) },
                     supportingContent = { Text(stringResource(R.string.settings_haptic_desc)) },
                     leadingContent = {
-                        Icon(Icons.Default.Vibration, contentDescription = null)
+                        Icon(Icons.Default.Vibration, contentDescription = stringResource(R.string.cd_vibration))
                     },
                     trailingContent = {
                         Switch(
@@ -1311,29 +1505,35 @@ fun SettingsScreen(
                 }
             }
 
-            HorizontalDivider()
+            if (categoryFilter == null) HorizontalDivider()
 
             // Data Section
-            SettingsSection(title = stringResource(R.string.settings_section_data)) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_data),
+                id = "donnees", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.settings_csv_separator)) },
                     supportingContent = { Text(stringResource(R.string.settings_csv_current, csvSeparator)) },
                     leadingContent = {
-                        Icon(Icons.Default.Settings, contentDescription = null)
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.cd_settings))
                     },
                     modifier = Modifier.clickable { showCsvDialog = true }
                 )
             }
 
-            HorizontalDivider()
+            if (categoryFilter == null) HorizontalDivider()
 
             // Privacy Section
-            SettingsSection(title = stringResource(R.string.settings_section_privacy)) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_privacy),
+                id = "confidentialite", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.no_ads)) },
                     supportingContent = { Text(stringResource(R.string.settings_no_ads_desc)) },
                     leadingContent = {
-                        Icon(Icons.Default.Block, contentDescription = null)
+                        Icon(Icons.Default.Block, contentDescription = stringResource(R.string.cd_block))
                     }
                 )
 
@@ -1341,7 +1541,7 @@ fun SettingsScreen(
                     headlineContent = { Text(stringResource(R.string.no_tracking)) },
                     supportingContent = { Text(stringResource(R.string.settings_no_tracking_desc)) },
                     leadingContent = {
-                        Icon(Icons.Default.PrivacyTip, contentDescription = null)
+                        Icon(Icons.Default.PrivacyTip, contentDescription = stringResource(R.string.cd_privacy))
                     }
                 )
 
@@ -1349,7 +1549,7 @@ fun SettingsScreen(
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.settings_crash_logs_title)) },
                     supportingContent = { Text(stringResource(R.string.settings_crash_logs_desc)) },
-                    leadingContent = { Icon(Icons.Default.BugReport, contentDescription = null) },
+                    leadingContent = { Icon(Icons.Default.BugReport, contentDescription = stringResource(R.string.cd_bug_report)) },
                     trailingContent = {
                         Switch(
                             checked = crashLogsEnabled,
@@ -1431,12 +1631,78 @@ fun SettingsScreen(
                         exportAllLauncher.launch("crash-logs-${ts}.zip")
                     }
                 )
+
+                // Lien vers la politique de confidentialité complète (#10)
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.view_privacy_policy)) },
+                    supportingContent = { Text(stringResource(R.string.view_privacy_policy_desc)) },
+                    leadingContent = {
+                        Icon(Icons.Default.PrivacyTip, contentDescription = null)
+                    },
+                    modifier = Modifier.clickable(onClick = onNavigateToPrivacyPolicy),
+                )
+
+                // Droit à l'effacement RGPD — Art. 17 (#16)
+                var showDeleteAllDialog by remember { mutableStateOf(false) }
+                ListItem(
+                    headlineContent = { Text(stringResource(R.string.delete_all_data)) },
+                    supportingContent = { Text(stringResource(R.string.delete_all_data_desc)) },
+                    leadingContent = {
+                        Icon(
+                            Icons.Default.DeleteForever,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    },
+                    modifier = Modifier.clickable { showDeleteAllDialog = true },
+                )
+
+                if (showDeleteAllDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showDeleteAllDialog = false },
+                        title = { Text(stringResource(R.string.delete_all_data)) },
+                        text = {
+                            Text(
+                                text = stringResource(R.string.delete_all_data_warning),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    showDeleteAllDialog = false
+                                    deleteAllUserDataUseCase?.let { useCase ->
+                                        scope.launch {
+                                            useCase.execute()
+                                            snackbarHostState.showSnackbar(
+                                                context.getString(R.string.delete_all_data_success)
+                                            )
+                                        }
+                                    }
+                                }
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.delete_all_data_confirm),
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDeleteAllDialog = false }) {
+                                Text(stringResource(R.string.delete_all_data_cancel))
+                            }
+                        },
+                    )
+                }
             }
 
-            HorizontalDivider()
+            if (categoryFilter == null) HorizontalDivider()
 
             // Backup Section
-            SettingsSection(title = stringResource(R.string.settings_section_backups)) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_backups),
+                id = "sauvegardes", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 val autoBackupEnabled by preferencesManager.autoBackupEnabled.collectAsStateWithLifecycle(initialValue = false)
                 val backupDays by preferencesManager.backupFrequencyDays.collectAsStateWithLifecycle(initialValue = 7)
 
@@ -1501,14 +1767,32 @@ fun SettingsScreen(
             }
 
             // About Section
-            SettingsSection(title = stringResource(R.string.settings_section_about)) {
+            SettingsSection(
+                title = stringResource(R.string.settings_section_about),
+                id = "a_propos", anchors = sectionAnchors, scrollState = settingsScrollState, categoryFilter = categoryFilter,
+            ) {
                 ListItem(
                     headlineContent = { Text(stringResource(R.string.version)) },
                     supportingContent = { Text(versionDisplay) },
                     leadingContent = {
-                        Icon(Icons.Default.Info, contentDescription = null)
-                    }
+                        Icon(Icons.Default.Info, contentDescription = stringResource(R.string.cd_info))
+                    },
+                    modifier = Modifier.clickable(onClick = ::handleVersionTap),
                 )
+                if (developerModeEnabled) {
+                    ListItem(
+                        headlineContent = {
+                            Text(stringResource(R.string.settings_developer_options))
+                        },
+                        supportingContent = {
+                            Text(stringResource(R.string.settings_developer_options_desc))
+                        },
+                        leadingContent = {
+                            Icon(Icons.Default.BugReport, contentDescription = null)
+                        },
+                        modifier = Modifier.clickable(onClick = onNavigateToDeveloperOptions),
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -1553,22 +1837,200 @@ fun SettingsScreen(
 
 }
 
+// Palette large — tout le cercle chromatique plutôt que les seuls verts et
+// neutres de marque, pour que « plus de couleurs » veuille vraiment dire
+// quelque chose. Chaque teinte reste assez saturée pour rester lisible en
+// primaire (texte blanc dessus) comme en conteneur (texte contrastant calculé
+// par ColorUtils.getContrastingTextColor).
+private val EXTENDED_COLOR_PALETTE = listOf(
+    "#2D5F3F", "#8FD1A4", "#4A6B58", "#B1CCBB", "#1B4430",
+    "#0F6B45", "#9CE8BE", "#4E5B31", "#8FC24E", "#3E6B52",
+    "#00897B", "#4DB6AC", "#0097A7", "#4DD0E1",
+    "#1565C0", "#64B5F6", "#3949AB", "#7986CB",
+    "#6A1B9A", "#BA68C8", "#4527A0",
+    "#AD1457", "#F06292", "#C62828", "#E57373",
+    "#D84315", "#EF6C00", "#FFB74D", "#FF8F00",
+    "#B26A00", "#FFB95C", "#A85218",
+    "#9E9D24", "#AFB42B",
+    "#6D4C41", "#A1887F",
+    "#455A64", "#90A4AE", "#73796E", "#616161", "#9E9E9E", "#191C17",
+)
+
+/**
+ * Sélecteur de couleur partagé — accent (boutons/icônes) et couleur des
+ * blocs mis en avant utilisent la même palette large, avec repli sur une
+ * couleur personnalisée en hexadécimal pour une liberté totale.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ColorPickerRow(
+    current: String?,
+    onPick: (String) -> Unit,
+    allowReset: Boolean,
+    onReset: () -> Unit = {},
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var showCustomDialog by remember { mutableStateOf(false) }
+    val visible = if (expanded) EXTENDED_COLOR_PALETTE else EXTENDED_COLOR_PALETTE.take(15)
+
+    FlowRow(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (allowReset) {
+            Surface(
+                modifier = Modifier.size(32.dp).clickable { onReset() },
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                shape = MaterialTheme.shapes.small,
+                border = if (current == null) BorderStroke(2.dp, MaterialTheme.colorScheme.onSurface) else null,
+            ) {
+                Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
+                    Icon(
+                        Icons.Default.RestartAlt,
+                        contentDescription = stringResource(R.string.default_color),
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        visible.forEach { hex ->
+            val col = try {
+                androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(hex))
+            } catch (e: Exception) {
+                MaterialTheme.colorScheme.primary
+            }
+            val selected = current?.equals(hex, true) == true
+            Surface(
+                modifier = Modifier.size(32.dp).clickable { onPick(hex) },
+                color = col,
+                shape = MaterialTheme.shapes.small,
+                border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.onSurface) else null,
+            ) {}
+        }
+        // Couleur personnalisée — la palette, même large, ne couvre jamais
+        // tous les cas ; un champ hexadécimal ouvre le choix en entier.
+        Surface(
+            modifier = Modifier.size(32.dp).clickable { showCustomDialog = true },
+            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            shape = MaterialTheme.shapes.small,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+        ) {
+            Box(contentAlignment = androidx.compose.ui.Alignment.Center) {
+                Icon(
+                    Icons.Default.Colorize,
+                    contentDescription = stringResource(R.string.custom_color),
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+    Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+        TextButton(onClick = { expanded = !expanded }) {
+            Text(stringResource(if (expanded) R.string.less_colors else R.string.more_colors))
+        }
+    }
+
+    if (showCustomDialog) {
+        var hexInput by remember { mutableStateOf(current?.removePrefix("#") ?: "2D5F3F") }
+        val previewColor = try {
+            androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor("#$hexInput"))
+        } catch (e: Exception) {
+            null
+        }
+        AlertDialog(
+            onDismissRequest = { showCustomDialog = false },
+            title = { Text(stringResource(R.string.custom_color)) },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = hexInput,
+                        onValueChange = { hexInput = it.filter { c -> c.isLetterOrDigit() }.take(6) },
+                        label = { Text(stringResource(R.string.custom_color_hex_label)) },
+                        leadingIcon = { Text("#", style = MaterialTheme.typography.bodyLarge) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        color = previewColor ?: MaterialTheme.colorScheme.surfaceContainerHighest,
+                        shape = MaterialTheme.shapes.small,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)),
+                    ) {}
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = previewColor != null,
+                    onClick = {
+                        onPick("#$hexInput")
+                        showCustomDialog = false
+                    },
+                ) { Text(stringResource(R.string.save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCustomDialog = false }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
+}
+
 private fun parseWktPointZ(wkt: String?): Triple<Double?, Double?, Double?> =
     com.forestry.counter.domain.location.WktUtils.parsePointZ(wkt)
 
 @Composable
 fun SettingsSection(
     title: String,
+    id: String? = null,
+    anchors: MutableMap<String, Float>? = null,
+    scrollState: ScrollState? = null,
+    categoryFilter: Set<String>? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column {
+    if (categoryFilter != null && id !in categoryFilter) return
+
+    // Position capturée pour SettingsHomeScreen : recherche et catégories y
+    // sautent directement plutôt que de laisser l'utilisateur dérouler à la
+    // main. Position relative au Column défilant, normalisée par le décalage
+    // de scroll courant — seule façon stable dans un Modifier.verticalScroll.
+    val anchorModifier = if (id != null && anchors != null && scrollState != null) {
+        Modifier.onGloballyPositioned { coordinates ->
+            anchors[id] = coordinates.positionInParent().y + scrollState.value
+        }
+    } else {
+        Modifier
+    }
+    // Chaque section est sa propre carte — la version précédente posait
+    // les ListItem directement sur le fond de l'écran, sans regroupement
+    // visuel. La séparation entre sections vient maintenant de l'espace
+    // entre les cartes, pas d'un simple trait fin (HorizontalDivider).
+    Column(
+        modifier = anchorModifier
+            .padding(horizontal = com.forestry.counter.presentation.theme.Space.screenH)
+            .padding(top = com.forestry.counter.presentation.theme.Space.md),
+    ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            modifier = Modifier.padding(
+                start = com.forestry.counter.presentation.theme.Space.xs,
+                bottom = com.forestry.counter.presentation.theme.Space.xs,
+            ),
         )
-        content()
+        Surface(
+            shape = com.forestry.counter.presentation.theme.GsShape.lg,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = com.forestry.counter.presentation.theme.Elevation.card,
+        ) {
+            Column(modifier = Modifier.padding(vertical = com.forestry.counter.presentation.theme.Space.xxs)) {
+                content()
+            }
+        }
     }
 }
 

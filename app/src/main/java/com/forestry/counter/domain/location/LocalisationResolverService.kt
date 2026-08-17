@@ -1,9 +1,9 @@
 package com.forestry.counter.domain.location
 
 import android.util.Log
-import com.forestry.counter.data.local.entity.StationEnvironnementaleEntity
 import com.forestry.counter.data.mapper.toParcelleEntity
 import com.forestry.counter.data.mapper.toParcelle
+import com.forestry.counter.domain.model.StationEnvironnementale
 import com.forestry.counter.domain.repository.ParcelleRepository
 import com.forestry.counter.domain.repository.StationEnvironnementaleRepository
 import kotlinx.coroutines.Dispatchers
@@ -20,7 +20,7 @@ import java.util.UUID
  * Résout la localisation depuis des coordonnées GPS vers :
  * - Données cadastrales IGN (commune, section, numéro, contenance)
  * - SylvoÉcoRégion (SER) depuis le WFS IGN/IFN
- * - Cache dans ParcelleEntity + StationEnvironnementaleEntity
+ * - Cache dans ParcelleEntity + StationEnvironnementale
  */
 class LocalisationResolverService(
     private val parcelleRepository: ParcelleRepository,
@@ -99,7 +99,7 @@ class LocalisationResolverService(
         // Créer/mettre à jour station environnementale
         val existing = stationRepository.getByParcelleOnce(parcelleId)
         if (existing == null) {
-            stationRepository.insert(StationEnvironnementaleEntity(
+            stationRepository.insert(StationEnvironnementale(
                 stationId = UUID.randomUUID().toString(),
                 parcelleId = parcelleId,
                 altitudeM = null, slopePct = null, aspectDeg = null, aspectLabel = null,

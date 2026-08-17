@@ -1,5 +1,7 @@
 package com.forestry.counter.domain.model.station
 
+import com.forestry.counter.domain.model.Metadatable
+
 /**
  * Observation stationnelle complète.
  * Combinaison de données de terrain, données dendro et données géographiques.
@@ -50,8 +52,17 @@ data class StationObservation(
     val especesHygrophiles: Boolean = false,
 
     // ── Notes libres ──
-    val notes: String = ""
-)
+    val notes: String = "",
+
+    // Metadata spec GeoSylva 3.0 §3.1 — provenance et traçabilité
+    override val deletedAt: Long? = null,
+    override val auteur: String? = null,
+    override val source: String? = null,
+    override val version: Int = 1
+) : Metadatable<StationObservation> {
+    override fun withMetadata(auteur: String, source: String, version: Int): StationObservation =
+        copy(auteur = auteur, source = source, version = version)
+}
 
 data class DiagnosticPhoto(
     val uri: String,

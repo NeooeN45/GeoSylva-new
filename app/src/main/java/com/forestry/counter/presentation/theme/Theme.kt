@@ -20,54 +20,92 @@ private val LightColorScheme = lightColorScheme(
     primary = Primary,
     onPrimary = OnPrimary,
     primaryContainer = PrimaryVariant,
-    onPrimaryContainer = OnPrimary,
+    onPrimaryContainer = OnPrimaryContainer,
     secondary = Secondary,
     onSecondary = OnSecondary,
     secondaryContainer = SecondaryVariant,
-    onSecondaryContainer = OnSecondary,
-    tertiary = Secondary,
-    onTertiary = OnSecondary,
+    onSecondaryContainer = OnSecondaryContainer,
+    tertiary = Tertiary,
+    onTertiary = OnTertiary,
+    tertiaryContainer = TertiaryContainer,
+    onTertiaryContainer = OnTertiaryContainer,
     background = Background,
     onBackground = OnBackground,
     surface = Surface,
     onSurface = OnSurface,
-    surfaceVariant = Gray100,
-    onSurfaceVariant = Gray700,
+    surfaceVariant = SurfaceVariant,
+    onSurfaceVariant = OnSurfaceVariant,
     error = Error,
     onError = OnError,
-    outline = Gray300,
-    outlineVariant = Gray200
+    outline = Outline,
+    outlineVariant = OutlineVariant,
+    surfaceDim = SurfaceDim,
+    surfaceBright = SurfaceBright,
+    surfaceContainerLowest = SurfaceContainerLowest,
+    surfaceContainerLow = SurfaceContainerLow,
+    surfaceContainer = SurfaceContainer,
+    surfaceContainerHigh = SurfaceContainerHigh,
+    surfaceContainerHighest = SurfaceContainerHighest,
+    surfaceTint = Primary,
+    inverseSurface = InverseSurface,
+    inverseOnSurface = InverseOnSurface
 )
 
 private val DarkColorScheme = darkColorScheme(
     primary = PrimaryDark,
     onPrimary = OnPrimaryDark,
     primaryContainer = PrimaryVariantDark,
-    onPrimaryContainer = OnPrimaryDark,
+    onPrimaryContainer = OnPrimaryContainerDark,
     secondary = SecondaryDark,
     onSecondary = OnSecondaryDark,
     secondaryContainer = SecondaryVariantDark,
-    onSecondaryContainer = OnSecondaryDark,
-    tertiary = SecondaryDark,
-    onTertiary = OnSecondaryDark,
+    onSecondaryContainer = OnSecondaryContainerDark,
+    tertiary = TertiaryDark,
+    onTertiary = OnTertiaryDark,
+    tertiaryContainer = TertiaryContainerDark,
+    onTertiaryContainer = OnTertiaryContainerDark,
     background = BackgroundDark,
     onBackground = OnBackgroundDark,
     surface = SurfaceDark,
     onSurface = OnSurfaceDark,
-    surfaceVariant = Gray800,
-    onSurfaceVariant = Gray300,
+    surfaceVariant = SurfaceVariantDark,
+    onSurfaceVariant = OnSurfaceVariantDark,
     error = ErrorDark,
     onError = OnErrorDark,
-    outline = Gray700,
-    outlineVariant = Gray800
+    outline = OutlineDark,
+    outlineVariant = OutlineVariantDark,
+    surfaceDim = SurfaceDimDark,
+    surfaceBright = SurfaceBrightDark,
+    surfaceContainerLowest = SurfaceContainerLowestDark,
+    surfaceContainerLow = SurfaceContainerLowDark,
+    surfaceContainer = SurfaceContainerDark,
+    surfaceContainerHigh = SurfaceContainerHighDark,
+    surfaceContainerHighest = SurfaceContainerHighestDark,
+    surfaceTint = PrimaryDark,
+    inverseSurface = InverseSurfaceDark,
+    inverseOnSurface = InverseOnSurfaceDark
 )
 
 @Composable
 @Suppress("DEPRECATION")
 fun ForestryCounterTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
-    accentColor: Color = AccentGreen,
-    dynamicColor: Boolean = true,
+    accentColor: Color = Primary,
+    // Couleur des blocs mis en avant (tuiles de statistiques, etc.) —
+    // demandée séparément de `accentColor` : elle ne pilotait jusqu'ici que
+    // les boutons/icônes, jamais ces blocs, restés au vert de marque fixe
+    // quel que soit l'accent choisi. `null` = comportement historique.
+    containerAccentColor: Color? = null,
+    // Couleur des cartes et menus (surfaceContainerHigh/Highest) — le
+    // « verre foncé » signalé en thème sombre sur les lignes Thème, Langue,
+    // Taille de police… de la page Apparence, entre autres. `null` = teinte
+    // dérivée du thème (comportement historique).
+    cardAccentColor: Color? = null,
+    // Défaut à `false` : sur Android 12+, la palette Material You dérivée du
+    // fond d'écran de l'utilisateur écrase entièrement l'identité GeoSylva.
+    // C'est acceptable pour une application système, pas pour un outil métier.
+    // Reste proposé comme option explicite dans les réglages.
+    dynamicColor: Boolean = false,
     fontSize: FontSize = FontSize.MEDIUM,
     content: @Composable () -> Unit
 ) {
@@ -82,8 +120,41 @@ fun ForestryCounterTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        darkTheme -> DarkColorScheme.copy(primary = accentColor)
-        else -> LightColorScheme.copy(primary = accentColor)
+        // L'accent personnalisé n'écrase la couleur de marque que si
+        // l'utilisateur en a explicitement choisi un autre. Sinon une couleur
+        // pensée pour le thème clair se retrouverait appliquée au thème sombre.
+        darkTheme -> {
+            var scheme = if (accentColor == Primary) DarkColorScheme else DarkColorScheme.copy(primary = accentColor)
+            if (containerAccentColor != null) {
+                scheme = scheme.copy(
+                    primaryContainer = containerAccentColor,
+                    onPrimaryContainer = com.forestry.counter.presentation.utils.ColorUtils.getContrastingTextColor(containerAccentColor),
+                )
+            }
+            if (cardAccentColor != null) {
+                scheme = scheme.copy(
+                    surfaceContainerHigh = cardAccentColor,
+                    surfaceContainerHighest = cardAccentColor,
+                )
+            }
+            scheme
+        }
+        else -> {
+            var scheme = if (accentColor == Primary) LightColorScheme else LightColorScheme.copy(primary = accentColor)
+            if (containerAccentColor != null) {
+                scheme = scheme.copy(
+                    primaryContainer = containerAccentColor,
+                    onPrimaryContainer = com.forestry.counter.presentation.utils.ColorUtils.getContrastingTextColor(containerAccentColor),
+                )
+            }
+            if (cardAccentColor != null) {
+                scheme = scheme.copy(
+                    surfaceContainerHigh = cardAccentColor,
+                    surfaceContainerHighest = cardAccentColor,
+                )
+            }
+            scheme
+        }
     }
 
     val scale = fontSize.scale
@@ -109,7 +180,7 @@ fun parseAccentColor(colorString: String): Color {
     return try {
         Color(android.graphics.Color.parseColor(colorString))
     } catch (e: Exception) {
-        AccentGreen
+        Primary
     }
 }
 

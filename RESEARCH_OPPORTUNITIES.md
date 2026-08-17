@@ -472,6 +472,151 @@ Mois 9-12 : Hypsomètre
 
 ---
 
+## 6.6 Approfondissement — Identification botanique (Pl@ntNet), issu d'une session de réflexion avec un agent (2026-07-19)
+
+Complète l'entrée "API PlantNet (identification essence)" de la Phase 3
+(§6.4) avec une réflexion plus poussée sur l'architecture, le hors-ligne,
+les licences et une trajectoire vers un modèle embarqué souverain. Ce qui
+suit est une synthèse d'idées à valider/challenger, pas une décision prise.
+
+### Ce que l'API Pl@ntNet apporterait réellement
+
+Reçoit jusqu'à 5 photos d'un même individu (feuille, fleur, fruit, écorce)
+et retourne plusieurs espèces candidates avec score de confiance, famille
+botanique, noms vernaculaires, identifiants GBIF/POWO et version du moteur
+— exploitable pour la traçabilité scientifique attendue dans Quintessences.
+
+Usages GeoSylva envisagés : identification essences/régénération/plantes
+indicatrices, assistance aux relevés floristiques et à l'IBP, détection
+d'espèces invasives ou patrimoniales, accélération du diagnostic
+stationnel, préremplissage d'observation Flora/Quintessences, suggestion
+de maladies/ravageurs (couverture encore limitée côté Pl@ntNet sur ce
+dernier point).
+
+Évaluation subjective de départ : ~9/10 comme aide à l'identification,
+~4/10 comme identification professionnelle autonome — c'est-à-dire un
+assistant, jamais une source de vérité automatique.
+
+### Principe non négociable : jamais d'auto-affirmation
+
+GeoSylva ne doit jamais écrire directement « essence = chêne sessile »
+après une seule photo. L'interface doit toujours afficher les meilleures
+hypothèses avec leur confiance, les organes/photos analysés, et proposer
+« Confirmer » / « Ajouter une photo » / « Identifier manuellement » avec
+avertissement explicite en cas d'incertitude.
+
+Statut de cycle de vie proposé pour une identification :
+`SUGGESTION_IA` → `VALIDEE_UTILISATEUR` (uniquement après confirmation
+humaine). Tant qu'une identification reste `SUGGESTION_IA`, elle ne doit
+déclencher ni tarif de cubage, ni conseil sylvicole, ni conclusion
+écologique — cohérent avec le principe déjà appliqué côté GSIE (ADR-007,
+distinction observation/estimation/simulation).
+
+Traçabilité à conserver par identification : espèces candidates et leurs
+scores, identifiants taxonomiques GBIF/POWO, version du moteur Pl@ntNet,
+date de l'analyse, empreinte des photographies, décision et identité du
+validateur, niveau de preuve et incertitude.
+
+### Compatibilité offline-first (principe fondateur GeoSylva, cf. CLAUDE.md local)
+
+Pl@ntNet est un service en ligne — incompatible tel quel avec le principe
+"aucune fonctionnalité cœur ne dépend du réseau". Piste retenue : file
+d'attente locale — photo et observation enregistrées immédiatement, essence
+marquée `en attente d'identification`, envoi automatique à la reconnexion,
+notification à réception du résultat, recherche manuelle locale toujours
+disponible en secours.
+
+### Architecture recommandée (protection de la clé API)
+
+La clé Pl@ntNet ne doit jamais résider dans l'APK (extractible). Circuit
+proposé : `GeoSylva → serveur GSIE sécurisé → Pl@ntNet → normalisation
+Quintessences → validation humaine` — le serveur GSIE porte la clé, les
+quotas, le cache, la journalisation et le suivi de coût. Retirer les
+métadonnées GPS des photos avant envoi (Pl@ntNet ne conserve les images
+qu'en mémoire volatile pendant l'identification mais garde un historique
+technique des requêtes).
+
+### Prix, quotas, licences — à reconfirmer par écrit avant mise en production commerciale
+
+Quota gratuit annoncé : 500 identifications/jour. Usage commercial annoncé
+au moment de cette réflexion : ~1 000 € HT / 200 000 requêtes par an, puis
+5 € HT / 1 000 requêtes supplémentaires (~0,5 centime/identification à
+plein usage). **Ces chiffres proviennent d'une synthèse d'agent et doivent
+être reconfirmés directement auprès de Pl@ntNet avant tout engagement
+commercial** (cohérent avec le principe ADR-007 : ne jamais traiter une
+donnée non vérifiée comme un fait acquis). Licences à respecter si les
+photos de référence Pl@ntNet sont affichées : attribution + CC BY-SA pour
+les images, CC BY pour les données d'observation.
+
+### Piste avancée : identification multi-espèces sur une même photo (API "survey", bêta)
+
+Pl@ntNet teste une API de reconnaissance multi-espèces sur une photo de
+placette/quadrat — pertinente pour les relevés de végétation, l'IBP et les
+inventaires de biodiversité, mais encore bêta, moins performante, accès sur
+demande uniquement. À resurveiller, pas à intégrer maintenant.
+
+### Piste stratégique : essences forestières françaises en local (hors-ligne)
+
+Question posée : un modèle embarqué, spécifique aux essences forestières
+françaises, est-il réaliste en offline dans GeoSylva ? Réponse de travail :
+oui, avec un modèle propre à construire — Pl@ntNet a démontré la
+faisabilité technique d'un mode embarqué compressé, mais celui-ci est
+annoncé réservé à leur propre application mobile (pas de téléchargement
+direct réutilisable sans accord).
+
+**Contenu d'un pack "Essences forestières — France métropolitaine"
+envisagé** : noms scientifiques/vernaculaires/synonymes, identifiants
+TAXREF/GBIF/POWO (TAXREF = référentiel taxonomique officiel du SINP
+français — cohérent avec SCI-003 déjà adopté côté GSIE), critères
+d'identification, photos (feuilles/bourgeons/écorces/fruits/silhouettes),
+autécologie et exigences climatiques/édaphiques, répartition/altitude/
+statut indigène, usages sylvicoles et méthodes de cubage compatibles,
+photographies légalement réutilisables avec crédits. Téléchargement
+séparable : base textuelle légère, photos, modèle IA, fiches
+autécologiques, packs régionaux (Atlantique, Massif central, Méditerranée,
+Alpes, Pyrénées...).
+
+**Piste modèle IA** : vision légère (MobileNet/EfficientNet-Lite) entraînée
+sur ~100-250 taxons forestiers prioritaires, quantifiée INT8, exécutée via
+LiteRT sur Android. Flux envisagé : photo → contrôle qualité (flou,
+lumière, cadrage) → candidats du modèle local → repondération contextuelle
+(région, altitude, saison, sol, habitat — recoupe directement le rôle du
+Botanical/Pedology/Climate Engine GSIE déjà en place) → validation humaine
+→ éventuelle seconde expertise Pl@ntNet en ligne. **Exigence non
+négociable** : le modèle doit savoir répondre "espèce inconnue / résultat
+insuffisant" plutôt que de toujours forcer une réponse dans son catalogue
+fermé — sans quoi il produirait silencieusement une fausse certitude,
+contraire au garde-fou anti-invention déjà en vigueur côté GSIE (ADR-007).
+
+**Données d'entraînement** : Pl@ntNet-300K (~306 000 images, 1 081 espèces,
+CC BY 4.0) comme point de départ possible, mais un corpus forestier
+français dédié et validé serait nécessaire (plusieurs saisons/organes :
+arbres adultes et jeunes, feuilles saines et endommagées, écorces
+jeunes/âgées, bourgeons/rameaux hivernaux, espèces proches à discriminer
+spécifiquement — chênes sessile/pédonculé/pubescent, sapin/épicéa,
+érables, ormes, saules —, hybrides et essences introduites).
+
+**Trajectoire hybride envisagée** : hors-ligne = catalogue + clé
+d'identification + IA spécialisée française ; en ligne = vérification
+Pl@ntNet + catalogue plus large ; Quintessences = normalisation
+taxonomique, contextualisation écologique, niveau de preuve, historique ;
+validation humaine = seule habilitée à rendre l'essence utilisable pour le
+cubage ou la décision sylvicole.
+
+**Piste partenariat** : contacter Pl@ntNet/CIRAD pour évaluer une licence
+de leur modèle embarqué ou un partenariat ciblé placettes forestières/
+validation professionnelle/données de terrain — mais un modèle souverain
+spécialisé essences françaises resterait réalisable indépendamment de cet
+accord, et pourrait devenir une fonctionnalité différenciante de GeoSylva.
+
+**À trancher plus tard, pas maintenant** : ceci reste une piste Phase 3+
+(cf. §6.4/§6.5) — ne pas démarrer avant que la tranche GeoSylva → GSIE
+(capsule territoriale, synchronisation) soit verte, conformément à l'ordre
+d'exécution déjà retenu (`00_START_HERE/OBJECTIF_DEMONTRABLE_ET_ORDRE_EXECUTION.md`
+et audit du 19/07/2026).
+
+---
+
 ## 7. ACTIONS IMMÉDIATES (cette semaine)
 
 1. **Postuler** : NVIDIA Inception + Microsoft for Startups + Google for Startups + AWS Activate

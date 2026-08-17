@@ -1,7 +1,7 @@
 package com.forestry.counter.domain.diagnostic
 
-import com.forestry.counter.data.local.entity.StationEnvironnementaleEntity
 import com.forestry.counter.data.sylviculture.FertiliteEssenceSerData
+import com.forestry.counter.domain.model.StationEnvironnementale
 
 /**
  * Score d'adéquation d'une essence à une station forestière.
@@ -48,14 +48,14 @@ object EssenceSuitabilityScorer {
      */
     fun scoreAll(
         essenceCodes: List<String>,
-        station: StationEnvironnementaleEntity
+        station: StationEnvironnementale
     ): List<SuitabilityScore> =
         essenceCodes.map { score(it, station) }.sortedByDescending { it.scoreTotal }
 
     /**
      * Score une essence contre une station.
      */
-    fun score(essenceCode: String, station: StationEnvironnementaleEntity): SuitabilityScore {
+    fun score(essenceCode: String, station: StationEnvironnementale): SuitabilityScore {
         val fertilite = scoreFertilite(essenceCode, station.codeSer)
         val climat    = scoreClimat(essenceCode, station)
         val sol       = scoreSol(essenceCode, station)
@@ -102,7 +102,7 @@ object EssenceSuitabilityScorer {
     // ──────────────────────────────────────────────────────────────────────────
     // Score climatique (normales embarquées)
     // ──────────────────────────────────────────────────────────────────────────
-    private fun scoreClimat(essenceCode: String, station: StationEnvironnementaleEntity): Int {
+    private fun scoreClimat(essenceCode: String, station: StationEnvironnementale): Int {
         val t = station.tempMoyC ?: return SCORE_NEUTRAL
         val p = station.precipMmAn ?: return SCORE_NEUTRAL
         val specs = CLIMATE_SPECS[essenceCode] ?: return SCORE_NEUTRAL
@@ -118,7 +118,7 @@ object EssenceSuitabilityScorer {
     // ──────────────────────────────────────────────────────────────────────────
     // Score sol (pH, RU, drainage)
     // ──────────────────────────────────────────────────────────────────────────
-    private fun scoreSol(essenceCode: String, station: StationEnvironnementaleEntity): Int {
+    private fun scoreSol(essenceCode: String, station: StationEnvironnementale): Int {
         val ph = station.soilPh ?: return SCORE_NEUTRAL
         val ru = station.soilRumMm ?: return SCORE_NEUTRAL
         val specs = SOIL_SPECS[essenceCode] ?: return SCORE_NEUTRAL
@@ -142,7 +142,7 @@ object EssenceSuitabilityScorer {
     // ──────────────────────────────────────────────────────────────────────────
     // Score sanitaire (risques pathogènes connus × essence)
     // ──────────────────────────────────────────────────────────────────────────
-    private fun scoreSanitaire(essenceCode: String, station: StationEnvironnementaleEntity): Int {
+    private fun scoreSanitaire(essenceCode: String, station: StationEnvironnementale): Int {
         val risques = PATHOGEN_RISK[essenceCode] ?: return SCORE_GOOD
         var score = 100
         val t = station.tempMoyC ?: return SCORE_GOOD

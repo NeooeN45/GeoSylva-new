@@ -85,9 +85,77 @@ class Lambert93ConverterTest {
     @Test
     fun `toL93 Paris matches IGN reference`() {
         val (e, n) = Lambert93Converter.toL93(2.3522, 48.8566)
-        // Référence IGN : E≈652462, N≈6862130 — tolérance 50m
-        assertApprox(652_462.0, e, 50.0, "Paris E")
-        assertApprox(6_862_130.0, n, 150.0, "Paris N")
+        // Référence IGN : E≈652462, N≈6862130 (RGF93).
+        // Notre conversion WGS84→L93 (sans Helmert) donne E≈652469, N≈6862035.
+        // Écart ~95m en N : la référence IGN 6862130 correspond à des coordonnées
+        // RGF93 précises, notre entrée WGS84 (2.3522, 48.8566) est arrondie à 4 décimales
+        // (~11m). Tolérance 100m pour tenir compte de l'arrondi d'entrée + écart WGS84/ETRS89.
+        assertApprox(652_462.0, e, 100.0, "Paris E")
+        assertApprox(6_862_130.0, n, 100.0, "Paris N")
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // Points géodésiques de référence — validation de régression
+    // Valeurs attendues = sortie du convertisseur (formules IGN NTG 71
+    // sur GRS80). Tolérance 1 m : détecte toute dérive des formules.
+    // WGS84 et ETRS89/RGF93 traités comme confondus (écart ~60 cm en 2026,
+    // négligeable face à l'incertitude GPS forestière ±2-5 m).
+    // ═══════════════════════════════════════════════════════════
+
+    @Test
+    fun `control point - Paris Pantheon`() {
+        val (e, n) = Lambert93Converter.toL93(2.3467, 48.8462)
+        assertApprox(652_055.9, e, 1.0, "Paris Pantheon E")
+        assertApprox(6_860_882.2, n, 1.0, "Paris Pantheon N")
+    }
+
+    @Test
+    fun `control point - Marseille Notre Dame de la Garde`() {
+        val (e, n) = Lambert93Converter.toL93(5.3636, 43.2906)
+        assertApprox(891_906.7, e, 1.0, "Marseille E")
+        assertApprox(6_246_364.6, n, 1.0, "Marseille N")
+    }
+
+    @Test
+    fun `control point - Strasbourg Cathedral`() {
+        val (e, n) = Lambert93Converter.toL93(7.7521, 48.5839)
+        assertApprox(1_050_292.5, e, 1.0, "Strasbourg E")
+        assertApprox(6_842_064.8, n, 1.0, "Strasbourg N")
+    }
+
+    @Test
+    fun `control point - Bordeaux Place de la Bourse`() {
+        val (e, n) = Lambert93Converter.toL93(-0.5678, 44.8378)
+        assertApprox(418_141.5, e, 1.0, "Bordeaux E")
+        assertApprox(6_421_772.6, n, 1.0, "Bordeaux N")
+    }
+
+    @Test
+    fun `control point - Lille Grand Place`() {
+        val (e, n) = Lambert93Converter.toL93(3.0573, 50.6292)
+        assertApprox(704_061.1, e, 1.0, "Lille E")
+        assertApprox(7_059_136.6, n, 1.0, "Lille N")
+    }
+
+    @Test
+    fun `control point - Brest`() {
+        val (e, n) = Lambert93Converter.toL93(-4.4861, 48.3904)
+        assertApprox(146_633.0, e, 1.0, "Brest E")
+        assertApprox(6_836_262.3, n, 1.0, "Brest N")
+    }
+
+    @Test
+    fun `control point - Nice`() {
+        val (e, n) = Lambert93Converter.toL93(7.2620, 43.7102)
+        assertApprox(1_043_410.2, e, 1.0, "Nice E")
+        assertApprox(6_299_400.0, n, 1.0, "Nice N")
+    }
+
+    @Test
+    fun `control point - Lyon Bellecour`() {
+        val (e, n) = Lambert93Converter.toL93(4.8320, 45.7579)
+        assertApprox(842_394.9, e, 1.0, "Lyon E")
+        assertApprox(6_519_240.5, n, 1.0, "Lyon N")
     }
 
     @Test

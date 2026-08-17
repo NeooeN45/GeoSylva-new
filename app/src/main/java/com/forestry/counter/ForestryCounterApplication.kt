@@ -24,6 +24,10 @@ import com.forestry.counter.data.repository.RipisylveRepositoryImpl
 import com.forestry.counter.data.repository.StationRepositoryImpl
 import com.forestry.counter.domain.repository.RipisylveRepository
 import com.forestry.counter.domain.repository.StationRepository
+import com.forestry.counter.domain.repository.IdentityRepository
+import com.forestry.counter.data.repository.IdentityRepositoryFactory
+import com.forestry.counter.data.service.MetadataService
+import com.forestry.counter.data.sync.ParcelSyncRepositoryFactory
 import com.forestry.counter.domain.calculator.FormulaParser
 import com.forestry.counter.domain.calculation.ForestryCalculator
 import com.forestry.counter.domain.calculation.PeuplementAvantCoupeCalculator
@@ -35,6 +39,7 @@ import com.forestry.counter.domain.repository.GroupRepository
 import com.forestry.counter.domain.repository.InventaireSessionRepository
 import com.forestry.counter.domain.repository.ObservationFloreRepository
 import com.forestry.counter.domain.repository.ParcelleRepository
+import com.forestry.counter.domain.repository.ParcelSyncRepository
 import com.forestry.counter.domain.repository.PlacetteRepository
 import com.forestry.counter.domain.repository.EssenceRepository
 import com.forestry.counter.domain.repository.StationEnvironnementaleRepository
@@ -109,9 +114,17 @@ class ForestryCounterApplication : Application() {
         private set
     lateinit var stationRepository: StationRepository
         private set
+    lateinit var identityRepository: IdentityRepository
+        private set
+    lateinit var parcelleSyncRepository: ParcelSyncRepository
+        private set
+    lateinit var projectRepository: com.forestry.counter.domain.repository.ProjectRepository
+        private set
 
     // Services
     lateinit var localisationResolverService: LocalisationResolverService
+        private set
+    lateinit var metadataService: MetadataService
         private set
 
     // Preferences
@@ -122,6 +135,8 @@ class ForestryCounterApplication : Application() {
     lateinit var exportDataUseCase: ExportDataUseCase
         private set
     lateinit var importDataUseCase: ImportDataUseCase
+        private set
+    lateinit var deleteAllUserDataUseCase: com.forestry.counter.domain.usecase.privacy.DeleteAllUserDataUseCase
         private set
 
     // Calculator
@@ -155,6 +170,23 @@ class ForestryCounterApplication : Application() {
         // Install crash logger (controlled via settings)
         CrashLogger.install(this)
 
+        // Initialiser le compte et la file avant les dépôts métier permet de
+        // mettre chaque mutation de parcelle en attente, sans bloquer le mode local.
+        userPreferences = UserPreferencesManager(applicationContext)
+        identityRepository = IdentityRepositoryFactory.create(applicationContext)
+        parcelleSyncRepository = ParcelSyncRepositoryFactory.create(
+            context = applicationContext,
+            syncDao = database.parcelSyncDao(),
+            parcelleDao = database.parcelleDao(),
+            identityRepository = identityRepository,
+        )
+
+        // Service metadata — renseigne auteur/source/version à l'écriture (spec §3.1).
+        // Le accountProvider lit l'identité courante de façon synchrone via le StateFlow.
+        metadataService = MetadataService(
+            accountProvider = { identityRepository.session.value?.accountId }
+        )
+
         // Initialize calculator
         formulaParser = FormulaParser()
 
@@ -185,21 +217,27 @@ class ForestryCounterApplication : Application() {
         )
 
         // Forestry repositories
-        parcelleRepository = ParcelleRepositoryImpl(database.parcelleDao())
-        placetteRepository = PlacetteRepositoryImpl(database.placetteDao())
-        essenceRepository = EssenceRepositoryImpl(database.essenceDao())
-        tigeRepository = TigeRepositoryImpl(database.tigeDao())
+        parcelleRepository = ParcelleRepositoryImpl(
+            parcelleDao = database.parcelleDao(),
+            metadataService = metadataService,
+            onUpsert = parcelleSyncRepository::enqueueUpsert,
+            onDelete = parcelleSyncRepository::enqueueDelete,
+        )
+        placetteRepository = PlacetteRepositoryImpl(database.placetteDao(), metadataService)
+        essenceRepository = EssenceRepositoryImpl(database.essenceDao(), metadataService)
+        tigeRepository = TigeRepositoryImpl(database.tigeDao(), metadataService)
         parameterRepository = ParameterRepositoryImpl(database.parameterDao())
         ibpRepository = IbpRepositoryImpl(database.ibpEvaluationDao())
-        foretRepository = ForetRepositoryImpl(database.foretDao())
-        inventaireSessionRepository = InventaireSessionRepositoryImpl(database.inventaireSessionDao())
+        foretRepository = ForetRepositoryImpl(database.foretDao(), metadataService)
+        inventaireSessionRepository = InventaireSessionRepositoryImpl(database.inventaireSessionDao(), metadataService)
         stationEnvironnementaleRepository = StationEnvironnementaleRepositoryImpl(database.stationEnvironnementaleDao())
-        diagnosticSylvicoleRepository = DiagnosticSylvicoleRepositoryImpl(database.diagnosticSylvicoleDao())
-        observationFloreRepository = ObservationFloreRepositoryImpl(database.observationFloreDao())
+        diagnosticSylvicoleRepository = DiagnosticSylvicoleRepositoryImpl(database.diagnosticSylvicoleDao(), metadataService)
+        observationFloreRepository = ObservationFloreRepositoryImpl(database.observationFloreDao(), metadataService)
         valeurFonciereRepository = ValeurFonciereRepositoryImpl(database.valeurFonciereDao())
-        ripisylveRepository = RipisylveRepositoryImpl(database.ripisylveDao())
-        stationRepository = StationRepositoryImpl(database.stationDao())
+        ripisylveRepository = RipisylveRepositoryImpl(database.ripisylveDao(), metadataService)
+        stationRepository = StationRepositoryImpl(database.stationDao(), metadataService)
         localisationResolverService = LocalisationResolverService(parcelleRepository, stationEnvironnementaleRepository)
+        projectRepository = com.forestry.counter.data.repository.ProjectRepositoryImpl(database.projectDao())
 
         // Initialize forestry calculator
         forestryCalculator = ForestryCalculator(parameterRepository)
@@ -208,9 +246,6 @@ class ForestryCounterApplication : Application() {
 
         // Initialize offline tile manager
         offlineTileManager = com.forestry.counter.domain.location.OfflineTileManager(applicationContext)
-
-        // Initialize preferences
-        userPreferences = UserPreferencesManager(applicationContext)
 
         applyAppLocale()
 
@@ -227,6 +262,23 @@ class ForestryCounterApplication : Application() {
             groupRepository,
             counterRepository,
             formulaRepository
+        )
+
+        // Use case RGPD — droit à l'effacement (Art. 17)
+        deleteAllUserDataUseCase = com.forestry.counter.domain.usecase.privacy.DeleteAllUserDataUseCase(
+            foretDao = database.foretDao(),
+            parcelleDao = database.parcelleDao(),
+            tigeDao = database.tigeDao(),
+            placetteDao = database.placetteDao(),
+            inventaireSessionDao = database.inventaireSessionDao(),
+            stationDao = database.stationDao(),
+            ripisylveDao = database.ripisylveDao(),
+            ibpEvaluationDao = database.ibpEvaluationDao(),
+            arbreHabitatDao = database.arbreHabitatDao(),
+            diagnosticSylvicoleDao = database.diagnosticSylvicoleDao(),
+            alerteSanitaireDao = database.alerteSanitaireDao(),
+            observationFloreDao = database.observationFloreDao(),
+            context = applicationContext,
         )
 
         applicationScope.launch { seedSylvicultureData() }
