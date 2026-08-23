@@ -21,9 +21,28 @@ entièrement hors-ligne.
 
 ---
 
-[Pourquoi](#-pourquoi-geosylva) · [Fonctionnalités](#-fonctionnalités) · [Architecture](#-architecture) · [Stack](#-stack-technique) · [Installation](#-installation) · [Tests](#-tests) · [GSIE](#-intégration-gsie) · [Sécurité](#-sécurité--confidentialité) · [Licence](#-licence)
+[Pourquoi](#pourquoi-geosylva) · [Fonctionnalités](#fonctionnalités) · [Architecture](#architecture) · [Stack](#stack-technique) · [Installation](#installation) · [Tests](#tests) · [GSIE](#intégration-gsie-et-hub-geosylva) · [Sécurité](#sécurité--confidentialité) · [Licence](#licence)
 
 </div>
+
+---
+
+## Aperçu
+
+<p align="center">
+  <img src="app/src/main/res/drawable-nodpi/app_icon.png" alt="GeoSylva — icône" width="180">
+</p>
+
+<!-- TODO: remplacer par un screenshot de l'écran inventaire + carte dans docs/assets/geosylva-hero.png -->
+<!-- <p align="center"><img src="docs/assets/geosylva-hero.png" alt="GeoSylva — inventaire terrain et cartographie" width="800"></p> -->
+
+```
+Terrain : saisie tiges → GPS auto → clinomètre → cubage (7 méthodes)
+Bureau  : synthèse dendrométrique → martelage → export PDF / Shapefile / GeoJSON
+```
+
+**Conçue par des forestiers, pour les forestiers.** Inventaire terrain,
+martelage, cartographie et synthèse dendrométrique — entièrement hors-ligne.
 
 ---
 
